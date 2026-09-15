@@ -43,11 +43,25 @@ tabel ini secara langsung, harus lewat helper tersebut.
 | Kolom | Tipe | Keterangan |
 |---|---|---|
 | `npsn` | VARCHAR(20) PK | |
+| `sekolah_id` | CHAR(36) NULLABLE | UUID Dapodik, dari scraping |
 | `nama` | VARCHAR(255) | |
-| `alamat` | VARCHAR(500) | |
+| `alamat` | VARCHAR(500) | gabungan `alamat_jalan` + `desa_kelurahan` |
 | `jenjang` | ENUM | `SD`, `SMP`, `SMA`, `SMK` |
+| `status_sekolah` | ENUM | `Negeri`, `Swasta` |
+| `kecamatan` | VARCHAR(255) NULLABLE | |
+| `desa_kelurahan` | VARCHAR(255) NULLABLE | |
+| `lintang` / `bujur` | DECIMAL(10,7) NULLABLE | koordinat, dari scraping |
+| `akreditasi` | VARCHAR(5) NULLABLE | `A`, `B`, `C`, dst |
+| `nama_kepsek` | VARCHAR(255) NULLABLE | |
 | `sumber_data` | VARCHAR(50) | mis. `"Dapodik"` |
 | `tanggal_pembaruan_data` | DATE | dari hasil scraping/parsing (`INTEGRATION.md`) |
+| `tanggal_verifikasi_baseline` | DATE NULLABLE | kapan kondisi sarpras terakhir diverifikasi (dipakai label "Baseline" di UI) |
+
+> **Catatan:** field `sekolah_id`, `status_sekolah`, `kecamatan`,
+> `desa_kelurahan`, `lintang`, `bujur`, `akreditasi`, dan `nama_kepsek`
+> ditambahkan agar cocok dengan data aktual hasil scraping Dapodik
+> (`app/dataset/scraping/scrape_sekolah_v4.py`). Sebelumnya skema hanya
+> punya 6 kolom dan tidak cukup untuk menampung hasil ingest.
 
 ## 4. `sekolah_data_resmi`
 
@@ -60,13 +74,37 @@ tabel ini secara langsung, harus lewat helper tersebut.
 
 ## 5. `kondisi_sarana`
 
+**Model agregat per jenis ruang** — sesuai bentuk data Dapodik yang
+memang agregat (mis. `ruang_kelas=6, kelas_baik=6, kelas_ringan=0`), bukan
+daftar ruang individual bernomor. Satu baris = satu jenis ruang per sekolah.
+
 | Kolom | Tipe | Keterangan |
 |---|---|---|
 | `id` | CHAR(36) PK | |
 | `sekolah_npsn` | VARCHAR(20) FK → `sekolah.npsn` | |
-| `nama_ruang` | VARCHAR(255) | |
-| `kondisi` | ENUM | `baik`, `rusak_ringan`, `rusak_sedang`, `rusak_berat` |
-| `lokasi_ruang` | VARCHAR(255) NULLABLE | opsional/keterangan warga (`PRD.md` §6.1) |
+| `nama_ruang` | VARCHAR(255) | jenis ruang: `Ruang Kelas`, `Perpustakaan`, `Lab IPA`, `Lab Komputer`, `Ruang Guru`, `Ruang Kepsek`, `Ruang TU`, `UKS`, `WC Guru`, `WC Siswa`, `Kantin`, `Tempat Bermain`, `Lab Bahasa`, `Ruang Praktik`, `Ruang Keterampilan`, dst |
+| `jumlah` | INT DEFAULT 0 | total unit jenis ruang ini |
+| `kondisi_baik` | INT DEFAULT 0 | |
+| `kondisi_rusak_ringan` | INT DEFAULT 0 | |
+| `kondisi_rusak_sedang` | INT DEFAULT 0 | |
+| `kondisi_rusak_berat` | INT DEFAULT 0 | |
+| `sumber` | ENUM | `dapodik`, `laporan_warga` — dari mana angka ini berasal |
+| `created_at` | DATETIME | |
+| `updated_at` | DATETIME | |
+
+**Constraint:** `UNIQUE(sekolah_npsn, nama_ruang, sumber)` — satu jenis
+ruang satu baris per sumber data. Data Dapodik dan agregat laporan warga
+disimpan terpisah agar bisa dibandingkan (mismatch detection).
+
+> **Catatan validasi:** data Dapodik kadang tidak konsisten (mis.
+> `kelas_sedang=6` padahal `jumlah=6` dan `kelas_baik=6` — total kondisi
+> melebihi jumlah unit). Aturan ingest: simpan apa adanya, tandai baris
+> sebagai `perlu_verifikasi` bila `kondisi_baik + ringan + sedang + berat >
+> jumlah`. UI menampilkan penanda "data perlu verifikasi".
+
+**Catatan:** kolom `lokasi_ruang` yang lama dihapus — digantikan oleh
+`nama_ruang` (jenis) dan `sumber`. Lokasi ruang spesifik (opsional dari
+warga, `PRD.md` §6.1) dicatat di deskripsi `laporan`, bukan di sini.
 
 ## 6. `laporan`
 
@@ -77,10 +115,17 @@ tabel ini secara langsung, harus lewat helper tersebut.
 | `user_id` | CHAR(36) FK → `users.id` | |
 | `sekolah_npsn` | VARCHAR(20) FK → `sekolah.npsn` | |
 | `kategori` | ENUM | `infrastruktur_sarana`, `ketersediaan_tenaga_pengajar`, `lainnya` |
-| `fasilitas_terkait` | VARCHAR(255) NULLABLE | wajib jika kategori = `infrastruktur_sarana` (validasi di level aplikasi, bukan DB) |
+| `fasilitas_terkait` | VARCHAR(255) NULLABLE | wajib jika kategori = `infrastruktur_sarana` (validasi level aplikasi). Nilai = `nama_ruang` yang disanggah, mis. `"Ruang Kelas"` |
+| `kondisi_dilaporkan` | ENUM NULLABLE | `baik`, `rusak_ringan`, `rusak_sedang`, `rusak_berat` — kondisi aktual menurut warga, dipakai untuk deteksi mismatch vs Dapodik |
 | `deskripsi` | TEXT | |
 | `klaster_id` | CHAR(36) NULLABLE, FK → `klaster.id` | diisi setelah AI pipeline jalan, null sebelum diproses |
+| `status_sanggahan` | ENUM DEFAULT `menunggu` | `menunggu`, `divalidasi`, `ditolak` — dipakai badge "Ada sanggahan" di detail sekolah (`PAGE_STATES.md`) |
 | `created_at` | DATETIME | |
+
+> **Mismatch detection:** jika `kondisi_dilaporkan` berbeda dari
+> `kondisi_sarana.kondisi_*` (sumber `dapodik`) untuk `nama_ruang` yang
+> sama, laporan ditandai sebagai mismatch dan tampil di Tabel Verifikasi
+> Mismatch (`ARCHITECTURE.md` §5.2).
 
 ## 7. `laporan_foto`
 
@@ -105,6 +150,8 @@ tabel ini secara langsung, harus lewat helper tersebut.
 | `urutan_prioritas_override` | INT NULLABLE | diisi kalau Kepala Dinas override (`DECISIONS.md` D-10) |
 | `alasan_override` | TEXT NULLABLE | wajib diisi kalau `urutan_prioritas_override` diisi |
 | `status_verifikasi` | ENUM | `menunggu_verifikasi`, `tidak_terverifikasi`, `terverifikasi` |
+| `status_penanganan` | ENUM NULLABLE | `dalam_antrian_prioritas`, `dalam_proses`, `selesai`, `tidak_dapat_ditindaklanjuti` — status tindak lanjut terkini (`INTERFACES.md` §7); riwayat lengkap ada di `status_log` |
+| `updated_at` | DATETIME | |
 | `created_at` | DATETIME | |
 
 ## 9. `vote`
@@ -183,6 +230,11 @@ klaster 1---N status_log
   perlu tabel join `klaster_laporan` many-to-many — belum ada kasus yang
   mengharuskan satu laporan masuk >1 klaster, jadi dipakai relasi 1-ke-N
   dulu sampai terbukti perlu diubah.
+- **Ambang batas `penanda_masalah`** (`aman` / `perlu_perhatian` /
+  `kritis` di `INTERFACES.md` §2) — belum ditentukan dari sisi data
+  (berapa jumlah isu aktif / rasio kerusakan yang dianggap kritis).
+- **Aturan normalisasi inkonsistensi Dapodik** (`jumlah_kondisi > jumlah`):
+  apakah cukup ditandai `perlu_verifikasi`, atau perlu auto-koreksi.
 - Indeks tambahan untuk performa (`laporan.sekolah_npsn`,
   `klaster.skor_prioritas` untuk sorting dashboard) belum ditentukan —
   tambahkan begitu ada data uji nyata untuk diukur.
