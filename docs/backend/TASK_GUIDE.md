@@ -149,15 +149,20 @@ EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
 
 | Endpoint | Method | Body/Response |
 |----------|--------|---------------|
-| `/auth/register` | POST | `{ nama, email, password, role? }` → `{ user_id }` |
-| `/auth/login` | POST | `{ email, password }` → `{ access_token, token_type }` |
+| `/auth/register` | POST | `{ nama, nik, email, password, sekolah_terkait_id? }` → `{ user_id, status_verifikasi }` |
+| `/auth/login` | POST | `{ email, password }` → `{ access_token, refresh_token, role, status_verifikasi }` |
+| `/auth/refresh` | POST (Publik) | `{ refresh_token }` → `{ access_token, refresh_token, role, status_verifikasi }` |
+| `/auth/me` | GET (Semua role login) | → `{ id, nama, email, role, status_verifikasi, sekolah_terkait_npsn? }` |
 
 **Validasi:**
+- NIK 16 digit (422 VALIDATION_ERROR kalau salah)
 - Email unique (cek di DB)
-- Password di-hash dengan bcrypt
-- Default role: `warga_umum`
+- Password di-hash dengan pwdlib argon2
+- Default role: `warga_umum`, status_verifikasi: `menunggu`
+- NIK tidak pernah dikembalikan di respons API (disimpan di PDP Vault terenkripsi)
+- Refresh token berisi claim `type: "refresh"`, access token `type: "access"`
 
-**Deliverable:** Register + Login functional.
+**Deliverable:** Register, login, refresh token, dan profile (GET /auth/me) functional.
 
 ---
 
@@ -286,19 +291,22 @@ class SekolahDetailResponse(SekolahResponse):
 
 | Endpoint | Method | Query |
 |----------|--------|-------|
-| `/sekolah/search` | GET | `?q=<nama/alamat>` |
+| `/sekolah` | GET | `?search=&jenjang=&page=` |
 
-**Deliverable:** Pencarian fuzzy (LIKE) berdasarkan nama atau alamat.
+**Deliverable:** Direktori sekolah dengan filter dan pagination.
 
 ---
 
 #### F2.8 — Detail Kondisi Sarana
 
+**Sesuai INTERFACES.md, kondisi sarana sudah termasuk dalam `GET /sekolah/{npsn}`**
+(field `data_resmi.kondisi_sarana`) — **tidak ada** endpoint `/sekolah/{npsn}/sarana`.
+
 | Endpoint | Method | Deskripsi |
 |----------|--------|-----------|
-| `/sekolah/{npsn}/sarana` | GET | Daftar ruang + kondisi per sekolah |
+| `/sekolah/{npsn}` | GET | Detail sekolah + `kondisi_sarana` (agregat per jenis ruang) |
 
-**Deliverable:** Kondisi sarana terlihat per ruang.
+**Deliverable:** Kondisi sarana terlihat dalam respons detail sekolah.
 
 ---
 
@@ -367,7 +375,7 @@ class LaporanResponse(BaseModel):
 
 | Endpoint | Method | Role | Deskripsi |
 |----------|--------|------|-----------|
-| `/laporan/me` | GET | `warga_terverifikasi`, `komite_sekolah` | Daftar laporan yang dikirim user |
+| `/laporan/riwayat` | GET | `warga_terverifikasi`, `komite_sekolah` | Daftar laporan yang dikirim user |
 
 **Deliverable:** User bisa lihat riwayat laporannya.
 
@@ -377,9 +385,13 @@ class LaporanResponse(BaseModel):
 
 | Endpoint | Method | Role | Deskripsi |
 |----------|--------|------|-----------|
-| `/laporan/{tracking_id}` | GET | Publik | Detail laporan berdasarkan tracking_id |
+| `/laporan/{id}` | GET | Pemilik laporan, `verifikator_dinas`, `kepala_dinas` | Detail satu laporan |
 
-**Deliverable:** Status laporan bisa dipantau publik.
+> Catatan: detail laporan **bukan** publik (sesuai INTERFACES.md §4 — akses
+> terbatas pemilik + dinas). Pantauan status publik memakai
+> `GET /klaster/{id}/status` (F3.3).
+
+**Deliverable:** Detail laporan tampil untuk pemilik & dinas.
 
 ---
 
