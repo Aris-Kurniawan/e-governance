@@ -104,6 +104,37 @@ tersedia** di Dapodik (sumber hanya punya agregat per jenis ruang). Mockup
 detail sekolah sudah disesuaikan menampilkan kartu per jenis ruang
 ("Rincian Fasilitas Sekolah") + tombol sanggah.
 
+### Added — Database & Migrasi (F1.2)
+
+- **`app/models/`** — 12 tabel SQLAlchemy (2.0 style, Mapped):
+  - `base.py` — `Base`, `TimestampMixin`, `gen_uuid()`, `utcnow()`
+  - `user.py` — `User`, `PdpVault`
+  - `sekolah.py` — `Sekolah`, `SekolahDataResmi`, `KondisiSarana`
+    (+ property `perlu_verifikasi` untuk deteksi inkonsistensi Dapodik)
+  - `laporan.py` — `Laporan`, `LaporanFoto`
+  - `klaster.py` — `Klaster`, `Vote`, `StatusLog`
+  - `logs.py` — `IngestJob`, `AuditLog`
+  - `__init__.py` — registrasi semua model ke `Base.metadata`
+- **`app/core/database.py`** — engine + `SessionLocal` + dependency `get_db()`.
+- **`alembic/`** + **`alembic.ini`** — Alembic dikonfigurasi; URL diambil
+  dari `settings.DATABASE_URL` (`.env`), bukan hardcode.
+- **`alembic/versions/478d2b0819e6_init_12_tables.py`** — migration awal
+  12 tabel.
+
+**Verifikasi:** `alembic upgrade head` + `revision --autogenerate`
+dijalankan terhadap SQLite sementara (`*.db`, di-gitignore) — 12 tabel +
+`alembic_version` terbuat, struktur kolom cocok dengan
+`DATABASE_SCHEMA.md`. `dev_check.db` dihapus setelah verifikasi.
+
+**⚠ Belum diverifikasi terhadap MySQL:** MySQL/MariaDB belum tersedia di
+environment ini dan Docker Desktop belum terintegrasi ke WSL 2. Perlu
+langkah manual (lihat SETUP.md §5) untuk `alembic upgrade head` ke MySQL
+dan konfirmasi ENUM/DECIMAL berjalan sesuai.
+
+### Changed — `.gitignore`
+
+- Tambah `*.db` (SQLite dev check) agar tidak ter-commit.
+
 ---
 
 ## Status Fase 1
@@ -111,15 +142,15 @@ detail sekolah sudah disesuaikan menampilkan kartu per jenis ruang
 | Task | Status |
 |------|--------|
 | F1.1 — Setup FastAPI Project Structure | ✅ Selesai |
-| F1.2 — Database & Migrasi Alembic | ⬜ Belum |
+| F1.2 — Database & Migrasi Alembic | ✅ Selesai (verifikasi SQLite; MySQL pending) |
 | F1.3 — PDP Vault Helper | ⬜ Belum |
 | F1.4 — Setup Config & Environment | ✅ Selesai (digabung F1.1) |
-| F1.5 — Verifikasi Koneksi DB | ⬜ Belum |
+| F1.5 — Verifikasi Koneksi DB | ⚠️ Sebagian (SQLite OK, MySQL pending) |
 | F1.6 — Scraping Dapodik | ✅ Selesai |
 | F1.7 — Parsing PDF Dapodik | ⚠️ Opsional (API JSON sudah cukup) |
 
-**Progress Fase 1: ~57%** (4 dari 7 task selesai; F1.7 kemungkinan
-tidak diperlukan karena scraping JSON API sudah berhasil).
+**Progress Fase 1: ~71%** (5 dari 7 task selesai; F1.5 butuh konfirmasi
+MySQL, F1.7 kemungkinan tidak diperlukan).
 
 ---
 
