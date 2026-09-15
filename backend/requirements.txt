@@ -23,4 +23,7 @@ typing_extensions==4.16.0
 uvicorn==0.53.0
 uvloop==0.22.1
 watchfiles==1.2.0
-websockets==17.1.0
+websockets==17.1.0argon2-cffi==25.1.0
+argon2-cffi-bindings==26.1.0
+pwdlib==0.3.1
+PyJWT==2.14.0

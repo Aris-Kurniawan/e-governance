@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
+    JWT_REFRESH_EXPIRE_DAYS: int = 7
 
     # PPP Vault
     PDP_ENCRYPTION_KEY: str = ""

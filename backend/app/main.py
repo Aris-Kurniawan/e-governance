@@ -7,6 +7,7 @@ FastAPI application factory.
 from fastapi import FastAPI
 
 from app.core.config import settings
+from app.routers import auth
 
 app = FastAPI(
     title="SIMAKIS API",
@@ -16,6 +17,10 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
+# Registrasi Router
+app.include_router(auth.router)
+
+
 
 @app.get("/", tags=["health"])
 def root():
@@ -24,4 +29,10 @@ def root():
 
 @app.get("/health", tags=["health"])
 def health():
+    return {"status": "healthy"}
+
+
+# Health check alias
+@app.get("/api/health", tags=["health"])
+def api_health():
     return {"status": "healthy"}
