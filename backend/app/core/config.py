@@ -1,11 +1,15 @@
 """Konfigurasi aplikasi — baca dari environment (.env)."""
 
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Path ke direktori backend (e-goverment/backend)
+BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[".env", str(BACKEND_DIR / ".env")],
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -15,14 +19,14 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Database
-    DATABASE_URL: str = "mysql+pymysql://user:password@localhost:3306/simakis"
+    DATABASE_URL: str = "sqlite:///./simakis_local.db"
 
     # Auth
     JWT_SECRET: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
 
-    # PDP Vault
+    # PPP Vault
     PDP_ENCRYPTION_KEY: str = ""
 
     # MinIO / S3
@@ -33,6 +37,5 @@ class Settings(BaseSettings):
 
     # AI Pipeline
     EMBEDDING_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
-
 
 settings = Settings()
