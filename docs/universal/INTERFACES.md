@@ -149,13 +149,50 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
     "nama": "string",
     "alamat": "string",
     "jenjang": "string",
+    "status_sekolah": "Negeri | Swasta",
+    "akreditasi": "string | null",
+    "nama_kepsek": "string | null",
+    "jumlah_isu_aktif": 0,
+    "penanda_masalah": "aman | perlu_perhatian | kritis",
+    "rasio_guru_siswa": "1:16",
+    "rasio_spm_terpenuhi": true,
+    "jumlah_pd": 642,
+    "jumlah_ptk": 40,
+    "jumlah_rombel": 28,
+    "utilitas_kapasitas_belajar": 89.4,
     "data_resmi": {
       "sumber": "Dapodik",
-      "tanggal_pembaruan": "2026-01-15",
-      "rasio_guru_siswa": "1:20",
-      "kondisi_sarana": [
-        { "nama_ruang": "string", "kondisi": "baik | rusak_ringan | rusak_sedang | rusak_berat" }
-      ]
+      "tanggal_pembaruan": "2026-09-13",
+      "tanggal_verifikasi_baseline": "2026-08-01"
+    },
+    "kondisi_sarana": [
+      {
+        "nama_ruang": "Ruang Kelas",
+        "jumlah": 30,
+        "baik": 20,
+        "rusak_ringan": 0,
+        "rusak_sedang": 0,
+        "rusak_berat": 10,
+        "perlu_verifikasi": false,
+        "ada_sanggahan": false
+      },
+      {
+        "nama_ruang": "Perpustakaan",
+        "jumlah": 1,
+        "baik": 1,
+        "rusak_ringan": 0,
+        "rusak_sedang": 0,
+        "rusak_berat": 0,
+        "perlu_verifikasi": false,
+        "ada_sanggahan": false
+      }
+    ],
+    "ringkasan_sarpras": {
+      "total_unit": 38,
+      "total_baik": 30,
+      "total_rusak_ringan": 5,
+      "total_rusak_sedang": 0,
+      "total_rusak_berat": 3
     },
     "klaster_isu": [
       { "klaster_id": "string", "kategori": "string", "skor_prioritas": 0, "status": "string" }
@@ -163,6 +200,34 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
   }
 }
 ```
+
+**Catatan:**
+- `kondisi_sarana` berbentuk **agregat per jenis ruang** (bukan per ruang
+  individual) — mengikuti bentuk data Dapodik yang memang agregat.
+- `rasio_guru_siswa` = `jumlah_pd / jumlah_ptk`, `rasio_spm_terpenuhi` =
+  rasio memenuhi standar jenjang (SD/SMA 1:20, SMP 1:25).
+- `utilitas_kapasitas_belajar` = `(jumlah_rombel × 32) / jumlah_pd × 100`.
+- `ada_sanggahan` = ada laporan warga (`status_sanggahan = menunggu` atau
+  `divalidasi`) menargetkan `nama_ruang` tersebut.
+- `perlu_verifikasi` = data Dapodik inkonsisten (`jumlah kondisi > jumlah
+  unit`) — lihat `backend/DATABASE_SCHEMA.md` §5.
+- **Endpoint sanggahan** — warga melaporkan kondisi berbeda dari Dapodik
+  langsung dari kartu fasilitas (lihat §4.1).
+
+---
+
+## 2.1 Sanggahan Sarpras (`/sekolah/{npsn}/sanggahan`)
+
+| Method | Endpoint | Akses | Deskripsi |
+|---|---|---|---|
+| POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | Kirim sanggahan (via laporan biasa, `kategori=infrastruktur_sarana`, `fasilitas_terkait=nama_ruang`, `kondisi_dilaporkan=...`) |
+| GET | `/sekolah/{npsn}/sanggahan` | Publik | Riwayat sanggahan untuk satu sekolah |
+
+**Catatan:** tombol "Sanggah Data Ini" di kartu fasilitas mengarah ke
+`POST /laporan` dengan `fasilitas_terkait` terisi otomatis dan
+`kondisi_dilaporkan` dipilih warga. **Tidak ada** endpoint terpisah untuk
+sanggahan — memakai jalur laporan yang sama (`PRD.md` §3.1, cross-check
+Dapodik).
 
 ---
 

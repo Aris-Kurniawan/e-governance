@@ -49,9 +49,9 @@
 |---|-------|----|---------|
 | 1 | `users` | `id` CHAR(36) | UUID, role ENUM 6 nilai |
 | 2 | `pdp_vault` | `user_id` CHAR(36) | Terpisah dari users, FK ke users |
-| 3 | `sekolah` | `npsn` VARCHAR(20) | PK alami (bukan UUID) |
+| 3 | `sekolah` | `npsn` VARCHAR(20) | PK alami (bukan UUID); + field scraping (sekolah_id, status_sekolah, kecamatan, desa, lintang/bujur, akreditasi, nama_kepsek) |
 | 4 | `sekolah_data_resmi` | `id` CHAR(36) | FK ke sekolah.npsn |
-| 5 | `kondisi_sarana` | `id` CHAR(36) | FK ke sekolah.npsn |
+| 5 | `kondisi_sarana` | `id` CHAR(36) | FK ke sekolah.npsn; **agregat per jenis ruang** (jumlah + 4 kondisi + sumber) |
 | 6 | `laporan` | `id` CHAR(36) | FK ke users + sekolah, klaster_id nullable |
 | 7 | `laporan_foto` | `id` CHAR(36) | FK ke laporan, storage_key (bukan biner) |
 | 8 | `klaster` | `id` CHAR(36) | FK ke sekolah, skor_prioritas computed |
@@ -197,14 +197,36 @@ admin > kepala_dinas > verifikator_dinas > komite_sekolah > warga_terverifikasi 
 class Sekolah(Base):
     __tablename__ = "sekolah"
     npsn = Column(String(20), primary_key=True)
+    sekolah_id = Column(String(36), nullable=True)   # UUID Dapodik
     nama = Column(String(255))
     alamat = Column(String(500))
     jenjang = Column(Enum("SD", "SMP", "SMA", "SMK"))
+    status_sekolah = Column(Enum("Negeri", "Swasta"), nullable=True)
+    kecamatan = Column(String(255), nullable=True)
+    desa_kelurahan = Column(String(255), nullable=True)
+    lintang = Column(Numeric(10, 7), nullable=True)
+    bujur = Column(Numeric(10, 7), nullable=True)
+    akreditasi = Column(String(5), nullable=True)
+    nama_kepsek = Column(String(255), nullable=True)
     sumber_data = Column(String(50))
     tanggal_pembaruan_data = Column(Date)
+    tanggal_verifikasi_baseline = Column(Date, nullable=True)
+
+class KondisiSarana(Base):
+    __tablename__ = "kondisi_sarana"
+    id = Column(String(36), primary_key=True)
+    sekolah_npsn = Column(String(20), ForeignKey("sekolah.npsn"))
+    nama_ruang = Column(String(255))          # jenis ruang
+    jumlah = Column(Integer, default=0)
+    kondisi_baik = Column(Integer, default=0)
+    kondisi_rusak_ringan = Column(Integer, default=0)
+    kondisi_rusak_sedang = Column(Integer, default=0)
+    kondisi_rusak_berat = Column(Integer, default=0)
+    sumber = Column(Enum("dapodik", "laporan_warga"))
+    __table_args__ = (UniqueConstraint("sekolah_npsn", "nama_ruang", "sumber"),)
 ```
 
-**Deliverable:** 3 model: `Sekolah`, `SekolahDataResmi`, `KondisiSarana`.
+**Deliverable:** 3 model: `Sekolah`, `SekolahDataResmi`, `KondisiSarana` (agregat per jenis ruang).
 
 ---
 
@@ -212,21 +234,40 @@ class Sekolah(Base):
 
 ```python
 # app/schemas/sekolah.py
+class KondisiSaranaResponse(BaseModel):
+    nama_ruang: str
+    jumlah: int
+    baik: int
+    rusak_ringan: int
+    rusak_sedang: int
+    rusak_berat: int
+    perlu_verifikasi: bool
+    ada_sanggahan: bool
+
 class SekolahResponse(BaseModel):
     npsn: str
     nama: str
     alamat: str
     jenjang: str
-    sumber_data: str
-    tanggal_pembaruan_data: date
+    status_sekolah: str | None
+    jumlah_isu_aktif: int
+    penanda_masalah: str
 
 class SekolahDetailResponse(SekolahResponse):
-    rasio_guru_siswa: str | None
-    ikd: str | None
-    sarana: list[KondisiSaranaResponse]
+    akreditasi: str | None
+    nama_kepsek: str | None
+    rasio_guru_siswa: str
+    rasio_spm_terpenuhi: bool
+    jumlah_pd: int
+    jumlah_ptk: int
+    jumlah_rombel: int
+    utilitas_kapasitas_belajar: float
+    kondisi_sarana: list[KondisiSaranaResponse]
+    ringkasan_sarpras: dict           # total_unit, total_baik, ...
+    klaster_isu: list[dict]
 ```
 
-**Deliverable:** Schema untuk semua endpoint sekolah.
+**Deliverable:** Schema untuk semua endpoint sekolah (termasuk `kondisi_sarana` agregat).
 
 ---
 
@@ -274,9 +315,11 @@ class Laporan(Base):
     user_id = Column(String(36), ForeignKey("users.id"))
     sekolah_npsn = Column(String(20), ForeignKey("sekolah.npsn"))
     kategori = Column(Enum("infrastruktur_sarana", "ketersediaan_tenaga_pengajar", "lainnya"))
-    fasilitas_terkait = Column(String(255), nullable=True)
+    fasilitas_terkait = Column(String(255), nullable=True)   # nama_ruang yang disanggah
+    kondisi_dilaporkan = Column(Enum("baik", "rusak_ringan", "rusak_sedang", "rusak_berat"), nullable=True)
     deskripsi = Column(Text)
     klaster_id = Column(String(36), ForeignKey("klaster.id"), nullable=True)
+    status_sanggahan = Column(Enum("menunggu", "divalidasi", "ditolak"), default="menunggu")
     created_at = Column(DateTime)
 ```
 
@@ -290,7 +333,8 @@ class Laporan(Base):
 class LaporanCreate(BaseModel):
     sekolah_npsn: str
     kategori: str
-    fasilitas_terkait: str | None
+    fasilitas_terkait: str | None       # wajib jika kategori infrastruktur_sarana
+    kondisi_dilaporkan: str | None      # kondisi aktual menurut warga (untuk mismatch)
     deskripsi: str
 
 class LaporanResponse(BaseModel):
@@ -388,6 +432,20 @@ Update ingest_job.status = selesai
 | `/ingest/riwayat` | GET | `admin`, `verifikator_dinas` | Daftar riwayat job ingest |
 
 **Deliverable:** Monitoring status ingest job.
+
+---
+
+#### F2.17 — Riwayat Sanggahan Sekolah
+
+| Endpoint | Method | Role | Deskripsi |
+|----------|--------|------|-----------|
+| `/sekolah/{npsn}/sanggahan` | GET | Publik | Riwayat sanggahan warga untuk satu sekolah |
+
+**Catatan:** tombol "Sanggah Data Ini" di kartu fasilitas memakai
+`POST /laporan` yang sudah ada (`fasilitas_terkait` + `kondisi_dilaporkan`).
+Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
+
+**Deliverable:** Riwayat sanggahan tampil per sekolah/fasilitas.
 
 ---
 
