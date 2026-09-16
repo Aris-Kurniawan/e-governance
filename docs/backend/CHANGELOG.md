@@ -244,11 +244,11 @@ tidak menambah migration baru.
 | F2.2 — Middleware Otorisasi RBAC | ✅ Selesai |
 | F2.3 — Profile Management (`/auth/me`) | ✅ Selesai |
 | F2.4 — Model SQLAlchemy (Sekolah) | ✅ Selesai (dari F1.2) |
-| F2.9 — Model SQLAlchemy (Laporan) | ✅ Selesai (dari F1.2) |
 | F2.5 — Schema Pydantic (Sekolah) | ⬜ Belum |
 | F2.6 — Endpoint Sekolah | ⬜ Belum |
 | F2.7 — Pencarian Sekolah | ⬜ Belum |
 | F2.8 — Detail Kondisi Sarana | ⬜ Belum |
+| F2.9 — Model SQLAlchemy (Laporan) | ✅ Selesai (dari F1.2) |
 | F2.10 — Schema Pydantic (Laporan) | ⬜ Belum |
 | F2.11 — Buat Laporan | ⬜ Belum |
 | F2.12 — Riwayat Laporan User | ⬜ Belum |
