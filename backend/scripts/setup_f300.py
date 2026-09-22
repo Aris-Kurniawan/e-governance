@@ -36,44 +36,82 @@ JENIS_SARANA = [
     "uks", "wc_guru", "wc_siswa",
 ]
 
-KATEGORI_OPTIONS = ["infrastruktur_sarana", "ketersediaan_tenaga_pengajar", "lainnya"]
+KATEGORI_OPTIONS = ["ruang_belajar", "sanitasi_air", "utilitas", "akses_lahan", "penunjang"]
 KONDISI_OPTIONS = ["baik", "rusak_ringan", "rusak_sedang", "rusak_berat"]
 
 LAPORAN_DESKRIPSI = {
-    "infrastruktur_sarana": [
+    "ruang_belajar": [
         "Atap ruang kelas bocor saat hujan, plafon rusak di beberapa titik",
-        "Lantai keramik pecah dan retak di koridor utama",
+        "Lantai keramik kelas pecah dan retak, berbahaya bagi siswa",
         "Dinding kelas berlubang dan cat mengelupas, perlu renovasi",
         "Pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak",
-        "Jendela kaca pecah dan tidak ada penggantian sudah 6 bulan",
-        "Kondisi perpustakaan sangat minim, buku sudah usang dan rak rusak",
+        "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan",
+        "Kondisi perpustakaan memprihatinkan, buku usang dan rak rusak",
         "Laboratorium IPA tidak memiliki meja praktik yang memadai",
         "Komputer di lab sudah rusak lebih dari 50 persen",
-        "Ruang guru bocor dan tidak layak untuk aktivitas mengajar",
-        "Ketersediaan buku teks sangat kurang untuk siswa",
+        "Ruang kelas bocor sehingga kegiatan belajar terganggu",
         "Meja dan kursi siswa banyak yang rusak tidak bisa digunakan",
-        "Papan tulis sudah rusak dan diganti seadanya",
-        "Sarana olahraga sangat terbatas, lapangan rusak",
+        "Papan tulis kelas sudah rusak dan diganti seadanya",
+        "Ruang kelas sempit, jumlah siswa melebihi kapasitas",
+        "Langit-langit kelas ambruk sebagian, belum diperbaiki",
+        "Perabot kelas tidak layak, banyak kursi patah",
+    ],
+    "sanitasi_air": [
+        "Toilet siswa rusak, tidak bisa digunakan sebagian",
+        "Tidak ada air bersih di WC sekolah, siswa kesulitan",
+        "Saluran pembuangan WC tersumbat dan bau menyengat",
+        "Jumlah toilet sangat kurang dibanding jumlah siswa",
+        "Pintu toilet rusak dan tidak ada privasi",
+        "Bak air WC bocor sehingga air terbuang",
+        "Tidak ada sabun dan air bersih di tempat cuci tangan",
+        "WC guru dalam kondisi rusak berat, tidak layak pakai",
+        "Sumber air sekolah kering saat musim kemarau",
+        "Keran air di area sekolah banyak yang mati",
+    ],
+    "utilitas": [
         "Listrik sering padam karena instalasi kabel sudah tua",
-        "Talang air tersumbat menyebabkan genangan saat hujan",
+        "Daya listrik sekolah tidak cukup untuk seluruh ruangan",
+        "Tidak ada akses internet di sekolah, menghambat pembelajaran",
+        "Kabel listrik terkelupas dan berbahaya bagi siswa",
+        "Lampu penerangan kelas banyak yang mati",
+        "Instalasi listrik belum sesuai standar keamanan",
+        "Jaringan internet lambat dan sering terputus",
+        "Belum ada genset cadangan saat listrik padam",
+        "Stop kontak di kelas rusak dan tidak aman",
+        "Tagihan listrik menunggak sehingga sempat diputus",
     ],
-    "ketersediaan_tenaga_pengajar": [
-        "Kekurangan guru mata pelajaran matematika dan sains",
-        "Guru mata pelajaran bahasa Inggris belum tersedia tahun ini",
-        "Hanya ada 2 guru untuk 6 kelas di tingkat atas",
-        "Rasio guru dan siswa sangat tidak seimbang, lebih dari 1:40",
-        "Guru tetap mengajar di beberapa sekolah sekaligus",
-        "Tidak ada guru Pendidikan Jasmani yang tetap",
-        "Guru perpustakaan tidak ada, perpustakaan tidak beroperasi optimal",
-        "Kekurangan guru teknologi informasi untuk kelas atas",
-    ],
-    "lainnya": [
+    "akses_lahan": [
         "Akses jalan menuju sekolah rusak parah saat musim hujan",
-        "Keamanan sekolah belum memadai, pagar rusak di beberapa titik",
-        "Area bermain anak tidak layak dan berbahaya",
-        "Kebersihan lingkungan sekolah perlu perhatian serius",
-        "Tidak ada tempat sampah yang memadai di area sekolah",
+        "Pagar sekolah rusak di beberapa titik, keamanan terancam",
+        "Halaman sekolah becek dan tergenang saat hujan",
+        "Drainase sekolah tersumbat menyebabkan banjir",
+        "Tidak ada jalur khusus untuk siswa disabilitas",
+        "Gerbang sekolah rusak dan tidak bisa dikunci",
+        "Area parkir tidak memadai dan tidak aman",
+        "Talang air tersumbat menyebabkan genangan di halaman",
+        "Jalan masuk sekolah berlubang dan berbahaya",
+        "Batas tanah sekolah belum dipagar dengan baik",
     ],
+    "penunjang": [
+        "Sarana olahraga sangat terbatas, lapangan rusak",
+        "Ruang UKS tidak memiliki peralatan medis memadai",
+        "Tempat ibadah sekolah rusak dan tidak layak",
+        "Tidak ada ruang guru yang memadai",
+        "Area bermain anak tidak layak dan berbahaya",
+        "Perabot ruang guru banyak yang rusak",
+        "Tidak ada tempat sampah memadai di area sekolah",
+        "Ruang serbaguna sekolah rusak atapnya",
+        "Sarana kesenian dan ekstrakurikuler tidak tersedia",
+        "Kantin sekolah tidak layak dan tidak higienis",
+    ],
+}
+
+FASILITAS_MAP = {
+    "ruang_belajar": ["ruang_kelas", "perpustakaan", "lab_ipa", "lab_komputer"],
+    "sanitasi_air": ["wc_siswa", "wc_guru", "sumber_air", "saluran_pembuangan"],
+    "utilitas": ["listrik", "internet", "penerangan", "genset"],
+    "akses_lahan": ["jalan_akses", "pagar", "drainase", "halaman", "gerbang"],
+    "penunjang": ["uks", "tempat_ibadah", "ruang_guru", "lapangan_olahraga", "kantin"],
 }
 
 
@@ -227,22 +265,13 @@ def seed_laporan(db: Session, admin_user: User) -> int:
     laporan_count = 0
     used_ids = set()
 
-    for i in range(100):
-        kategori = random.choice(KATEGORI_OPTIONS)
+    # Distribusi merata: 20 laporan per kategori (5 kategori x 20 = 100)
+    for i, kategori in enumerate([k for k in KATEGORI_OPTIONS for _ in range(100 // len(KATEGORI_OPTIONS))]):
         npsn = random.choice(npsn_list)
         kondisi = random.choice(KONDISI_OPTIONS)
 
-        # Buat deskripsi realistis
-        deskripsi_pool = LAPORAN_DESKRIPSI.get(kategori, LAPORAN_DESKRIPSI["lainnya"])
-        deskripsi = random.choice(deskripsi_pool)
-
-        # Fasilitas terkait
-        if kategori == "infrastruktur_sarana":
-            fasilitas = random.choice(JENIS_SARANA)
-        elif kategori == "ketersediaan_tenaga_pengajar":
-            fasilitas = random.choice(["guru_matematika", "guru_ipa", "guru_bahasa", "guru_ti", "guru_pjok", "lainnya"])
-        else:
-            fasilitas = random.choice(["jalan", "keamanan", "kebersihan", "listrik", "air", "lainnya"])
+        deskripsi = random.choice(LAPORAN_DESKRIPSI[kategori])
+        fasilitas = random.choice(FASILITAS_MAP[kategori])
 
         # Tracking ID unik
         tracking_id = f"TRK-{2026}-{i+1:04d}"

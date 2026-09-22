@@ -9,7 +9,7 @@ class LaporanCreateRequest(BaseModel):
     """Request untuk membuat laporan baru."""
 
     sekolah_npsn: str = Field(..., description="NPSN sekolah")
-    kategori: str = Field(..., description="Kategori: infrastruktur_sarana, ketersediaan_tenaga_pengajar, lainnya")
+    kategori: str = Field(..., description="Kategori: ruang_belajar, sanitasi_air, utilitas, akses_lahan, penunjang")
     fasilitas_terkait: Optional[str] = Field(None, description="Nama fasilitas/ruang")
     kondisi_dilaporkan: Optional[str] = Field(None, description="baik, rusak_ringan, rusak_sedang, rusak_berat")
     deskripsi: str = Field(..., description="Deskripsi masalah")

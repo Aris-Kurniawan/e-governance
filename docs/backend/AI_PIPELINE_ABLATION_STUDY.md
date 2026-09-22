@@ -32,10 +32,10 @@ Untuk menemukan konfigurasi optimal, kami akan melakukan **ablation study** (pen
 
 **0.3 Seed Dummy Laporan**
 - Generate sekitar 100 laporan dummy dengan variasi:
-  - `kategori`: `infrastruktur_sarana`, `ketersediaan_tenaga_pengajar`, `lainnya`
+  - `kategori`: `ruang_belajar`, `sanitasi_air`, `utilitas`, `akses_lahan`, `penunjang`
   - `kondisi_dilaporkan`: `baik`, `rusak_ringan`, `rusak_sedang`, `rusak_berat`
   - `deskripsi`: Variare teks realistis (contoh: "Atap ruang kelas 3 bocor", "Laboratorium tidak fungsional")
-  - Distribusi merata ke 62 sekolah berbeda
+  - Distribusi merata: 20 laporan per kategori, disebar ke 62 sekolah
 - Simpan ke `app/ai_pipeline/experiments/manual_laporan.json` (bukan database, hanya untuk testing)
 - **Catatan:** Data ini hanya untuk ablation study, bukan untuk produksi
 
@@ -78,18 +78,23 @@ Kelompokkan 62 sekolah ke dalam klaster berdasarkan **jenis masalah infrastruktu
 
 ### 1.3 Contoh Klaster Manual
 
+Sesuai taksonomi 5 kategori infrastruktur:
+
 ```
-Klaster 0: Masalah Ruang Kelas & Infrastruktur
-- NPSN001, NPSN002, NPSN005, ... (sekolah dengan laporan mayoritas tentang ruang kelas rusak)
+Klaster 0: Ruang Belajar (kelas, lab, perpustakaan)
+- Sekolah dengan laporan mayoritas atap bocor, meja rusak, lab tidak fungsional
 
-Klaster 1: Masalah Fasilitas Khusus (Lab, Perpustakaan, UKS)
-- NPSN003, NPSN008, NPSN012, ... (sekolah dengan laporan mayoritas tentang lab/perp/UKS)
+Klaster 1: Sanitasi & Air (WC, air bersih, pembuangan)
+- Sekolah dengan laporan mayoritas WC rusak, tidak ada air bersih
 
-Klaster 2: Masalah Tenaga Pengajar & SDM
-- NPSN004, NPSN009, NPSN015, ... (sekolah dengan laporan mayoritas tentang kekurangan guru)
+Klaster 2: Utilitas (listrik, internet, penerangan)
+- Sekolah dengan laporan mayoritas listrik mati, instalasi tidak aman
 
-Klaster 3: Masalah Lainnya (Listrik, Air, Sanitasi)
-- NPSN007, NPSN011, NPSN020, ... (sekolah dengan laporan miscellaneous)
+Klaster 3: Akses & Lahan (jalan, pagar, drainase)
+- Sekolah dengan laporan mayoritas jalan rusak, pagar bobol, halaman becek
+
+Klaster 4: Fasilitas Penunjang (UKS, ibadah, olahraga, kantin)
+- Sekolah dengan laporan mayoritas UKS kosong, lapangan rusak
 ```
 
 ### 1.4 Format Output
@@ -98,16 +103,30 @@ Klaster 3: Masalah Lainnya (Listrik, Air, Sanitasi)
 {
   "manual_clusters": {
     "cluster_0": {
-      "label": "Ruang Kelas & Infrastruktur",
-      "description": "Masalah ruang kelas rusak, atap bocor, lantai retak",
+      "label": "Ruang Belajar",
+      "description": "Masalah kelas, lab, perpustakaan — atap bocor, lantai retak, meja rusak, lab tidak fungsional",
       "schools": ["NPSN001", "NPSN002", "NPSN005", ...]
     },
     "cluster_1": {
-      "label": "Fasilitas Khusus",
-      "description": "Lab, perpustakaan, UKS tidak memadai atau rusak",
+      "label": "Sanitasi & Air",
+      "description": "Toilet rusak, air bersih tidak tersedia, saluran pembuangan tersumbat",
       "schools": ["NPSN003", "NPSN008", ...]
     },
-    ...
+    "cluster_2": {
+      "label": "Utilitas",
+      "description": "Listrik padam, instalasi tua, internet mati",
+      "schools": ["NPSN004", "NPSN012", ...]
+    },
+    "cluster_3": {
+      "label": "Akses & Lahan",
+      "description": "Jalan akses rusak, pagar rusak, drainase buruk",
+      "schools": ["NPSN007", "NPSN015", ...]
+    },
+    "cluster_4": {
+      "label": "Fasilitas Penunjang",
+      "description": "UKS tidak memadai, tempat ibadah rusak, lapangan olahraga rusak",
+      "schools": ["NPSN009", "NPSN020", ...]
+    }
   }
 }
 ```

@@ -473,7 +473,7 @@ Model SQLAlchemy untuk Sekolah dan Laporan sudah dibuat di Fase 1, di-reuse untu
 - **`scripts/setup_f300.py`** — Script setup otomatis (4 step):
   - Register admin user: `admin@simakis.id` / `Admin123!` (role: admin, status terverifikasi, NIK 16 digit disimpan via PDP Vault).
   - Ingest CSV Dapodik: 62 sekolah (SD 37, SMP 12, SMA 5, SMK 8) + 304 KondisiSarana.
-  - Seed 100 dummy laporan, distribusi ke 62 sekolah (kategori: infrastruktur_sarana, ketersediaan_tenaga_pengajar, lainnya), deskripsi realistis per kategori.
+  - Seed 100 dummy laporan, distribusi ke 62 sekolah, deskripsi realistis per kategori (kategori awal 3 nilai; diganti 5 nilai infrastruktur di 3.2).
   - Verify DB: jumlah sekolah ≥ 62, laporan ≥ 100, kondisi_sarana terisi.
 - **`requirements.txt`** — tambah dependencies AI Pipeline:
   - `torch==2.14.0+cpu` — CPU-only (versi GPU 554MB terlalu besar untuk dev).
@@ -486,11 +486,47 @@ Model SQLAlchemy untuk Sekolah dan Laporan sudah dibuat di Fase 1, di-reuse untu
 
 ---
 
+## 3.2 Taksonomi Infrastruktur Eksplisit (F3.0b, 2026-09-22)
+
+**Keputusan scope:** platform SIMAKIS dibatasi **infrastruktur-only** (sesuai nama:
+*Advokasi Kebutuhan Infrastruktur Sekolah*). Kategori non-fisik
+(`ketersediaan_tenaga_pengajar`) dihapus karena tidak punya data pembanding
+di Dapodik, sehingga tidak bisa diverifikasi sistem.
+
+- **`app/models/laporan.py`** — `KATEGORI_ENUM` diubah dari 3 nilai lama
+  (`infrastruktur_sarana`, `ketersediaan_tenaga_pengajar`, `lainnya`) menjadi
+  5 kategori infrastruktur eksplisit:
+  - `ruang_belajar` — kelas, lab IPA, lab komputer, perpustakaan
+  - `sanitasi_air` — WC, air bersih, saluran pembuangan
+  - `utilitas` — listrik, internet, penerangan
+  - `akses_lahan` — jalan akses, pagar, drainase, halaman
+  - `penunjang` — UKS, tempat ibadah, olahraga, kantin, ruang guru
+- **`alembic/versions/8cca6e1b2fa3_...py`** — migration ALTER ENUM pada
+  `laporan.kategori` dan `klaster.kategori`. Data dummy lama dihapus dulu
+  (laporan_foto, vote, status_log, laporan, klaster) agar ALTER tidak gagal
+  dengan `Data truncated`.
+- **`app/schemas/laporan.py`** — deskripsi field `kategori` diperbarui ke 5 nilai baru.
+- **`scripts/setup_f300.py`** — `KATEGORI_OPTIONS`, `LAPORAN_DESKRIPSI` (10 deskripsi
+  realistis per kategori), dan `FASILITAS_MAP` diperbarui. Seed jadi distribusi
+  merata: **20 laporan per kategori × 5 = 100 laporan**.
+- **`docs/universal/INTERFACES.md`** — kontrak `POST /laporan` (request kategori),
+  endpoint sanggahan, dan response diperbarui.
+- **`docs/backend/AI_PIPELINE_ABLATION_STUDY.md`** — seed categories + contoh
+  manual clustering (F3.0a) diselaraskan dengan 5 klaster infrastruktur.
+
+**Verifikasi:**
+- `alembic upgrade head` sukses (ENUM baru aktif).
+- Re-seed: 100 laporan (20 per kategori) tersebar ke 62 sekolah.
+- 12/12 tests pass.
+
+---
+
 ## Status Fase 3
 
 | Task | Status |
 |------|--------|
 | F3.00 — Setup Ablation Study | ✅ Selesai |
+| F3.0b — Taksonomi Infrastruktur Eksplisit | ✅ Selesai |
 
 ---
 

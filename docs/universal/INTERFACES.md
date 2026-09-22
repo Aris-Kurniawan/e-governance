@@ -220,7 +220,7 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
-| POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | Kirim sanggahan (via laporan biasa, `kategori=infrastruktur_sarana`, `fasilitas_terkait=nama_ruang`, `kondisi_dilaporkan=...`) |
+| POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | Kirim sanggahan (via laporan biasa, `kategori=ruang_belajar|sanitasi_air|utilitas|akses_lahan|penunjang`, `fasilitas_terkait=nama_ruang`, `kondisi_dilaporkan=...`) |
 | GET | `/sekolah/{npsn}/sanggahan` | Publik | Riwayat sanggahan untuk satu sekolah |
 
 **Catatan:** tombol "Sanggah Data Ini" di kartu fasilitas mengarah ke
@@ -268,8 +268,9 @@ response `200`:
 ```json
 {
   "sekolah_npsn": "string",
-  "kategori": "infrastruktur_sarana | ketersediaan_tenaga_pengajar | lainnya",
-  "fasilitas_terkait": "string | null",   // wajib diisi jika kategori = infrastruktur_sarana (PAGE_STATES.md §A4)
+  "kategori": "ruang_belajar | sanitasi_air | utilitas | akses_lahan | penunjang",
+  "fasilitas_terkait": "string | null",
+  "kondisi_dilaporkan": "baik | rusak_ringan | rusak_sedang | rusak_berat | null",
   "deskripsi": "string"
 }
 ```
@@ -279,11 +280,8 @@ response `201`:
   "data": {
     "laporan_id": "string",
     "tracking_id": "string",
-    "status": "menunggu_verifikasi",
-    "cross_check": {
-      "tersedia": true,
-      "data_dapodik": "string | null"   // null kalau kategori = lainnya (tidak ada cross-check, PRD.md §3.1)
-    }
+    "status": "menunggu",
+    "created_at": "ISO8601"
   }
 }
 ```
