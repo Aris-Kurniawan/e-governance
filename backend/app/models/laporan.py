@@ -7,7 +7,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, gen_uuid
 
-KATEGORI_ENUM = ("infrastruktur_sarana", "ketersediaan_tenaga_pengajar", "lainnya")
+KATEGORI_ENUM = (
+    "ruang_belajar",
+    "sanitasi_air",
+    "utilitas",
+    "akses_lahan",
+    "penunjang",
+)
 KONDISI_ENUM = ("baik", "rusak_ringan", "rusak_sedang", "rusak_berat")
 STATUS_SANGGHAN_ENUM = ("menunggu", "divalidasi", "ditolak")
 
