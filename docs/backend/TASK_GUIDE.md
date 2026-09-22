@@ -231,7 +231,7 @@ class KondisiSarana(Base):
     __table_args__ = (UniqueConstraint("sekolah_npsn", "nama_ruang", "sumber"),)
 ```
 
-**Deliverable:** 3 model: `Sekolah`, `SekolahDataResmi`, `KondisiSarana` (agregat per jenis ruang).
+**Deliverable:** 3 model: `S ekolah`, `SekolahDataResmi`, `KondisiSarana` (agregat per jenis ruang).
 
 ---
 
@@ -464,6 +464,162 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 ## FASE 3 — Fitur Lanjutan (Minggu 8–11)
 
 ### A. FEAT-004 — Klasterisasi Isu (AI Pipeline)
+
+#### F3.00 — Setup & Prerequisites for Ablation Study
+
+**Tujuan:** Menyiapkan data dan environment untuk ablation study AI pipeline.
+
+**Langkah:**
+1. **Register admin user** — `POST /auth/register` dengan peran `admin`
+2. **Jalankan ingest CSV** (F2.15) — `POST /ingest/dapodik` dengan file `sekolah_lamongan_semua.csv`
+3. **Seed dummy laporan** — Generate ~100 laporan dummy dengan variasi kategori & teks realistis, distribusi ke 62 sekolah
+4. **Verify DB populated** — Verifikasi jumlah Sekolah ≥ 62, Laporan ≥ 100, KondisiSarana terisi
+5. **Cek Python dependencies** — `sentence-transformers`, `umap-learn`, `hdbscan`, `scikit-learn`, `python-multipart`, `minio`
+
+**Estimasi Waktu:** 30 menit
+
+**Deliverable:**
+- `app/ai_pipeline/experiments/manual_clusters.json` — Ground truth manual (akan dibuat di F3.0a)
+- `app/ai_pipeline/experiments/manual_laporan.json` — Dummy laporan untuk testing
+- Semua library AI terinstall di venv
+
+**Status: ✅ SELESAI (22 Sep 2026)**
+- Admin user: `admin@simakis.id` / `Admin123!` (role: admin, terverifikasi)
+- CSV Dapodik ingest: 62 sekolah + 304 KondisiSarana
+- Seed laporan dummy: 100 laporan (distribusi ke 62 sekolah)
+- Dependencies AI: torch 2.14.0+cpu, sentence-transformers 6.1.0, umap-learn 0.5.12, hdbscan 0.8.44, scikit-learn 1.9.1
+- Tests: 12/12 pass
+
+---
+
+#### F3.0a — Manual Clustering (Ground Truth Preparation)
+
+**Lokasi:** `app/ai_pipeline/experiments/manual_clusters.json`
+
+**Tujuan:** Membuat klaster manual berdasarkan pengetahuan domain sebagai benchmark evaluasi AI pipeline.
+
+**Langkah:**
+1. List semua 62 NPSN dari CSV Dapodik
+2. Baca laporan tiap sekolah dari database
+3. Kelompokkan manual berdasarkan jenis masalah dominan
+4. Simpan ke JSON dengan struktur: `{ cluster_id: { label, description, schools[] } }`
+
+**Deliverable:**
+- `app/ai_pipeline/experiments/manual_clusters.json` — Ground truth dengan 62 NPSN terkategorisasi
+
+**Estimasi Waktu:** 1 hari
+
+---
+
+#### F3.0b — Implementasi Ablation Framework
+
+**Lokasi:** `app/ai_pipeline/experiments/`
+
+**Tujuan:** Membangun infrastructure untuk menjalankan 81 kombinasi testing.
+
+**Deliverable:**
+- `app/ai_pipeline/experiments/run_ablation.py` — Script utama loop 81 kombinasi (A1-A3 × B1-B3 × C1-C3 × D1-D3)
+- `app/ai_pipeline/experiments/evaluation.py` — Fungsi evaluasi:
+  - Internal metrics: `silhouette_score()`, `davies_bouldin_score()`
+  - External metrics: `purity()`, `nmi()`, `ari()`, `homogeneity()`, `completeness()`, `v_measure()`
+  - Manual review template
+- `app/ai_pipeline/experiments/` structure (results/, config templates)
+
+**Estimasi Waktu:** 2 hari
+
+---
+
+#### F3.0c — Running Test Suite A (Embedding Variations)
+
+**Tujuan:** Jalankan 27 kombinasi untuk memilih embedding terbaik (3 embedding × 9 kombinasi B×C×D lainnya).
+
+**Kombinasi:**
+- A1 (IndoBERT) × B1-B3 × C1-C3 × D1-D3 = 27 test
+- Estimasi: ~40 menit (A1 lamban dengan GPU)
+
+**Deliverable:**
+- `app/ai_pipeline/experiments/results/A1_*.json` (9 file)
+- Metric report untuk A1
+
+**Estimasi Waktu:** 1 hari (implementasi framework berjalan)
+
+---
+
+#### F3.0d — Running Test Suite B (TF-IDF Baseline + MiniLM)
+
+**Tujuan:** Jalankan 27 kombinasi untuk A2 (TF-IDF) dan A3 (MiniLM).
+
+**Kombinasi:**
+- A2 × B1-B3 × C1-C3 × D1-D3 = 27 test (~2 menit)
+- A3 × B1-B3 × C1-C3 × D1-D3 = 27 test (~10 menit)
+- Total: ~12 menit
+
+**Deliverable:**
+- `app/ai_pipeline/experiments/results/A2_*.json` (9 file)
+- `app/ai_pipeline/experiments/results/A3_*.json` (9 file)
+- Metric report untuk A2 & A3
+
+**Estimasi Waktu:** Paralel dengan F3.0c
+
+---
+
+#### F3.0e — Analysis & Reporting
+
+**Tujuan:** Menganalisis hasil 81 kombinasi, identifikasi top 5 config terbaik.
+
+**Langkah:**
+1. Load 81 hasil JSON
+2. Generate `summary_report.csv` (kolom: config, silhouette, NMI, ARI, purity, rank)
+3. Sort by NMI/ARI (external metrics)
+4. Identifikasi top 5 config
+5. Manual review top 5 (apakah label relevan?)
+6. Tulis laporan: `docs/backend/ABLATION_RESULTS.md`
+
+**Deliverable:**
+- `app/ai_pipeline/experiments/summary_report.csv`
+- `docs/backend/ABLATION_RESULTS.md` — Laporan analisis dengan rekomendasi config optimal
+
+**Estimasi Waktu:** 2 hari
+
+---
+
+#### F3.0f — Implementation of Optimal Config
+
+**Tujuan:** Update F3.1-F3.5 dengan konfigurasi terbaik dari ablation study.
+
+**Langkah:**
+1. Tentukan config terbaik dari F3.0e (misal: A1+B1+C1+D2)
+2. Update parameter default di:
+   - `app/ai_pipeline/embedding.py` → model = config optimal A
+   - `app/ai_pipeline/reduction.py` → n_components = config optimal B
+   - `app/ai_pipeline/clustering.py` → min_cluster_size, min_samples = config optimal C
+   - `app/ai_pipeline/labeling.py` → ngram_range, stopwords = config optimal D
+3. Buat `app/ai_pipeline/pipeline.py` → integrasi semua komponen dengan config optimal
+4. Test end-to-end pipeline
+
+**Deliverable:**
+- Updated F3.1-F3.5 dengan config terbaik
+- `app/ai_pipeline/pipeline.py` — Pipeline utama end-to-end
+- `tests/test_ai_pipeline.py` — Test integration
+
+**Estimasi Waktu:** 1 hari
+
+---
+
+**Ringkasan F3.0 Sub-tasks:**
+
+| Sub-task | Tujuan | Durasi | Dependen |
+|----------|--------|--------|----------|
+| F3.0a | Manual clustering | 1 hari | - |
+| F3.0b | Framework setup | 2 hari | F3.0a |
+| F3.0c | Test suite A (embedding) | 1 hari | F3.0b |
+| F3.0d | Test suite B (baseline + MiniLM) | Paralel F3.0c | F3.0b |
+| F3.0e | Analysis & reporting | 2 hari | F3.0c + F3.0d |
+| F3.0f | Optimal config implementation | 1 hari | F3.0e |
+
+**Total: 1 minggu** (F3.0a → F3.0b → F3.0c/F3.0d paralel → F3.0e → F3.0f)
+
+---
 
 #### F3.1 — Embedding Teks (IndoBERT)
 
