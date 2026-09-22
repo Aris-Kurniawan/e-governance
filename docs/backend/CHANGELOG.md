@@ -184,7 +184,7 @@ diperlukan).
 
 ---
 
-# FASE 2 — Fitur Dasar (Minggu 4–7) 🔄 Berjalan
+# FASE 2 — Fitur Dasar (Minggu 4–7) ✅ 100%
 
 ## 2.1 Auth & RBAC (F2.1–F2.3, 2026-09-15)
 
@@ -486,7 +486,7 @@ Model SQLAlchemy untuk Sekolah dan Laporan sudah dibuat di Fase 1, di-reuse untu
 
 ---
 
-## 3.2 Taksonomi Infrastruktur Eksplisit (F3.0b, 2026-09-22)
+## 3.2 Keputusan Scope: Taksonomi Infrastruktur Eksplisit (2026-09-22)
 
 **Keputusan scope:** platform SIMAKIS dibatasi **infrastruktur-only** (sesuai nama:
 *Advokasi Kebutuhan Infrastruktur Sekolah*). Kategori non-fisik
@@ -523,10 +523,51 @@ di Dapodik, sehingga tidak bisa diverifikasi sistem.
 
 ## Status Fase 3
 
+### A. FEAT-004 — Klasterisasi Isu (AI Pipeline)
+
 | Task | Status |
 |------|--------|
-| F3.00 — Setup Ablation Study | ✅ Selesai |
-| F3.0b — Taksonomi Infrastruktur Eksplisit | ✅ Selesai |
+| F3.00 — Setup & Prerequisites for Ablation Study | ✅ Selesai |
+| F3.0a — Manual Clustering (Ground Truth) | ⬜ Belum |
+| F3.0b — Implementasi Ablation Framework | ⬜ Belum |
+| F3.0c — Running Test Suite A (Embedding Variations) | ⬜ Belum |
+| F3.0d — Running Test Suite B (TF-IDF Baseline + MiniLM) | ⬜ Belum |
+| F3.0e — Analysis & Reporting | ⬜ Belum |
+| F3.0f — Implementation of Optimal Config | ⬜ Belum |
+| F3.1 — Embedding Teks (IndoBERT) | ⬜ Belum |
+| F3.2 — Reduksi Dimensi UMAP | ⬜ Belum |
+| F3.3 — Clustering HDBSCAN | ⬜ Belum |
+| F3.4 — Labeling TF-IDF | ⬜ Belum |
+| F3.5 — Formula Urgensi KBM + Skor Prioritas | ⬜ Belum |
+| F3.6 — Async Task Queue | ⬜ Belum |
+| F3.7 — Model SQLAlchemy (Klaster) | ⬜ Belum |
+| F3.8 — Endpoint Trigger Clustering | ⬜ Belum |
+| F3.9 — Endpoint Status Pipeline | ⬜ Belum |
+| F3.10 — Verifikasi Klaster | ⬜ Belum |
+
+### B. FEAT-005 — Voting Prioritas
+
+| Task | Status |
+|------|--------|
+| F3.11 — Model SQLAlchemy (Vote) | ⬜ Belum |
+| F3.12 — Vote Baru | ⬜ Belum |
+| F3.13 — Cek Status Vote | ⬜ Belum |
+| F3.14 — Hitung Ulang Skor Prioritas | ⬜ Belum |
+| F3.15 — Override Prioritas oleh Kepala Dinas | ⬜ Belum |
+
+### C. FEAT-006 — Accountability / Status
+
+| Task | Status |
+|------|--------|
+| F3.16 — Model SQLAlchemy (Status Log) | ⬜ Belum |
+| F3.17 — Update Status | ⬜ Belum |
+| F3.18 — Riwayat Status | ⬜ Belum |
+| F3.19 — Dashboard Prioritas | ⬜ Belum |
+| F3.20 — Model SQLAlchemy (Audit Log) | ⬜ Belum |
+| F3.21 — Logging Aksi Sensitif | ⬜ Belum |
+| F3.22 — Dashboard Wilayah (FEAT-002) | ⬜ Belum |
+
+**Progress Fase 3: 1/24 task selesai.**
 
 ---
 
