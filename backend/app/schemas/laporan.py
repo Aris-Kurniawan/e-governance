@@ -6,13 +6,12 @@ from pydantic import BaseModel, Field
 
 
 class LaporanCreateRequest(BaseModel):
-    """Request untuk membuat laporan baru."""
+    """Request untuk membuat laporan baru (teks bebas, tanpa kategori)."""
 
     sekolah_npsn: str = Field(..., description="NPSN sekolah")
-    kategori: str = Field(..., description="Kategori: ruang_belajar, sanitasi_air, utilitas, akses_lahan, penunjang")
     fasilitas_terkait: Optional[str] = Field(None, description="Nama fasilitas/ruang")
     kondisi_dilaporkan: Optional[str] = Field(None, description="baik, rusak_ringan, rusak_sedang, rusak_berat")
-    deskripsi: str = Field(..., description="Deskripsi masalah")
+    deskripsi: str = Field(..., description="Deskripsi masalah (teks bebas); kategori ditentukan AI pipeline")
 
 
 model_config = {"from_attributes": True}
@@ -25,7 +24,6 @@ class LaporanResponse(BaseModel):
     tracking_id: str
     user_id: str
     sekolah_npsn: str
-    kategori: str
     fasilitas_terkait: Optional[str]
     kondisi_dilaporkan: Optional[str]
     deskripsi: str

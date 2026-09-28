@@ -51,7 +51,6 @@ def riwayat_sanggahan_sekolah(
             {
                 "id": s.id,
                 "tracking_id": s.tracking_id,
-                "kategori": s.kategori,
                 "fasilitas_terkait": s.fasilitas_terkait,
                 "kondisi_dilaporkan": s.kondisi_dilaporkan,
                 "deskripsi": s.deskripsi,

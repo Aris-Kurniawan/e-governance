@@ -284,7 +284,6 @@ def seed_laporan(db: Session, admin_user: User) -> int:
             tracking_id=tracking_id,
             user_id=admin_user.id,
             sekolah_npsn=npsn,
-            kategori=kategori,
             fasilitas_terkait=fasilitas,
             kondisi_dilaporkan=kondisi,
             deskripsi=deskripsi,
@@ -318,11 +317,6 @@ def verify_db(db: Session):
     for j in ["SD", "SMP", "SMA", "SMK"]:
         count = db.scalar(select(func.count()).select_from(Sekolah).where(Sekolah.jenjang == j))
         print(f"    {j}: {count}")
-
-    # Breakdown laporan by kategori
-    for k in KATEGORI_OPTIONS:
-        count = db.scalar(select(func.count()).select_from(Laporan).where(Laporan.kategori == k))
-        print(f"  Laporan [{k}]: {count}")
 
     all_ok = True
     if sekolah_count < 62:

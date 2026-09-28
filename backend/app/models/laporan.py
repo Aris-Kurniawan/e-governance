@@ -25,7 +25,8 @@ class Laporan(Base, TimestampMixin):
     tracking_id: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
     sekolah_npsn: Mapped[str] = mapped_column(String(20), ForeignKey("sekolah.npsn"))
-    kategori: Mapped[str] = mapped_column(Enum(*KATEGORI_ENUM, name="kategori_laporan"))
+    # kategori DIHAPUS (Keputusan #1, 2026-09-23): laporan teks bebas; kategori hanya di klaster.
+    # KATEGORI_ENUM tetap dipertahankan di modul ini karena dipakai model Klaster.
     fasilitas_terkait: Mapped[str | None] = mapped_column(String(255), nullable=True)
     kondisi_dilaporkan: Mapped[str | None] = mapped_column(
         Enum(*KONDISI_ENUM, name="kondisi_dilaporkan"), nullable=True
