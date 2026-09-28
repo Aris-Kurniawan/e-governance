@@ -157,13 +157,15 @@ Halaman `src/pages/warga/Direktori.tsx`:
 
 Halaman `src/pages/warga/DetailSekolah.tsx` (`GET /sekolah/{npsn}`):
 - Header: nama, alamat, jenjang, badge status
-- Box `data_resmi` (Dapodik) — `ComparisonBox` + `HairlineKop`:
-  `sumber`, `tanggal_pembaruan`, `rasio_guru_siswa`, `kondisi_sarana` list
-- Daftar `klaster_isu` (klik → detail klaster)
+- **Kartu 1 — Audit Sarpras**: ringkasan kondisi sarana (donut chart: total unit, persentase baik/rusak ringan/sedang/berat) + daftar detail per jenis ruang (nama, jumlah, kondisi breakdown, tombol "Sanggah" jika perlu_verifikasi=true)
+- **Kartu 2 — Profil Dapodik**: akreditasi (badge), nama kepala sekolah, jenjang, status sekolah (badge)
+- **Kartu 3 — Isu & Klaster Warga**: daftar `klaster_isu` (klik → detail klaster); empty state "Belum ada isu terdeteksi" sampai Fase D
 - Tombol "Laporkan Isu" → navigasi ke Form Laporan
-- **Empty state**: sekolah tanpa isu → `klaster_isu: []`
+- **Empty state sarpras**: sekolah tanpa data kondisi sarana → tampil pesan "Data sarana tidak tersedia"
 
-**Deliverable:** Detail sekolah tampil dari mock.
+**Catatan scope v1:** Field `rasio_guru_siswa`, `jumlah_pd/ptk/rombel`, `utilitas_kapasitas_belajar` **tidak ditampilkan** (data tidak di-ingest per scope infrastruktur-only). Lihat `DECISIONS.md` D-20.
+
+**Deliverable:** Detail sekolah tampil dari mock (3 kartu utama: Audit + Profil + Isu).
 
 ---
 
