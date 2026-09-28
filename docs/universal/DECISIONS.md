@@ -180,3 +180,29 @@ MinIO/S3.
 manual, bukan S3 API.
 **Status:** Perlu konfirmasi eksplisit supaya tidak salah asumsi di
 `ARCHITECTURE.md`.
+
+---
+
+## Penyesuaian Tampilan Detail Sekolah v1
+
+### D-20: Kartu Rasio Pendidik & Kapasitas Rombel di-hide di detail sekolah v1
+**Keputusan:** Frontend **tidak menampilkan** kartu "Rasio Pendidik" dan "Kapasitas Rombel" pada halaman detail sekolah versi v1.
+**Alasan:**
+1. Data `jumlah_pd`, `jum_ptk`, `jum_guru`, `rombel` tidak di-ingest dari CSV Dapodik per **scope infrastruktur-only** (Fase 2, keputusan 22‑September‑2026).
+2. Database tidak punya kolom untuk data tersebut.
+3. API `/sekolah/{npsn}` mengembalikan nilai default `0`/`null` untuk field terkait — menampilkan angka nol akan misleading.
+4. **PRD FEAT-001** menyebutkan "data siswa, rasio guru" di profil, tetapi di v1 sengaja di-deviate untuk fokus pada **audit sarana/prasarana** yang datanya valid & di‑ingest.
+
+**Alternatif ditolak:**
+- **Mengisi backend dengan data csv** → ditolak untuk v1 karena scope sudah final; opsi bisa dipertimbangkan nanti.
+- **Menampilkan kartu dengan placeholder "Data tidak tersedia"** → ditolak karena akan menimbulkan pertanyaan dari user.
+
+**Konsekuensi:**
+- Detail sekolah hanya menampilkan:
+  1. **Audit Sarpras**: donut chart kondisi fisik sarana + ringkasan total unit.
+  2. **Profil Dapodik**: akreditasi, nama kepala sekolah, jenjang, status.
+  3. **Isu & Klaster Warga**: empty state sampai Fase D (klasterisasi AI).
+- **Field API** `rasio_guru_siswa`, `rasio_spm_terpenuhi`, `jumlah_pd`, `jumlah_ptk`, `jumlah_rombel`, `utilitas_kapasitas_belajar` tetap dikirim backend dengan nilai default, namun **tidak dirender** oleh FE.
+- **Catatan kontrak**: Lihat `INTERFACES.md` §2 (Catatan penting untuk implementasi v1) untuk daftar field yang di‑hide serta keterangan unimplemented (`data_resmi`, `ada_sanggahan`).
+
+**Status:** Final (2026‑09‑28).
