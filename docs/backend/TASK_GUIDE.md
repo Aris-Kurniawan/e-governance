@@ -322,14 +322,16 @@ class Laporan(Base):
     tracking_id = Column(String(50), unique=True)
     user_id = Column(String(36), ForeignKey("users.id"))
     sekolah_npsn = Column(String(20), ForeignKey("sekolah.npsn"))
-    kategori = Column(Enum("infrastruktur_sarana", "ketersediaan_tenaga_pengajar", "lainnya"))
-    fasilitas_terkait = Column(String(255), nullable=True)   # nama_ruang yang disanggah
+    # kategori DIHAPUS (Keputusan #1, 2026-09-23): kategori hanya ada di tabel klaster (hasil AI)
+    fasilitas_terkait = Column(String(255), nullable=True)   # nama_ruang yang dilaporkan (opsional, dari teks warga)
     kondisi_dilaporkan = Column(Enum("baik", "rusak_ringan", "rusak_sedang", "rusak_berat"), nullable=True)
     deskripsi = Column(Text)
     klaster_id = Column(String(36), ForeignKey("klaster.id"), nullable=True)
     status_sanggahan = Column(Enum("menunggu", "divalidasi", "ditolak"), default="menunggu")
     created_at = Column(DateTime)
 ```
+
+**Catatan:** Kolom `kategori` dihapus (lihat CHANGELOG.md §3.3 Keputusan #1). Kategori infrastruktur kini ditentukan oleh AI pipeline dan disimpan di tabel `klaster.kategori`.
 
 **Deliverable:** 2 model: `Laporan`, `LaporanFoto`.
 
@@ -340,10 +342,10 @@ class Laporan(Base):
 ```python
 class LaporanCreate(BaseModel):
     sekolah_npsn: str
-    kategori: str
-    fasilitas_terkait: str | None       # wajib jika kategori infrastruktur_sarana
-    kondisi_dilaporkan: str | None      # kondisi aktual menurut warga (untuk mismatch)
-    deskripsi: str
+    # kategori DIHAPUS (Keputusan #1, 2026-09-23): laporan teks bebas, kategori ditentukan AI
+    fasilitas_terkait: str | None       # nama ruang yang dilaporkan (opsional, dari teks warga)
+    kondisi_dilaporkan: str | None      # kondisi aktual menurut warga (baik/ringan/sedang/berat)
+    deskripsi: str                      # teks bebas minimal 50 karakter
 
 class LaporanResponse(BaseModel):
     id: str
@@ -351,6 +353,8 @@ class LaporanResponse(BaseModel):
     status: str
     created_at: datetime
 ```
+
+**Catatan:** Field `kategori` dihapus dari request schema; kategori nanti ditentukan oleh AI pipeline dan muncul di tabel klaster.
 
 **Deliverable:** Schema untuk semua endpoint laporan.
 
@@ -360,12 +364,16 @@ class LaporanResponse(BaseModel):
 
 | Endpoint | Method | Role | Body |
 |----------|--------|------|------|
-| `/laporan` | POST | `warga_terverifikasi`, `komite_sekolah` | `{ sekolah_npsn, kategori, deskripsi, foto? }` |
+| `/laporan` | POST | `warga_terverifikasi`, `komite_sekolah` | `{ sekolah_npsn, deskripsi, fasilitas_terkait?, kondisi_dilaporkan?, foto? }` |
 
 **Validasi:**
-- `fasilitas_terkait` wajib jika `kategori = "infrastruktur_sarana"`
+- `deskripsi` minimal 50 karakter (teks bebas)
+- `fasilitas_terkait` opsional (warga bisa atau tidak menyebut nama fasilitas dalam deskripsi)
+- `kondisi_dilaporkan` opsional (baik/ringan/sedang/berat), dipakai untuk scoring keparahan jika ada
 - Generate `tracking_id` unik untuk ditampilkan ke warga
 - Simpan metadata foto (kalau ada) ke `laporan_foto`
+
+**Catatan:** Tidak ada field `kategori` — warga melaporkan teks bebas, AI pipeline yang nanti mengelompokkan ke kategori infrastruktur (lihat Fase 3).
 
 **Deliverable:** Warga bisa kirim laporan.
 
@@ -463,6 +471,82 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 
 ## FASE 3 — Fitur Lanjutan (Minggu 8–11)
 
+### Rencana Eksekusi Fase 3 (Timeline & Urutan Pengerjaan)
+
+#### 🔑 Panduan Membaca Dokumentasi Ini
+
+Dokumentasi ini menggunakan **3 level istilah** yang mudah tertukar. Berikut penjelasannya:
+
+| Istilah | Arti | Contoh | Siapa yang nentuin |
+|---------|------|--------|--------------------|
+| **Fase 1/2/3/4** | Fase besar proyek (dari `ROADMAP.md`) | Fase 3 = Fitur Lanjutan (AI + Voting + Dashboard) | Roadmap awal |
+| **Fase A–F** | Pengelompokan tipe kerja **dalam Fase 3** (dibuat saat perencanaan eksekusi) | Fase D = AI pipeline inti | Rencana eksekusi ini |
+| **F3.0a, F3.1, …, F3.22** | Task individual dengan deliverable spesifik | F3.3 = Clustering HDBSCAN | Task breakdown |
+
+**Hubungannya:**
+```
+Fase 3 (proyek besar)
+├── Fase A  → (bukan F3.x, ini prerequisite: schema changes)
+├── Fase B  → (bukan F3.x, ini dokumentasi, sudah selesai ✅)
+├── Fase C  → berisi: F3.0a
+├── Fase D  → berisi: F3.1, F3.2, F3.3, F3.4, F3.5   ← INI AI pipeline
+├── Fase E  → berisi: F3.0b, F3.0c, F3.0d, F3.0e, F3.0f  ← testing pipeline
+└── Fase F  → berisi: F3.6, F3.7*, F3.8–F3.22       ← API + dashboard
+              (* sudah selesai dari F1.2)
+```
+
+**Catatan penting:** Fase A–F **bukan** langkah-langkah dalam satu pipeline. Hanya Fase D yang merupakan AI pipeline (embedding → UMAP → HDBSCAN → TF-IDF → scoring). Fase lainnya = pekerjaan pendukung sebelum dan sesudah pipeline.
+
+| Fase | Tipe Kerja | Hubungannya dengan AI Pipeline |
+|------|-----------|-------------------------------|
+| A | Perubahan database (drop kolom `kategori`) | **Prerequisite** — harus selesai sebelum pipeline jalan |
+| C | Manual clustering (ground truth) | **Persiapan data** — benchmark untuk mengukur akurasi AI |
+| D | Bangun pipeline: embedding, clustering, scoring | **PIPELINE ITU SENDIRI** ✅ |
+| E | Ablation study (81 kombinasi testing) | **Quality assurance** — cari config optimal sebelum production |
+| F | API endpoints + dashboard | **Delivery** — expose hasil pipeline ke user (warga, verifikator, dinas) |
+
+---
+
+> **Sumber keputusan desain:** 8 keputusan final (free-text laporan, 5 kategori
+> hibrida, cron harian, verifikasi 1-per-1 + badge, outlier `belum_terklasifikasi`,
+> dual labeling, skor gabungan, literatur) terdokumentasi di `CHANGELOG.md` §3.3.
+> Section ini = **satu-satunya sumber timeline pengerjaan Fase 3**.
+
+**Status awal:** 5/24 task selesai (F3.00, F3.7, F3.11, F3.16, F3.20 — model dari F1.2).
+
+#### Urutan Langkah Pengerjaan
+
+| # | Langkah | Pelaku | Output / Kriteria Selesai |
+|---|---------|--------|---------------------------|
+| 0 | Cek posisi: branch `backend`, `git status` bersih, backup DB (opsional) | Aris | Working tree bersih sebelum eksekusi |
+| 1 | **Fase A** — Drop `laporan.kategori` (migration + model + schema + router + re-seed) ✅ **SELESAI (23 Sep 2026, belum commit)** | Assistant | `alembic upgrade head` sukses, 14/14 tests hijau |
+| 2 | Update `INTERFACES.md` (hapus `kategori` dari `POST /laporan`) + kabari Dimas — doc ✅, kabari Dimas ⏳ | Assistant + Aris | Kontrak FE↔BE sinkron; form FE tanpa dropdown kategori |
+| 3 | Review hasil Fase A → commit (hanya atas instruksi eksplisit "commit") | Aris | Commit di branch `backend` |
+| 4 | **Fase C** — F3.0a manual clustering 62 sekolah (butuh input domain untuk tie-breaker) | Assistant + Aris | `manual_clusters.json` valid, 62 NPSN terkategorisasi |
+| 5 | **Fase D** — Pipeline inti F3.1–F3.5 | Assistant | 5 modul pipeline + tests |
+| 6 | **Fase E** — Ablation F3.0b–F3.0f (81 kombinasi) | Assistant | `ABLATION_RESULTS.md` + config optimal terpasang |
+| 7 | **Fase F** — Endpoint & dashboard F3.6, F3.8–F3.22 | Assistant | Semua endpoint sesuai kontrak, tests hijau |
+
+#### Estimasi Timeline
+
+| Fase | Isi | Estimasi |
+|------|-----|----------|
+| A | Schema changes (hapus `kategori`) + dokumentasi | 1 hari |
+| C | F3.0a manual clustering (62 sekolah) | 1 hari |
+| D | F3.1–F3.5 pipeline inti (embedding → scoring) | 3 hari |
+| E | F3.0b–F3.0f ablation study (81 kombinasi) | 3–4 hari |
+| F | F3.6, F3.8–F3.22 endpoints & dashboard | 5 hari |
+| | **Total sisa** | **~13 hari** |
+
+#### Catatan Eksekusi
+
+- **Jangan pernah auto-commit** — commit hanya setelah Aris bilang "commit".
+- Setiap fase: jalankan `./venv/bin/python -m pytest` sebelum lanjut.
+- Fase B (perbaikan dokumentasi ablation study §0.3/§1) **sudah selesai** (23 Sep 2026) — tidak ada lagi di timeline.
+- `INTERFACES.md` masih pending update `POST /laporan` — dikerjakan bersamaan Fase A (langkah #2).
+
+---
+
 ### A. FEAT-004 — Klasterisasi Isu (AI Pipeline)
 
 #### F3.00 — Setup & Prerequisites for Ablation Study
@@ -472,8 +556,8 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 **Langkah:**
 1. **Register admin user** — `POST /auth/register` dengan peran `admin`
 2. **Jalankan ingest CSV** (F2.15) — `POST /ingest/dapodik` dengan file `sekolah_lamongan_semua.csv`
-3. **Seed dummy laporan** — Generate ~100 laporan dummy dengan variasi kategori & teks realistis, distribusi ke 62 sekolah
-4. **Verify DB populated** — Verifikasi jumlah Sekolah ≥ 62, Laporan ≥ 100, KondisiSarana terisi
+3. **Seed dummy laporan** — Generate ~100 laporan dummy dengan **teks bebas realistis** (tanpa field `kategori`), distribusi ke 62 sekolah, deskripsi minimal 50 karakter
+4. **Verify DB populated** — Verifikasi jumlah Sekolah ≥ 62, Laporan ≥ 100 (semua tanpa kategori), KondisiSarana terisi
 5. **Cek Python dependencies** — `sentence-transformers`, `umap-learn`, `hdbscan`, `scikit-learn`, `python-multipart`, `minio`
 
 **Estimasi Waktu:** 30 menit
@@ -486,7 +570,7 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 **Status: ✅ SELESAI (22 Sep 2026)**
 - Admin user: `admin@simakis.id` / `Admin123!` (role: admin, terverifikasi)
 - CSV Dapodik ingest: 62 sekolah + 304 KondisiSarana
-- Seed laporan dummy: 100 laporan (distribusi ke 62 sekolah)
+- Seed laporan dummy: 100 laporan **teks bebas tanpa kategori** (distribusi ke 62 sekolah)
 - Dependencies AI: torch 2.14.0+cpu, sentence-transformers 6.1.0, umap-learn 0.5.12, hdbscan 0.8.44, scikit-learn 1.9.1
 - Tests: 12/12 pass
 
@@ -498,14 +582,43 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 
 **Tujuan:** Membuat klaster manual berdasarkan pengetahuan domain sebagai benchmark evaluasi AI pipeline.
 
-**Langkah:**
-1. List semua 62 NPSN dari CSV Dapodik
-2. Baca laporan tiap sekolah dari database
-3. Kelompokkan manual berdasarkan jenis masalah dominan
-4. Simpan ke JSON dengan struktur: `{ cluster_id: { label, description, schools[] } }`
+**Metodologi (Keputusan #2, 2026-09-23):**
+Ground truth = **5 kategori hibrida** (3 dari Dapodik + 2 dari laporan warga). Lihat CHANGELOG.md §3.3 untuk sumber literatur.
+
+**Langkah per sekolah (62 NPSN):**
+1. **Baca `kondisi_sarana` Dapodik** → hitung jumlah rusak per kategori:
+   - `ruang_belajar` ← `ruang_kelas`, `perpustakaan`, `lab_ipa`, `lab_komputer` (dominan = max count)
+   - `sanitasi_air` ← `wc_guru`, `wc_siswa`
+   - `penunjang` ← `uks`
+2. **Baca laporan teks warga sekolah itu** → cari indikasi kategori yang tidak ada di Dapodik:
+   - `utilitas` ← teks tentang "listrik", "internet", "penerangan"
+   - `akses_lahan` ← teks tentang "jalan", "pagar", "drainase"
+3. **Tentukan kategori dominan** (skor tertinggi) → label cluster sekolah
+4. **Tie-breaker:** domain knowledge (final review sebelum finalisasi)
+
+**Format Output JSON** (refer ke AI_PIPELINE_ABLATION_STUDY.md §1.4):
+```json
+{
+  "metadata": {
+    "created_date": "2026-09-23",
+    "total_schools": 62,
+    "total_categories": 5,
+    "source": "Hibrida: Dapodik kondisi_sarana (3 kategori) + laporan warga teks (2 kategori)"
+  },
+  "manual_clusters": {
+    "c0": {
+      "label": "ruang_belajar",
+      "description": "...",
+      "source_dapodik": ["ruang_kelas", "perpustakaan", "lab_ipa", "lab_komputer"],
+      "schools": ["20505816", ...]
+    },
+    ...
+  }
+}
+```
 
 **Deliverable:**
-- `app/ai_pipeline/experiments/manual_clusters.json` — Ground truth dengan 62 NPSN terkategorisasi
+- `app/ai_pipeline/experiments/manual_clusters.json` — Ground truth dengan 62 NPSN terkategorisasi ke 5 kategori
 
 **Estimasi Waktu:** 1 hari
 
@@ -529,7 +642,7 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 
 ---
 
-#### F3.0c — Running Test Suite A (Embedding Variations)
+ws#### F3.0c — Running Test Suite A (Embedding Variations)
 
 **Tujuan:** Jalankan 27 kombinasi untuk memilih embedding terbaik (3 embedding × 9 kombinasi B×C×D lainnya).
 
@@ -656,10 +769,15 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 **Lokasi:** `app/ai_pipeline/clustering.py`
 
 **Input:** Reduced vektor
-**Output:** Label klaster (-1 = outlier)
+**Output:** Label klaster (integer, -1 = noise/outlier)
 
 **Library:** `hdbscan`
 **Parameter:** `min_cluster_size=5`, `min_samples=3`
+
+**Outlier Handling (Keputusan #5, 2026-09-23):**
+- Noise label (-1) dari HDBSCAN → masuk klaster khusus `klaster_id = "belum_terklasifikasi"`
+- Klaster ini status `menunggu_verifikasi` permanent sampai verifikator review (F3.10)
+- Verifikator bisa: setujui label otomatis (TF-IDF) → terverifikasi, atau manual assign kategori berbeda, atau tolak sebagai unclear
 
 **Deliverable:** Fungsi `cluster_texts(vectors: np.ndarray) -> np.ndarray`
 
@@ -670,11 +788,22 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 **Lokasi:** `app/ai_pipeline/labeling.py`
 
 **Input:** Teks per klaster
-**Output:** Label/kata kunci per klaster
+**Output:** Label klaster dengan **dual output** (Keputusan #6, 2026-09-23):
+- **Label teks bebas** — keywords TF-IDF (contoh: "Atap Bocor Lantai Retak")
+- **Enum kategori** — mapping ke 5 kategori infrastruktur (ruang_belajar, sanitasi_air, utilitas, akses_lahan, penunjang)
 
-**Library:** `scikit-learn` (TfidfVectorizer)
+**Library:** `scikit-learn` (TfidfVectorizer + heuristic mapping)
 
-**Deliverable:** Fungsi `label_clusters(texts: list[str], labels: np.ndarray) -> dict`
+**Mapping Algorithm:**
+1. Extract ngram_keywords dari TF-IDF (top 5-10)
+2. Cek keywords: jika mengandung kata "kelas", "lab", "perpus", "ruang" → `ruang_belajar`
+3. Cek keywords: jika mengandung "wc", "toilet", "air", "sanitasi" → `sanitasi_air`
+4. Cek keywords: jika mengandung "listrik", "internet", "penerangan", "listrik" → `utilitas`
+5. Cek keywords: jika mengandung "jalan", "pagar", "drainase", "halaman" → `akses_lahan`
+6. Cek keywords: jika mengandung "uks", "ibadah", "olahraga", "kantin" → `penunjang`
+7. Tie-breaker: domain knowledge (final review)
+
+**Deliverable:** Fungsi `label_clusters(texts: list[str], labels: np.ndarray) -> dict` dengan struktur `{ klaster_id: { label_teks: str, kategori: str } }`
 
 ---
 
@@ -682,17 +811,33 @@ Endpoint ini hanya menampilkan riwayatnya, dikelompokkan per `nama_ruang`.
 
 **Lokasi:** `app/ai_pipeline/scoring.py`
 
-**Input:** Keparahan dari data Dapodik + jumlah vote
+**Input:** 
+- `kondisi_dilaporkan` dari laporan warga (baik=0, ringan=1, sedang=2, berat=3)
+- `kondisi_sarana` dari Dapodik (jumlah rusak per sarana, berat/sedang/ringan)
+- `jumlah_vote_terhitung` dari warga
+
 **Output:** Skor prioritas akhir
 
-**Formula:**
+**Formula (Keputusan #7, 2026-09-23):**
 ```
+# Skor keparahan dari kondisi_dilaporkan (laporan warga)
+severity_per_laporan = { "baik": 0, "rusak_ringan": 33, "rusak_sedang": 66, "rusak_berat": 100 }
+skor_from_laporan = AVG(severity_per_laporan untuk semua laporan dalam klaster)
+
+# Skor keparahan dari kondisi_sarana (Dapodik)
+skor_from_dapodik = SUM(jumlah_rusak * weight) / total_fasilitas
+# weight: berat=100, sedang=66, ringan=33
+
+# Gabungan (70% dari laporan warga, 30% dari Dapodik)
+skor_keparahan = 0.7 * skor_from_laporan + 0.3 * skor_from_dapodik
+
+# Skor prioritas final
 skor_prioritas = skor_keparahan + jumlah_vote_terhitung
 ```
 
 **Catatan:** Skor dampak KBM adalah lapisan skoring terpisah setelah klaster terbentuk, bukan input ke HDBSCAN (sesuai `PRD.md` §6.2).
 
-**Deliverable:** Fungsi `calculate_priority_score(severity: float, votes: int) -> float`
+**Deliverable:** Fungsi `calculate_priority_score(kondisi_laporan: list, kondisi_dapodik: dict, votes: int) -> float`
 
 ---
 
@@ -700,15 +845,19 @@ skor_prioritas = skor_keparahan + jumlah_vote_terhitung
 
 **Tujuan:** Menjalankan AI Pipeline tanpa blocking HTTP request.
 
-**Pilihan (belum diputuskan):**
+**Keputusan #3 (2026-09-23):** → **Scheduled cron harian** (bukan manual trigger, bukan real-time)
 
-| Opsi | Kelebihan | Kekurangan |
-|------|-----------|------------|
-| FastAPI `BackgroundTasks` | Simpel, built-in | Tidak persistent, tidak scalable |
-| Celery + Redis | Persistent, scalable | Butuh Redis, lebih kompleks |
-| RQ (Redis Queue) | Simpel, butuh Redis | Kurang populer |
+**Konfigurasi:**
+- Jadwal: setiap hari pukul 02:00 WIB (minimalkan dampak ke user)
+- Job: baca semua laporan dengan `klaster_id IS NULL` → jalankan pipeline → tulis hasil ke MySQL
+- Endpoint manual `/ai/cluster` tetap ada (F3.8) sebagai **fallback** untuk admin (recap/forced run)
 
-**Deliverable:** Task queue yang menjalankan pipeline async.
+**Alasan memilih cron dibanding real-time:**
+- Batch processing lebih efisien (sekali embedding untuk semua laporan baru)
+- CPU-only inference ~5-10 menit per batch (acceptable untuk jadwal malam)
+- Predictable workflow untuk verifikator (tahu kapan klaster baru siap direview)
+
+**Deliverable:** Task queue yang menjalankan pipeline async (cron harian + manual trigger).
 
 ---
 
@@ -739,18 +888,26 @@ class Klaster(Base):
 
 | Endpoint | Method | Role | Deskripsi |
 |----------|--------|------|-----------|
-| `/ai/cluster` | POST | `admin`, `verifikator_dinas` | Trigger pipeline klasterisasi |
+| `/ai/cluster` | POST | `admin`, `verifikator_dinas` | Trigger pipeline klasterisasi **manual/fallback** |
+
+**Keputusan #3 (2026-09-23):**
+- Trigger utama = **cron harian** (02:00) → F3.6
+- Endpoint ini = **fallback** untuk admin (misal: re-process semua laporan, forced run untuk testing ablation)
 
 **Alur:**
 ```
 POST /ai/cluster →
-Baca semua laporan dengan klaster_id IS NULL →
+Baca semua laporan dengan klaster_id IS NULL (atau all laporan jika flag force_reprocess) →
 Jalankan pipeline (async) →
 Tulis hasil klaster ke MySQL →
 Response: { job_id, status: "processing" }
 ```
 
-**Deliverable:** Pipeline bisa ditrigger via API.
+**Parameter opsional:**
+- `force_reprocess: bool` — jika true, reprocess semua laporan (reset klaster_id → NULL)
+- `only_new: bool` (default true) — hanya laporan belum terklaster
+
+**Deliverable:** Pipeline bisa ditrigger manual via API (selain cron harian).
 
 ---
 
@@ -768,13 +925,27 @@ Response: { job_id, status: "processing" }
 
 | Endpoint | Method | Role | Body |
 |----------|--------|------|------|
-| `/klaster/{id}/verifikasi` | PUT | `verifikator_dinas` | `{ status: "terverifikasi"/"tidak_terverifikasi", alasan? }` |
+| `/klaster/{id}/verifikasi` | PUT | `verifikator_dinas` | `{ status: "terverifikasi"/"tidak_terverifikasi"/"perlu_info_tambahan", alasan? }` |
+
+**Keputusan #4 (2026-09-23):**
+- **Review satu per satu** (bukan batch) → verifikator buka daftar, per klaster decide
+- **Klaster belum terverifikasi tampil di dashboard dengan badge status** (Keputusan #4) — transparansi ke publik, tidak disembunyikan
+- **Dashboard prioritas (F3.19)** menampilkan badge `menunggu_verifikasi` untuk klaster status `menunggu_verifikasi`
+
+**Status flow (update dari F3.17):**
+```
+Menunggu Verifikasi
+    → Perlu Info Tambahan (status: menunggu_verifikasi tetap, tapi ada catatan)
+    → Tidak Terverifikasi (alasan wajib)
+    → Terverifikasi
+```
 
 **Validasi:**
-- `alasan` wajib jika status = `tidak_terverifikasi`
-- Klaster yang tidak terverifikasi tetap ada (tidak dihapus)
+- `alasan` wajib jika status = `tidak_terverifikasi` atau `perlu_info_tambahan`
+- Klaster yang tidak terverifikasi tetap ada di database (tidak dihapus)
+- Verifikator bisa edit kategori manual jika AI keliru (override `klaster.kategori`)
 
-**Deliverable:** Verifikator bisa validasi hasil klaster AI.
+**Deliverable:** Verifikator bisa validasi hasil klaster AI (3 opsi status).
 
 ---
 
@@ -917,7 +1088,31 @@ Menunggu Verifikasi
 |----------|--------|------|-----------|
 | `/dashboard/prioritas` | GET | Publik | Daftar klaster diurutkan berdasarkan skor prioritas |
 
-**Deliverable:** Dashboard prioritas untuk publik.
+**Response:**
+```json
+{
+  "data": [
+    {
+      "klaster_id": "k-xxx",
+      "label": "Atap Bocor Lantai Retak",
+      "kategori": "ruang_belajar",
+      "sekolah_npsn": "20505816",
+      "sekolah_nama": "SD NEGERI 3 MADE",
+      "skor_prioritas": 185.50,
+      "status_verifikasi": "terverifikasi",  // atau "menunggu_verifikasi"
+      "badge": "menunggu_verifikasi"  // tampil badge jika belum terverifikasi (Keputusan #4)
+    },
+    ...
+  ]
+}
+```
+
+**Keputusan #4 (2026-09-23):**
+- **Klaster belum terverifikasi TAMPIL di dashboard publik** dengan badge status `menunggu_verifikasi`
+- Transparansi: warga bisa lihat klaster yang belum direview (bukan disembunyikan)
+- Filter optional: `?status=terverifikasi` untuk hanya tampilkan yang sudah verified
+
+**Deliverable:** Dashboard prioritas untuk publik (dengan badge status transparansi).
 
 ---
 

@@ -32,12 +32,12 @@ Untuk menemukan konfigurasi optimal, kami akan melakukan **ablation study** (pen
 
 **0.3 Seed Dummy Laporan**
 - Generate sekitar 100 laporan dummy dengan variasi:
-  - `kategori`: `ruang_belajar`, `sanitasi_air`, `utilitas`, `akses_lahan`, `penunjang`
   - `kondisi_dilaporkan`: `baik`, `rusak_ringan`, `rusak_sedang`, `rusak_berat`
-  - `deskripsi`: Variare teks realistis (contoh: "Atap ruang kelas 3 bocor", "Laboratorium tidak fungsional")
-  - Distribusi merata: 20 laporan per kategori, disebar ke 62 sekolah
-- Simpan ke `app/ai_pipeline/experiments/manual_laporan.json` (bukan database, hanya untuk testing)
-- **Catatan:** Data ini hanya untuk ablation study, bukan untuk produksi
+  - `deskripsi`: **Teks bebas realistis** (contoh: "Atap ruang kelas 3 bocor saat hujan", "Laboratorium IPA tidak memiliki peralatan praktikum", "WC siswa tersumbat dan berbau tidak sedap", "Listrik sering mati mengganggu proses belajar")
+  - **Tidak ada field `kategori`** — AI pipeline akan mengelompokkan berdasarkan teks deskripsi
+  - Sebar ke 62 sekolah (1-3 laporan per sekolah)
+- Simpan ke database langsung (via `scripts/setup_f300.py`)
+- **Catatan:** Data ini untuk ablation study dan pengujian AI pipeline (dalam database) — bukan ground truth manual
 
 **0.4 Verify Database Population**
 ```bash
@@ -70,11 +70,30 @@ print("All AI libraries ready")
 
 ### 1.1 Tujuan
 
-Membuat "jawaban benar" berdasarkan pengetahuan domain untuk menjadi benchmark evaluasi AI pipeline.
+Membuat "jawaban benar" berdasarkan pengetahuan domain untuk menjadi benchmark evaluasi AI pipeline. Ground truth ini digunakan untuk mengukur akurasi AI clustering dengan metrik NMI, ARI, dan Purity.
 
 ### 1.2 Pendekatan
 
-Kelompokkan 62 sekolah ke dalam klaster berdasarkan **jenis masalah infrastruktur** yang paling dominan.
+Kelompokkan 62 sekolah ke dalam **5 kategori infrastruktur** berdasarkan masalah yang paling dominan di sekolah tersebut. Kategori ground truth = **hibrida**:
+
+| Kategori | Sumber Data | Dasar Literatur |
+|----------|-------------|-----------------|
+| `ruang_belajar` | **Dapodik** `kondisi_sarana` | Permendiknas 24/2007 (Permendikbudriset 22/2023) — ruang kelas, perpustakaan, lab |
+| `sanitasi_air` | **Dapodik** + laporan warga | UNICEF/WHO JMP WASH in Schools (SDG 4.a.1) — air, sanitasi, hygiene |
+| `utilitas` | **Dapodik** + laporan warga | UNICEF/WHO JMP WASH SDG 4.a.1(a,b) — listrik, internet |
+| `penunjang` | **Dapodik** `kondisi_sarana` | Permendiknas 24/2007 — UKS, tempat ibadah |
+| `akses_lahan` | **Laporan warga** (teks) | Permendiknas 24/2007 (luas lahan) + NCES FCI (site improvements) |
+
+**Metode per sekolah:**
+1. **Baca `kondisi_sarana` Dapodik** — hitung jumlah rusak per kategori:
+   - `ruang_belajar` ← `ruang_kelas`, `perpustakaan`, `lab_ipa`, `lab_komputer`
+   - `sanitasi_air` ← `wc_guru`, `wc_siswa`
+   - `penunjang` ← `uks`
+2. **Baca laporan teks warga sekolah itu** — tambah skor untuk kategori yang tidak ada di Dapodik:
+   - `utilitas` ← laporan tentang listrik/internet (Dapodik hanya punya jenis, bukan kondisi rusak)
+   - `akses_lahan` ← laporan tentang jalan/pagar/drainase (tidak ada di Dapodik)
+3. **Ambil kategori dominan** (skor tertinggi) → label cluster sekolah
+4. **Tie-breaker:** pengetahuan domain (final review sebelum finalisasi)
 
 ### 1.3 Contoh Klaster Manual
 
@@ -82,61 +101,104 @@ Sesuai taksonomi 5 kategori infrastruktur:
 
 ```
 Klaster 0: Ruang Belajar (kelas, lab, perpustakaan)
-- Sekolah dengan laporan mayoritas atap bocor, meja rusak, lab tidak fungsional
+- SDN 3 Made: 11 ruang_kelas rusak (dominan), 1 perpustakaan rusak, 1 UKS rusak
+- SDN 4 Made: 16 ruang_kelas rusak (dominan), 1 lab_komputer rusak, 3 WC rusak
 
 Klaster 1: Sanitasi & Air (WC, air bersih, pembuangan)
-- Sekolah dengan laporan mayoritas WC rusak, tidak ada air bersih
+- SDX Y: 8 WC siswa rusak berat (dominan), 2 ruang kelas rusak ringan
 
 Klaster 2: Utilitas (listrik, internet, penerangan)
-- Sekolah dengan laporan mayoritas listrik mati, instalasi tidak aman
+- SDX Z: Laporan warga: "Listrik sering mati, instalasi tua, kabel berbahaya"
 
 Klaster 3: Akses & Lahan (jalan, pagar, drainase)
-- Sekolah dengan laporan mayoritas jalan rusak, pagar bobol, halaman becek
+- SDX W: Laporan warga: "Jalan akses rusak parah, pagar bobol, halaman becek saat hujan"
 
 Klaster 4: Fasilitas Penunjang (UKS, ibadah, olahraga, kantin)
-- Sekolah dengan laporan mayoritas UKS kosong, lapangan rusak
+- SDX V: 3 UKS rusak (dominan), tempat ibadah tidak ada
 ```
 
-### 1.4 Format Output
+### 1.4 Format Output (manual_clusters.json)
 
 ```json
 {
+  "metadata": {
+    "created_date": "2026-09-23",
+    "total_schools": 62,
+    "total_categories": 5,
+    "source": "Hibrida: Dapodik kondisi_sarana (3 kategori) + laporan warga teks (2 kategori)"
+  },
   "manual_clusters": {
-    "cluster_0": {
-      "label": "Ruang Belajar",
-      "description": "Masalah kelas, lab, perpustakaan — atap bocor, lantai retak, meja rusak, lab tidak fungsional",
-      "schools": ["NPSN001", "NPSN002", "NPSN005", ...]
+    "c0": {
+      "label": "ruang_belajar",
+      "description": "Masalah ruang kelas, lab, perpustakaan — atap bocor, lantai retak, meja rusak, lab tidak fungsional",
+      "source_dapodik": ["ruang_kelas", "perpustakaan", "lab_ipa", "lab_komputer"],
+      "schools": ["20505816", "20505835", ...]  // NPSN list
     },
-    "cluster_1": {
-      "label": "Sanitasi & Air",
+    "c1": {
+      "label": "sanitasi_air",
       "description": "Toilet rusak, air bersih tidak tersedia, saluran pembuangan tersumbat",
-      "schools": ["NPSN003", "NPSN008", ...]
+      "source_dapodik": ["wc_guru", "wc_siswa"],
+      "schools": ["20505824", ...]
     },
-    "cluster_2": {
-      "label": "Utilitas",
+    "c2": {
+      "label": "utilitas",
       "description": "Listrik padam, instalasi tua, internet mati",
-      "schools": ["NPSN004", "NPSN012", ...]
+      "source_dapodik": ["sumber_listrik", "akses_internet"],  // dari Dapodik jenis, bukan kondisi
+      "source_laporan_warga": true,  // juga dari teks laporan (Dapodik tidak punya data kondisi)
+      "schools": ["20505843", ...]
     },
-    "cluster_3": {
-      "label": "Akses & Lahan",
-      "description": "Jalan akses rusak, pagar rusak, drainase buruk",
-      "schools": ["NPSN007", "NPSN015", ...]
+    "c3": {
+      "label": "akses_lahan",
+      "description": "Jalan akses rusak, pagar rusak, drainase buruk, halaman becek",
+      "source_dapodik": [],  // tidak ada di Dapodik
+      "source_laporan_warga": true,  // semua dari teks laporan
+      "schools": ["20505851", ...]
     },
-    "cluster_4": {
-      "label": "Fasilitas Penunjang",
+    "c4": {
+      "label": "penunjang",
       "description": "UKS tidak memadai, tempat ibadah rusak, lapangan olahraga rusak",
-      "schools": ["NPSN009", "NPSN020", ...]
+      "source_dapodik": ["uks"],
+      "schools": ["20505867", ...]
     }
   }
 }
 ```
 
-### 1.5 Langkah Implementasi
+### 1.5 Langkah Implementasi (F3.0a)
 
-1. **List semua 62 NPSN** (dari CSV Dapodik)
-2. **Baca laporan tiap sekolah** (dari database laporan yang sudah di-ingest)
-3. **Kategorisasi manual** — kelompokkan berdasarkan frekuensi jenis masalah
-4. **Simpan ke `app/ai_pipeline/experiments/manual_clusters.json`**
+1. **Query semua 62 NPSN** dari tabel `sekolah`
+2. **Untuk setiap NPSN:**
+   - Baca `kondisi_sarana` dari Dapodik → hitung rusak per kategori (dominan = max count)
+   - Baca `laporan` dari database → baca teks deskripsi → cari indikasi `utilitas` / `akses_lahan`
+   - Tentukan kategori dominan (tie-breaker = domain knowledge)
+3. **Simpan hasil ke `app/ai_pipeline/experiments/manual_clusters.json`**
+4. **Verifikasi:** Semua 62 NPSN ada di salah satu klaster; distribusi merata (±12-13 per klaster)
+
+**Script:**
+```bash
+cd backend
+./venv/bin/python -c "
+from app.models import Sekolah, Laporan, KondisiSarana
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+import json
+
+# Setup DB connection
+engine = create_engine('mysql+pymysql://root:dev123@localhost/simakis')
+Session = sessionmaker(bind=engine)
+session = Session()
+
+# Build ground truth
+ground_truth = {'manual_clusters': {}}
+
+# ... implementasi logika ...
+
+with open('app/ai_pipeline/experiments/manual_clusters.json', 'w') as f:
+    json.dump(ground_truth, f, indent=2)
+
+print('Ground truth saved to manual_clusters.json')
+"
+```
 
 ---
 

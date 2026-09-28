@@ -521,6 +521,125 @@ di Dapodik, sehingga tidak bisa diverifikasi sistem.
 
 ---
 
+## 3.3 Keputusan Desain: Free-Text Laporan + 5 Kategori Hibrida (2026-09-23)
+
+**Keputusan desain:** Laporan warga menggunakan **teks bebas** — tidak ada dropdown
+`kategori` di form. AI yang mengelompokkan laporan ke dalam kategori infrastruktur
+melalui clustering (IndoBERT + HDBSCAN). Kategori ground truth = **5 kategori hibrida**:
+
+| Kategori | Sumber Data | Literatur Pendukung |
+|----------|-------------|---------------------|
+| `ruang_belajar` | Dapodik (kondisi_sarana) | Permendiknas 24/2007 (di-Rev. Permendikbudriset 22/2023) |
+| `sanitasi_air` | Dapodik + laporan warga | UNICEF/WHO JMP WASH in Schools (SDG 4.a.1) |
+| `utilitas` | Dapodik + laporan warga | UNICEF/WHO JMP WASH SDG 4.a.1(a,b) |
+| `penunjang` | Dapodik (uks) | Permendiknas 24/2007 (UKS, tempat ibadah) |
+| `akses_lahan` | Laporan warga saja | Permendiknas 24/2007 (luas lahan) + NCES FCI (site improvements) |
+
+**Keputusan terkait (8/8):**
+1. **`laporan.kategori`** → **HAPUS kolom** (migration drop, hapus dari model/schemas/routers/seed)
+2. **Ground truth** → **5 kategori hibrida** (Dapodik 3 + laporan warga 2)
+3. **Waktu jalan AI** → **Scheduled cron harian**
+4. **Alur verifikasi** → **Review satu per satu** + badge status tampil di publik
+5. **Outlier HDBSCAN (-1)** → **Opsi A**: klaster `belum_terklasifikasi` + review verifikator
+6. **Label klaster** → **Dua-duanya**: teks bebas (TF-IDF) + enum kategori
+7. **Formula skor keparahan** → **Gabungan** `kondisi_dilaporkan` + data Dapodik
+8. **Literatur** → **Selesai dicari** (lihat tabel di atas)
+
+**Dampak implementasi:**
+- Migration baru: `ALTER TABLE laporan DROP COLUMN kategori`
+- Model `Laporan` hapus field `kategori`; `KATEGORI_ENUM` tetap (dipakai `klaster.kategori`)
+- Schema Pydantic (`LaporanCreateRequest`) hapus field `kategori`
+- Router `laporan.py` hapus 4 referensi `kategori=`
+- Seed script: laporan tanpa kategori (teks bebas saja)
+- `INTERFACES.md`: hapus `kategori` dari `POST /laporan` contract
+- `AI_PIPELINE_ABLATION_STUDY.md`: perbaiki §0.3 (seed = teks bebas) + §1 (ground truth = 5 kategori hibrida)
+
+**Verifikasi rencana:**
+- Migration sukses: `alembic upgrade head` tanpa error
+- Seed: 100 laporan tanpa kategori, deskripsi teks bebas (50+ kata per laporan)
+- `KATEGORI_ENUM` tetap berfungsi di tabel `klaster`
+- Tests: 12/12 pass setelah schema update
+
+---
+
+## 3.4 Perbaikan Dokumentasi Ground Truth (Fase B, 2026-09-23) ✅ SELESAI
+
+Dokumentasi keputusan #1–#8 disinkronkan ke seluruh doc backend (teks bebas +
+5 kategori hibrida + outlier `belum_terklasifikasi` + dual labeling + skor
+gabungan + cron harian + verifikasi 1-per-1/badge):
+
+- **`AI_PIPELINE_ABLATION_STUDY.md`** — §0.3 (seed teks bebas, tanpa kategori) +
+  §1 (ground truth 5 kategori hibrida, sumber Dapodik + laporan warga, format JSON)
+- **`TASK_GUIDE.md`** — F2.9–F2.11 (hapus `kategori`), F3.00/3.0a (metodologi
+  hybrid), F3.3 (outlier), F3.4 (dual label), F3.5 (skor gabungan), F3.6/F3.8
+  (cron harian), F3.10 (3 status + badge), F3.19 (badge publik).
+- **`CHANGELOG.md`** — §3.3 mencatat 8 keputusan final + literatur.
+
+> **Timeline & urutan pengerjaan Fase 3 tidak lagi di CHANGELOG** — satu-satunya
+> sumber ada di **`TASK_GUIDE.md` → "Rencana Eksekusi Fase 3 (Timeline & Urutan
+> Pengerjaan)"** di pembuka Fase 3. CHANGELOG hanya mencatat apa yang *sudah*
+> direalisasi (Fase B selesai; Fase A/C/D/E/F belum dikerjakan).
+
+**Status:** 5/24 task Fase 3 selesai. **Fase A (drop `kategori`) SELESAI**
+(2026-09-23, belum di-commit):
+
+- Migration `c01f4a7b2d09_drop_laporan_kategori.py` — `DROP COLUMN laporan.kategori`
+  (down_revision `8cca6e1b2fa3`); `alembic upgrade head` sukses, kolom hilang,
+  `klaster.kategori` tetap ada, 100 laporan lama aman.
+- `app/models/laporan.py` — field `kategori` dihapus; `KATEGORI_ENUM` dipertahankan
+  (dipakai `klaster.py`).
+- `app/schemas/laporan.py` — `kategori` dihapus dari `LaporanCreateRequest` +
+  `LaporanResponse`.
+- `app/routers/laporan.py` — 4 referensi `kategori=` dihapus.
+- `app/routers/sanggahan.py` — key `kategori` dihapus dari response.
+- `scripts/setup_f300.py` — seed teks bebas (tanpa kategori) + verify breakdown
+  kategori dihapus; re-seed 100 laporan sukses.
+- `docs/universal/INTERFACES.md` — `kategori` dihapus dari kontrak `POST /laporan`
+  (§2.1 + §4 contoh request).
+- `tests/test_laporan.py` (baru) — 2 regression test: POST /laporan tanpa kategori
+  (201, response tanpa `kategori`) + field kategori diabaikan jika dikirim.
+
+**Verifikasi:** `pytest` → **14 passed** (12 lama + 2 baru). Catatan: response
+`POST /laporan` tidak dibungkus `{ data: ... }` (beda dari auth) — pre-existing,
+bukan regresi Fase A.
+
+**Selanjutnya:** Fase C (F3.0a manual clustering) — butuh input domain Aris.
+
+---
+
+## 3.5 Penyesuaian Tampilan Detail Sekolah Frontend v1 (2026-09-28)
+
+**Keputusan:** Kartu "Rasio Pendidik" dan "Kapasitas Rombel" di halaman detail sekolah **tidak ditampilkan** di frontend v1 karena data `jumlah_pd`, `jumlah_ptk`, `jumlah_rombel` tidak di-ingest per **scope infrastruktur-only**.
+
+**Alasan:** Platform SIMAKIS v1 fokus pada **infrastructure advocacy** (kondisi fisik sarana/prasarana). Data jumlah siswa, guru, dan rombel tidak terkait langsung dengan ketersediaan infrastruktur fisik.
+
+**Dokumentasi yang diperbarui:**
+
+1. **`docs/universal/INTERFACES.md` §2** — tambah catatan implementasi v1:
+   - Field `rasio_guru_siswa`, `rasio_spm_terpenuhi`, `jumlah_pd/ptk/rombel`, `utilitas_kapasitas_belajar` dikirim dengan nilai default (null/0) tapi **tidak dirender** di FE v1.
+   - `data_resmi` blok (sumber, tanggal_pembaruan) & `ada_sanggahan` ditandai **belum diimplementasi** di backend v1.
+   - `penanda_masalah` saat ini return `"normal"` (bukan `aman|perlu_perhatian|kritis`), threshold belum diputuskan.
+   - `jumlah_isu_aktif` saat ini selalu `0` (belum dihitung backend).
+   - Aturan render FE: jangan tampilkan angka 0/null dari field yang ditandai "tidak diimplementasi" sebagai angka valid.
+   - Frontend v1 hanya tampilkan: (1) Audit Sarpras, (2) Profil Dapodik (akreditasi/kepsek/jenjang/status), (3) Isu & Klaster Warga (empty state sampai Fase D).
+
+2. **`docs/universal/DECISIONS.md`** — tambah **D-20**: Kartu Rasio Pendidik & Kapasitas Rombel di-hide di v1; field API tetap dikirim default tapi FE tidak render; alternatif "isi backend" ditolak untuk v1.
+
+3. **`docs/frontend/TASK_GUIDE.md` F2.6** — update spesifikasi Detail Sekolah: 3 kartu (Audit Sarpras + Profil Dapodik + Isu Klaster), catatan scope v1 (rasio/rombel tidak tampil).
+
+4. **`docs/frontend/MOCK_DATA.md` §3.2** — tambah catatan scope v1: `rasio_guru_siswa` dikirim null/default, FE tidak render.
+
+5. **`docs/universal/PRD.md` FEAT-001** — update requirement: "Pencarian nama/alamat; kondisi sarana; ..." + catatan inline *(rasio guru & data siswa tidak ditampilkan di v1 per scope infrastruktur-only – lihat DECISIONS.md D-20)*.
+
+**Konsekuensi:**
+- Backend **tidak perlu ubah kode** — response tetap kirim field dengan nilai default.
+- Frontend (Dimas) rombak mockup halaman detail: buang 2 kartu, ganti layout ke 3 kartu di atas.
+- PRD FEAT-001 deviasi dicatat (rasio guru tidak tampil di v1).
+
+**Status:** Dokumentasi selesai; koordinasi dengan Dimas pending.
+
+---
+
 ## Status Fase 3
 
 ### A. FEAT-004 — Klasterisasi Isu (AI Pipeline)
@@ -540,7 +659,7 @@ di Dapodik, sehingga tidak bisa diverifikasi sistem.
 | F3.4 — Labeling TF-IDF | ⬜ Belum |
 | F3.5 — Formula Urgensi KBM + Skor Prioritas | ⬜ Belum |
 | F3.6 — Async Task Queue | ⬜ Belum |
-| F3.7 — Model SQLAlchemy (Klaster) | ⬜ Belum |
+| F3.7 — Model SQLAlchemy (Klaster) | ✅ Selesai (dari F1.2) |
 | F3.8 — Endpoint Trigger Clustering | ⬜ Belum |
 | F3.9 — Endpoint Status Pipeline | ⬜ Belum |
 | F3.10 — Verifikasi Klaster | ⬜ Belum |
@@ -549,7 +668,7 @@ di Dapodik, sehingga tidak bisa diverifikasi sistem.
 
 | Task | Status |
 |------|--------|
-| F3.11 — Model SQLAlchemy (Vote) | ⬜ Belum |
+| F3.11 — Model SQLAlchemy (Vote) | ✅ Selesai (dari F1.2) |
 | F3.12 — Vote Baru | ⬜ Belum |
 | F3.13 — Cek Status Vote | ⬜ Belum |
 | F3.14 — Hitung Ulang Skor Prioritas | ⬜ Belum |
@@ -559,15 +678,15 @@ di Dapodik, sehingga tidak bisa diverifikasi sistem.
 
 | Task | Status |
 |------|--------|
-| F3.16 — Model SQLAlchemy (Status Log) | ⬜ Belum |
+| F3.16 — Model SQLAlchemy (Status Log) | ✅ Selesai (dari F1.2) |
 | F3.17 — Update Status | ⬜ Belum |
 | F3.18 — Riwayat Status | ⬜ Belum |
 | F3.19 — Dashboard Prioritas | ⬜ Belum |
-| F3.20 — Model SQLAlchemy (Audit Log) | ⬜ Belum |
+| F3.20 — Model SQLAlchemy (Audit Log) | ✅ Selesai (dari F1.2) |
 | F3.21 — Logging Aksi Sensitif | ⬜ Belum |
 | F3.22 — Dashboard Wilayah (FEAT-002) | ⬜ Belum |
 
-**Progress Fase 3: 1/24 task selesai.**
+**Progress Fase 3: 5/24 task selesai.**
 
 ---
 

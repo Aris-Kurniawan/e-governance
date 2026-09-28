@@ -80,6 +80,8 @@ export const sekolahList: SekolahList[] = [
 
 ### 3.2 Detail (`GET /sekolah/{npsn}`)
 
+> **Catatan scope v1:** Field `rasio_guru_siswa` dan data siswa/rombel dikirim default/null oleh backend v1 per scope infrastruktur-only. Frontend v1 **tidak merender** rasio guru/siswa di halaman detail sekolah (lihat `DECISIONS.md` D-20). Mock di bawah hanya contoh data lama.
+
 ```ts
 export const sekolahDetail: Record<string, SekolahDetail> = {
   "20532361": {

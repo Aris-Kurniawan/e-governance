@@ -201,7 +201,23 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
 }
 ```
 
-**Catatan:**
+**Catatan penting untuk implementasi v1 (september 2026):**
+- `data_resmi` blok (sumber, tanggal_pembaruan, tanggal_verifikasi_baseline) **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di schema. Datanya tersedia di kolom `sekolah.sumber_data` dan `sekolah.tanggal_pembaruan_data` di DB.
+- `ada_sanggahan` pada setiap item `kondisi_sarana` **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di contoh response. Endpoint untuk menghitung ada sanggahan tersedia di `GET /sekolah/{npsn}/sanggahan`.
+- `penanda_masalah` di response saat ini mengembalikan `"normal"` (bukan `aman | perlu_perhatian | kritis` seperti di kontrak). Nilai threshold dan logika perhitungan belum diputuskan — lihat `INTERFACES.md` §11.
+- `jumlah_isu_aktif` saat ini selalu `0` — belum dihitung oleh backend.
+- **Field berikut dikirim dengan nilai default (null/0) dan tidak dirender di frontend v1** karena data Dapodik tidak di-ingest per scope infrastruktur-only:
+  - `rasio_guru_siswa` → `null`
+  - `rasio_spm_terpenuhi` → `false`
+  - `jumlah_pd`, `jumlah_ptk`, `jumlah_rombel` → `0`
+  - `utilitas_kapasitas_belajar` → `0.0`
+  > **Penjelasan scope:** Platform SIMAKIS v1 fokus pada **infrastructure advocacy** — laporan isu terkait kondisi fisik sarana/prasarana. Data jumlah siswa, guru, dan rombel tidak di-ingest dari Dapodik karena tidak terkait langsung dengan ketersediaan infrastruktur.
+- Frontend v1 hanya menampilkan:
+  - **Audit Sarpras**: kartu ringkasan kondisi sarana (donut chart + detail per ruang)
+  - **Profil Dapodik**: akreditasi, nama kepala sekolah, jenjang, status sekolah
+  - **Isu & Klaster Warga**: empty state sampai Fase D (klasterisasi AI)
+
+**Catatan teknis (umum):**
 - `kondisi_sarana` berbentuk **agregat per jenis ruang** (bukan per ruang
   individual) — mengikuti bentuk data Dapodik yang memang agregat.
 - `rasio_guru_siswa` = `jumlah_pd / jumlah_ptk`, `rasio_spm_terpenuhi` =
@@ -211,6 +227,10 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
   `divalidasi`) menargetkan `nama_ruang` tersebut.
 - `perlu_verifikasi` = data Dapodik inkonsisten (`jumlah kondisi > jumlah
   unit`) — lihat `backend/DATABASE_SCHEMA.md` §5.
+- **Aturan render FE** — FE **tidak boleh** merender angka `0`/`null` dari
+  field yang ditandai "tidak diimplementasi di v1" di atas sebagai angka
+  valid (mis. menampilkan "0 Rombongan Belajar"). Field tersebut di-hide,
+  bukan ditampilkan sebagai angka nol.
 - **Endpoint sanggahan** — warga melaporkan kondisi berbeda dari Dapodik
   langsung dari kartu fasilitas (lihat §4.1).
 
@@ -220,7 +240,7 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
-| POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | Kirim sanggahan (via laporan biasa, `kategori=ruang_belajar|sanitasi_air|utilitas|akses_lahan|penunjang`, `fasilitas_terkait=nama_ruang`, `kondisi_dilaporkan=...`) |
+| POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | Kirim sanggahan (via laporan biasa, teks bebas; `fasilitas_terkait=nama_ruang` terisi otomatis dari kartu, `kondisi_dilaporkan=...`) |
 | GET | `/sekolah/{npsn}/sanggahan` | Publik | Riwayat sanggahan untuk satu sekolah |
 
 **Catatan:** tombol "Sanggah Data Ini" di kartu fasilitas mengarah ke
@@ -268,7 +288,6 @@ response `200`:
 ```json
 {
   "sekolah_npsn": "string",
-  "kategori": "ruang_belajar | sanitasi_air | utilitas | akses_lahan | penunjang",
   "fasilitas_terkait": "string | null",
   "kondisi_dilaporkan": "baik | rusak_ringan | rusak_sedang | rusak_berat | null",
   "deskripsi": "string"
