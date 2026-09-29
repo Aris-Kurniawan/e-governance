@@ -1,0 +1,2916 @@
+{
+  "metadata": {
+    "created_date": "2026-09-29",
+    "total_schools": 62,
+    "total_categories": 5,
+    "source": "Hibrida: Rasio kerusakan Dapodik (% rusak) + Laporan warga teks",
+    "cluster_distribution": {
+      "ruang_belajar": 37,
+      "sanitasi_air": 13,
+      "penunjang": 2,
+      "utilitas": 4,
+      "akses_lahan": 6
+    }
+  },
+  "manual_clusters": {
+    "ruang_belajar": {
+      "label": "ruang_belajar",
+      "description": "Isu kerusakan fasilitas kegiatan belajar mengajar (kelas, lab, perpus)",
+      "source_dapodik": [
+        "ruang_kelas",
+        "perpustakaan",
+        "lab_ipa",
+        "lab_komputer"
+      ],
+      "schools": [
+        "20505816",
+        "20505818",
+        "20505916",
+        "20505917",
+        "20505923",
+        "20505971",
+        "20506016",
+        "20506097",
+        "20506145",
+        "20506174",
+        "20506244",
+        "20506249",
+        "20506286",
+        "20506336",
+        "20506349",
+        "20506385",
+        "20506406",
+        "20506433",
+        "20506443",
+        "20506479",
+        "20506498",
+        "20506499",
+        "20506506",
+        "20506507",
+        "20506543",
+        "20506558",
+        "20506575",
+        "20506583",
+        "20506628",
+        "20506659",
+        "20507220",
+        "20549027",
+        "20570616",
+        "69759218",
+        "69830411",
+        "70010840",
+        "70063774"
+      ]
+    },
+    "sanitasi_air": {
+      "label": "sanitasi_air",
+      "description": "Isu fasilitas toilet, kebersihan, dan saluran sanitasi dasar",
+      "source_dapodik": [
+        "wc_guru",
+        "wc_siswa"
+      ],
+      "schools": [
+        "20505819",
+        "20506254",
+        "20506327",
+        "20506382",
+        "20506396",
+        "20506544",
+        "20506545",
+        "20506559",
+        "20506584",
+        "20507221",
+        "20549009",
+        "70002205",
+        "70003836"
+      ]
+    },
+    "penunjang": {
+      "label": "penunjang",
+      "description": "Isu fasilitas kesehatan (UKS) dan ibadah penunjang sekolah",
+      "source_dapodik": [
+        "uks",
+        "tempat_ibadah"
+      ],
+      "schools": [
+        "20507213",
+        "20549024"
+      ]
+    },
+    "utilitas": {
+      "label": "utilitas",
+      "description": "Isu pasokan listrik, lampu penerangan, dan jaringan internet/WiFi",
+      "source_dapodik": [],
+      "schools": [
+        "20506218",
+        "20506220",
+        "20506241",
+        "20549023"
+      ]
+    },
+    "akses_lahan": {
+      "label": "akses_lahan",
+      "description": "Isu pagar sekolah, jalan akses masuk, paving halaman, dan drainase banjir",
+      "source_dapodik": [],
+      "schools": [
+        "20505970",
+        "20506380",
+        "20507211",
+        "20554338",
+        "70040020",
+        "70062428"
+      ]
+    }
+  },
+  "school_details": {
+    "20505816": {
+      "npsn": "20505816",
+      "nama": "SD NEGERI 1 MADE",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 14.29,
+      "scores": {
+        "ruang_belajar": 14.29,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20505818": {
+      "npsn": "20505818",
+      "nama": "SD NEGERI 3 MADE",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 11,
+            "rusak": 11
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20505819": {
+      "npsn": "20505819",
+      "nama": "SD NEGERI 4 MADE",
+      "jenjang": "SD",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 94.74,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 1
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 17,
+            "rusak": 16
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20505916": {
+      "npsn": "20505916",
+      "nama": "SD NEGERI 1 KRAMAT",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 85.71,
+      "scores": {
+        "ruang_belajar": 85.71,
+        "sanitasi_air": 50.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 7,
+            "rusak": 6
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 1
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20505917": {
+      "npsn": "20505917",
+      "nama": "SD NEGERI 2 KRAMAT",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1,
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20505923": {
+      "npsn": "20505923",
+      "nama": "SD NEGERI PLOSOWAHYU",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 1
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20505970": {
+      "npsn": "20505970",
+      "nama": "SD NEGERI 1 RANCANGKENCONO",
+      "jenjang": "SD",
+      "assigned_category": "akses_lahan",
+      "max_score": 25.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1,
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20505971": {
+      "npsn": "20505971",
+      "nama": "SD NEGERI 2 RANCANGKENCONO",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 50.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 1
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506016": {
+      "npsn": "20506016",
+      "nama": "SD NEGERI PANGKATREJO",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 8,
+            "rusak": 8
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506097": {
+      "npsn": "20506097",
+      "nama": "SD NEGERI BANJARMENDALAN",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 37.5,
+      "scores": {
+        "ruang_belajar": 37.5,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 7,
+            "rusak": 3
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506145": {
+      "npsn": "20506145",
+      "nama": "SD NEGERI KARANGLANGIT",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 66.67,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 1
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 3,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506174": {
+      "npsn": "20506174",
+      "nama": "SD NEGERI KEBET",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 42.86,
+      "scores": {
+        "ruang_belajar": 42.86,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 3
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506218": {
+      "npsn": "20506218",
+      "nama": "SD NEGERI 4 JETIS",
+      "jenjang": "SD",
+      "assigned_category": "utilitas",
+      "max_score": 25.0,
+      "scores": {
+        "ruang_belajar": 21.43,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 12,
+            "rusak": 2
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506220": {
+      "npsn": "20506220",
+      "nama": "SD NEGERI KEPATIHAN",
+      "jenjang": "SD",
+      "assigned_category": "utilitas",
+      "max_score": 25.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 10,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506241": {
+      "npsn": "20506241",
+      "nama": "SMK MUHAMMADIYAH 4 LAMONGAN",
+      "jenjang": "SMK",
+      "assigned_category": "utilitas",
+      "max_score": 25.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 12,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506244": {
+      "npsn": "20506244",
+      "nama": "SMK NU LAMONGAN",
+      "jenjang": "SMK",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 50.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 15,
+            "rusak": 15
+          },
+          "wc_guru": {
+            "total": 6,
+            "rusak": 6
+          },
+          "wc_siswa": {
+            "total": 4,
+            "rusak": 4
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 2
+        }
+      }
+    },
+    "20506249": {
+      "npsn": "20506249",
+      "nama": "SMK NEGERI 1 LAMONGAN",
+      "jenjang": "SMK",
+      "assigned_category": "ruang_belajar",
+      "max_score": 0.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 5,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 33,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 5,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506254": {
+      "npsn": "20506254",
+      "nama": "SMA NEGERI 2 LAMONGAN",
+      "jenjang": "SMA",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 48.78,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 4,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 36,
+            "rusak": 20
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 4,
+            "rusak": 4
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506286": {
+      "npsn": "20506286",
+      "nama": "SMKS PGRI 1 LAMONGAN",
+      "jenjang": "SMK",
+      "assigned_category": "ruang_belajar",
+      "max_score": 0.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 20,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 8,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506327": {
+      "npsn": "20506327",
+      "nama": "SMA NEGERI 1 LAMONGAN",
+      "jenjang": "SMA",
+      "assigned_category": "sanitasi_air",
+      "max_score": 50.0,
+      "scores": {
+        "ruang_belajar": 41.86,
+        "sanitasi_air": 50.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 2,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 4,
+            "rusak": 2
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 36,
+            "rusak": 15
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 4,
+            "rusak": 1
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506336": {
+      "npsn": "20506336",
+      "nama": "SMA PANCA MARGA 1 LAMONGAN",
+      "jenjang": "SMA",
+      "assigned_category": "ruang_belajar",
+      "max_score": 56.25,
+      "scores": {
+        "ruang_belajar": 56.25,
+        "sanitasi_air": 50.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 14,
+            "rusak": 9
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506349": {
+      "npsn": "20506349",
+      "nama": "SMP NEGERI 1 LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "ruang_belajar",
+      "max_score": 5.41,
+      "scores": {
+        "ruang_belajar": 5.41,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 4,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 32,
+            "rusak": 2
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 8,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506380": {
+      "npsn": "20506380",
+      "nama": "SMP NEGERI 3 LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "akses_lahan",
+      "max_score": 25.0,
+      "scores": {
+        "ruang_belajar": 6.25,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 2,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 28,
+            "rusak": 2
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506382": {
+      "npsn": "20506382",
+      "nama": "SMP NEGERI 4 LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "sanitasi_air",
+      "max_score": 71.43,
+      "scores": {
+        "ruang_belajar": 32.26,
+        "sanitasi_air": 71.43,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 2,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 27,
+            "rusak": 10
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 12,
+            "rusak": 8
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506385": {
+      "npsn": "20506385",
+      "nama": "SMP NEGERI 2 LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 25.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 1
+          },
+          "lab_komputer": {
+            "total": 3,
+            "rusak": 3
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 33,
+            "rusak": 33
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 3,
+            "rusak": 3
+          },
+          "wc_siswa": {
+            "total": 4,
+            "rusak": 4
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1,
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506396": {
+      "npsn": "20506396",
+      "nama": "SMP NEGERI 5 LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 44.44,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 1
+          },
+          "lab_komputer": {
+            "total": 2,
+            "rusak": 2
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 23,
+            "rusak": 8
+          },
+          "uks": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506406": {
+      "npsn": "20506406",
+      "nama": "SMP MUHAMMADIYAH 2 LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "ruang_belajar",
+      "max_score": 0.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 5,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506433": {
+      "npsn": "20506433",
+      "nama": "SMP SUNAN GIRI 1 LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "ruang_belajar",
+      "max_score": 0.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506443": {
+      "npsn": "20506443",
+      "nama": "SMP MURNI SUNAN DRAJAT LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 1
+          },
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 1
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 3,
+            "rusak": 3
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506479": {
+      "npsn": "20506479",
+      "nama": "SD NEGERI SUKOREJO",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 13,
+            "rusak": 13
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506498": {
+      "npsn": "20506498",
+      "nama": "SD NEGERI 1 SUKOMULYO",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506499": {
+      "npsn": "20506499",
+      "nama": "SD NEGERI 2 SUKOMULYO",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 1
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506506": {
+      "npsn": "20506506",
+      "nama": "SD NEGERI 1 SENDANGREJO",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 14.29,
+      "scores": {
+        "ruang_belajar": 14.29,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506507": {
+      "npsn": "20506507",
+      "nama": "SD NEGERI 2 SENDANGREJO",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 50.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 2,
+          "utilitas": 1
+        }
+      }
+    },
+    "20506543": {
+      "npsn": "20506543",
+      "nama": "SD NEGERI SIDOMUKTI",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506544": {
+      "npsn": "20506544",
+      "nama": "SD NEGERI 1 SIDOHARJO",
+      "jenjang": "SD",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 93.75,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 14,
+            "rusak": 14
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 4,
+            "rusak": 4
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20506545": {
+      "npsn": "20506545",
+      "nama": "SD NEGERI 2 SIDOHARJO",
+      "jenjang": "SD",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 85.71,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 1
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506558": {
+      "npsn": "20506558",
+      "nama": "SD NEGERI 1 TUMENGGUNGAN",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 85.71,
+      "scores": {
+        "ruang_belajar": 85.71,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 50.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 2
+        }
+      }
+    },
+    "20506559": {
+      "npsn": "20506559",
+      "nama": "SD NEGERI 2 TUMENGGUNGAN",
+      "jenjang": "SD",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506575": {
+      "npsn": "20506575",
+      "nama": "SD NEGERI TLOGOANYAR",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506583": {
+      "npsn": "20506583",
+      "nama": "SD NEGERI 3 JETIS",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 2,
+            "rusak": 2
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 13,
+            "rusak": 13
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 8,
+            "rusak": 8
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506584": {
+      "npsn": "20506584",
+      "nama": "SD NEGERI WAJIK",
+      "jenjang": "SD",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 87.5,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 1
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 5
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 1
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20506628": {
+      "npsn": "20506628",
+      "nama": "SD NEGERI SUMBERJO",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 1
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20506659": {
+      "npsn": "20506659",
+      "nama": "SD NEGERI TANJUNG",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20507211": {
+      "npsn": "20507211",
+      "nama": "SD MUHAMMADIYAH 1 LAMONGAN",
+      "jenjang": "SD",
+      "assigned_category": "akses_lahan",
+      "max_score": 75.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 75.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 27,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 3
+        }
+      }
+    },
+    "20507213": {
+      "npsn": "20507213",
+      "nama": "SD NU BANAT BANIN LAMONGAN",
+      "jenjang": "SD",
+      "assigned_category": "penunjang",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 73.91,
+        "sanitasi_air": 75.0,
+        "penunjang": 100.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 22,
+            "rusak": 17
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 6,
+            "rusak": 6
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "20507220": {
+      "npsn": "20507220",
+      "nama": "SD KEMALA BHAYANGKARI 5",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 70.0,
+      "scores": {
+        "ruang_belajar": 70.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 7,
+            "rusak": 6
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20507221": {
+      "npsn": "20507221",
+      "nama": "SD ISLAM PLUS AL- MUDHOFAR",
+      "jenjang": "SD",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 75.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 6
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20549009": {
+      "npsn": "20549009",
+      "nama": "SMP ISLAM TANFIRUL GHOYYI",
+      "jenjang": "SMP",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 25.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 5,
+            "rusak": 1
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 1
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20549023": {
+      "npsn": "20549023",
+      "nama": "SMAS MUHAMMADIYAH 4",
+      "jenjang": "SMA",
+      "assigned_category": "utilitas",
+      "max_score": 50.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 50.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 5,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 2
+        }
+      }
+    },
+    "20549024": {
+      "npsn": "20549024",
+      "nama": "SMA NEGERI 3 LAMONGAN",
+      "jenjang": "SMA",
+      "assigned_category": "penunjang",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 21.95,
+        "sanitasi_air": 0.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_ipa": {
+            "total": 1,
+            "rusak": 0
+          },
+          "lab_komputer": {
+            "total": 3,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 36,
+            "rusak": 9
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 6,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 11,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20549027": {
+      "npsn": "20549027",
+      "nama": "SMKS MUHAMMADIYAH 1 LAMONGAN",
+      "jenjang": "SMK",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 33,
+            "rusak": 33
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "20554338": {
+      "npsn": "20554338",
+      "nama": "SMK NEGERI 2 LAMONGAN",
+      "jenjang": "SMK",
+      "assigned_category": "akses_lahan",
+      "max_score": 25.0,
+      "scores": {
+        "ruang_belajar": 16.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 23,
+            "rusak": 3
+          },
+          "wc_guru": {
+            "total": 6,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 12,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "20570616": {
+      "npsn": "20570616",
+      "nama": "SMK THORIQUL ULUM LAMONGAN",
+      "jenjang": "SMK",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 1
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 9,
+            "rusak": 9
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "69759218": {
+      "npsn": "69759218",
+      "nama": "SMP THORIQUL `ULUM LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "ruang_belajar",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 1
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 4,
+            "rusak": 4
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {
+          "utilitas": 1
+        }
+      }
+    },
+    "69830411": {
+      "npsn": "69830411",
+      "nama": "SD ISLAM TERPADU CENDEKIA",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 0.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 19,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 12,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "70002205": {
+      "npsn": "70002205",
+      "nama": "SD ALAM CITRA INSANI",
+      "jenjang": "SD",
+      "assigned_category": "sanitasi_air",
+      "max_score": 60.0,
+      "scores": {
+        "ruang_belajar": 50.0,
+        "sanitasi_air": 60.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 3
+          },
+          "wc_guru": {
+            "total": 3,
+            "rusak": 1
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "70003836": {
+      "npsn": "70003836",
+      "nama": "SMK ISLAM TANFIRUL GHOYYI",
+      "jenjang": "SMK",
+      "assigned_category": "sanitasi_air",
+      "max_score": 100.0,
+      "scores": {
+        "ruang_belajar": 75.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 1
+          },
+          "ruang_kelas": {
+            "total": 3,
+            "rusak": 2
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 2
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "70010840": {
+      "npsn": "70010840",
+      "nama": "SMP ALAM CITRA INSANI LAMONGAN",
+      "jenjang": "SMP",
+      "assigned_category": "ruang_belajar",
+      "max_score": 50.0,
+      "scores": {
+        "ruang_belajar": 50.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 4,
+            "rusak": 3
+          },
+          "wc_guru": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 1,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    },
+    "70040020": {
+      "npsn": "70040020",
+      "nama": "SMP APLIKATIF As Sunniyyah Sunan Drajat Lamongan",
+      "jenjang": "SMP",
+      "assigned_category": "akses_lahan",
+      "max_score": 50.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 50.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "lab_komputer": {
+            "total": 1,
+            "rusak": 0
+          },
+          "perpustakaan": {
+            "total": 1,
+            "rusak": 0
+          },
+          "ruang_kelas": {
+            "total": 6,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 2,
+          "utilitas": 1
+        }
+      }
+    },
+    "70062428": {
+      "npsn": "70062428",
+      "nama": "SD JAZEERAH ISLAMIC SCHOOL",
+      "jenjang": "SD",
+      "assigned_category": "akses_lahan",
+      "max_score": 25.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 2,
+            "rusak": 0
+          },
+          "uks": {
+            "total": 1,
+            "rusak": 0
+          },
+          "wc_guru": {
+            "total": 2,
+            "rusak": 0
+          },
+          "wc_siswa": {
+            "total": 2,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {
+          "akses_lahan": 1
+        }
+      }
+    },
+    "70063774": {
+      "npsn": "70063774",
+      "nama": "SD ISLAM ZAWIYAH AL-AZHAR",
+      "jenjang": "SD",
+      "assigned_category": "ruang_belajar",
+      "max_score": 0.0,
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      },
+      "breakdown": {
+        "dapodik_stats": {
+          "ruang_kelas": {
+            "total": 3,
+            "rusak": 0
+          }
+        },
+        "laporan_mentions": {}
+      }
+    }
+  },
+  "tie_breaker_cases": [
+    {
+      "npsn": "20505818",
+      "nama": "SD NEGERI 3 MADE",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20505819",
+      "nama": "SD NEGERI 4 MADE",
+      "reason": "Skor ratio seri antara ['sanitasi_air', 'penunjang'], dipilih: sanitasi_air",
+      "scores": {
+        "ruang_belajar": 94.74,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20505917",
+      "nama": "SD NEGERI 2 KRAMAT",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 25.0
+      }
+    },
+    {
+      "npsn": "20505923",
+      "nama": "SD NEGERI PLOSOWAHYU",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20505970",
+      "nama": "SD NEGERI 1 RANCANGKENCONO",
+      "reason": "Skor ratio seri antara ['utilitas', 'akses_lahan'], dipilih: akses_lahan",
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 25.0
+      }
+    },
+    {
+      "npsn": "20506016",
+      "nama": "SD NEGERI PANGKATREJO",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506145",
+      "nama": "SD NEGERI KARANGLANGIT",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 66.67,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506244",
+      "nama": "SMK NU LAMONGAN",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 50.0
+      }
+    },
+    {
+      "npsn": "20506249",
+      "nama": "SMK NEGERI 1 LAMONGAN",
+      "reason": "Semua skor rasio 0, default: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506286",
+      "nama": "SMKS PGRI 1 LAMONGAN",
+      "reason": "Semua skor rasio 0, default: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506385",
+      "nama": "SMP NEGERI 2 LAMONGAN",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 25.0,
+        "akses_lahan": 25.0
+      }
+    },
+    {
+      "npsn": "20506396",
+      "nama": "SMP NEGERI 5 LAMONGAN",
+      "reason": "Skor ratio seri antara ['sanitasi_air', 'penunjang'], dipilih: sanitasi_air",
+      "scores": {
+        "ruang_belajar": 44.44,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      }
+    },
+    {
+      "npsn": "20506406",
+      "nama": "SMP MUHAMMADIYAH 2 LAMONGAN",
+      "reason": "Semua skor rasio 0, default: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506433",
+      "nama": "SMP SUNAN GIRI 1 LAMONGAN",
+      "reason": "Semua skor rasio 0, default: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506443",
+      "nama": "SMP MURNI SUNAN DRAJAT LAMONGAN",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506479",
+      "nama": "SD NEGERI SUKOREJO",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506498",
+      "nama": "SD NEGERI 1 SUKOMULYO",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506499",
+      "nama": "SD NEGERI 2 SUKOMULYO",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      }
+    },
+    {
+      "npsn": "20506544",
+      "nama": "SD NEGERI 1 SIDOHARJO",
+      "reason": "Skor ratio seri antara ['sanitasi_air', 'penunjang'], dipilih: sanitasi_air",
+      "scores": {
+        "ruang_belajar": 93.75,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506575",
+      "nama": "SD NEGERI TLOGOANYAR",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      }
+    },
+    {
+      "npsn": "20506583",
+      "nama": "SD NEGERI 3 JETIS",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "20506628",
+      "nama": "SD NEGERI SUMBERJO",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      }
+    },
+    {
+      "npsn": "20506659",
+      "nama": "SD NEGERI TANJUNG",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 25.0
+      }
+    },
+    {
+      "npsn": "20549027",
+      "nama": "SMKS MUHAMMADIYAH 1 LAMONGAN",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air', 'penunjang'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 100.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "69759218",
+      "nama": "SMP THORIQUL `ULUM LAMONGAN",
+      "reason": "Skor ratio seri antara ['ruang_belajar', 'sanitasi_air'], dipilih: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 100.0,
+        "sanitasi_air": 100.0,
+        "penunjang": 0.0,
+        "utilitas": 25.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "69830411",
+      "nama": "SD ISLAM TERPADU CENDEKIA",
+      "reason": "Semua skor rasio 0, default: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    },
+    {
+      "npsn": "70063774",
+      "nama": "SD ISLAM ZAWIYAH AL-AZHAR",
+      "reason": "Semua skor rasio 0, default: ruang_belajar",
+      "scores": {
+        "ruang_belajar": 0.0,
+        "sanitasi_air": 0.0,
+        "penunjang": 0.0,
+        "utilitas": 0.0,
+        "akses_lahan": 0.0
+      }
+    }
+  ]
+}
