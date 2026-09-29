@@ -640,6 +640,25 @@ bukan regresi Fase A.
 
 ---
 
+## 3.6 Ground Truth Manual Clustering (F3.0a, 2026-09-29) ✅ SELESAI
+
+Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 5 kategori hibrida:
+
+**Output:** `backend/app/ai_pipeline/experiments/manual_clusters.json`
+- 62 sekolah terkategorisasi ke 5 kategori
+- Distribusi: ruang_belajar 37, sanitasi_air 13, akses_lahan 6, utilitas 4, penunjang 2
+- Scoring: rasio kerusakan (% rusak/total unit) Dapodik + mention laporan teks
+- 27 tie-breaker cases (dokumentasi otomatis untuk review domain)
+
+**Script:** `backend/app/ai_pipeline/experiments/generate_ground_truth.py`
+- Baca `kondisi_sarana` + `laporan` teks bebas
+- Mapping Dapodik: ruang_belajar (kelas/lab/perpus), sanitasi_air (WC), penunjang (UKS/ibadah)
+- Kategori teks: utilitas (listrik/internet), akses_lahan (jalan/pagar/drainase)
+
+**Deliverable:** Ground truth siap sebagai benchmark evaluasi F3.1–F3.5 (AI pipeline ablation study).
+
+---
+
 ## Status Fase 3
 
 ### A. FEAT-004 — Klasterisasi Isu (AI Pipeline)
@@ -647,7 +666,7 @@ bukan regresi Fase A.
 | Task | Status |
 |------|--------|
 | F3.00 — Setup & Prerequisites for Ablation Study | ✅ Selesai |
-| F3.0a — Manual Clustering (Ground Truth) | ⬜ Belum |
+| F3.0a — Manual Clustering (Ground Truth) | ✅ Selesai (29 Sep 2026) |
 | F3.0b — Implementasi Ablation Framework | ⬜ Belum |
 | F3.0c — Running Test Suite A (Embedding Variations) | ⬜ Belum |
 | F3.0d — Running Test Suite B (TF-IDF Baseline + MiniLM) | ⬜ Belum |
@@ -686,7 +705,7 @@ bukan regresi Fase A.
 | F3.21 — Logging Aksi Sensitif | ⬜ Belum |
 | F3.22 — Dashboard Wilayah (FEAT-002) | ⬜ Belum |
 
-**Progress Fase 3: 5/24 task selesai.**
+**Progress Fase 3: 6/24 task selesai.**
 
 ---
 
