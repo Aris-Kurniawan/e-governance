@@ -659,6 +659,22 @@ Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 
 
 ---
 
+## 3.10 AI Pipeline Endpoints — F3.6, F3.8, F3.9, F3.10 (2026-09-29) ✅ SELESAI
+
+**Tujuan:** Enable AI pipeline integration via scheduled cron (F3.6) dan REST API endpoints (F3.8–F3.10).
+
+- **F3.6 (Cron script):** `backend/scripts/run_clustering.py` — batch processing harian 02:00 WIB untuk laporan `klaster_id IS NULL`, dikelompokkan per sekolah, menjalankan pipeline & kalkulasi skor prioritas.
+- **F3.8 (Manual Trigger):** `POST /ai/cluster` (admin, verifikator_dinas) — fallback manual rerun.
+- **F3.9 (Status Pipeline):** `GET /ai/status` — cek jumlah unclustered laporan & total klaster.
+- **F3.10 (Verifikasi Klaster):** `PUT /klaster/{klaster_id}/verifikasi` (verifikator_dinas) — update status (`terverifikasi`, `tidak_terverifikasi`, `perlu_info_tambahan`) + append ke `StatusLog`.
+
+**File baru:**
+- `backend/scripts/run_clustering.py`
+- `backend/app/routers/klaster.py`
+- `backend/tests/test_klaster.py`
+
+---
+
 ## Status Fase 3
 
 ### A. FEAT-004 — Klasterisasi Isu (AI Pipeline)
@@ -667,21 +683,21 @@ Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 
 |------|--------|
 | F3.00 — Setup & Prerequisites for Ablation Study | ✅ Selesai |
 | F3.0a — Manual Clustering (Ground Truth) | ✅ Selesai (29 Sep 2026) |
-| F3.0b — Implementasi Ablation Framework | ⬜ Belum |
-| F3.0c — Running Test Suite A (Embedding Variations) | ⬜ Belum |
-| F3.0d — Running Test Suite B (TF-IDF Baseline + MiniLM) | ⬜ Belum |
-| F3.0e — Analysis & Reporting | ⬜ Belum |
-| F3.0f — Implementation of Optimal Config | ⬜ Belum |
-| F3.1 — Embedding Teks (IndoBERT) | ⬜ Belum |
-| F3.2 — Reduksi Dimensi UMAP | ⬜ Belum |
-| F3.3 — Clustering HDBSCAN | ⬜ Belum |
-| F3.4 — Labeling TF-IDF | ⬜ Belum |
-| F3.5 — Formula Urgensi KBM + Skor Prioritas | ⬜ Belum |
-| F3.6 — Async Task Queue | ⬜ Belum |
+| F3.0b — Implementasi Ablation Framework | ✅ Selesai (29 Sep 2026) |
+| F3.0c — Running Test Suite A (Embedding Variations) | ✅ Selesai (29 Sep 2026) |
+| F3.0d — Running Test Suite B (TF-IDF Baseline + MiniLM) | ✅ Selesai (29 Sep 2026) |
+| F3.0e — Analysis & Reporting | ✅ Selesai (29 Sep 2026) |
+| F3.0f — Implementation of Optimal Config | ✅ Selesai (29 Sep 2026) |
+| F3.1 — Embedding Teks (default TF-IDF per ablation, dukung indobert/minilm) | ✅ Selesai (29 Sep 2026) |
+| F3.2 — Reduksi Dimensi UMAP (n_components=10) | ✅ Selesai (29 Sep 2026) |
+| F3.3 — Clustering HDBSCAN (min_cluster_size=3, min_samples=2) | ✅ Selesai (29 Sep 2026) |
+| F3.4 — Labeling TF-IDF (unigram + mapping 5 kategori) | ✅ Selesai (29 Sep 2026) |
+| F3.5 — Formula Urgensi KBM + Skor Prioritas (0.7×laporan + 0.3×Dapodik + vote) | ✅ Selesai (29 Sep 2026) |
+| F3.6 — Async Task Queue (cron harian 02:00 WIB + manual trigger) | ✅ Selesai (29 Sep 2026) |
 | F3.7 — Model SQLAlchemy (Klaster) | ✅ Selesai (dari F1.2) |
-| F3.8 — Endpoint Trigger Clustering | ⬜ Belum |
-| F3.9 — Endpoint Status Pipeline | ⬜ Belum |
-| F3.10 — Verifikasi Klaster | ⬜ Belum |
+| F3.8 — Endpoint Trigger Clustering (POST /ai/cluster) | ✅ Selesai (29 Sep 2026) |
+| F3.9 — Endpoint Status Pipeline (GET /ai/status) | ✅ Selesai (29 Sep 2026) |
+| F3.10 — Verifikasi Klaster (PUT /klaster/{id}/verifikasi) | ✅ Selesai (29 Sep 2026) |
 
 ### B. FEAT-005 — Voting Prioritas
 
@@ -705,7 +721,7 @@ Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 
 | F3.21 — Logging Aksi Sensitif | ⬜ Belum |
 | F3.22 — Dashboard Wilayah (FEAT-002) | ⬜ Belum |
 
-**Progress Fase 3: 6/24 task selesai.**
+**Progress Fase 3: 21/24 task selesai.**
 
 ---
 
