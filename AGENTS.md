@@ -15,13 +15,20 @@
 
 ## Git
 
+- **Commit per task** — satu task = satu commit, jangan digabung. Contoh:
+  - `F3.0b: Implementasi Ablation Framework` ✅
+  - `F3.0e: Analysis & Reporting` ✅
+  - `F3.0f: Implementation of Optimal Config` ✅
+  - `F3.6: Async Task Queue - Cron Script` ✅
+  - `F3.8-F3.10: AI Pipeline Endpoints` ✅
+- **Format commit:** `<task>: <deskripsi singkat>` (contoh: `F3.0f: Implementation of Optimal Config (A2+B1+C2+D1)`)
 - **Commit hanya saat user menyebut "commit"** — jangan commit/ push sendiri
 - **Push gagal** (tidak ada credentials GitHub) → user push manual
 - Branch: `backend`, `frontend`, `development`, `main`
 - **Line-ending:** blob branch `backend` = **CRLF**, branch `frontend` = **LF** (tidak ada .gitattributes/autocrlf)
   - Edit file backend → pertahankan CRLF (cek `git diff --stat`: kalau seluruh file berubah = line-ending rusak, perbaiki: `sed -i 's/$/\r/' <file>`)
   - Salin/ pindah antar branch → normalisasi `sed 's/\r$//'` atau lewat temp `git worktree`
-  - Jangan stage file yang hanya noise line-ending
+  - **Jangan stage/commit file yang hanya noise line-ending** (cek `git diff --stat`: kalau seluruh file berubah (>90% baris) = line-ending noise, jangan di-commit)
 
 ## Kontrak & Keputusan (Single Source of Truth)
 
