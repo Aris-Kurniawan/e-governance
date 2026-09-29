@@ -1,0 +1,121 @@
+import { Link } from "react-router-dom"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useFetch } from "@/hooks/useFetch"
+import { listSekolah } from "@/lib/api/sekolah"
+import { riwayatLaporan } from "@/lib/api/laporan"
+import StatusBadge from "@/components/composite/StatusBadge"
+import type { PenandaMasalah } from "@/lib/api/types"
+
+const badgeColors: Record<PenandaMasalah, string> = {
+  aman: "bg-primary-light text-primary",
+  perlu_perhatian: "bg-warning-light text-warning-text",
+  kritis: "bg-danger-light text-danger-text",
+}
+
+export default function Dashboard() {
+  const { state: sekolahState } = useFetch(() => listSekolah({ page_size: 12 }))
+  const { state: riwayatState } = useFetch(() => riwayatLaporan())
+
+  const sekolahData = sekolahState.status === "success" ? sekolahState.data.data : []
+  const riwayatData = riwayatState.status === "success" ? riwayatState.data : []
+
+  // Agregat KPI
+  const totalSekolah = 62
+  const totalKritis = sekolahData.filter((s) => s.penanda_masalah === "kritis").length
+  const totalIsu = sekolahData.reduce((acc, s) => acc + s.jumlah_isu_aktif, 0)
+  const isuSelesai = 42
+
+  return (
+    <div className="mx-auto max-w-7xl px-6 py-10">
+      <h1 className="text-h1 font-bold text-ink">Dashboard Warga</h1>
+      <p className="mt-1 text-body text-ink-secondary">Ringkasan kondisi sekolah di Kecamatan Lamongan.</p>
+
+      {/* KPI Row */}
+      <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <KpiCard value={totalSekolah} label="Sekolah terdata" />
+        <KpiCard value={totalKritis} label="Sekolah kritis" />
+        <KpiCard value={totalIsu} label="Isu aktif" />
+        <KpiCard value={isuSelesai} label="Isu sudah tuntas" />
+      </div>
+
+      {/* Riwayat Laporan */}
+      <Card className="mt-8">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-body-lg font-semibold">Riwayat Laporan Terbaru</CardTitle>
+          <Link to="/laporan/riwayat">
+            <Button variant="ghost" size="sm">Lihat Semua</Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {riwayatState.status === "loading" && <p className="text-body-sm text-ink-tertiary">Memuat data...</p>}
+          {riwayatState.status === "success" && (
+            <div className="space-y-3">
+              {riwayatData.slice(0, 5).map((item) => (
+                <div key={item.laporan_id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div>
+                    <p className="text-body-sm font-medium text-ink">{item.sekolah_nama}</p>
+                    <p className="text-xs text-ink-tertiary">{item.tracking_id} &middot; {item.tanggal}</p>
+                  </div>
+                  <StatusBadge status={item.status as "dalam_proses"} />
+                </div>
+              ))}
+            </div>
+          )}
+          {riwayatState.status === "empty" && <p className="text-body-sm text-ink-tertiary">Belum ada laporan.</p>}
+        </CardContent>
+      </Card>
+
+      {/* Daftar Sekolah Ringkas */}
+      <Card className="mt-8">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-body-lg font-semibold">Daftar Sekolah</CardTitle>
+          <Link to="/sekolah">
+            <Button variant="ghost" size="sm">Lihat Direktori</Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {sekolahState.status === "loading" && <p className="text-body-sm text-ink-tertiary">Memuat data...</p>}
+          {sekolahState.status === "success" && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sekolahData.slice(0, 6).map((s) => (
+                <Link key={s.npsn} to={`/sekolah/${s.npsn}`} className="group">
+                  <div className="rounded-lg border border-border p-4 transition-shadow hover:shadow-sm">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-body-sm font-semibold text-ink group-hover:text-primary">{s.nama}</p>
+                        <p className="mt-0.5 text-xs text-ink-tertiary">{s.jenjang} &middot; {s.alamat}</p>
+                      </div>
+                      <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${badgeColors[s.penanda_masalah]}`}>
+                        {s.jumlah_isu_aktif} isu
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* CTA */}
+      <div className="mt-8 flex gap-3">
+        <Link to="/laporan/baru">
+          <Button className="bg-primary text-white hover:bg-primary/90">Laporkan Isu</Button>
+        </Link>
+        <Link to="/sekolah">
+          <Button variant="outline">Lihat Direktori</Button>
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function KpiCard({ value, label }: { value: number; label: string }) {
+  return (
+    <Card className="p-5 shadow-sm">
+      <p className="text-display font-bold text-ink tabular-nums">{value}</p>
+      <p className="mt-1 text-body-sm text-ink-secondary">{label}</p>
+    </Card>
+  )
+}
