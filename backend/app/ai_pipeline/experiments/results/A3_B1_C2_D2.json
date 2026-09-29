@@ -1,0 +1,80 @@
+{
+  "config": "A3_B1_C2_D2",
+  "variants": {
+    "embedding": "A3",
+    "reduction": "B1",
+    "clustering": "C2",
+    "labeling": "D2"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.1300264596939087,
+    "davies_bouldin": 1.8629019587277063,
+    "ari": -0.030713066664805267,
+    "nmi": 0.20925136481248446,
+    "purity": 0.5476190476190477,
+    "homogeneity": 0.2626796236813446,
+    "completeness": 0.1738838947017443,
+    "v_measure": 0.20925136481248444,
+    "noise_ratio": 0.06666666666666667
+  },
+  "n_clusters": 7,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "sekolah",
+      "dan",
+      "internet",
+      "terputus",
+      "lambat dan"
+    ],
+    "1": [
+      "jumlah",
+      "dan",
+      "tidak",
+      "air",
+      "tidak ada"
+    ],
+    "2": [
+      "langit",
+      "kelas",
+      "banyak",
+      "langit langit",
+      "sebagian"
+    ],
+    "3": [
+      "dan",
+      "berbahaya",
+      "dan berbahaya",
+      "sekolah",
+      "listrik"
+    ],
+    "4": [
+      "tidak",
+      "memadai",
+      "ruang",
+      "rusak",
+      "guru"
+    ],
+    "5": [
+      "tidak",
+      "sekolah",
+      "dan",
+      "dan tidak",
+      "sekolah rusak"
+    ],
+    "6": [
+      "rusak",
+      "terancam",
+      "titik",
+      "keamanan",
+      "pagar sekolah"
+    ]
+  },
+  "runtime_sec": 0.04,
+  "generated_at": "2026-09-29T11:24:10"
+}

@@ -1,0 +1,72 @@
+{
+  "config": "A2_B3_C2_D3",
+  "variants": {
+    "embedding": "A2",
+    "reduction": "B3",
+    "clustering": "C2",
+    "labeling": "D3"
+  },
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.15106216073036194,
+    "davies_bouldin": 1.8532729620012809,
+    "ari": -0.03150610089236933,
+    "nmi": 0.2277302689918786,
+    "purity": 0.6363636363636364,
+    "homogeneity": 0.278616042814547,
+    "completeness": 0.1925613249212153,
+    "v_measure": 0.22773026899187856,
+    "noise_ratio": 0.26666666666666666
+  },
+  "n_clusters": 6,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "berbahaya",
+      "listrik",
+      "kabel",
+      "jalan",
+      "berlubang berbahaya"
+    ],
+    "1": [
+      "rusak bisa",
+      "dikunci",
+      "bisa dikunci",
+      "gerbang",
+      "gerbang rusak"
+    ],
+    "2": [
+      "terputus",
+      "sering",
+      "sering terputus",
+      "internet lambat",
+      "internet"
+    ],
+    "3": [
+      "titik",
+      "titik keamanan",
+      "keamanan terancam",
+      "keamanan",
+      "beberapa titik"
+    ],
+    "4": [
+      "jumlah",
+      "rusak",
+      "tersumbat",
+      "layak",
+      "guru"
+    ],
+    "5": [
+      "langit",
+      "kelas",
+      "banyak",
+      "langit langit",
+      "sebagian belum"
+    ]
+  },
+  "runtime_sec": 0.06,
+  "generated_at": "2026-09-29T09:55:49"
+}

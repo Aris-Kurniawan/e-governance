@@ -1,0 +1,44 @@
+{
+  "config": "A2_B3_C1_D2",
+  "variants": {
+    "embedding": "A2",
+    "reduction": "B3",
+    "clustering": "C1",
+    "labeling": "D2"
+  },
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.05449783056974411,
+    "davies_bouldin": 3.2795769289824803,
+    "ari": 0.04970372335721235,
+    "nmi": 0.055998337007681524,
+    "purity": 0.5555555555555556,
+    "homogeneity": 0.04233659761907719,
+    "completeness": 0.08267796974536593,
+    "v_measure": 0.055998337007681524,
+    "noise_ratio": 0.2
+  },
+  "n_clusters": 2,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "dan",
+      "sekolah",
+      "jumlah",
+      "tidak",
+      "air"
+    ],
+    "1": [
+      "tidak",
+      "dan",
+      "sekolah",
+      "kelas",
+      "langit"
+    ]
+  },
+  "runtime_sec": 0.03,
+  "generated_at": "2026-09-29T09:55:49"
+}

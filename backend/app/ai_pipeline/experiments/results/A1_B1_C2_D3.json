@@ -1,0 +1,66 @@
+{
+  "config": "A1_B1_C2_D3",
+  "variants": {
+    "embedding": "A1",
+    "reduction": "B1",
+    "clustering": "C2",
+    "labeling": "D3"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.12518370151519775,
+    "davies_bouldin": 1.8310706924373885,
+    "ari": 0.0027645637717615998,
+    "nmi": 0.2311108175440865,
+    "purity": 0.525,
+    "homogeneity": 0.2524557002757086,
+    "completeness": 0.21309393370729873,
+    "v_measure": 0.2311108175440865,
+    "noise_ratio": 0.1111111111111111
+  },
+  "n_clusters": 5,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "langit",
+      "kelas",
+      "belum",
+      "sering",
+      "lampu"
+    ],
+    "1": [
+      "rusak",
+      "bisa",
+      "berbahaya",
+      "gerbang rusak",
+      "dikunci"
+    ],
+    "2": [
+      "banyak",
+      "rusak",
+      "kelas",
+      "banyak rusak",
+      "kursi"
+    ],
+    "3": [
+      "jumlah",
+      "rusak",
+      "toilet",
+      "sangat",
+      "sangat kurang"
+    ],
+    "4": [
+      "air",
+      "tersumbat",
+      "tersumbat menyebabkan",
+      "menyebabkan banjir",
+      "drainase"
+    ]
+  },
+  "runtime_sec": 0.04,
+  "generated_at": "2026-09-29T11:19:56"
+}

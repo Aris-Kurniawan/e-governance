@@ -1,0 +1,52 @@
+{
+  "config": "A3_B3_C1_D2",
+  "variants": {
+    "embedding": "A3",
+    "reduction": "B3",
+    "clustering": "C1",
+    "labeling": "D2"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.0983915776014328,
+    "davies_bouldin": 2.1580720320584557,
+    "ari": -0.019543287591856084,
+    "nmi": 0.07327185013009167,
+    "purity": 0.5588235294117647,
+    "homogeneity": 0.06330129888341239,
+    "completeness": 0.0869705280792057,
+    "v_measure": 0.07327185013009166,
+    "noise_ratio": 0.24444444444444444
+  },
+  "n_clusters": 3,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "sekolah",
+      "dan",
+      "internet",
+      "sering",
+      "jaringan"
+    ],
+    "1": [
+      "tidak",
+      "dan",
+      "sekolah",
+      "rusak",
+      "dan tidak"
+    ],
+    "2": [
+      "dan berbahaya",
+      "berbahaya",
+      "dan",
+      "listrik",
+      "kabel"
+    ]
+  },
+  "runtime_sec": 0.03,
+  "generated_at": "2026-09-29T11:24:11"
+}

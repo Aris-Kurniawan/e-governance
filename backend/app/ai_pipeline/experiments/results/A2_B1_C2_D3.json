@@ -1,0 +1,72 @@
+{
+  "config": "A2_B1_C2_D3",
+  "variants": {
+    "embedding": "A2",
+    "reduction": "B1",
+    "clustering": "C2",
+    "labeling": "D3"
+  },
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.16658617556095123,
+    "davies_bouldin": 1.681654650634897,
+    "ari": 0.02385180732766864,
+    "nmi": 0.38738797504512873,
+    "purity": 0.7241379310344828,
+    "homogeneity": 0.47893053187372076,
+    "completeness": 0.325224682117586,
+    "v_measure": 0.3873879750451287,
+    "noise_ratio": 0.35555555555555557
+  },
+  "n_clusters": 6,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "terputus",
+      "sering terputus",
+      "sering",
+      "jaringan",
+      "jaringan internet"
+    ],
+    "1": [
+      "berbahaya",
+      "listrik",
+      "kabel",
+      "masuk",
+      "masuk berlubang"
+    ],
+    "2": [
+      "banyak",
+      "kelas",
+      "mati",
+      "penerangan",
+      "penerangan kelas"
+    ],
+    "3": [
+      "langit",
+      "kelas",
+      "belum",
+      "sebagian",
+      "langit kelas"
+    ],
+    "4": [
+      "rusak",
+      "banyak rusak",
+      "banyak",
+      "ruang",
+      "ruang guru"
+    ],
+    "5": [
+      "tersumbat",
+      "rusak",
+      "air",
+      "wc",
+      "menyebabkan"
+    ]
+  },
+  "runtime_sec": 0.05,
+  "generated_at": "2026-09-29T09:55:49"
+}

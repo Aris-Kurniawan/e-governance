@@ -1,0 +1,52 @@
+{
+  "config": "A1_B2_C2_D2",
+  "variants": {
+    "embedding": "A1",
+    "reduction": "B2",
+    "clustering": "C2",
+    "labeling": "D2"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.2780737280845642,
+    "davies_bouldin": 1.2717749769702014,
+    "ari": -0.09385648914419238,
+    "nmi": 0.126739318243342,
+    "purity": 0.5714285714285714,
+    "homogeneity": 0.12174357303889746,
+    "completeness": 0.13216260836422164,
+    "v_measure": 0.126739318243342,
+    "noise_ratio": 0.5333333333333333
+  },
+  "n_clusters": 3,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "langit",
+      "kelas",
+      "langit kelas",
+      "belum",
+      "belum diperbaiki"
+    ],
+    "1": [
+      "sekolah",
+      "tidak",
+      "dan",
+      "sekolah rusak",
+      "rusak"
+    ],
+    "2": [
+      "sekolah",
+      "tidak",
+      "dan",
+      "jumlah",
+      "tersumbat"
+    ]
+  },
+  "runtime_sec": 0.02,
+  "generated_at": "2026-09-29T11:19:56"
+}
