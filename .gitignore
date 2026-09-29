@@ -39,6 +39,9 @@ backend/app/dataset/raw/*
 debug_page.html
 dapodik_lamongan_raw.json
 
+# Ablation study cache (derivable, rebuild via run_ablation.py)
+backend/app/ai_pipeline/experiments/cache/
+
 # Node & Frontend
 node_modules/
 dist/
