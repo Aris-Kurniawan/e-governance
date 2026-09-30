@@ -79,3 +79,38 @@ async def get_vote_status(
             "vote_id": vote.id
         }
     }
+
+
+# F3.14 - Hitung Ulang Skor Prioritas
+require_admin = RoleChecker(["admin"])
+
+
+@router.put("/klaster/{klaster_id}/skor")
+async def recalculate_skor(
+    klaster_id: str,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """F3.14 — Hitung Ulang Skor Prioritas."""
+    klaster = db.scalar(select(Klaster).where(Klaster.id == klaster_id))
+    if not klaster:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Klaster tidak ditemukan")
+
+    laporan_list = db.scalars(select(Laporan).where(Laporan.klaster_id == klaster_id)).all()
+    kondisi_laporan = [{"kondisi_dilaporkan": lap.kondisi_dilaporkan or "baik"} for lap in laporan_list]
+    kondisi_dapodik = {"total": 0, "berat": 0, "sedang": 0, "ringan": 0}
+    votes = klaster.jumlah_vote_terhitung or 0
+    skor = calculate_priority_score(kondisi_laporan, kondisi_dapodik, votes)
+
+    klaster.skor_prioritas = Decimal(str(skor))
+    klaster.skor_keparahan = Decimal(str(skor - votes))
+    db.commit()
+
+    return {
+        "success": True,
+        "data": {
+            "klaster_id": klaster_id,
+            "skor_prioritas": float(skor),
+            "jumlah_vote_terhitung": votes
+        }
+    }
