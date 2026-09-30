@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import AuthRequiredModal from "@/components/composite/AuthRequiredModal"
 import { useAuth } from "@/context/AuthContext"
 import { 
@@ -16,11 +17,143 @@ import {
   Lock
 } from "lucide-react"
 
+type ToneMatriks = "baik" | "minor" | "kritis" | "netral"
+
+interface BarisMatriks {
+  npsn: string
+  nama: string
+  jenjang: "SD" | "SMP" | "SMA" | "SMK"
+  ruangKelas: { label: string; tone: ToneMatriks }
+  labIpa: { label: string; tone: ToneMatriks }
+  perpus: { label: string; tone: ToneMatriks }
+  sanitasi: { label: string; tone: ToneMatriks }
+  status: "Sesuai" | "Selisih Minor" | "Mismatch Kritis"
+}
+
+// Data matriks integritas (mock UI-only) — 5 entitas percontohan dari 24 terdaftar
+const matriksSekolah: BarisMatriks[] = [
+  {
+    npsn: "20506281",
+    nama: "SMAN 1 Sukodadi",
+    jenjang: "SMA",
+    ruangKelas: { label: "18", tone: "baik" },
+    labIpa: { label: "1 Rusak", tone: "kritis" },
+    perpus: { label: "1", tone: "baik" },
+    sanitasi: { label: "8", tone: "baik" },
+    status: "Mismatch Kritis",
+  },
+  {
+    npsn: "20506304",
+    nama: "SMPN 2 Lamongan",
+    jenjang: "SMP",
+    ruangKelas: { label: "24", tone: "baik" },
+    labIpa: { label: "2", tone: "baik" },
+    perpus: { label: "1", tone: "baik" },
+    sanitasi: { label: "-2 Unit", tone: "minor" },
+    status: "Selisih Minor",
+  },
+  {
+    npsn: "20506112",
+    nama: "SDN 5 Turi",
+    jenjang: "SD",
+    ruangKelas: { label: "6", tone: "baik" },
+    labIpa: { label: "—", tone: "netral" },
+    perpus: { label: "1", tone: "baik" },
+    sanitasi: { label: "3", tone: "baik" },
+    status: "Sesuai",
+  },
+  {
+    npsn: "20506450",
+    nama: "SMKN 1 Lamongan",
+    jenjang: "SMK",
+    ruangKelas: { label: "-1 R.Teori", tone: "minor" },
+    labIpa: { label: "5", tone: "baik" },
+    perpus: { label: "1", tone: "baik" },
+    sanitasi: { label: "12", tone: "baik" },
+    status: "Selisih Minor",
+  },
+  {
+    npsn: "20506303",
+    nama: "SMPN 1 Lamongan",
+    jenjang: "SMP",
+    ruangKelas: { label: "27", tone: "baik" },
+    labIpa: { label: "3", tone: "baik" },
+    perpus: { label: "1", tone: "baik" },
+    sanitasi: { label: "10", tone: "baik" },
+    status: "Sesuai",
+  },
+]
+
+const TONE_SEL: Record<Exclude<ToneMatriks, "netral">, string> = {
+  baik: "bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60",
+  minor: "bg-amber-50 font-bold text-amber-800 border border-amber-200/60",
+  kritis: "bg-rose-50 font-bold text-rose-700 border border-rose-200/60",
+}
+
+const STATUS_SEL: Record<BarisMatriks["status"], string> = {
+  Sesuai: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  "Selisih Minor": "bg-amber-50 text-amber-800 border-amber-200",
+  "Mismatch Kritis": "bg-rose-50 text-rose-800 border-rose-200",
+}
+
+const OPSI_JENJANG = ["Semua", "SD", "SMP", "SMA", "SMK"] as const
+
 export default function DashboardWilayah() {
   const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
   const [isAuthRequiredOpen, setIsAuthRequiredOpen] = useState(false)
   const [selectedSchoolForReport, setSelectedSchoolForReport] = useState<{ npsn: string; nama: string } | null>(null)
+  const [filterJenjang, setFilterJenjang] = useState<string>("Semua")
+
+  const filteredRows =
+    filterJenjang === "Semua"
+      ? matriksSekolah
+      : matriksSekolah.filter((r) => r.jenjang === filterJenjang)
+
+  const renderSel = (cell: { label: string; tone: ToneMatriks }) =>
+    cell.tone === "netral" ? (
+      <span className="text-slate-400">{cell.label}</span>
+    ) : (
+      <span className={`inline-block rounded px-2 py-0.5 text-sm ${TONE_SEL[cell.tone]}`}>{cell.label}</span>
+    )
+
+  // Ekspor CSV dari baris matriks hasil filter jenjang (tampilan yang terlihat)
+  const handleUnduhCsv = () => {
+    const headers = [
+      "NPSN",
+      "Nama Sekolah",
+      "Jenjang",
+      "Ruang Kelas",
+      "Lab IPA/Kimia",
+      "Perpustakaan",
+      "Sanitasi/Toilet",
+      "Status Integritas",
+    ]
+    const rows = filteredRows.map((r) => [
+      `"${r.npsn}"`,
+      `"${r.nama}"`,
+      `"${r.jenjang}"`,
+      `"${r.ruangKelas.label}"`,
+      `"${r.labIpa.label}"`,
+      `"${r.perpus.label}"`,
+      `"${r.sanitasi.label}"`,
+      `"${r.status}"`,
+    ])
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n")
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    const saringan = filterJenjang !== "Semua" ? `${filterJenjang.toLowerCase()}_` : ""
+    link.setAttribute(
+      "download",
+      `matriks_integritas_sarpras_${saringan}${new Date().toISOString().slice(0, 10)}.csv`
+    )
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const handleReportClick = (school?: { npsn: string; nama: string }) => {
     if (!isAuthenticated) {
@@ -197,10 +330,36 @@ export default function DashboardWilayah() {
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> Laporkan Temuan
                   </Button>
-                  <Button variant="outline" size="sm" className="h-8 text-xs font-medium text-slate-700 border-slate-200">
-                    <Filter className="h-3.5 w-3.5 mr-1" /> Filter Jenjang
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-8 text-xs font-medium text-slate-700 border-slate-200">
+                  <Select value={filterJenjang} onValueChange={setFilterJenjang}>
+                    <SelectTrigger
+                      aria-label="Filter jenjang sekolah"
+                      className={`h-8 w-auto gap-2 rounded-lg border-slate-200 bg-white px-3 text-xs font-medium shadow-sm ${
+                        filterJenjang !== "Semua"
+                          ? "border-blue-300 bg-blue-50 text-[#0B3052]"
+                          : "text-slate-700"
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        <Filter className="h-3.5 w-3.5" />
+                        {filterJenjang === "Semua"
+                          ? "Filter Jenjang"
+                          : `Jenjang: ${filterJenjang}`}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OPSI_JENJANG.map((j) => (
+                        <SelectItem key={j} value={j} className="text-xs">
+                          {j}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUnduhCsv}
+                    className="h-8 text-xs font-medium text-slate-700 border-slate-200 cursor-pointer"
+                  >
                     <Download className="h-3.5 w-3.5 mr-1" /> Unduh CSV
                   </Button>
                 </div>
@@ -208,7 +367,7 @@ export default function DashboardWilayah() {
 
               {/* Table */}
               <div className="overflow-x-auto mt-4">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-slate-100 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                       <th className="py-3 px-3">NAMA SEKOLAH</th>
@@ -221,188 +380,48 @@ export default function DashboardWilayah() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {/* Row 1 */}
-                    <tr className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-3">
-                        <Link to="/sekolah/20506281" className="font-bold text-slate-900 hover:text-[#0B3052] block">
-                          SMAN 1 Sukodadi
-                        </Link>
-                        <span className="text-[11px] text-slate-400">NPSN: 20506281 · Negeri</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">18</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-rose-50 font-bold text-rose-700 border border-rose-200/60">1 Rusak</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">1</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">8</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <span className="inline-block rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-800 border border-rose-200">
-                          Mismatch Kritis
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleReportClick({ npsn: "20506281", nama: "SMAN 1 Sukodadi" })}
-                          className="h-7 px-2.5 text-[11px] font-bold text-[#0B3052] border-slate-200 hover:bg-blue-50 cursor-pointer"
-                        >
-                          Lapor
-                        </Button>
-                      </td>
-                    </tr>
-
-                    {/* Row 2 */}
-                    <tr className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-3">
-                        <Link to="/sekolah/20506304" className="font-bold text-slate-900 hover:text-[#0B3052] block">
-                          SMPN 2 Lamongan
-                        </Link>
-                        <span className="text-[11px] text-slate-400">NPSN: 20506304 · Negeri</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">24</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">2</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">1</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-amber-50 font-bold text-amber-800 border border-amber-200/60">-2 Unit</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <span className="inline-block rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800 border border-amber-200">
-                          Selisih Minor
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleReportClick({ npsn: "20506304", nama: "SMPN 2 Lamongan" })}
-                          className="h-7 px-2.5 text-[11px] font-bold text-[#0B3052] border-slate-200 hover:bg-blue-50 cursor-pointer"
-                        >
-                          Lapor
-                        </Button>
-                      </td>
-                    </tr>
-
-                    {/* Row 3 */}
-                    <tr className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-3">
-                        <Link to="/sekolah/20506112" className="font-bold text-slate-900 hover:text-[#0B3052] block">
-                          SDN 5 Turi
-                        </Link>
-                        <span className="text-[11px] text-slate-400">NPSN: 20506112 · Negeri</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">6</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center text-slate-400">—</td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">1</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">3</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <span className="inline-block rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-200">
-                          Sesuai
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleReportClick({ npsn: "20506112", nama: "SDN 5 Turi" })}
-                          className="h-7 px-2.5 text-[11px] font-bold text-[#0B3052] border-slate-200 hover:bg-blue-50 cursor-pointer"
-                        >
-                          Lapor
-                        </Button>
-                      </td>
-                    </tr>
-
-                    {/* Row 4 */}
-                    <tr className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-3">
-                        <Link to="/sekolah/20506450" className="font-bold text-slate-900 hover:text-[#0B3052] block">
-                          SMKN 1 Lamongan
-                        </Link>
-                        <span className="text-[11px] text-slate-400">NPSN: 20506450 · Negeri</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-amber-50 font-bold text-amber-800 border border-amber-200/60">-1 R.Teori</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">5</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">1</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">12</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <span className="inline-block rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800 border border-amber-200">
-                          Selisih Minor
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleReportClick({ npsn: "20506450", nama: "SMKN 1 Lamongan" })}
-                          className="h-7 px-2.5 text-[11px] font-bold text-[#0B3052] border-slate-200 hover:bg-blue-50 cursor-pointer"
-                        >
-                          Lapor
-                        </Button>
-                      </td>
-                    </tr>
-
-                    {/* Row 5 */}
-                    <tr className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-3">
-                        <Link to="/sekolah/20506303" className="font-bold text-slate-900 hover:text-[#0B3052] block">
-                          SMPN 1 Lamongan
-                        </Link>
-                        <span className="text-[11px] text-slate-400">NPSN: 20506303 · Negeri</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">27</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">3</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">1</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60">10</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <span className="inline-block rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-200">
-                          Sesuai
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleReportClick({ npsn: "20506303", nama: "SMPN 1 Lamongan" })}
-                          className="h-7 px-2.5 text-[11px] font-bold text-[#0B3052] border-slate-200 hover:bg-blue-50 cursor-pointer"
-                        >
-                          Lapor
-                        </Button>
-                      </td>
-                    </tr>
+                    {filteredRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-xs text-slate-400">
+                          Tidak ada sekolah dengan jenjang {filterJenjang}.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredRows.map((row) => (
+                        <tr key={row.npsn} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3.5 px-3">
+                            <Link
+                              to={`/sekolah/${row.npsn}`}
+                              className="font-bold text-slate-900 hover:text-[#0B3052] block"
+                            >
+                              {row.nama}
+                            </Link>
+                            <span className="text-[11px] text-slate-400">NPSN: {row.npsn} · Negeri</span>
+                          </td>
+                          <td className="py-3.5 px-3 text-center">{renderSel(row.ruangKelas)}</td>
+                          <td className="py-3.5 px-3 text-center">{renderSel(row.labIpa)}</td>
+                          <td className="py-3.5 px-3 text-center">{renderSel(row.perpus)}</td>
+                          <td className="py-3.5 px-3 text-center">{renderSel(row.sanitasi)}</td>
+                          <td className="py-3.5 px-3 text-right">
+                            <span
+                              className={`inline-block rounded-full border px-2.5 py-1 text-[11px] font-bold ${STATUS_SEL[row.status]}`}
+                            >
+                              {row.status}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-3 text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleReportClick({ npsn: row.npsn, nama: row.nama })}
+                              className="h-7 px-2.5 text-[11px] font-bold text-[#0B3052] border-slate-200 hover:bg-blue-50 cursor-pointer"
+                            >
+                              Lapor
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -415,7 +434,10 @@ export default function DashboardWilayah() {
                   <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> Selisih Minor</span>
                   <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Mismatch Kritis</span>
                 </div>
-                <span>Menampilkan 5 dari 24 entitas terdaftar</span>
+                <span>
+                  Menampilkan {filteredRows.length} dari 24 entitas terdaftar
+                  {filterJenjang !== "Semua" ? ` · difilter jenjang ${filterJenjang}` : ""}
+                </span>
               </div>
             </div>
           </div>

@@ -10,8 +10,14 @@ export default function Landing() {
   const navigate = useNavigate()
   const [isAuthRequiredOpen, setIsAuthRequiredOpen] = useState(false)
 
+  // Gerbang autentikasi pelaporan (CHANGELOG "Proteksi & Gerbang Autentikasi Pelaporan"):
+  // belum login → modal Wajib Masuk / Daftar; sudah login → langsung ke form laporan.
   const handleMulaiLapor = () => {
-    navigate("/sekolah")
+    if (!isAuthenticated) {
+      setIsAuthRequiredOpen(true)
+    } else {
+      navigate("/laporan/baru")
+    }
   }
 
   return (

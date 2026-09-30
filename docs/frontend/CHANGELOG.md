@@ -19,6 +19,12 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
 ## [Belum Rilis]
 
 ### Ditambahkan
+- **Fitur Filter Jenjang & Ekspor CSV pada Matriks Integritas Dashboard Wilayah (`src/pages/warga/DashboardWilayah.tsx`)**:
+  - Tombol **Filter Jenjang** sebelumnya hanya tampilan (tanpa `onClick`); kini membuka dropdown pilihan `Semua / SD / SMP / SMA / SMK` (komponen `Select` shadcn) yang menyaring baris tabel matriks secara langsung — label tombol berubah menjadi `Jenjang: <pilihan>` dengan aksen biru saat filter aktif.
+  - Tombol **Unduh CSV** kini mengekspor baris hasil filter menjadi berkas `matriks_integritas_sarpras_<jenjang?>_<tanggal>.csv` (kolom NPSN, Nama Sekolah, Jenjang, Ruang Kelas, Lab IPA/Kimia, Perpustakaan, Sanitasi/Toilet, Status Integritas), mengikuti pola ekspor CSV Direktori Sekolah.
+  - 5 baris tabel di-refactor dari JSX hardcoded menjadi array `matriksSekolah` (type `BarisMatriks` + token warna `TONE_SEL`/`STATUS_SEL`) sehingga tampilan, filter, dan ekspor memakai satu sumber data.
+  - Footer tabel kini menampilkan jumlah baris hasil filter ("Menampilkan X dari 24 entitas terdaftar · difilter jenjang …") dan empty state "Tidak ada sekolah dengan jenjang …".
+  - `npm run build` sukses; `/laporan/wilayah` dan `/dashboard` → HTTP 200.
 - **Implementasi Halaman Dashboard Wilayah (`src/pages/warga/DashboardWilayah.tsx`)**:
   - Halaman audit partisipatif sarana sekolah tingkat kecamatan dengan rute `/laporan/wilayah` dan `/dashboard`.
   - Banner status sinkronisasi Dapodik real-time (Kecamatan Lamongan - Semester Genap).
@@ -40,6 +46,12 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - State `404` "Klaster tidak ditemukan" untuk ID tak dikenal.
 
 ### Diubah
+- **Teks Tabel Matriks Integritas Dashboard Wilayah Satu Baris (`src/pages/warga/DashboardWilayah.tsx`)**:
+  - Class `whitespace-nowrap` ditambahkan ke elemen `<table>` sehingga seluruh sel (header RUANG KELAS/LAB IPA-KIMIA/STATUS INTEGRITAS, nama sekolah, baris NPSN · Negeri, pill metrik "1 Rusak"/"−1 R.Teori", dan badge status) tidak lagi turun baris; bila lebar layar kurang, tabel dapat digulir horizontal via pembungkus `overflow-x-auto`.
+  - `npm run build` sukses; `/laporan/wilayah` → HTTP 200.
+- **Perbesaran Ukuran Angka Matriks Integritas Dashboard Wilayah (`src/pages/warga/DashboardWilayah.tsx`)**:
+  - Angka pada pill metrik tabel (Ruang Kelas, Lab IPA/Kimia, Perpustakaan, Sanitasi/Toilet) dinaikkan dari `text-xs` (12px) menjadi `text-sm` (14px) agar lebih terbaca; pill netral "—" tetap berukuran kecil.
+  - `npm run build` sukses; `/laporan/wilayah` → HTTP 200.
 - **Penyelarasan 3 Kartu Detail Sekolah dengan TASK_GUIDE F2.6 & DECISIONS D-20 (`src/pages/warga/DetailSekolah.tsx`, `src/mocks/sekolahDirektori.ts`)**:
   - Baris kartu metrik kini persis mengikuti spesifikasi F2.6: **Kartu 1 — Audit Sarpras**, **Kartu 2 — Profil Dapodik**, **Kartu 3 — Isu & Klaster Warga**.
   - **Kartu 2 — Profil Dapodik** (baru): badge akreditasi, nama kepala sekolah, jenjang, dan badge status sekolah; footer sumber data Dapodik + TA berjalan. Field `kepalaSekolah` ditambahkan ke `SekolahBaseline` (pool nama deterministik per NPSN).
@@ -111,6 +123,13 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - **Tahap 2 (Verifikasi Identitas)**: Estimasi waktu 2 menit, progress bar 100%, kartu pilihan 4 peran (Pelajar/Siswa Aktif dengan badge *Saksi Kunci*, Orang Tua/Wali, Pengurus Komite, Warga Umum).
   - Integrasi kotak verifikasi Dapodik peserta didik (dropdown sekolah, validasi NISN 10-digit dengan badge status, area unggah foto kartu pelajar berbingkai dashed hijau).
   - Input NIK terenkripsi 16-digit sah, dropdown kelurahan/desa domisili di Lamongan, serta banner jaminan keamanan data anak UU PDP No. 27/2022.
+
+### Diperbaiki
+- **Gerbang Login Tombol "Mulai Laporkan Temuan" di Beranda (`src/pages/warga/Landing.tsx`)**:
+  - Tombol hero **Mulai Laporkan Temuan** sebelumnya selalu `navigate("/sekolah")` tanpa memeriksa sesi, padahal `AuthRequiredModal` sudah ter-mount tetapi tidak pernah dibuka — warga dapat memulai alur pelaporan tanpa masuk akun, tidak sesuai catatan entri "Proteksi & Gerbang Autentikasi Pelaporan" di changelog ini.
+  - Kini `handleMulaiLapor` mengecek sesi: belum login → modal *Wajib Masuk / Daftar Akun* terbuka dengan `redirect=/laporan/baru&action=report`; sudah login → langsung diarahkan ke form pelaporan.
+  - Audit seluruh titik masuk pelaporan terhadap `FLOWS.md` (Alur Warga node B & G), `PAGE_STATES.md` §A1/A4, serta `INTERFACES.md` `POST /laporan` — Dashboard Wilayah, Detail Sekolah (tombol lapor + sanggah + auto-buka `action=report` setelah login), Riwayat Laporan, rute `/laporan/baru` via `ProtectedRoute`, banner CTA Beranda, dan jalur Registrasi (`redirect` + `action`) sudah benar; hanya tombol hero Beranda yang lupa gerbang.
+  - `npm run build` sukses; `/`, `/laporan/baru`, `/sekolah/20532361` → HTTP 200.
 
 ---
 
