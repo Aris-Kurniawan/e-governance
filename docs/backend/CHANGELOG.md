@@ -675,6 +675,19 @@ Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 
 
 ---
 
+## 3.11 Envelope Respons & Inventaris Endpoint (2026-09-30) ✅ SELESAI
+
+**Tujuan:** Samakan bentuk respons backend dengan kontrak `INTERFACES.md` §0.1/§0.3 sebelum FE integrasi.
+
+- **Respons sukses:** hapus field `success: true` dari semua router (`klaster`, `vote`, `dashboard`, `audit`); `message` dipindah ke dalam `data`. Sekarang konsisten `{ data, meta? }`.
+- **Respons gagal:** exception handler global di `app/main.py` — `HTTPException` → `{ error: { code, message } }` dengan mapping kode standar §0.3 (`VALIDATION_ERROR/UNAUTHORIZED/FORBIDDEN/NOT_FOUND/ALREADY_VOTED/REASON_REQUIRED/INTERNAL_ERROR`); `RequestValidationError` (pydantic) → 400 `VALIDATION_ERROR` + `details` per-field (sebelumnya 422 bawaan FastAPI).
+- **Test:** 39/39 pass — fix fixture `login()` di `test_klaster.py` (baca envelope `data`), assert menyesuaikan envelope baru.
+- **`docs/frontend/API_CLIENT.md`:** inventaris 26 endpoint aktif + tabel perbedaan path backend vs `INTERFACES.md` (vote/riwayat/upload) + catat `GET /klaster` & `GET /klaster/{id}` **belum ada** di backend.
+
+**Commit:** `b90b2ae` (backend), `c47cd25` (docs).
+
+---
+
 ## Status Fase 3
 
 ### A. FEAT-004 — Klasterisasi Isu (AI Pipeline)
