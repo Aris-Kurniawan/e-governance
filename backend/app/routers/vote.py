@@ -114,3 +114,37 @@ async def recalculate_skor(
             "jumlah_vote_terhitung": votes
         }
     }
+
+
+# F3.15 - Override Prioritas
+require_kepala_dinas = RoleChecker(["kepala_dinas"])
+
+
+@router.put("/klaster/{klaster_id}/override")
+async def override_prioritas(
+    klaster_id: str,
+    urutan_prioritas: int,
+    alasan: str,
+    _: User = Depends(require_kepala_dinas),
+    db: Session = Depends(get_db),
+):
+    """F3.15 — Override Prioritas oleh Kepala Dinas."""
+    if not alasan:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="alasan wajib diisi")
+
+    klaster = db.scalar(select(Klaster).where(Klaster.id == klaster_id))
+    if not klaster:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Klaster tidak ditemukan")
+
+    klaster.urutan_prioritas_override = urutan_prioritas
+    klaster.alasan_override = alasan
+    db.commit()
+
+    return {
+        "success": True,
+        "data": {
+            "klaster_id": klaster_id,
+            "urutan_prioritas_override": urutan_prioritas,
+            "alasan_override": alasan
+        }
+    }
