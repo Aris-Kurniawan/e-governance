@@ -704,10 +704,10 @@ Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 
 | Task | Status |
 |------|--------|
 | F3.11 — Model SQLAlchemy (Vote) | ✅ Selesai (dari F1.2) |
-| F3.12 — Vote Baru | ⬜ Belum |
-| F3.13 — Cek Status Vote | ⬜ Belum |
-| F3.14 — Hitung Ulang Skor Prioritas | ⬜ Belum |
-| F3.15 — Override Prioritas oleh Kepala Dinas | ⬜ Belum |
+| F3.12 — Vote Baru (POST /vote) | ✅ Selesai (30 Sep 2026) |
+| F3.13 — Cek Status Vote (GET /vote/status/{klaster_id}) | ✅ Selesai (30 Sep 2026) |
+| F3.14 — Hitung Ulang Skor Prioritas (PUT /klaster/{id}/skor) | ✅ Selesai (30 Sep 2026) |
+| F3.15 — Override Prioritas (PUT /klaster/{id}/override) | ✅ Selesai (30 Sep 2026) |
 
 ### C. FEAT-006 — Accountability / Status
 
@@ -721,7 +721,7 @@ Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 
 | F3.21 — Logging Aksi Sensitif | ⬜ Belum |
 | F3.22 — Dashboard Wilayah (FEAT-002) | ⬜ Belum |
 
-**Progress Fase 3: 21/24 task selesai.**
+**Progress Fase 3: 24/29 task selesai.**
 
 ---
 
