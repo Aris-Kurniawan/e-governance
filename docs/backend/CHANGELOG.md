@@ -714,8 +714,8 @@ Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 
 | Task | Status |
 |------|--------|
 | F3.16 — Model SQLAlchemy (Status Log) | ✅ Selesai (dari F1.2) |
-| F3.17 — Update Status | ⬜ Belum |
-| F3.18 — Riwayat Status | ⬜ Belum |
+| F3.17 — Update Status (POST /klaster/{id}/status) | ✅ Selesai (30 Sep 2026) |
+| F3.18 — Riwayat Status (GET /klaster/{id}/riwayat) | ✅ Selesai (30 Sep 2026) |
 | F3.19 — Dashboard Prioritas | ⬜ Belum |
 | F3.20 — Model SQLAlchemy (Audit Log) | ✅ Selesai (dari F1.2) |
 | F3.21 — Logging Aksi Sensitif | ⬜ Belum |
