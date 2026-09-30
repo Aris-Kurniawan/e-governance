@@ -264,3 +264,27 @@ async def update_status(
         "message": f"Status updated to {status}",
         "data": {"klaster_id": klaster_id, "status": status}
     }
+
+
+# F3.18 — GET /klaster/{id}/riwayat (Riwayat Status)
+@verifikasi_router.get("/{klaster_id}/riwayat")
+async def get_riwayat_status(
+    klaster_id: str,
+    db: Session = Depends(get_db),
+):
+    """F3.18 — Riwayat Status."""
+    logs = db.scalars(
+        select(StatusLog).where(StatusLog.klaster_id == klaster_id).order_by(StatusLog.created_at.desc())
+    ).all()
+    
+    return {
+        "success": True,
+        "data": [
+            {
+                "status": log.status,
+                "alasan": log.alasan,
+                "timestamp": log.created_at.isoformat() if log.created_at else None
+            }
+            for log in logs
+        ]
+    }
