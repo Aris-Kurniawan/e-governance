@@ -217,3 +217,50 @@ async def verify_klaster(
         "message": f"Klaster {klaster_id} verified with status {status}",
         "data": {"klaster_id": klaster_id, "status": status}
     }
+
+
+# F3.17 - Update Status
+require_verif_kepala = RoleChecker(["verifikator_dinas", "kepala_dinas"])
+
+
+@verifikasi_router.post("/{klaster_id}/status")
+async def update_status(
+    klaster_id: str,
+    status: str,
+    alasan: str | None = None,
+    current_user: User = Depends(require_verif_kepala),
+    db: Session = Depends(get_db),
+):
+    """F3.17 — Update Status."""
+    valid_status = [
+        "menunggu_verifikasi", "perlu_info_tambahan", "tidak_terverifikasi",
+        "terverifikasi", "dalam_antrian_prioritas", "dalam_proses",
+        "selesai", "tidak_dapat_ditindaklanjuti",
+    ]
+    if status not in valid_status:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of {valid_status}")
+
+    if status in ["tidak_terverifikasi", "tidak_dapat_ditindaklanjuti"] and not alasan:
+        raise HTTPException(status_code=422, detail="alasan wajib untuk status ini")
+
+    klaster = db.scalar(select(Klaster).where(Klaster.id == klaster_id))
+    if not klaster:
+        raise HTTPException(status_code=404, detail="Klaster tidak ditemukan")
+
+    klaster.status_penanganan = status
+    klaster.updated_at = datetime.now()
+    db.add(klaster)
+    log = StatusLog(
+        klaster_id=klaster_id,
+        status=status,
+        alasan=alasan,
+        actor_user_id=current_user.id,
+    )
+    db.add(log)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Status updated to {status}",
+        "data": {"klaster_id": klaster_id, "status": status}
+    }
