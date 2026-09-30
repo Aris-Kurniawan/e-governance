@@ -7,7 +7,7 @@ FastAPI application factory.
 from fastapi import FastAPI
 
 from app.core.config import settings
-from app.routers import auth, sekolah, laporan, upload, ingest, sanggahan, klaster, vote
+from app.routers import auth, sekolah, laporan, upload, ingest, sanggahan, klaster, vote, dashboard
 
 app = FastAPI(
     title="SIMAKIS API",
@@ -26,6 +26,8 @@ app.include_router(ingest.router)
 app.include_router(sanggahan.router)
 app.include_router(klaster.router)
 app.include_router(klaster.verifikasi_router)
+app.include_router(vote.router)
+app.include_router(dashboard.router)
 
 
 
