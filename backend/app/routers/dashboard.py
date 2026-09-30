@@ -36,7 +36,6 @@ async def get_dashboard_prioritas(
     results = db.execute(query).all()
     
     return {
-        "success": True,
         "data": [
             {
                 "klaster_id": k.id,
@@ -88,7 +87,6 @@ async def get_dashboard_wilayah(
     top_sekolah = db.execute(top_sekolah_q).all()
     
     return {
-        "success": True,
         "data": {
             "jumlah_sekolah": total_sekolah,
             "jumlah_klaster_aktif": total_klaster,

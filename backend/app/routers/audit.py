@@ -41,7 +41,6 @@ async def get_audit_log(
     total_pages = (total + page_size - 1) // page_size if total else 1
     
     return {
-        "success": True,
         "data": [
             {
                 "audit_id": log.id,

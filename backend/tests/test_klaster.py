@@ -50,7 +50,7 @@ def create_test_user(db, role="warga_terverifikasi"):
 
 def login(client, email):
     resp = client.post("/auth/login", json={"email": email, "password": "password"})
-    return resp.json()["access_token"]
+    return resp.json()["data"]["access_token"]
 
 
 class TestKlasterRouter:
@@ -76,7 +76,6 @@ class TestKlasterRouter:
         response = client.post("/ai/cluster")
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
         assert "klaster_created" in data["data"]
     
     def test_trigger_cluster_verifikator(self, db_session):
@@ -103,7 +102,6 @@ class TestKlasterRouter:
         response = client.get("/ai/status")
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
         assert "unclustered_laporan" in data["data"]
         assert "total_klaster" in data["data"]
     
@@ -122,7 +120,7 @@ class TestKlasterRouter:
         
         response = client.put("/klaster/klaster-id-xyz/verifikasi?status=tidak_terverifikasi")
         assert response.status_code == 400
-        assert "alasan wajib" in response.json()["detail"]
+        assert "alasan wajib" in response.json()["error"]["message"]
     
     def test_verify_klaster_invalid_status(self, db_session):
         user = create_test_user(db_session, role="verifikator_dinas")

@@ -61,7 +61,8 @@ def test_register_invalid_nik_length(client):
             "password": "securepassword123",
         },
     )
-    assert response.status_code == 422
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
 
 
 def test_login_and_get_me(client):

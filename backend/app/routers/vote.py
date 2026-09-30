@@ -48,7 +48,7 @@ async def create_vote(
     klaster.skor_keparahan = Decimal(str(skor - klaster.jumlah_vote_terhitung))
 
     db.commit()
-    return {"success": True, "data": {"vote_id": vote.id, "status_vote": vote.status_vote}}
+    return {"data": {"vote_id": vote.id, "status_vote": vote.status_vote}}
 
 
 @router.get("/status/{klaster_id}")
@@ -64,7 +64,6 @@ async def get_vote_status(
     
     if not vote:
         return {
-            "success": True,
             "data": {
                 "has_voted": False,
                 "status_vote": None
@@ -72,7 +71,6 @@ async def get_vote_status(
         }
     
     return {
-        "success": True,
         "data": {
             "has_voted": True,
             "status_vote": vote.status_vote,
@@ -107,7 +105,6 @@ async def recalculate_skor(
     db.commit()
 
     return {
-        "success": True,
         "data": {
             "klaster_id": klaster_id,
             "skor_prioritas": float(skor),
@@ -141,7 +138,6 @@ async def override_prioritas(
     db.commit()
 
     return {
-        "success": True,
         "data": {
             "klaster_id": klaster_id,
             "urutan_prioritas_override": urutan_prioritas,

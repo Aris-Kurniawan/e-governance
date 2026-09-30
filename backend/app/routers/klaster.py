@@ -133,9 +133,10 @@ async def trigger_clustering(
     try:
         total = run_clustering_sync(db, force_reprocess=force_reprocess)
         return {
-            "success": True,
-            "message": f"Clustering triggered. Created {total} klaster.",
-            "data": {"klaster_created": total}
+            "data": {
+                "klaster_created": total,
+                "message": f"Clustering triggered. Created {total} klaster.",
+            }
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -158,12 +159,11 @@ async def get_clustering_status(
     total_klaster = db.scalar(stmt_klaster) or 0
     
     return {
-        "success": True,
-        "message": "Pipeline status",
         "data": {
             "unclustered_laporan": unclustered,
             "total_klaster": total_klaster,
             "last_run": "N/A (no cron log yet)",
+            "message": "Pipeline status",
         }
     }
 
@@ -213,9 +213,11 @@ async def verify_klaster(
     db.commit()
     
     return {
-        "success": True,
-        "message": f"Klaster {klaster_id} verified with status {status}",
-        "data": {"klaster_id": klaster_id, "status": status}
+        "data": {
+            "klaster_id": klaster_id,
+            "status": status,
+            "message": f"Klaster {klaster_id} verified with status {status}",
+        }
     }
 
 
@@ -260,9 +262,11 @@ async def update_status(
     db.commit()
 
     return {
-        "success": True,
-        "message": f"Status updated to {status}",
-        "data": {"klaster_id": klaster_id, "status": status}
+        "data": {
+            "klaster_id": klaster_id,
+            "status": status,
+            "message": f"Status updated to {status}",
+        }
     }
 
 
@@ -278,7 +282,6 @@ async def get_riwayat_status(
     ).all()
     
     return {
-        "success": True,
         "data": [
             {
                 "status": log.status,
