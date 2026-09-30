@@ -5,7 +5,7 @@
 > `universal/INTERFACES.md` menjadi tipe TypeScript, konfigurasi client, dan
 > pola pemakaian di komponen. Kalau ada perbedaan, `INTERFACES.md` menang.
 
-**Update terakhir:** 15 September 2026
+**Update terakhir:** 30 September 2026 (sinkron dengan backend — 26 endpoint aktif)
 
 ---
 
@@ -245,7 +245,53 @@ async function request<T>(
 
 ---
 
-## 5. Peta Pemakaian per Halaman
+## 5. Inventaris Endpoint (26, sinkron dengan backend 30 Sep 2026)
+
+| # | Method | Endpoint | Akses | Status |
+|---|---|---|---|---|
+| 1 | POST | `/auth/register` | Publik | ✅ |
+| 2 | POST | `/auth/login` | Publik | ✅ |
+| 3 | POST | `/auth/refresh` | Publik | ✅ |
+| 4 | GET | `/auth/me` | Login | ✅ |
+| 5 | GET | `/sekolah` | Publik | ✅ |
+| 6 | GET | `/sekolah/{npsn}` | Publik | ✅ |
+| 7 | GET | `/sekolah/{npsn}/sanggahan` | Publik | ✅ |
+| 8 | POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | ✅ |
+| 9 | GET | `/laporan/riwayat` | `warga_terverifikasi`, `komite_sekolah` | ✅ |
+| 10 | GET | `/laporan/{id}` | Pemilik / dinas | ✅ |
+| 11 | POST | `/upload/laporan` | Pemilik laporan (multipart) | ✅ |
+| 12 | DELETE | `/upload/{storage_key}` | Pemilik laporan | ✅ |
+| 13 | POST | `/ingest/dapodik` | `admin`, `verifikator_dinas` | ✅ |
+| 14 | GET | `/ingest/riwayat` | `admin`, `verifikator_dinas` | ✅ |
+| 15 | POST | `/ai/cluster` | `admin`, `verifikator_dinas` | ✅ |
+| 16 | GET | `/ai/status` | `admin`, `verifikator_dinas` | ✅ |
+| 17 | PUT | `/klaster/{id}/verifikasi` | `verifikator_dinas` | ✅ |
+| 18 | POST | `/klaster/{id}/status` | `verifikator_dinas`, `kepala_dinas` | ✅ |
+| 19 | GET | `/klaster/{id}/riwayat` | Publik | ✅ |
+| 20 | POST | `/vote` | `warga_terverifikasi`, `komite_sekolah` | ✅ |
+| 21 | GET | `/vote/status/{klaster_id}` | `warga_terverifikasi`, `komite_sekolah` | ✅ |
+| 22 | PUT | `/vote/klaster/{id}/skor` | `admin` | ✅ |
+| 23 | PUT | `/vote/klaster/{id}/override` | `kepala_dinas` | ✅ |
+| 24 | GET | `/dashboard/prioritas` | Publik | ✅ |
+| 25 | GET | `/dashboard/wilayah` | `verifikator_dinas`, `kepala_dinas` | ✅ |
+| 26 | GET | `/audit/log` | `admin`, `kepala_dinas` | ✅ |
+
+> **Perbedaan path vs `INTERFACES.md`** (backend mengikuti `TASK_GUIDE.md`;
+> kedua dokumen perlu disinkronkan — jangan ubah path FE sepihak):
+>
+> | `INTERFACES.md` | Backend aktual | Task |
+> |---|---|---|
+> | `POST /klaster/{id}/vote` | `POST /vote` (body `{ klaster_id }`) | F3.12 |
+> | `GET /klaster/{id}/vote/status` | `GET /vote/status/{klaster_id}` | F3.13 |
+> | `GET /klaster/{id}/status` | `GET /klaster/{id}/riwayat` | F3.18 |
+> | `POST /laporan/{id}/foto` | `POST /upload/laporan` | — |
+> | `GET /klaster`, `GET /klaster/{id}` | **belum ada** | — |
+>
+> Endpoint yang belum ada di backend: `GET /klaster` (list) dan
+> `GET /klaster/{id}` (detail klaster + laporan anggota) — halaman Detail
+> Klaster (`PAGE_STATES.md` §A3) menunggu task ini.
+
+### 5.1 Peta Pemakaian per Halaman
 
 | Halaman | Endpoint | Catatan |
 |---|---|---|
@@ -255,9 +301,11 @@ async function request<T>(
 | Detail Sekolah | `GET /sekolah/{npsn}` | `data_resmi` = box Dapodik (`ComparisonBox.tsx`) |
 | Form Laporan | `POST /laporan` | Respons `cross_check` dipakai di state setelah kirim |
 | Riwayat Laporan | `GET /laporan/riwayat` | |
-| Detail Klaster | `GET /klaster/{id}` | |
-| Vote | `POST /klaster/{id}/vote`, `GET /klaster/{id}/vote/status` | `409 ALREADY_VOTED` → tombol "Sudah Vote" disabled |
-| Status Tindak Lanjut | `GET /klaster/{id}/status` | Riwayat append-only → render `InstitutionalStepper` |
+| Upload Foto | `POST /upload/laporan` | `multipart/form-data`, field `laporan_id` |
+| Detail Klaster | `GET /klaster/{id}` | ⚠️ endpoint belum ada di backend |
+| Vote | `POST /vote`, `GET /vote/status/{klaster_id}` | `409 ALREADY_VOTED` → tombol "Sudah Vote" disabled |
+| Status Tindak Lanjut | `GET /klaster/{id}/riwayat` | Riwayat append-only → render `InstitutionalStepper` |
+| Dashboard Prioritas | `GET /dashboard/prioritas` | Badge `menunggu_verifikasi` untuk klaster belum diverifikasi (Keputusan #4) |
 
 ---
 
