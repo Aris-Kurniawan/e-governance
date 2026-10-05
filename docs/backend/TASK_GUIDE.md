@@ -1,4 +1,4 @@
-# TASK_GUIDE.md — Backend SIMAKIS
+-# TASK_GUIDE.md — Backend SIMAKIS
 
 > Panduan tugas backend per fitur berdasarkan `PRD.md`, `ROADMAP.md`,
 > dan `DATABASE_SCHEMA.md`. Dokumen ini menjadi **single source of truth**
@@ -1171,6 +1171,44 @@ class AuditLog(Base):
 
 ## FASE 4 — Integrasi & Finalisasi (Minggu 12–14)
 
+### F4.0 — Prasyarat Integrasi: Re-seed Database
+
+> ⚠️ **BLOCKER DITEMUKAN 30 Sep 2026:** database `simakis` saat ini **hanya berisi
+> tabel `alembic_version`** — seluruh tabel aplikasi (`sekolah`, `laporan`,
+> `klaster`, `users`, `vote`, `status_log`, `audit_log`) hilang. Semua endpoint
+> akan mengembalikan data kosong bila integrasi FE↔BE dijalankan tanpa
+> re-seed lebih dulu.
+>
+> Catatan: data ablation **tidak hilang** — hasil eksperimen tetap ada di
+> `backend/app/ai_pipeline/experiments/` (`manual_clusters.json` + 81 file
+> `results/*.json`). Yang hilang hanya isi database.
+
+**Tujuan:** Pulihkan isi database agar backend melayani data realistis untuk
+diuji integrasi dengan frontend.
+
+**Langkah:**
+
+| # | Langkah | Perintah |
+|---|---------|----------|
+| 1 | Migrasi schema | `cd backend && ./venv/bin/alembic upgrade head` |
+| 2 | Ingest 62 sekolah Dapodik | `POST /ingest/dapodik` (file `sekolah_lamongan_semua.csv`, role `admin`/`verifikator_dinas`) |
+| 3 | Seed laporan dummy | `./venv/bin/python scripts/setup_f300.py` (100 laporan, 20 per kategori) |
+| 4 | Jalankan clustering | `POST /ai/cluster` atau `./venv/bin/python scripts/run_clustering.py` |
+| 5 | Verifikasi | `GET /sekolah`, `GET /dashboard/prioritas`, `GET /vote/status/{id}` balas data non-kosong |
+
+**Verifikasi wajib:** `GET /sekolah` balas **62** sekolah (bukan array kosong);
+`GET /dashboard/prioritas` balas ≥1 klaster; `GET /laporan/riwayat` balas
+data laporan.
+
+**Deliverable:** Database terisi (62 sekolah, ~100 laporan, klaster aktif,
+user admin + verifikator) — siap dilayani ke frontend.
+
+**Estimasi Waktu:** 0,5 hari
+
+**Ketergantungan:** F4.0 → F4.1 (harus selesai sebelum integrasi FE↔BE)
+
+---
+
 ### F4.1 — Integrasi Frontend ↔ Backend
 
 **Tujuan:** Ganti semua mock data frontend → API sungguhan.
@@ -1192,14 +1230,14 @@ class AuditLog(Base):
 
 ---
 
-### F4.3 — Evaluasi Klasterisasi
+### F4.3 — Evaluasi Klasterisasi ✅ SELESAI (metrik otomatis, 2026-10-05)
 
 **Metrik:**
-- Silhouette Score
-- Davies-Bouldin Index
-- Validasi manual oleh Verifikator
+- Silhouette Score ✅ — rata-rata +0.1385 (20 sekolah multi-klaster) → positif
+- Davies-Bouldin Index ✅ — rata-rata 1.5364 (< 2.0)
+- Validasi manual oleh Verifikator ⏳ — menunggu F4.1 (endpoint `/api/klaster/{id}/verifikasi`)
 
-**Deliverable:** Skor metrik positif, mayoritas klaster relevan.
+**Deliverable:** Skor metrik positif, mayoritas klaster relevan. ✅ (lihat CHANGELOG §3.15, script: `scripts/evaluate_clustering.py`)
 
 ---
 

@@ -738,8 +738,125 @@ Ground truth manual untuk evaluasi AI pipeline selesai dibuat dengan metodologi 
 
 ---
 
+## 3.12 Temuan Database & Persiapan Fase 4 (2026-09-30)
+
+**Temuan:**
+- Pengecekan database `simakis` menunjukkan tabel kosong (hanya tersisa `alembic_version`). Seluruh data sekolah, laporan, klaster, user, dan vote ter-drop sebelumnya.
+- Data eksperimen AI (`backend/app/ai_pipeline/experiments/`) dan script seed (`setup_f300.py`, `run_clustering.py`) tetap aman dan utuh.
+
+**Keputusan / Tindakan (F4.0 — Prasyarat Integrasi):**
+- Menambahkan **F4.0** di `TASK_GUIDE.md` sebagai prasyarat wajib sebelum integrasi frontend ↔ backend:
+  1. `alembic upgrade head`
+  2. Ingest CSV Dapodik (62 sekolah)
+  3. Seed laporan dummy (100 laporan, `setup_f300.py`)
+  4. Jalankan AI clustering (`run_clustering.py` atau POST `/ai/cluster`)
+  5. Verifikasi respon non-kosong
+
+---
+
+## 3.13 F3.23 — Desain & Eksekusi Eksperimen Augmentasi Data (2026-10-02/03) ✅ SELESAI
+
+**Konteks:** Atas saran dosen, ablation awal perlu dibandingkan pada jumlah
+laporan **sedikit vs banyak**. Analisis data awal: 100 laporan dummy dibuat
+dari hanya **54 kalimat template** (`setup_f300.py`) → kosakata sangat berulang
+dan menguntungkan TF-IDF; neural (IndoBERT/MiniLM) kalah sebelum sempat
+bersinar. Pencarian dataset pengaduan nyata berlabel (Mendeley/LAPOR!/
+JAKI/Kaggle/Zenodo) nihil yang sesuai domain sarpras → keputusan **jalur
+augmentasi + template sendiri**.
+
+**Task baru: F3.23** (sekarang **SELESAI**):
+- `generate_augmented.py` — script memperluas 54 template → 185 template unik dengan 5 teknik variasi (sinonim, parafrase, gaya, konteks, gabung_topik).
+- `dataset_aug_{45,150,500,1500}.json` — 4 dataset dengan distribusi kategori seimbang.
+- `run_scale_sweep.py` — runner evaluasi 24 kombinasi (3 embedding × 2 UMAP) × skala.
+- `results_scale/` — 24 result JSON + `summary_scale.csv` (all NMI/Purity/Clustering metrics).
+
+**Hasil Utama:**
+- **n=45:** Neural (A1+B2) unggul NMI 0.65 (TF-IDF 0.46). Variasi semantik membuat neural bersinar.
+- **n=150:** Neural (A1+B2) NMI 0.64, MiniLM (A3+B2) 0.63, TF-IDF (A2+B2) 0.62 — **sangat kompetitif**.
+- **n=500:** TF-IDF (A2+B1) NMI 0.58 (terbaik), neural sekitar 0.55–0.57 — **saling sengit**.
+- **n=1500:** Semua metode **converge** ke NMI ~0.47–0.49, purity 1.00; **TF-IDF 10x lebih cepat** (6.6s vs 40–60s).
+- **UMAP penting** di skala besar: noise ratio turun dari ~17% tanpa UMAP menjadi ~5% dengan UMAP.
+
+**Keputusan:** Kembangkan **A2+B1+C2+D1** sebagai config default production (TF-IDF + UMAP 10 + HDBSCAN 3/2). Neural untuk phase lanjutan jika butuh fine-tuning.
+
+**Verifikasi:**
+- `pytest tests/`: **39 passed** ✅
+- DB: 62 sekolah + 600 laporan (100 seed + 500 augmentasi) ✅
+- Database re-seed F4.0 selesai (alembic upgrade head, ingest CSV, seed laporan, clustering) ✅
+
+---
+
+## 3.14 F4.0 Re-seed Database & F3.23 Insert Laporan (2026-10-03) ✅ SELESAI
+
+**Masalah:** Database `simakis` hanya berisi `alembic_version` (tabel aplikasi ter-drop).
+
+**Penyelesaian:**
+- `alembic upgrade head` → 12 tabel aplikasi terbuat.
+- `scripts/setup_f300.py` → 62 sekolah, 304 kondisi_sarana, 100 laporan.
+- `scripts/run_clustering.py` → initial clustering selesai.
+- `insert_augmented_laporan.py` → 500 laporan augmentasi di-DB.
+- **Total:** 62 sekolah, **600 laporan** (100+500), 1 admin user (`admin@simakis.id`).
+
+---
+
+### 3.14 F4.0 Re-seed & Clustering Pipeline Fixes (2026-10-05) ✅ SELESAI
+
+**Masalah yang Ditemukan (5 Okt 2026):**
+1. **Bug rollback kaskade (Factor 1):** `scripts/run_clustering.py` memproses 62 sekolah dalam 1 transaksi → 1 error → `db.rollback()` menghapus kerja semua sekolah sebelumnya. Output "Created 83 klaster" tapi DB hanya 26.
+2. **Crash UMAP spectral (Factor 2):** Sekolah dengan ≤11 laporan → `scipy.linalg.eigh` crash → sekolah di-skip utuh.
+3. **Test isolation gagal (Factor 3):** `tests/test_klaster.py` fixture `drop_all(bind=engine)` menghapus seluruh tabel DB produksi `simakis` setiap pytest jalan. Ini menjelaskan temuan 30 Sep "DB hanya alembic_version".
+
+**Perbaikan:**
+1. **Per-school commit** (`run_clustering.py:160`): pindahkan `db.commit()` ke dalam loop sekolah → rollback hanya sekolah yang error.
+2. **Index tracking fix** (`run_clustering.py:91–96`): perbaiki mapping `labels[idx]` agar pakai `text_idx` bukan `idx` (prevent index misalignment jika ada laporan tanpa deskripsi).
+3. **UMAP spectral guard** (`reduction.py:52–61`): jika `n_samples < n_components+2` pakai `init='random'` + adaptive `n_components = min(n_components, n_samples-1)`.
+4. **Test isolation** (`tests/conftest.py` baru + `test_klaster.py` update): tests pakai DB terpisah `simakis_test` via fixtures; production DB tidak lagi disinggung.
+
+**Hasil Verifikasi:**
+- **600/600 laporan clustered** (0 unlinked), 100 klaster created
+- **Pytest 39/39 passed** → production DB tetap 600 laporan, 100 klaster (tidak berubah)
+- Test DB `simakis_test` terisolasi sepenuhnya
+
+**File yang Diubah:**
+- `scripts/run_clustering.py` (per-school commit, index tracking)
+- `app/ai_pipeline/reduction.py` (UMAP spectral guard)
+- `tests/conftest.py` (baru: test fixtures untuk simakis_test)
+- `tests/test_klaster.py` (update fixtures, hapus `setup_db` yang drop_all)
+
+---
+
+### 3.15 F4.3 — Evaluasi Klasterisasi (2026-10-05) ✅ SELESAI (metrik otomatis)
+
+**Deliverable:** Skor metrik positif, mayoritas klaster relevan.
+
+**Eksekusi:** `scripts/evaluate_clustering.py` (baru) — metrik dihitung terhadap
+assignment klaster **di DB produksi** (bukan rerun), embeddings dihitung ulang
+dengan konfigurasi pipeline sama (TF-IDF 300 + UMAP 10).
+
+**Hasil (600 laporan, 100 klaster, 62 sekolah):**
+
+| Metrik | Nilai | Interpretasi |
+|---|---|---|
+| Silhouette (rata-rata 20 sekolah multi-klaster) | **+0.1385** | positif → di atas random, tapi masih lemah |
+| Davies-Bouldin (rata-rata 20 sekolah) | **1.5364** | < 2.0 = klaster cukup terpisah |
+| Silhouette global (600 laporan) | −0.5683 | **tidak bermakna** — label klaster unik per sekolah, jarak antar-sekolah bukan ruang klaster yang sama; hanya sekolah ≥2 klaster yang valid |
+| Sekolah multi-klaster (silhouette terhitung) | 20 / 62 | 42 sekolah = 1 klaster (metrik undefined) |
+| Kategori klaster | 75 belum_terklasifikasi, 14 ruang_belajar, 5 sanitasi_air, 5 utilitas, 1 akses_lahan | noise HDBSCAN mayoritas |
+
+**Kesimpulan:**
+- ✅ Silhouette positif & DB-index < 2 → **deliverable "skor metrik positif" terpenuhi**.
+- ⚠️ Kekuatan klaster masih lemah (0.14) — konsisten dengan 75/100 klaster =
+  hasil noise (`min_cluster_size=3` ketat untuk data 5–16 laporan/sekolah).
+- ⏳ **Validasi manual oleh Verifikator** (bagian F4.3 ketiga) menunggu F4.1
+  integrasi FE↔BE — endpoint `/api/klaster/{id}/verifikasi` sudah ada.
+
+---
+
 ## Catatan Terbuka
 
+- [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.
+      `n = 45 → 150 → 500 → 1.500` (desain sudah ada di TASK_GUIDE/AIP §9).
+- [x] **F4.0 Re-seed database & clustering pipeline fix** — ✅ SELESAI (5 Okt 2026): 62 sekolah, 600 laporan, 100 klaster, pipeline robust ke error per-sekolah.
 - [ ] Hapus scraper versi lama (`intercept_dapo.py`, `scrape_sekolah.py`,
       `_v2.py`, `_v3.py`) dan file raw sisa (`debug_page.html`, dll).
 - [ ] Task queue AI Pipeline: BackgroundTasks / Celery / RQ.
