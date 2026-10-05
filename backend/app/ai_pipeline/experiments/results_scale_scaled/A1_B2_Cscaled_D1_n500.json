@@ -1,0 +1,62 @@
+{
+  "config": {
+    "n": 500,
+    "variant_a": "A1",
+    "variant_b": "B2",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 22,
+      "min_samples": 11
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.21080909669399261,
+    "davies_bouldin": 1.4440615440871483,
+    "ari": 0.3776484417721721,
+    "nmi": 0.6757214226982803,
+    "purity": 0.6238532110091743,
+    "homogeneity": 0.5566758609305688,
+    "completeness": 0.8595332760308099,
+    "v_measure": 0.6757214226982804,
+    "noise_ratio": 0.564
+  },
+  "n_clusters": 4,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "sudah karena instalasi kabel padam",
+      "kategori": "belum_terklasifikasi"
+    },
+    "1": {
+      "label_teks": "internet pembelajaran tidak menghambat di",
+      "kategori": "utilitas"
+    },
+    "2": {
+      "label_teks": "tidak sekolah dan rusak berbahaya",
+      "kategori": "belum_terklasifikasi"
+    },
+    "3": {
+      "label_teks": "siswa wc tidak pakai berat",
+      "kategori": "sanitasi_air"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 500,
+    "variant_a": "A1",
+    "method": "indobert",
+    "variant_b": "B2",
+    "umap": false,
+    "min_cluster_size": 22,
+    "min_samples": 11,
+    "nmi": 0.6757,
+    "ari": 0.3776,
+    "purity": 0.6239,
+    "noise_ratio": 0.564,
+    "n_clusters": 4,
+    "runtime_sec": 34.18
+  }
+}

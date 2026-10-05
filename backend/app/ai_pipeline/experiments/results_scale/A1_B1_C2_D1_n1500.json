@@ -1,0 +1,804 @@
+{
+  "config": {
+    "n": 1500,
+    "variant_a": "A1",
+    "variant_b": "B1",
+    "variant_c": "C2",
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.7909024953842163,
+    "davies_bouldin": 0.2649169367359817,
+    "ari": 0.04812920879402925,
+    "nmi": 0.478593021910854,
+    "purity": 1.0,
+    "homogeneity": 1.0000000000000002,
+    "completeness": 0.31457264808391794,
+    "v_measure": 0.478593021910854,
+    "noise_ratio": 0.05266666666666667
+  },
+  "n_clusters": 191,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "sumber sudah sejak saat lama",
+      "kategori": "belum_terklasifikasi"
+    },
+    "1": {
+      "label_teks": "sumber saat kemarau pendidikan musim",
+      "kategori": "belum_terklasifikasi"
+    },
+    "2": {
+      "label_teks": "pendidikan sumber kering musim saat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "3": {
+      "label_teks": "standar sesuai mengajar listrik belum",
+      "kategori": "utilitas"
+    },
+    "4": {
+      "label_teks": "sumber sudah sekolah sejak saat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "5": {
+      "label_teks": "sudah lama sejak berlangsung sumber",
+      "kategori": "belum_terklasifikasi"
+    },
+    "6": {
+      "label_teks": "tidak ada sabun tangan tempat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "7": {
+      "label_teks": "tidak tempat tangan sudah sejak",
+      "kategori": "belum_terklasifikasi"
+    },
+    "8": {
+      "label_teks": "siswa tidak untuk ada khusus",
+      "kategori": "belum_terklasifikasi"
+    },
+    "9": {
+      "label_teks": "untuk tidak khusus ada disabilitas",
+      "kategori": "belum_terklasifikasi"
+    },
+    "10": {
+      "label_teks": "tagihan sehingga sempat listrik menunggak",
+      "kategori": "utilitas"
+    },
+    "11": {
+      "label_teks": "tidak tersedia sarana kesenian ekstrakurikuler",
+      "kategori": "belum_terklasifikasi"
+    },
+    "12": {
+      "label_teks": "tidak stop kontak dan di",
+      "kategori": "belum_terklasifikasi"
+    },
+    "13": {
+      "label_teks": "tidak aman stop kontak kelas",
+      "kategori": "ruang_belajar"
+    },
+    "14": {
+      "label_teks": "listrik ruangan untuk tua kabel",
+      "kategori": "ruang_belajar"
+    },
+    "15": {
+      "label_teks": "tidak sudah sejak parkir memadai",
+      "kategori": "belum_terklasifikasi"
+    },
+    "16": {
+      "label_teks": "tidak sudah sejak lama berlangsung",
+      "kategori": "belum_terklasifikasi"
+    },
+    "17": {
+      "label_teks": "tinggi sekolah risiko dan jalan",
+      "kategori": "akses_lahan"
+    },
+    "18": {
+      "label_teks": "yang tidak praktik mengajar ipa",
+      "kategori": "belum_terklasifikasi"
+    },
+    "19": {
+      "label_teks": "tua sudah sering listrik padam",
+      "kategori": "utilitas"
+    },
+    "20": {
+      "label_teks": "membahayakan masuk sekolah dan jalan",
+      "kategori": "akses_lahan"
+    },
+    "21": {
+      "label_teks": "wc tidak siswa di bersih",
+      "kategori": "sanitasi_air"
+    },
+    "22": {
+      "label_teks": "terbatas siswa sarana berbahaya sangat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "23": {
+      "label_teks": "sudah sekolah sejak masuk berbahaya",
+      "kategori": "belum_terklasifikasi"
+    },
+    "24": {
+      "label_teks": "sangat sarana terbatas lapangan olahraga",
+      "kategori": "penunjang"
+    },
+    "25": {
+      "label_teks": "air mengajar kegiatan mengganggu belajar",
+      "kategori": "sanitasi_air"
+    },
+    "26": {
+      "label_teks": "sangat sarana lapangan kurang olahraga",
+      "kategori": "penunjang"
+    },
+    "27": {
+      "label_teks": "sangat sarana lapangan olahraga kurang",
+      "kategori": "penunjang"
+    },
+    "28": {
+      "label_teks": "air terbuang wc bak sehingga",
+      "kategori": "sanitasi_air"
+    },
+    "29": {
+      "label_teks": "air lama berlangsung sejak sudah",
+      "kategori": "sanitasi_air"
+    },
+    "30": {
+      "label_teks": "sudah sekolah sejak masuk jalan",
+      "kategori": "akses_lahan"
+    },
+    "31": {
+      "label_teks": "sudah sejak berlangsung lama dan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "32": {
+      "label_teks": "sekolah serbaguna sudah ruang sejak",
+      "kategori": "ruang_belajar"
+    },
+    "33": {
+      "label_teks": "satuan pendidikan masuk jalan berlubang",
+      "kategori": "akses_lahan"
+    },
+    "34": {
+      "label_teks": "tua sudah siswa kabel keselamatan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "35": {
+      "label_teks": "tua sudah siswa kabel keselamatan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "36": {
+      "label_teks": "air wc tidak toilet selain",
+      "kategori": "sanitasi_air"
+    },
+    "37": {
+      "label_teks": "air toilet privasi tidak ada",
+      "kategori": "sanitasi_air"
+    },
+    "38": {
+      "label_teks": "yang penerangan kegiatan mengajar belajar",
+      "kategori": "utilitas"
+    },
+    "39": {
+      "label_teks": "sudah tua sering sejak padam",
+      "kategori": "belum_terklasifikasi"
+    },
+    "40": {
+      "label_teks": "sudah padam instalasi listrik karena",
+      "kategori": "utilitas"
+    },
+    "41": {
+      "label_teks": "wc tidak siswa kesulitan air",
+      "kategori": "sanitasi_air"
+    },
+    "42": {
+      "label_teks": "wc tidak siswa bersih air",
+      "kategori": "sanitasi_air"
+    },
+    "43": {
+      "label_teks": "rusak siswa persen lebih komputer",
+      "kategori": "belum_terklasifikasi"
+    },
+    "44": {
+      "label_teks": "dari persen di komputer lab",
+      "kategori": "ruang_belajar"
+    },
+    "45": {
+      "label_teks": "lebih persen hancur di lab",
+      "kategori": "ruang_belajar"
+    },
+    "46": {
+      "label_teks": "rusak persen 50 dari di",
+      "kategori": "belum_terklasifikasi"
+    },
+    "47": {
+      "label_teks": "siswa bagi keramik retak lantai",
+      "kategori": "belum_terklasifikasi"
+    },
+    "48": {
+      "label_teks": "siswa sudah sejak lama pecah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "49": {
+      "label_teks": "terkelupas siswa mengganggu mengajar listrik",
+      "kategori": "utilitas"
+    },
+    "50": {
+      "label_teks": "uks tidak peralatan memiliki ruang",
+      "kategori": "ruang_belajar"
+    },
+    "51": {
+      "label_teks": "siswa serbaguna sekolah rusak ruang",
+      "kategori": "ruang_belajar"
+    },
+    "52": {
+      "label_teks": "serbaguna sekolah ruang atapnya rusak",
+      "kategori": "ruang_belajar"
+    },
+    "53": {
+      "label_teks": "pecah toilet privasi tidak pintu",
+      "kategori": "sanitasi_air"
+    },
+    "54": {
+      "label_teks": "toilet tidak privasi dan pintu",
+      "kategori": "sanitasi_air"
+    },
+    "55": {
+      "label_teks": "instansi masuk pendidikan dan berlubang",
+      "kategori": "belum_terklasifikasi"
+    },
+    "56": {
+      "label_teks": "masuk dan pendidikan berbahaya jalan",
+      "kategori": "akses_lahan"
+    },
+    "57": {
+      "label_teks": "uks tidak siswa ruang peralatan",
+      "kategori": "ruang_belajar"
+    },
+    "58": {
+      "label_teks": "tidak uks ruang peralatan memiliki",
+      "kategori": "ruang_belajar"
+    },
+    "59": {
+      "label_teks": "toilet pintu dan privasi tidak",
+      "kategori": "sanitasi_air"
+    },
+    "60": {
+      "label_teks": "sudah standar sesuai sejak listrik",
+      "kategori": "utilitas"
+    },
+    "61": {
+      "label_teks": "untuk tidak seluruh ruangan pendidikan",
+      "kategori": "ruang_belajar"
+    },
+    "62": {
+      "label_teks": "instansi menyebabkan tersumbat drainase banjir",
+      "kategori": "akses_lahan"
+    },
+    "63": {
+      "label_teks": "tidak untuk siswa seluruh sekolah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "64": {
+      "label_teks": "sekolah tidak untuk seluruh ruangan",
+      "kategori": "ruang_belajar"
+    },
+    "65": {
+      "label_teks": "berbahaya aman area tidak bermain",
+      "kategori": "belum_terklasifikasi"
+    },
+    "66": {
+      "label_teks": "sering buat bahaya siswa lambat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "67": {
+      "label_teks": "terputus jaringan internet dan lambat",
+      "kategori": "utilitas"
+    },
+    "68": {
+      "label_teks": "toilet tersedia dan belum pintu",
+      "kategori": "sanitasi_air"
+    },
+    "69": {
+      "label_teks": "toilet tersedia privasi pintu dan",
+      "kategori": "sanitasi_air"
+    },
+    "70": {
+      "label_teks": "sekolah tersumbat drainase banjir menyebabkan",
+      "kategori": "akses_lahan"
+    },
+    "71": {
+      "label_teks": "belajar kegiatan mengajar drainase banjir",
+      "kategori": "akses_lahan"
+    },
+    "72": {
+      "label_teks": "yang tidak selain area rusak",
+      "kategori": "belum_terklasifikasi"
+    },
+    "73": {
+      "label_teks": "berbahaya selain ruang perabot banyak",
+      "kategori": "ruang_belajar"
+    },
+    "74": {
+      "label_teks": "tidak pendidikan kantin dan higienis",
+      "kategori": "penunjang"
+    },
+    "75": {
+      "label_teks": "saat padam listrik genset cadangan",
+      "kategori": "utilitas"
+    },
+    "76": {
+      "label_teks": "sering terputus mengajar lambat kegiatan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "77": {
+      "label_teks": "siswa padam saat keselamatan listrik",
+      "kategori": "utilitas"
+    },
+    "78": {
+      "label_teks": "tergenang sekolah saat mengajar mengganggu",
+      "kategori": "belum_terklasifikasi"
+    },
+    "79": {
+      "label_teks": "memadai anak dan area bermain",
+      "kategori": "belum_terklasifikasi"
+    },
+    "80": {
+      "label_teks": "layak bermain area anak dan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "81": {
+      "label_teks": "tidak sekolah higienis dan kantin",
+      "kategori": "penunjang"
+    },
+    "82": {
+      "label_teks": "yang tidak siswa ruang memadai",
+      "kategori": "ruang_belajar"
+    },
+    "83": {
+      "label_teks": "yang tidak ruang guru memadai",
+      "kategori": "ruang_belajar"
+    },
+    "84": {
+      "label_teks": "tidak layak ruang yang guru",
+      "kategori": "ruang_belajar"
+    },
+    "85": {
+      "label_teks": "tidak pendidikan menghambat pembelajaran ada",
+      "kategori": "belum_terklasifikasi"
+    },
+    "86": {
+      "label_teks": "tidak ada pendidikan pembelajaran internet",
+      "kategori": "utilitas"
+    },
+    "87": {
+      "label_teks": "terputus siswa sering jaringan internet",
+      "kategori": "utilitas"
+    },
+    "88": {
+      "label_teks": "siswa ada saat padam listrik",
+      "kategori": "utilitas"
+    },
+    "89": {
+      "label_teks": "siswa saat padam keselamatan listrik",
+      "kategori": "utilitas"
+    },
+    "90": {
+      "label_teks": "tergenang siswa sekolah saat keselamatan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "91": {
+      "label_teks": "tergenang sekolah saat halaman hujan",
+      "kategori": "akses_lahan"
+    },
+    "92": {
+      "label_teks": "toilet jumlah tidak siswa pintu",
+      "kategori": "sanitasi_air"
+    },
+    "93": {
+      "label_teks": "siswa keselamatan wc saluran tersumbat",
+      "kategori": "sanitasi_air"
+    },
+    "94": {
+      "label_teks": "sudah sejak berlangsung lama sekolah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "95": {
+      "label_teks": "pendidikan instansi rusak ibadah dan",
+      "kategori": "penunjang"
+    },
+    "96": {
+      "label_teks": "tempat sekolah dan ibadah layak",
+      "kategori": "penunjang"
+    },
+    "97": {
+      "label_teks": "sudah sejak saat padam listrik",
+      "kategori": "utilitas"
+    },
+    "98": {
+      "label_teks": "saat listrik padam ada belum",
+      "kategori": "utilitas"
+    },
+    "99": {
+      "label_teks": "terputus sering mengganggu mengajar lambat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "100": {
+      "label_teks": "satuan saat menuju pendidikan hujan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "101": {
+      "label_teks": "sudah sekolah sejak saat parah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "102": {
+      "label_teks": "serius sekolah saat musim jalan",
+      "kategori": "akses_lahan"
+    },
+    "103": {
+      "label_teks": "parah saat sekolah jalan hujan",
+      "kategori": "akses_lahan"
+    },
+    "104": {
+      "label_teks": "jumlah toilet wc sangat saluran",
+      "kategori": "sanitasi_air"
+    },
+    "105": {
+      "label_teks": "jumlah siswa sudah sejak sangat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "106": {
+      "label_teks": "jumlah toilet peserta sangat dibanding",
+      "kategori": "sanitasi_air"
+    },
+    "107": {
+      "label_teks": "satuan pendidikan berbahaya bagi keselamatan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "108": {
+      "label_teks": "tanah sekolah siswa dipagar keselamatan",
+      "kategori": "akses_lahan"
+    },
+    "109": {
+      "label_teks": "siswa bagi berbahaya keselamatan memadai",
+      "kategori": "belum_terklasifikasi"
+    },
+    "110": {
+      "label_teks": "sudah sejak lama berlangsung bermain",
+      "kategori": "belum_terklasifikasi"
+    },
+    "111": {
+      "label_teks": "layak gak sejak lama sudah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "112": {
+      "label_teks": "tidak sudah sekolah kantin lama",
+      "kategori": "penunjang"
+    },
+    "113": {
+      "label_teks": "terputus siswa lambat berbahaya keselamatan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "114": {
+      "label_teks": "terputus siswa internet jaringan keselamatan",
+      "kategori": "utilitas"
+    },
+    "115": {
+      "label_teks": "saat rusak pendidikan jalan parah",
+      "kategori": "akses_lahan"
+    },
+    "116": {
+      "label_teks": "saat rusak pendidikan jalan parah",
+      "kategori": "akses_lahan"
+    },
+    "117": {
+      "label_teks": "sekolah rusak di saat beberapa",
+      "kategori": "belum_terklasifikasi"
+    },
+    "118": {
+      "label_teks": "siswa sekolah saat rusak parah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "119": {
+      "label_teks": "bagi siswa berbahaya tidak terkelupas",
+      "kategori": "belum_terklasifikasi"
+    },
+    "120": {
+      "label_teks": "langit siswa keselamatan sebagian kelas",
+      "kategori": "ruang_belajar"
+    },
+    "121": {
+      "label_teks": "langit sebagian kelas belum ambruk",
+      "kategori": "ruang_belajar"
+    },
+    "122": {
+      "label_teks": "terputus sering mengganggu mengajar lambat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "123": {
+      "label_teks": "terputus mengganggu mengajar lambat dan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "124": {
+      "label_teks": "wc tidak siswa pakai kondisi",
+      "kategori": "sanitasi_air"
+    },
+    "125": {
+      "label_teks": "toilet siswa rusak sebagian bisa",
+      "kategori": "sanitasi_air"
+    },
+    "126": {
+      "label_teks": "tidak terkelupas siswa selain sekolah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "127": {
+      "label_teks": "bagi siswa berbahaya tidak terkelupas",
+      "kategori": "belum_terklasifikasi"
+    },
+    "128": {
+      "label_teks": "tidak ada satuan pendidikan tempat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "129": {
+      "label_teks": "tidak tempat sampah area ada",
+      "kategori": "belum_terklasifikasi"
+    },
+    "130": {
+      "label_teks": "tidak sekolah dan higienis kantin",
+      "kategori": "penunjang"
+    },
+    "131": {
+      "label_teks": "tidak sekolah higienis kantin dan",
+      "kategori": "penunjang"
+    },
+    "132": {
+      "label_teks": "wc siswa berat rusak layak",
+      "kategori": "sanitasi_air"
+    },
+    "133": {
+      "label_teks": "berat pakai tidak wc layak",
+      "kategori": "sanitasi_air"
+    },
+    "134": {
+      "label_teks": "kelas titik atap beberapa saat",
+      "kategori": "ruang_belajar"
+    },
+    "135": {
+      "label_teks": "berat wc pakai tidak kondisi",
+      "kategori": "sanitasi_air"
+    },
+    "136": {
+      "label_teks": "wc tidak sobek pakai layak",
+      "kategori": "sanitasi_air"
+    },
+    "137": {
+      "label_teks": "wc tidak pecah pakai layak",
+      "kategori": "sanitasi_air"
+    },
+    "138": {
+      "label_teks": "di tidak menghambat sekolah mengganggu",
+      "kategori": "belum_terklasifikasi"
+    },
+    "139": {
+      "label_teks": "pakai wc guru kondisi layak",
+      "kategori": "sanitasi_air"
+    },
+    "140": {
+      "label_teks": "pakai kondisi dalam guru wc",
+      "kategori": "sanitasi_air"
+    },
+    "141": {
+      "label_teks": "tidak sekolah pembelajaran menghambat mengganggu",
+      "kategori": "belum_terklasifikasi"
+    },
+    "142": {
+      "label_teks": "tidak sekolah pembelajaran menghambat mengganggu",
+      "kategori": "belum_terklasifikasi"
+    },
+    "143": {
+      "label_teks": "tidak pendidikan dan bisa dikunci",
+      "kategori": "belum_terklasifikasi"
+    },
+    "144": {
+      "label_teks": "tidak sekolah mengajar mengganggu dan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "145": {
+      "label_teks": "tidak sudah sekolah sejak dikunci",
+      "kategori": "belum_terklasifikasi"
+    },
+    "146": {
+      "label_teks": "sudah pecah kelas kaca jendela",
+      "kategori": "ruang_belajar"
+    },
+    "147": {
+      "label_teks": "tidak ada tangan tempat berbahaya",
+      "kategori": "belum_terklasifikasi"
+    },
+    "148": {
+      "label_teks": "siswa berbahaya bagi keselamatan tidak",
+      "kategori": "belum_terklasifikasi"
+    },
+    "149": {
+      "label_teks": "siswa sekolah keselamatan saat sumber",
+      "kategori": "belum_terklasifikasi"
+    },
+    "150": {
+      "label_teks": "tersumbat talang siswa menyebabkan di",
+      "kategori": "belum_terklasifikasi"
+    },
+    "151": {
+      "label_teks": "tersumbat talang menyebabkan di air",
+      "kategori": "sanitasi_air"
+    },
+    "152": {
+      "label_teks": "mengajar kegiatan belajar mengganggu kaca",
+      "kategori": "belum_terklasifikasi"
+    },
+    "153": {
+      "label_teks": "sudah sejak lama berlangsung papan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "154": {
+      "label_teks": "tidak siswa aman parkir keselamatan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "155": {
+      "label_teks": "tidak parkir kurang area cukup",
+      "kategori": "belum_terklasifikasi"
+    },
+    "156": {
+      "label_teks": "dan pecah kondisi selain sudah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "157": {
+      "label_teks": "kondisi usang perpustakaan rak dan",
+      "kategori": "ruang_belajar"
+    },
+    "158": {
+      "label_teks": "tulis diganti seadanya dan papan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "159": {
+      "label_teks": "tulis sudah seadanya papan diganti",
+      "kategori": "belum_terklasifikasi"
+    },
+    "160": {
+      "label_teks": "yang keran mati pendidikan area",
+      "kategori": "belum_terklasifikasi"
+    },
+    "161": {
+      "label_teks": "perabot kelas kursi layak patah",
+      "kategori": "ruang_belajar"
+    },
+    "162": {
+      "label_teks": "yang tidak siswa mengajar mengganggu",
+      "kategori": "belum_terklasifikasi"
+    },
+    "163": {
+      "label_teks": "sudah sejak berlangsung lama melebihi",
+      "kategori": "belum_terklasifikasi"
+    },
+    "164": {
+      "label_teks": "sempit ruang kelas melebihi jumlah",
+      "kategori": "ruang_belajar"
+    },
+    "165": {
+      "label_teks": "mengelupas perlu dibenahi dinding kelas",
+      "kategori": "ruang_belajar"
+    },
+    "166": {
+      "label_teks": "sudah berlangsung lama sejak baik",
+      "kategori": "belum_terklasifikasi"
+    },
+    "167": {
+      "label_teks": "yang ruang guru perabot banyak",
+      "kategori": "ruang_belajar"
+    },
+    "168": {
+      "label_teks": "yang meja dan bisa kursi",
+      "kategori": "belum_terklasifikasi"
+    },
+    "169": {
+      "label_teks": "siswa mengganggu belajar kegiatan mengajar",
+      "kategori": "belum_terklasifikasi"
+    },
+    "170": {
+      "label_teks": "kelas sudah tidak pintu dinding",
+      "kategori": "ruang_belajar"
+    },
+    "171": {
+      "label_teks": "perlu renovasi mengelupas kelas dan",
+      "kategori": "ruang_belajar"
+    },
+    "172": {
+      "label_teks": "sudah siswa keselamatan tidak dengan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "173": {
+      "label_teks": "tidak sudah pintu kunci hancur",
+      "kategori": "belum_terklasifikasi"
+    },
+    "174": {
+      "label_teks": "siswa bagi berbahaya keselamatan layak",
+      "kategori": "belum_terklasifikasi"
+    },
+    "175": {
+      "label_teks": "tanah pendidikan dengan dipagar instansi",
+      "kategori": "akses_lahan"
+    },
+    "176": {
+      "label_teks": "beberapa di sudah berlangsung lama",
+      "kategori": "belum_terklasifikasi"
+    },
+    "177": {
+      "label_teks": "tidak tempat sekolah rusak ibadah",
+      "kategori": "penunjang"
+    },
+    "178": {
+      "label_teks": "rusak tidak tempat sekolah ibadah",
+      "kategori": "penunjang"
+    },
+    "179": {
+      "label_teks": "titik terancam pendidikan di keamanan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "180": {
+      "label_teks": "satuan terancam keamanan pendidikan titik",
+      "kategori": "belum_terklasifikasi"
+    },
+    "181": {
+      "label_teks": "terganggu sehingga ruang kelas kegiatan",
+      "kategori": "ruang_belajar"
+    },
+    "182": {
+      "label_teks": "titik terancam sekolah pagar di",
+      "kategori": "akses_lahan"
+    },
+    "183": {
+      "label_teks": "titik terancam sekolah pagar di",
+      "kategori": "akses_lahan"
+    },
+    "184": {
+      "label_teks": "mengganggu kegiatan belajar mengajar yang",
+      "kategori": "belum_terklasifikasi"
+    },
+    "185": {
+      "label_teks": "yang ruang perabot pendidik banyak",
+      "kategori": "ruang_belajar"
+    },
+    "186": {
+      "label_teks": "siswa terganggu ruang sehingga keselamatan",
+      "kategori": "ruang_belajar"
+    },
+    "187": {
+      "label_teks": "terganggu sudah sehingga sejak ruang",
+      "kategori": "ruang_belajar"
+    },
+    "188": {
+      "label_teks": "tergenang halaman hujan saat dan",
+      "kategori": "akses_lahan"
+    },
+    "189": {
+      "label_teks": "kegiatan belajar tidak untuk terganggu",
+      "kategori": "belum_terklasifikasi"
+    },
+    "190": {
+      "label_teks": "kegiatan belajar ruang terganggu sehingga",
+      "kategori": "ruang_belajar"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 1500,
+    "variant_a": "A1",
+    "method": "indobert",
+    "variant_b": "B1",
+    "umap": true,
+    "nmi": 0.4786,
+    "ari": 0.0481,
+    "purity": 1.0,
+    "noise_ratio": 0.0527,
+    "n_clusters": 191,
+    "runtime_sec": 58.68
+  }
+}

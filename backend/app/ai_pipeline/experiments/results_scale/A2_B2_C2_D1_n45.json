@@ -1,0 +1,52 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A2",
+    "variant_b": "B2",
+    "variant_c": "C2",
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.1236458495259285,
+    "davies_bouldin": 1.9020087965862658,
+    "ari": 0.22946175637393768,
+    "nmi": 0.4596958509243356,
+    "purity": 0.5882352941176471,
+    "homogeneity": 0.3885743047444004,
+    "completeness": 0.5626852841807505,
+    "v_measure": 0.45969585092433557,
+    "noise_ratio": 0.6222222222222222
+  },
+  "n_clusters": 3,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "belajar kegiatan dan mengajar mengganggu",
+      "kategori": "belum_terklasifikasi"
+    },
+    "1": {
+      "label_teks": "berbahaya dan sudah lama tidak",
+      "kategori": "belum_terklasifikasi"
+    },
+    "2": {
+      "label_teks": "tempat ibadah layak dan gak",
+      "kategori": "penunjang"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 45,
+    "variant_a": "A2",
+    "method": "tfidf",
+    "variant_b": "B2",
+    "umap": false,
+    "nmi": 0.4597,
+    "ari": 0.2295,
+    "purity": 0.5882,
+    "noise_ratio": 0.6222,
+    "n_clusters": 3,
+    "runtime_sec": 0.03
+  }
+}

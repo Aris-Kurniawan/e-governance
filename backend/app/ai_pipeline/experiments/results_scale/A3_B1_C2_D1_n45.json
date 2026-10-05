@@ -1,0 +1,72 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A3",
+    "variant_b": "B1",
+    "variant_c": "C2",
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.32890042662620544,
+    "davies_bouldin": 0.9617224641954663,
+    "ari": 0.04638170031096822,
+    "nmi": 0.3406488875079264,
+    "purity": 0.5135135135135135,
+    "homogeneity": 0.38750907112536315,
+    "completeness": 0.3038993495436223,
+    "v_measure": 0.3406488875079264,
+    "noise_ratio": 0.17777777777777778
+  },
+  "n_clusters": 8,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "kali terputus lambat jaringan internet",
+      "kategori": "utilitas"
+    },
+    "1": {
+      "label_teks": "jumlah sudah lama sejak berlangsung",
+      "kategori": "belum_terklasifikasi"
+    },
+    "2": {
+      "label_teks": "kegiatan belajar mengajar mengganggu sehingga",
+      "kategori": "belum_terklasifikasi"
+    },
+    "3": {
+      "label_teks": "siswa berbahaya bagi keselamatan langit",
+      "kategori": "belum_terklasifikasi"
+    },
+    "4": {
+      "label_teks": "dan berbahaya masuk jalan berlubang",
+      "kategori": "akses_lahan"
+    },
+    "5": {
+      "label_teks": "dan tulis seadanya sudah diganti",
+      "kategori": "belum_terklasifikasi"
+    },
+    "6": {
+      "label_teks": "tempat dan layak ibadah keselamatan",
+      "kategori": "penunjang"
+    },
+    "7": {
+      "label_teks": "air saat sumber musim kemarau",
+      "kategori": "sanitasi_air"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 45,
+    "variant_a": "A3",
+    "method": "minilm",
+    "variant_b": "B1",
+    "umap": true,
+    "nmi": 0.3406,
+    "ari": 0.0464,
+    "purity": 0.5135,
+    "noise_ratio": 0.1778,
+    "n_clusters": 8,
+    "runtime_sec": 14.15
+  }
+}

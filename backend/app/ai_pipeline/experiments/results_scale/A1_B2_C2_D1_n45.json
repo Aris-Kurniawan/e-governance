@@ -1,0 +1,48 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A1",
+    "variant_b": "B2",
+    "variant_c": "C2",
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.1996815800666809,
+    "davies_bouldin": 1.1252330735707012,
+    "ari": 0.00559073151017109,
+    "nmi": 0.13420156317465393,
+    "purity": 0.3157894736842105,
+    "homogeneity": 0.07873311345663106,
+    "completeness": 0.4541697665697441,
+    "v_measure": 0.13420156317465393,
+    "noise_ratio": 0.15555555555555556
+  },
+  "n_clusters": 2,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "dan sekolah sudah berbahaya siswa",
+      "kategori": "belum_terklasifikasi"
+    },
+    "1": {
+      "label_teks": "kali terputus lambat jaringan internet",
+      "kategori": "utilitas"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 45,
+    "variant_a": "A1",
+    "method": "indobert",
+    "variant_b": "B2",
+    "umap": false,
+    "nmi": 0.1342,
+    "ari": 0.0056,
+    "purity": 0.3158,
+    "noise_ratio": 0.1556,
+    "n_clusters": 2,
+    "runtime_sec": 12.52
+  }
+}

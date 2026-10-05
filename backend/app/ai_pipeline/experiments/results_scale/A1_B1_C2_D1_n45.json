@@ -1,0 +1,56 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A1",
+    "variant_b": "B1",
+    "variant_c": "C2",
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.338431179523468,
+    "davies_bouldin": 0.8818396065453937,
+    "ari": 0.46584927216175886,
+    "nmi": 0.6511480913664095,
+    "purity": 0.6842105263157895,
+    "homogeneity": 0.5820391196514061,
+    "completeness": 0.738879676670105,
+    "v_measure": 0.6511480913664095,
+    "noise_ratio": 0.15555555555555556
+  },
+  "n_clusters": 4,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "sudah dan kelas diganti tulis",
+      "kategori": "ruang_belajar"
+    },
+    "1": {
+      "label_teks": "jumlah air siswa tidak dan",
+      "kategori": "sanitasi_air"
+    },
+    "2": {
+      "label_teks": "dan sekolah berbahaya rusak pendidikan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "3": {
+      "label_teks": "listrik kali terputus lambat jaringan",
+      "kategori": "utilitas"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 45,
+    "variant_a": "A1",
+    "method": "indobert",
+    "variant_b": "B1",
+    "umap": true,
+    "nmi": 0.6511,
+    "ari": 0.4658,
+    "purity": 0.6842,
+    "noise_ratio": 0.1556,
+    "n_clusters": 4,
+    "runtime_sec": 26.68
+  }
+}

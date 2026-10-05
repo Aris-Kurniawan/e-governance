@@ -1,0 +1,94 @@
+{
+  "config": {
+    "n": 1500,
+    "variant_a": "A2",
+    "variant_b": "B2",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 38,
+      "min_samples": 19
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.29528793692588806,
+    "davies_bouldin": 1.6628314494367649,
+    "ari": 0.4702661927952229,
+    "nmi": 0.711355133135702,
+    "purity": 0.9156479217603912,
+    "homogeneity": 0.9024388167065321,
+    "completeness": 0.5870519211468208,
+    "v_measure": 0.7113551331357019,
+    "noise_ratio": 0.45466666666666666
+  },
+  "n_clusters": 12,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "dari lab 50 komputer persen",
+      "kategori": "ruang_belajar"
+    },
+    "1": {
+      "label_teks": "sudah kelas dan tidak baik",
+      "kategori": "ruang_belajar"
+    },
+    "2": {
+      "label_teks": "sekolah saat hujan rusak di",
+      "kategori": "belum_terklasifikasi"
+    },
+    "3": {
+      "label_teks": "sumber musim saat kemarau kering",
+      "kategori": "belum_terklasifikasi"
+    },
+    "4": {
+      "label_teks": "siswa tidak ada di wc",
+      "kategori": "sanitasi_air"
+    },
+    "5": {
+      "label_teks": "pakai berat kondisi layak wc",
+      "kategori": "sanitasi_air"
+    },
+    "6": {
+      "label_teks": "air kegiatan belajar sehingga bocor",
+      "kategori": "sanitasi_air"
+    },
+    "7": {
+      "label_teks": "jumlah toilet siswa dan privasi",
+      "kategori": "sanitasi_air"
+    },
+    "8": {
+      "label_teks": "dan area anak bermain berbahaya",
+      "kategori": "belum_terklasifikasi"
+    },
+    "9": {
+      "label_teks": "tidak dan sekolah layak kantin",
+      "kategori": "penunjang"
+    },
+    "10": {
+      "label_teks": "terputus jaringan dan lambat internet",
+      "kategori": "utilitas"
+    },
+    "11": {
+      "label_teks": "listrik sudah padam kabel karena",
+      "kategori": "utilitas"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 1500,
+    "variant_a": "A2",
+    "method": "tfidf",
+    "variant_b": "B2",
+    "umap": false,
+    "min_cluster_size": 38,
+    "min_samples": 19,
+    "nmi": 0.7114,
+    "ari": 0.4703,
+    "purity": 0.9156,
+    "noise_ratio": 0.4547,
+    "n_clusters": 12,
+    "runtime_sec": 1.05
+  }
+}

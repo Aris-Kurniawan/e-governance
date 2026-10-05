@@ -1,0 +1,54 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A2",
+    "variant_b": "B1"
+  },
+  "runs": [
+    {
+      "n": 45,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B1",
+      "umap": true,
+      "min_cluster_size": 3,
+      "min_samples": 2,
+      "nmi": 0.2244,
+      "ari": 0.0546,
+      "purity": 0.4103,
+      "noise_ratio": 0.1333,
+      "n_clusters": 4,
+      "runtime_sec": 0.02
+    },
+    {
+      "n": 45,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B1",
+      "umap": true,
+      "min_cluster_size": 5,
+      "min_samples": 2,
+      "nmi": 0.2244,
+      "ari": 0.0546,
+      "purity": 0.4103,
+      "noise_ratio": 0.1333,
+      "n_clusters": 4,
+      "runtime_sec": 0.02
+    },
+    {
+      "n": 45,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B1",
+      "umap": true,
+      "min_cluster_size": 8,
+      "min_samples": 4,
+      "nmi": 0.2717,
+      "ari": 0.1301,
+      "purity": 0.4074,
+      "noise_ratio": 0.4,
+      "n_clusters": 2,
+      "runtime_sec": 0.02
+    }
+  ]
+}

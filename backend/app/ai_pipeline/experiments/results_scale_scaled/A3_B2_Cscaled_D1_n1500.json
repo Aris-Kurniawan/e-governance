@@ -1,0 +1,54 @@
+{
+  "config": {
+    "n": 1500,
+    "variant_a": "A3",
+    "variant_b": "B2",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 38,
+      "min_samples": 19
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.11906561255455017,
+    "davies_bouldin": 1.3492511257265387,
+    "ari": 0.005102165947946506,
+    "nmi": 0.05680075700200668,
+    "purity": 0.23979591836734693,
+    "homogeneity": 0.030681711121793524,
+    "completeness": 0.38195754576794805,
+    "v_measure": 0.05680075700200668,
+    "noise_ratio": 0.08533333333333333
+  },
+  "n_clusters": 2,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "tidak dan sekolah sudah siswa",
+      "kategori": "belum_terklasifikasi"
+    },
+    "1": {
+      "label_teks": "dari lab 50 komputer persen",
+      "kategori": "ruang_belajar"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 1500,
+    "variant_a": "A3",
+    "method": "minilm",
+    "variant_b": "B2",
+    "umap": false,
+    "min_cluster_size": 38,
+    "min_samples": 19,
+    "nmi": 0.0568,
+    "ari": 0.0051,
+    "purity": 0.2398,
+    "noise_ratio": 0.0853,
+    "n_clusters": 2,
+    "runtime_sec": 31.02
+  }
+}

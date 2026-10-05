@@ -1,0 +1,56 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A2",
+    "variant_b": "B1",
+    "variant_c": "C2",
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.33159339427948,
+    "davies_bouldin": 1.0149352566844192,
+    "ari": 0.05460576677723909,
+    "nmi": 0.22436465006369077,
+    "purity": 0.41025641025641024,
+    "homogeneity": 0.2061897383113716,
+    "completeness": 0.24605340615743845,
+    "v_measure": 0.2243646500636908,
+    "noise_ratio": 0.13333333333333333
+  },
+  "n_clusters": 4,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "jumlah sangat sudah lama sejak",
+      "kategori": "belum_terklasifikasi"
+    },
+    "1": {
+      "label_teks": "belajar kegiatan mengajar mengganggu dan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "2": {
+      "label_teks": "dan siswa tidak keselamatan berbahaya",
+      "kategori": "belum_terklasifikasi"
+    },
+    "3": {
+      "label_teks": "instansi pendidikan dan sumber air",
+      "kategori": "sanitasi_air"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 45,
+    "variant_a": "A2",
+    "method": "tfidf",
+    "variant_b": "B1",
+    "umap": true,
+    "nmi": 0.2244,
+    "ari": 0.0546,
+    "purity": 0.4103,
+    "noise_ratio": 0.1333,
+    "n_clusters": 4,
+    "runtime_sec": 0.13
+  }
+}

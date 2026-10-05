@@ -628,6 +628,69 @@ Step 6: Dokumentasi
 
 ---
 
+## 9. Augmentasi Data & Eksperimen Skala (F3.23)
+
+> **Latar belakang.** Ablation awal (bagian 1–8) dijalankan pada **45 dokumen**
+> yang dibangun dari **54 kalimat template** (`scripts/setup_f300.py`). Karena
+> teksnya sangat berulang, hasilnya bias: TF-IDF menang telak, sedangkan
+> IndoBERT/MiniLM tidak menunjukkan kekuatannya (butuh variasi makna & skala).
+> Saran dosen: bandingkan **jumlah laporan sedikit vs banyak**. Bagian ini
+> mendesain dataset laporan sarpras yang **bervariasi kosakata** dan **ber-
+> skala**, untuk memetakan kurva NMI TF-IDF vs neural.
+
+### 9.1 Kenapa data sebelumnya tidak adil untuk neural
+
+- Kosakata efektif hanya **54 kalimat unik** (10–14 per kategori).
+- 100 laporan = random pick dari pool itu → tiap kalimat dipakai ulang 1–2×.
+- 45 dokumen ablation = gabungan kalimat yang sama per sekolah.
+- Akibatnya: pengelompokan "mudah" karena dokumen se-kategori literal identik;
+  neural tidak punya variasi semantik yang dibutuhkan untuk bersinar.
+
+### 9.2 Sumber variasi teks
+
+| Level | Teknik | Contoh (kategori ruang_belajar) |
+|-------|--------|--------------------------------|
+| Struktur | Balik urutan kalimat | "Atap kelas bocor saat hujan, plafon rusak" → "Plafon rusak, atap kelas bocor saat hujan" |
+| Sinonim | Ganti kata dengan makna sama | "rusak" → "pecah/hancur" ; "bocor" → "rembes" |
+| Gaya | Formal ↔ kasual | "Atap ruang kelas mengalami kebocoran" ↔ "Atap kelasnya udah bocor tiap hujan" |
+| Gabung | Satukan 2 topik se-kategori | "atap bocor" + "lantai keramik pecah" → 1 laporan |
+| Konteks | Tambah lokasi/keparahan | "...berbahaya bagi siswa dan mengganggu KBM" |
+
+### 9.3 Skala data (sweep)
+
+```
+n = 45 → 150 → 500 → 1.500
+```
+
+Untuk tiap n, jalankan kombinasi:
+- **A2** (TF-IDF)  vs  **A1/A3** (IndoBERT/MiniLM)
+- **B1** (UMAP n=10) + **C2** (HDBSCAN min_cluster_size=3, min_samples=2)
+- Ukur **NMI & purity** vs ground truth.
+
+**Output:** tabel/grafik NMI vs jumlah laporan per metode → titik crossover
+(jumlah laporan di mana neural menyusul / mendekati TF-IDF).
+
+### 9.4 Ground truth
+
+Variasi yang dihasilkan **menjaga label kategori template induk** → label
+otomatis. Ini independen terhadap representasi (bukan dari fitur model), jadi
+tidak menimbulkan bias melingkar.
+
+### 9.5 Ruang lingkup & fase lanjutan
+
+- **Task ini (F3.23):** template baru + generator augmentasi + dataset + sweep.
+- **Fase lanjutan (di luar F3.23):** fine-tuning IndoBERT/MiniLM di data domain
+  untuk benar-benar "melatih" model — baru di titik inilah neural berpeluang
+  mengungguli TF-IDF.
+
+### 9.6 Deliverable
+
+- `app/ai_pipeline/experiments/generate_augmented.py` (generator variasi)
+- Pool template diperluas (54 → ±150–250 unik)
+- Output augmentasi per n (`dataset_aug_{n}.json`)
+- Hasil sweep (`results/` + ringkasan)
+
+---
 ## Referensi
 
 - HDBSCAN docs: https://hdbscan.readthedocs.io/

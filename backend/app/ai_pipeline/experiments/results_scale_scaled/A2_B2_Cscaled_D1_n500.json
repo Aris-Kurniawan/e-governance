@@ -1,0 +1,54 @@
+{
+  "config": {
+    "n": 500,
+    "variant_a": "A2",
+    "variant_b": "B2",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 22,
+      "min_samples": 11
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.056129541248083115,
+    "davies_bouldin": 2.506440017379849,
+    "ari": 0.00993892277588956,
+    "nmi": 0.11941219492524177,
+    "purity": 0.30659025787965616,
+    "homogeneity": 0.07069997393976607,
+    "completeness": 0.3839609753145568,
+    "v_measure": 0.11941219492524176,
+    "noise_ratio": 0.302
+  },
+  "n_clusters": 2,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "tidak dan sekolah siswa berbahaya",
+      "kategori": "belum_terklasifikasi"
+    },
+    "1": {
+      "label_teks": "jumlah toilet privasi pintu dan",
+      "kategori": "sanitasi_air"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 500,
+    "variant_a": "A2",
+    "method": "tfidf",
+    "variant_b": "B2",
+    "umap": false,
+    "min_cluster_size": 22,
+    "min_samples": 11,
+    "nmi": 0.1194,
+    "ari": 0.0099,
+    "purity": 0.3066,
+    "noise_ratio": 0.302,
+    "n_clusters": 2,
+    "runtime_sec": 0.18
+  }
+}
