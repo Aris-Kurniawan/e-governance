@@ -21,6 +21,10 @@ def reduce_dimensions(
     """
     Reduce high‑dimensional embeddings using UMAP (if available) or identity passthrough.
     
+    FIX (Factor 2): Guard against spectral initialization crash on small datasets.
+    - When n_samples < n_components+2, spectral eigendecomposition fails
+    - Fallback: use random initialization or skip UMAP entirely
+    
     Args:
         embeddings: (n_samples, n_features) array
         n_components: target dimensionality (default 10 per ablation B1)
@@ -42,6 +46,19 @@ def reduce_dimensions(
             "UMAP library not installed. "
             "Install with: pip install umap-learn"
         )
+    
+    n_samples = embeddings.shape[0]
+    
+    # FIX: Guard spectral crash for small datasets
+    # spectral init needs eigendecomposition of ~(n_components+1)x(n_components+1) matrix
+    # scipy.linalg.eigh fails when k >= n_samples
+    if n_samples < n_components + 2:
+        # Small dataset: force random init (avoids spectral eigendecomposition)
+        umap_kwargs['init'] = 'random'
+    
+    # Adaptive n_components: can't reduce to k dimensions if k > n_samples-1
+    if n_samples < n_components:
+        n_components = max(2, n_samples - 1)
     
     reducer = umap.UMAP(
         n_components=n_components,

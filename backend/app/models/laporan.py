@@ -13,6 +13,7 @@ KATEGORI_ENUM = (
     "utilitas",
     "akses_lahan",
     "penunjang",
+    "belum_terklasifikasi",
 )
 KONDISI_ENUM = ("baik", "rusak_ringan", "rusak_sedang", "rusak_berat")
 STATUS_SANGGHAN_ENUM = ("menunggu", "divalidasi", "ditolak")
