@@ -46,6 +46,11 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - State `404` "Klaster tidak ditemukan" untuk ID tak dikenal.
 
 ### Diubah
+- **Antrian Validasi: Strip Filter Fungsional & Data Klaster Diperluas (`src/pages/dinas/AntrianValidasi.tsx`, `src/mocks/dinasData.ts`)**:
+  - Strip filter kini berfungsi: 4 tab status (Belum Ditinjau / Mismatch Terverifikasi / Kejadian Baru / Ditolak) dengan badge hitung `tabCounts`, dropdown sekolah (`schoolOptions`, `aria-label="Filter berdasarkan sekolah"`), slider **Prioritas Min** (`min=0 max=90 step=5`, label `N+`), serta pencarian tersinkron URL `?search=` — semua di-`useMemo` `filteredKlasters` dengan auto-pilih kartu pertama saat filter berubah, counter "X Klaster", footer "Menampilkan X dari Y klaster isu aktif", dan empty state 0 hasil.
+  - Kartu klaster: galeri bukti MinIO berlabel "BUKTI LAPORAN"; label "Terpilih di Inspector" dihapus (rincian di bagian **Dihapus**).
+  - `daftarKlasterDinas` diperluas 5 → 7 klaster (entri baru `kls-006`, `kls-007`) plus pembaruan field entri lama (+347 baris) untuk menopang filter.
+  - `npm run build` sukses.
 - **Footer Ringkas PublicLayout & WargaLayout (`src/layouts/PublicLayout.tsx`, `src/layouts/WargaLayout.tsx`)**:
   - Kredit footer disederhanakan: `© 2026 SIMAKIS · PSDKP Lamongan PENS · Disdik Kab. Lamongan` menjadi `© 2026 SIMAKIS · Disdik Kab. Lamongan` (PublicLayout) dan `© 2026 SIMAKIS Disdik Kab. Lamongan` (WargaLayout) — kredit PSDKP Lamongan PENS dihapus dari keduanya.
   - Format className komponen `Nav` di `WargaLayout` dirapikan ulang tanpa perubahan perilaku.
@@ -131,6 +136,12 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - **Tahap 2 (Verifikasi Identitas)**: Estimasi waktu 2 menit, progress bar 100%, kartu pilihan 4 peran (Pelajar/Siswa Aktif dengan badge *Saksi Kunci*, Orang Tua/Wali, Pengurus Komite, Warga Umum).
   - Integrasi kotak verifikasi Dapodik peserta didik (dropdown sekolah, validasi NISN 10-digit dengan badge status, area unggah foto kartu pelajar berbingkai dashed hijau).
   - Input NIK terenkripsi 16-digit sah, dropdown kelurahan/desa domisili di Lamongan, serta banner jaminan keamanan data anak UU PDP No. 27/2022.
+
+### Dihapus
+- **Label "Terpilih di Inspector" pada Kartu Klaster Antrian Validasi (`src/pages/dinas/AntrianValidasi.tsx`)**:
+  - Label indikator **"Terpilih di Inspector →"** di footer kartu klaster (muncul saat kartu dipilih) dihapus dari seluruh kartu *Antrian Isu Terklaster*; baris metrik kini hanya menampilkan jumlah laporan warga dan dukungan warga.
+  - Impor ikon `ArrowRight` ikut dihapus karena tidak lagi dipakai (aturan `noUnusedLocals`).
+  - `npm run build` sukses; `/dinas/antrian` → HTTP 200.
 
 ### Diperbaiki
 - **Tampilan Filter Jenjang & Pill Matriks Dashboard Wilayah (`src/pages/warga/DashboardWilayah.tsx`, `src/components/ui/select.tsx`)**:
