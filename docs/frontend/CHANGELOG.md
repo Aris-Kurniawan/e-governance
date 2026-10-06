@@ -133,6 +133,11 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - Input NIK terenkripsi 16-digit sah, dropdown kelurahan/desa domisili di Lamongan, serta banner jaminan keamanan data anak UU PDP No. 27/2022.
 
 ### Diperbaiki
+- **Tampilan Filter Jenjang & Pill Matriks Dashboard Wilayah (`src/pages/warga/DashboardWilayah.tsx`, `src/components/ui/select.tsx`)**:
+  - `SelectTrigger` shadcn: kelas `[&>span]:line-clamp-1` dihapus dan ikon chevron diberi `shrink-0 ml-1.5` sehingga label trigger ("Filter Jenjang" / "Jenjang: <pilihan>") tidak terpotong satu baris.
+  - Trigger Filter Jenjang kini `inline-flex whitespace-nowrap` dengan ikon `Filter shrink-0` terpisah dari label, teks tetap satu baris pada lebar sempit.
+  - Pill metrik matriks dirapikan jadi angka saja: `"1 Rusak"` → `"1"`, `"-2 Unit"` → `"2"`, `"-1 R.Teori"` → `"1"`.
+  - `npm run build` sukses.
 - **Gerbang Login Tombol "Mulai Laporkan Temuan" di Beranda (`src/pages/warga/Landing.tsx`)**:
   - Tombol hero **Mulai Laporkan Temuan** sebelumnya selalu `navigate("/sekolah")` tanpa memeriksa sesi, padahal `AuthRequiredModal` sudah ter-mount tetapi tidak pernah dibuka — warga dapat memulai alur pelaporan tanpa masuk akun, tidak sesuai catatan entri "Proteksi & Gerbang Autentikasi Pelaporan" di changelog ini.
   - Kini `handleMulaiLapor` mengecek sesi: belum login → modal *Wajib Masuk / Daftar Akun* terbuka dengan `redirect=/laporan/baru&action=report`; sudah login → langsung diarahkan ke form pelaporan.
