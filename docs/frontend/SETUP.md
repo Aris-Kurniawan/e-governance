@@ -5,10 +5,10 @@ dari `ARCHITECTURE.md` dan `DESIGN_SYSTEM.md` (React 18 SPA + Tailwind CSS +
 shadcn/ui + Apache ECharts) dan diverifikasi ulang terhadap file Figma mockup
 yang sudah dibuat.
 
-> Catatan: `API_CLIENT.md` dan `MOCK_DATA.md` belum dibuat (menunggu
-> `universal/INTERFACES.md`). Sampai keduanya ada, jalankan frontend dalam
-> mode UI-only — komponen data (tabel, chart, peta) dirender dengan props
-> statis dulu, belum fetch ke backend sungguhan.
+> Catatan: `API_CLIENT.md` dan `MOCK_DATA.md` sudah tersedia (`docs/frontend/`).
+> Sampai backend terhubung, jalankan frontend dalam mode UI-only — komponen
+> data (tabel, chart, peta) dirender dari `src/mocks/` dulu, belum fetch ke
+> backend sungguhan. Cek `TASK_GUIDE.md` (frontend) untuk urutan kerja.
 
 ---
 

@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 43% 11%; /* ink */
+    --card: 0 0% 100%; /* surface */
+    --card-foreground: 220 43% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 43% 11%;
+    --primary: 210 69% 23%; /* #123A63 */
+    --primary-foreground: 210 40% 98%; /* surface-subtle */
+    --secondary: 210 50% 95%; /* primary-light */
+    --secondary-foreground: 210 69% 23%;
+    --muted: 216 29% 97%; /* background-alt */
+    --muted-foreground: 216 18% 34%; /* ink-secondary */
+    --accent: 210 50% 95%; /* primary-light */
+    --accent-foreground: 210 69% 23%;
+    --destructive: 0 70% 35%; /* danger-text */
+    --destructive-foreground: 0 0% 100%;
+    --border: 218 17% 91%; /* border/divider */
+    --input: 218 17% 91%;
+    --ring: 210 47% 88%; /* primary-border */
+    --radius: 0.25rem;
+    --chart-1: 210 69% 23%;
+    --chart-2: 0 70% 35%;
+    --chart-3: 23 83% 31%;
+    --chart-4: 219 14% 60%;
+    --chart-5: 48 97% 77%;
+  }
+
+  .dark {
+    --background: 220 43% 11%;
+    --foreground: 210 40% 98%;
+    --card: 220 43% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 43% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 69% 23%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 216 29% 97%;
+    --secondary-foreground: 220 43% 11%;
+    --muted: 216 18% 34%;
+    --muted-foreground: 219 14% 60%;
+    --accent: 210 47% 88%;
+    --accent-foreground: 210 69% 23%;
+    --destructive: 0 70% 35%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 218 17% 91%;
+    --input: 218 17% 91%;
+    --ring: 210 47% 88%;
+    --chart-1: 210 69% 23%;
+    --chart-2: 0 70% 35%;
+    --chart-3: 23 83% 31%;
+    --chart-4: 219 14% 60%;
+    --chart-5: 48 97% 77%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'tnum';
+  }
+}
+
+/* ── Print: hanya dokumen data yang dicetak, bukan UI ── */
+@media print {
+  @page {
+    margin: 15mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  /* Sembunyikan shell layout (sidebar, topbar) */
+  aside,
+  header {
+    display: none !important;
+  }
+
+  /* Lepas layout flex & padding konten agar dokumen mengisi halaman */
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Reset container flex pembungkus agar tidak memotong dokumen */
+  .flex.min-h-screen {
+    display: block !important;
+    background: #ffffff !important;
+  }
+}
