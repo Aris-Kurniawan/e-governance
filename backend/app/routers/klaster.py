@@ -169,6 +169,103 @@ async def get_clustering_status(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# F4.5 — GET /klaster (List) & GET /klaster/{id} (Detail Klaster + Anggota)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _klaster_to_dict(k: Klaster) -> dict:
+    return {
+        "klaster_id": k.id,
+        "label": k.label,
+        "kategori": k.kategori,
+        "sekolah_npsn": k.sekolah_npsn,
+        "skor_keparahan": float(k.skor_keparahan) if k.skor_keparahan is not None else None,
+        "skor_prioritas": float(k.skor_prioritas) if k.skor_prioritas is not None else None,
+        "jumlah_vote_terhitung": k.jumlah_vote_terhitung,
+        "status_verifikasi": k.status_verifikasi,
+        "status_penanganan": k.status_penanganan,
+        "urutan_prioritas_override": k.urutan_prioritas_override,
+    }
+
+
+@verifikasi_router.get("")
+async def list_klaster(
+    sekolah_npsn: str | None = None,
+    kategori: str | None = None,
+    status_verifikasi: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+):
+    """F4.5 — List klaster (publik), filter opsional + pagination (INTERFACES §0.2)."""
+    page = max(page, 1)
+    page_size = min(max(page_size, 1), 100)
+
+    stmt = select(Klaster)
+    count_stmt = select(func.count()).select_from(Klaster)
+    if sekolah_npsn:
+        stmt = stmt.where(Klaster.sekolah_npsn == sekolah_npsn)
+        count_stmt = count_stmt.where(Klaster.sekolah_npsn == sekolah_npsn)
+    if kategori:
+        stmt = stmt.where(Klaster.kategori == kategori)
+        count_stmt = count_stmt.where(Klaster.kategori == kategori)
+    if status_verifikasi:
+        stmt = stmt.where(Klaster.status_verifikasi == status_verifikasi)
+        count_stmt = count_stmt.where(Klaster.status_verifikasi == status_verifikasi)
+
+    total_items = db.scalar(count_stmt) or 0
+    rows = db.scalars(
+        stmt.order_by(Klaster.skor_prioritas.desc().nullslast())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+
+    return {
+        "data": [_klaster_to_dict(k) for k in rows],
+        "meta": {
+            "page": page,
+            "page_size": page_size,
+            "total_items": total_items,
+            "total_pages": (total_items + page_size - 1) // page_size,
+        },
+    }
+
+
+@verifikasi_router.get("/{klaster_id}")
+async def get_klaster_detail(
+    klaster_id: str,
+    db: Session = Depends(get_db),
+):
+    """F4.5 — Detail klaster + daftar laporan anggota (publik)."""
+    klaster = db.scalar(select(Klaster).where(Klaster.id == klaster_id))
+    if not klaster:
+        raise HTTPException(status_code=404, detail="Klaster tidak ditemukan")
+
+    from app.models.sekolah import Sekolah
+    sekolah = db.scalar(select(Sekolah).where(Sekolah.npsn == klaster.sekolah_npsn))
+
+    laporan_rows = db.scalars(
+        select(Laporan)
+        .where(Laporan.klaster_id == klaster_id)
+        .order_by(Laporan.created_at.desc())
+    ).all()
+
+    data = _klaster_to_dict(klaster)
+    data["sekolah_nama"] = sekolah.nama if sekolah else None
+    data["created_at"] = klaster.created_at.isoformat() if klaster.created_at else None
+    data["laporan"] = [
+        {
+            "laporan_id": lap.id,
+            "fasilitas_terkait": lap.fasilitas_terkait,
+            "kondisi_dilaporkan": lap.kondisi_dilaporkan,
+            "deskripsi": lap.deskripsi,
+            "created_at": lap.created_at.isoformat() if lap.created_at else None,
+        }
+        for lap in laporan_rows
+    ]
+    return {"data": data}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # F3.10 — PUT /klaster/{id}/verifikasi (Cluster Verification)
 # ─────────────────────────────────────────────────────────────────────────────
 
