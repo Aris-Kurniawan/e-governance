@@ -76,9 +76,8 @@ def test_create_laporan_tanpa_kategori(client):
         },
     )
     assert res.status_code == 201, res.text
-    # NOTE: laporan endpoint langsung return LaporanResponse (tanpa wrapper data),
-    # berbeda dari auth endpoint yang pakai { data: ... }. Ini pre-existing, bukan regresi.
-    body = res.json()
+    # Envelope { data: ... } sesuai INTERFACES.md §0.1 (diperbaiki di F4.2/F4.4)
+    body = res.json()["data"]
     assert "kategori" not in body, "Field kategori tidak boleh ada di response laporan"
     assert body["sekolah_npsn"] == "20505816"
     assert "bocor" in body["deskripsi"].lower()
@@ -98,4 +97,4 @@ def test_create_laporan_menolak_kategori_kalau_dikirim(client):
     )
     assert res.status_code == 201, res.text
     # kategori tidak disimpan karena tidak ada di schema
-    assert "kategori" not in res.json()
+    assert "kategori" not in res.json()["data"]

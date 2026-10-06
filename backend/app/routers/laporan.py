@@ -29,7 +29,7 @@ def generate_tracking_id() -> str:
     return f"LAP-{datetime.now().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=LaporanResponse)
+@router.post("", status_code=status.HTTP_201_CREATED)
 def create_laporan(
     payload: LaporanCreateRequest,
     db: Session = Depends(get_db),
@@ -62,7 +62,7 @@ def create_laporan(
     db.commit()
     db.refresh(laporan)
 
-    return LaporanResponse(
+    return {"data": LaporanResponse(
         id=laporan.id,
         tracking_id=laporan.tracking_id,
         user_id=laporan.user_id,
@@ -72,7 +72,7 @@ def create_laporan(
         deskripsi=laporan.deskripsi,
         status_sanggahan=laporan.status_sanggahan,
         created_at=laporan.created_at,
-    )
+    )}
 
 
 @router.get("/riwayat", response_model=LaporanListResponse)
@@ -119,7 +119,7 @@ def riwayat_laporan(
     )
 
 
-@router.get("/{laporan_id}", response_model=LaporanDetailResponse)
+@router.get("/{laporan_id}")
 def detail_laporan(
     laporan_id: str,
     db: Session = Depends(get_db),
@@ -163,7 +163,7 @@ def detail_laporan(
         for f in foto_list
     ]
 
-    return LaporanDetailResponse(
+    return {"data": LaporanDetailResponse(
         id=laporan.id,
         tracking_id=laporan.tracking_id,
         user_id=laporan.user_id,
@@ -175,4 +175,4 @@ def detail_laporan(
         created_at=laporan.created_at,
         sekolah=sekolah_data,
         foto=foto_data,
-    )
+    )}

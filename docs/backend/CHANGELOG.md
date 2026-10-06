@@ -897,6 +897,44 @@ diubah karena sudah tested & committed; `INTERFACES.md` mengikuti path aktual).
 
 ---
 
+### 3.18 F4.2 + F4.4 — Black-box Testing & Fix Bug (2026-10-05) ✅ SELESAI
+
+**F4.2 — Black-box Testing (sisi backend):** `backend/tests/test_blackbox.py` — 48 skenario dalam 9 kelas:
+
+| Kelas | Cakupan |
+|---|---|
+| HealthAndErrorEnvelope | `GET /`, `/health`, bentuk `{"error":{code,message}}` |
+| AuthFlow | register → login → `/auth/me`, 401 tanpa token, 400 payload salah |
+| SekolahPublic | list `data`+`meta`, detail `data`, 404, 422 pagination |
+| LaporanFlow | create 201, 404 sekolah tak ada, riwayat owner-only, detail 201/403/404 |
+| KlasterPublic | envelope `data`+`meta`, filter kategori, 404 (endpoint F4.5) |
+| VoteFlow | vote 201, `ALREADY_VOTED` 409, override admin tanpa alasan 422, non-admin 403 |
+| VerifikasiStatus | verifikasi `data.status`, tolak tanpa alasan 422, riwayat |
+| DashboardAudit | 3 endpoint dashboard publik, `/audit/log` admin 200/non-admin 403 |
+| AIUpload | 401 tanpa token, upload ke laporan inexisten 404 |
+
+Hasil pertama: **40/47 lulus → 7 gagal = 4 bug nyata** (skenario error/edge ketemu),
+ditambah 1 temuan audit kontrak (lihat #5).
+
+**F4.4 — 5 temuan diperbaiki:**
+
+1. **Crash MySQL `NULLS LAST`** — `col.desc().nullslast()` dirender harfiah oleh MySQL → syntax error 1064 → 500 di `GET /klaster` (list), `GET /dashboard/prioritas`, `GET /dashboard/wilayah` (di SQLite lulus, jadi lolos selama ini). Fix: `col IS NULL, col DESC` (kompatibel lintas-DB): `dashboard.py:34,78`, `klaster.py:217`.
+2. **Crash `GET /audit/log`** — `select(AuditLog).count()` API SQLAlchemy 1.x → `AttributeError` 500. Fix: `select(func.count()).select_from(AuditLog)` (`audit.py:31`).
+3. **Envelope `data` belum diterapkan (sisa F3.11)** — `POST /laporan`, `GET /laporan/{id}`, `GET /sekolah/{npsn}` masih respons rata, melanggar INTERFACES §0.1. Fix: bungkus `{"data": ...}` + lepas `response_model` di 3 endpoint.
+4. **`GET /sekolah/{npsn}/sanggahan` minta login** — kode pakai `get_current_user`, INTERFACES §2.1 menyatakan **Publik**. Fix: lepas dependensi auth (riwayat sanggahan bersifat publik).
+5. **`GET /dashboard/wilayah` terbuka padahal spec = dinas** — TASK_GUIDE F3.22, PRD FEAT-002, dan INTERFACES §3 semua menetapkan `verifikator_dinas`/`kepala_dinas`, tapi endpoint tidak ada guard (kebalik dari #4). Fix: pasang `RoleChecker(["verifikator_dinas", "kepala_dinas"])` (`dashboard.py`).
+
+**Test penyesuaian:** `test_laporan.py` (2 asersi ikut bentuk baru `data`), `test_blackbox.py` (create/detail laporan + `/dashboard/wilayah` jadi 401/200 sesuai spec).
+
+**Verifikasi akhir:**
+- Pytest **87/87 lulus** (39 existing + 48 blackbox), 0 gagal.
+- DB prod `simakis` tak tersentuh (600 laporan, 100 klaster, tests memakai `simakis_test`).
+- Diff bersih: 26+/22− baris (kode+test), tanpa noise line-ending.
+
+**Catatan:** temuan baru dari pengujian FE (F4.1 bersama Dimas) → buka F4.4 lanjutan.
+
+---
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

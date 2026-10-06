@@ -5,11 +5,16 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import RoleChecker
 from app.models.klaster import Klaster
 from app.models.sekolah import Sekolah
+from app.models.user import User
 
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+
+# F3.22 / PRD FEAT-002 — Dashboard Wilayah khusus dinas
+require_dinas = RoleChecker(["verifikator_dinas", "kepala_dinas"])
 
 
 @router.get("/prioritas")
@@ -31,7 +36,9 @@ async def get_dashboard_prioritas(
     if status:
         query = query.where(Klaster.status_verifikasi == status)
     
-    query = query.order_by(Klaster.skor_prioritas.desc().nullslast()).limit(limit)
+    query = query.order_by(
+        Klaster.skor_prioritas.is_(None), Klaster.skor_prioritas.desc()
+    ).limit(limit)
     
     results = db.execute(query).all()
     
@@ -55,12 +62,13 @@ async def get_dashboard_prioritas(
 @router.get("/wilayah")
 async def get_dashboard_wilayah(
     db: Session = Depends(get_db),
+    _: User = Depends(require_dinas),
 ):
     """
     F3.22 — Dashboard Wilayah.
     
     GET /dashboard/wilayah
-    Akses: Publik (Ringkasan kondisi kecamatan Lamongan)
+    Akses: verifikator_dinas, kepala_dinas (PRD FEAT-002)
     """
     # Hitung jumlah sekolah
     total_sekolah = db.scalar(select(func.count()).select_from(Sekolah)) or 0
@@ -75,7 +83,7 @@ async def get_dashboard_wilayah(
     # Top 5 klaster prioritas
     top_klaster_q = select(Klaster, Sekolah).join(
         Sekolah, Klaster.sekolah_npsn == Sekolah.npsn
-    ).order_by(Klaster.skor_prioritas.desc().nullslast()).limit(5)
+    ).order_by(Klaster.skor_prioritas.is_(None), Klaster.skor_prioritas.desc()).limit(5)
     top_klaster = db.execute(top_klaster_q).all()
     
     # Sekolah dengan isu terbanyak

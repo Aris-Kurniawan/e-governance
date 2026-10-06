@@ -70,7 +70,7 @@ def list_sekolah(
     }
 
 
-@router.get("/{npsn}", response_model=SekolahDetailResponse)
+@router.get("/{npsn}")
 def get_sekolah(npsn: str, db: Session = Depends(get_db)):
     """Detail sekolah + kondisi sarana (agregat per jenis ruang)."""
     sekolah = db.scalar(select(Sekolah).where(Sekolah.npsn == npsn))
@@ -93,7 +93,7 @@ def get_sekolah(npsn: str, db: Session = Depends(get_db)):
     total_rusak_sedang = sum(s.kondisi_rusak_sedang for s in sarana_list)
     total_rusak_berat = sum(s.kondisi_rusak_berat for s in sarana_list)
 
-    return SekolahDetailResponse(
+    return {"data": SekolahDetailResponse(
         npsn=sekolah.npsn,
         nama=sekolah.nama,
         alamat=sekolah.alamat,
@@ -133,4 +133,4 @@ def get_sekolah(npsn: str, db: Session = Depends(get_db)):
             "total_rusak_berat": total_rusak_berat,
         },
         klaster_isu=[],
-    )
+    )}

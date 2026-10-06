@@ -1217,7 +1217,7 @@ user admin + verifikator) — siap dilayani ke frontend.
 
 ---
 
-### F4.2 — Black-box Testing
+### F4.2 — Black-box Testing ✅ SELESAI (sisi backend, 2026-10-05)
 
 **Metodologi:** Uji fungsi sistem tanpa melihat kode internal.
 
@@ -1226,7 +1226,11 @@ user admin + verifikator) — siap dilayani ke frontend.
 - Jalur gagal (error handling)
 - Edge cases
 
-**Deliverable:** Seluruh skenario kritikal lulus.
+**Deliverable:** Seluruh skenario kritikal lulus. ✅ — 48 skenario di
+`backend/tests/test_blackbox.py` (9 kelas: envelope, auth, sekolah, laporan,
+klaster, vote, verifikasi, dashboard/audit, upload); 87/87 pytest total.
+4 temuan awal → diperbaiki di F4.4 (lihat CHANGELOG §3.18).
+Pengujian sisi FE berjalan bersama F4.1.
 
 ---
 
@@ -1241,9 +1245,15 @@ user admin + verifikator) — siap dilayani ke frontend.
 
 ---
 
-### F4.4 — Fix Bug
+### F4.4 — Fix Bug ✅ SELESAI (2026-10-05)
 
-**Deliverable:** Semua temuan testing diperbaiki.
+**Deliverable:** Semua temuan testing diperbaiki. ✅ — 5 temuan backend
+diperbaiki & 87/87 lulus: (1) `NULLS LAST` crash di MySQL (klaster + 2
+dashboard), (2) `GET /audit/log` crash API SQLAlchemy 1.x, (3) envelope
+`data` dilengkapi di laporan create/detail + sekolah detail, (4) sanggahan
+jadi Publik sesuai INTERFACES §2.1, (5) `/dashboard/wilayah` dipasangi guard
+dinas sesuai spec F3.22/PRD FEAT-002. Detail: CHANGELOG §3.18.
+Temuan baru pengujian FE → F4.4 lanjutan.
 
 ---
 

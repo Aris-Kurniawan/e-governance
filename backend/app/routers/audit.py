@@ -1,7 +1,7 @@
 """F3.21 — Audit Log Endpoint."""
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, RoleChecker
@@ -28,7 +28,7 @@ async def get_audit_log(
     Akses: admin, kepala_dinas
     Paginated audit trail.
     """
-    total = db.scalar(select(AuditLog).count()) or 0
+    total = db.scalar(select(func.count()).select_from(AuditLog)) or 0
     offset = (page - 1) * page_size
     
     logs = db.scalars(

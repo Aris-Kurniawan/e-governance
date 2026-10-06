@@ -214,7 +214,7 @@ async def list_klaster(
 
     total_items = db.scalar(count_stmt) or 0
     rows = db.scalars(
-        stmt.order_by(Klaster.skor_prioritas.desc().nullslast())
+        stmt.order_by(Klaster.skor_prioritas.is_(None), Klaster.skor_prioritas.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()

@@ -6,10 +6,8 @@ from sqlalchemy.orm import Session
 from math import ceil
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
 from app.models.laporan import Laporan
 from app.models.sekolah import Sekolah
-from app.models.user import User
 
 router = APIRouter(prefix="/sekolah", tags=["sekolah"])
 
@@ -20,7 +18,6 @@ def riwayat_sanggahan_sekolah(
     page: int = Query(1, ge=1, description="Halaman"),
     page_size: int = Query(10, ge=1, le=50, description="Jumlah per halaman"),
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
 ):
     """Riwayat sanggahan data untuk sekolah tertentu."""
     # Cek sekolah ada
