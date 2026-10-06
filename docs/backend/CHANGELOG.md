@@ -852,6 +852,51 @@ dengan konfigurasi pipeline sama (TF-IDF 300 + UMAP 10).
 
 ---
 
+### 3.16 F4.5 — Dokumentasi API Final (2026-10-05) ✅ SELESAI
+
+**Deliverable:** Swagger + `INTERFACES.md` sinkron dengan kode.
+
+**Keputusan:** sinkronisasi **kode → kontrak** (pilihan Aris: backend tidak
+diubah karena sudah tested & committed; `INTERFACES.md` mengikuti path aktual).
+
+**Perubahan:**
+1. **2 endpoint baru diimplementasi** (`app/routers/klaster.py`):
+   - `GET /klaster` — list klaster publik, filter `sekolah_npsn`/`kategori`/`status_verifikasi`, pagination §0.2, urut `skor_prioritas` desc.
+   - `GET /klaster/{id}` — detail klaster + `sekolah_nama` + daftar laporan anggota (untuk halaman Detail Klaster, `PAGE_STATES.md` §A3).
+2. **`INTERFACES.md` ditulis ulang** mengikuti kode:
+   - §3: + `GET /dashboard/prioritas`; §5: path `PUT /klaster/{id}/verifikasi` (query-param) + `/ai/cluster` + `/ai/status`; §6: pindah ke `/vote/*` (query-param) + `PUT /vote/klaster/{id}/skor`; §7: `POST /klaster/{id}/status` + `GET /klaster/{id}/riwayat` + `PUT /vote/.../override`; §10: `POST /upload/laporan?laporan_id=` + `DELETE /upload/{storage_key}`; §0: health check `GET /`, `/health`, `/api/health`.
+   - Deviasi lama (path vote/foto/riwayat, method PATCH→PUT/POST, body→query-param) dihapus — kontrak = kode.
+3. **`API_CLIENT.md` §4**: tabel deviasi lama ditandai "sudah sinkron (F4.5)".
+4. **TASK_GUIDE F4.5** ditandai ✅ dengan catatan eksekusi.
+
+**Verifikasi:**
+- 31 endpoint di `openapi.json` = 31 endpoint terdokumentasi (sehat: 3 health + 28 API).
+- Pytest **39/39 passed** (endpoint baru lolos import/route tanpa memutus test lama).
+- Diff `comm` kode vs `INTERFACES.md`: 0 selisih nyata (hanya notasi `{id}` vs `{klaster_id}`).
+
+**Belum/Follow-up:**
+- Schema `backend/app/schemas/` belum diwajibkan mengikuti §0.1 (catatan header INTERFACES) — audit terpisah.
+- §11 "Yang Belum Diputuskan" tetap berlaku (batas ukuran foto, masa tunda vote, dll).
+
+---
+
+### 3.17 F4.6 — Docker Compose (2026-10-05) ✅ SELESAI
+
+**Deliverable:** `docker-compose.yml` untuk deploy.
+
+**File baru (4):**
+- `docker-compose.yml` — 3 service sesuai `DEPLOYMENT.md` §2: `backend` (build `./backend`, port 8000, `depends_on` mysql sehat), `mysql:8` (volume `mysql_data`, credentials dari env), `minio/minio` (volume `minio_data`, console :9001) + network `simakis-network`.
+- `backend/Dockerfile` — multi-stage, Python 3.14 slim, pre-download model embedding `paraphrase-multilingual-MiniLM-L12-v2` saat build (catatan `DEPLOYMENT.md` §6), non-root user, `HEALTHCHECK` ke `/api/health`, uvicorn workers=1.
+- `.dockerignore` — exclude venv/.env/cache/tests/frontend.
+- `.env.production.example` — template env produksi (JWT_SECRET & PDP_ENCRYPTION_KEY wajib diganti, `DATABASE_URL` mengarah ke service `mysql`, lihat `DEPLOYMENT.md` §4).
+
+**Verifikasi:** Docker tidak tersedia di WSL lokal → validasi syntax manual
+(setara `docker compose config` ditunda ke server deploy). Deploy manual:
+`docker compose --env-file .env.production up -d --build` lalu
+`docker compose exec backend alembic upgrade head` (`DEPLOYMENT.md` §5).
+
+---
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

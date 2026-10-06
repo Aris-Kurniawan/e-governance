@@ -276,20 +276,17 @@ async function request<T>(
 | 25 | GET | `/dashboard/wilayah` | `verifikator_dinas`, `kepala_dinas` | ✅ |
 | 26 | GET | `/audit/log` | `admin`, `kepala_dinas` | ✅ |
 
-> **Perbedaan path vs `INTERFACES.md`** (backend mengikuti `TASK_GUIDE.md`;
-> kedua dokumen perlu disinkronkan — jangan ubah path FE sepihak):
+> **Status sinkron (F4.5, 2026-10-05):** `INTERFACES.md` sudah disinkronkan
+> ke path backend aktual (keputusan: kontrak mengikuti kode). Deviasi lama di
+> bawah ini sudah tidak berlaku — **path backend adalah patokan**:
 >
-> | `INTERFACES.md` | Backend aktual | Task |
+> | Deviasi lama (sudah disinkron) | Backend aktual | Task |
 > |---|---|---|
-> | `POST /klaster/{id}/vote` | `POST /vote` (body `{ klaster_id }`) | F3.12 |
+> | `POST /klaster/{id}/vote` | `POST /vote?klaster_id={id}` | F3.12 |
 > | `GET /klaster/{id}/vote/status` | `GET /vote/status/{klaster_id}` | F3.13 |
 > | `GET /klaster/{id}/status` | `GET /klaster/{id}/riwayat` | F3.18 |
-> | `POST /laporan/{id}/foto` | `POST /upload/laporan` | — |
-> | `GET /klaster`, `GET /klaster/{id}` | **belum ada** | — |
->
-> Endpoint yang belum ada di backend: `GET /klaster` (list) dan
-> `GET /klaster/{id}` (detail klaster + laporan anggota) — halaman Detail
-> Klaster (`PAGE_STATES.md` §A3) menunggu task ini.
+> | `POST /laporan/{id}/foto` | `POST /upload/laporan?laporan_id={id}` | — |
+> | `GET /klaster`, `GET /klaster/{id}` | **sudah diimplementasi (F4.5)** | F4.5 |
 
 ### 5.1 Peta Pemakaian per Halaman
 

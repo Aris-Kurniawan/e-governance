@@ -1247,31 +1247,31 @@ user admin + verifikator) — siap dilayani ke frontend.
 
 ---
 
-### F4.5 — Dokumentasi API Final
+### F4.5 — Dokumentasi API Final ✅ SELESAI (2026-10-05)
 
-**Deliverable:** Swagger + `INTERFACES.md` sinkron dengan kode.
+**Deliverable:** Swagger + `INTERFACES.md` sinkron dengan kode. ✅
+
+**Catatan eksekusi:** kontrak disinkronkan **ke arah kode** (keputusan Aris):
+- `INTERFACES.md` §0–§10 ditulis ulang mengikuti path & param aktual (query-param style vote/verifikasi/status).
+- 2 endpoint baru diimplementasi: `GET /klaster` (list + pagination) & `GET /klaster/{id}` (detail + laporan anggota) — `app/routers/klaster.py`.
+- 4 endpoint sebelumnya tak terdokumentasi: `POST /ai/cluster`, `GET /ai/status`, `GET /dashboard/prioritas`, `PUT /vote/klaster/{id}/skor`.
+- Health check `GET /`, `/health`, `/api/health` didokumentasikan (untuk F4.6 Docker healthcheck).
+- `API_CLIENT.md` §4 catatan deviasi ditandai sudah sinkron.
+- Verifikasi: 31 endpoint di `openapi.json` = dokumentasi; pytest 39/39.
 
 ---
 
-### F4.6 — Docker Compose
+### F4.6 — Docker Compose ✅ SELESAI (2026-10-05)
 
-```yaml
-# Ringkasan struktur
-services:
-  backend:
-    build: ./backend
-    env_file: .env.production
-    ports: ["8000:8000"]
-    depends_on: [mysql, minio]
+**Deliverable:** `docker-compose.yml` untuk deploy. ✅
 
-  mysql:
-    image: mysql:8
+**File yang dibuat:**
+- `docker-compose.yml` (3 service: backend, MySQL 8, MinIO)
+- `backend/Dockerfile` (Python 3.14 slim, pre-download model embedding, healthcheck)
+- `.dockerignore`
+- `.env.production.example` (template prod)
 
-  minio:
-    image: minio/minio
-```
-
-**Deliverable:** `docker-compose.yml` untuk deploy.
+(Lihat `DEPLOYMENT.md` dan CHANGELOG §3.17 untuk instruksi deploy).
 
 ---
 
