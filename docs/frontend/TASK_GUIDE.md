@@ -6,7 +6,7 @@
 > Bentuk data apa pun diambil dari `API_CLIENT.md` §3 / `INTERFACES.md` —
 > jangan mendefinisikan ulang.
 
-**Update terakhir:** 15 September 2026
+**Update terakhir:** 1 Oktober 2026
 
 ---
 
@@ -18,6 +18,68 @@
 | **Fase 2** | 4–7 | Dashboard Warga, Direktori Sekolah, Form Laporan (mock data) |
 | **Fase 3** | 8–11 | Klaster Isu, Voting, Status Pemerintah |
 | **Fase 4** | 12–14 | Integrasi FE↔BE, Testing, Finalisasi |
+
+---
+
+## Status Pengerjaan
+
+**Rekap:** Fase 1 & Fase 2 **selesai** · Fase 3 **sebagian** · Fase 4 **belum**.
+Status diverifikasi terhadap kode pada 1 Oktober 2026.
+
+| Kode | Task | Status | Catatan |
+|------|------|--------|---------|
+| F1.1 | Setup Vite + React + TS | Selesai | Deviasi: routing di `src/App.tsx`, folder `src/routes/` hanya `.gitkeep` |
+| F1.2 | Token Desain & Tailwind | Selesai | `tailwind.config.js` + `src/styles/globals.css` |
+| F1.3 | Install & Generate shadcn/ui | Selesai | 12 komponen di `src/components/ui/` |
+| F1.4 | Font Plus Jakarta Sans | Selesai | Via Google Fonts di `index.html` |
+| F1.5 | Scaffold Struktur Folder | Selesai | `components/institutional/` & `components/layout/` masih `.gitkeep` |
+| F2.1 | API Client Layer | Selesai | `src/lib/api/`: client, types, auth, sekolah, laporan, klaster, errors |
+| F2.2 | Mock Data Layer | Selesai | `src/mocks/`: sekolah, sekolahDirektori, klaster, laporan, status, auth, dinasData |
+| F2.3 | Layout Warga | Selesai | `WargaLayout` + `PublicLayout` + `AuthLayout` |
+| F2.4 | Dashboard Warga | Selesai | `pages/warga/Dashboard.tsx` (+ `DashboardWilayah.tsx`) |
+| F2.5 | Direktori Sekolah | Selesai | Termasuk `NumberedPagination` |
+| F2.6 | Detail Sekolah | Selesai | 3 kartu sesuai `DECISIONS.md` D-20 |
+| F2.7 | Form Laporan | Selesai | — |
+| F2.8 | Riwayat Laporan | Selesai | — |
+| F2.9 | Page States & Error Boundary | Selesai | `hooks/useFetch.ts`, `components/errors/ErrorBoundary.tsx`, `lib/api/errors.ts` |
+| F3.1 | Klaster Isu | **Sebagian** | `DetailKlaster.tsx` sudah ada (badge status, skor prioritas, laporan anggota); `InstitutionalStepper` & halaman list klaster belum ada |
+| F3.2 | Voting | **Belum** | Tidak ada UI vote di halaman mana pun — pendukung API/mock sudah siap (lihat detail di bawah) |
+| F3.3 | Status Tindak Lanjut | **Belum** | Belum ada halaman/rute status publik per klaster; `useStatusPolling` sudah ada tetapi belum dipakai |
+| F3.4 | Portal Pemerintah | **Sebagian** | `DinasLayout` (spesifikasi menyebut `PemerintahLayout`), DashboardKadis, verifikasi klaster §B1 (AntrianValidasi) ✓; override prioritas §B2 & update status §B3 belum |
+| F4.1 | Ganti Mock → API Asli | **Belum** | Seluruh halaman masih memakai `src/mocks/` |
+| F4.2 | Black-box Testing | **Belum** | Belum ada catatan pengujian state `PAGE_STATES.md` |
+| F4.3 | Perf & Aksesibilitas | **Belum** | Rute masih import statis (belum lazy-load); audit Lighthouse belum |
+| F4.4 | Dokumentasi Final | **Belum** | — |
+
+### Detail Task Tertunda (belum selesai / terlewat)
+
+- [ ] **F3.2 — Voting** *(belum dikerjakan)*: target halaman **Detail Klaster Isu**
+  (`src/pages/warga/DetailKlaster.tsx`, rute `/klaster/:klasterId`, `PAGE_STATES.md §A3`).
+  Wajib: tombol **Vote** → konfirmasi → **Vote Tercatat**; akun masa tunda → badge
+  **Menunggu Masa Tunda** (bukan "Sudah Vote"); `409 ALREADY_VOTED` → tombol
+  **Sudah Vote** (disabled). Pendukung sudah tersedia: `lib/api/klaster.ts`
+  (`voteKlaster()`, `api.vote(id)`), type `VoteResponse`, mock `voteContoh` /
+  `votePendingContoh` (`mocks/klaster.ts`).
+- [ ] **F3.3 — Status Tindak Lanjut** *(belum dikerjakan)*: halaman status publik
+  per klaster, 6 status + alasan wajib (`PAGE_STATES.md §A5`), memakai
+  `useStatusPolling` (sudah tersedia, belum dipakai halaman mana pun).
+- [ ] **F3.1 — sisa**: komponen `InstitutionalStepper` (folder
+  `src/components/institutional/` masih `.gitkeep`) dan daftar/list klaster isu
+  sebagai tampilan sendiri (saat ini hanya widget di Dashboard Wilayah & kartu 3
+  Detail Sekolah).
+- [ ] **F3.4 — sisa**: override prioritas (`PAGE_STATES.md §B2` — tombol kolom
+  AKSI di `TabelVerifikasi.tsx` saat ini belum punya handler) dan update status
+  penanganan + loop "masih berlangsung" (§B3).
+- [ ] **F4.1 — Ganti Mock → API Asli**: seluruh pemakaian `src/mocks/` diganti
+  `src/lib/api/` tanpa mengubah struktur komponen.
+- [ ] **F4.2 — Black-box Testing**: uji manual seluruh state `PAGE_STATES.md`
+  (normal & gagal).
+- [ ] **F4.3 — Perf & Aksesibilitas**: lazy-load route, audit Lighthouse
+  (target aksesibilitas ≥ 90).
+- [ ] **F4.4 — Dokumentasi Final**: sinkronkan seluruh dokumen `docs/frontend/`
+  dengan kode final.
+
+> Penanda: `[ ]` = tertunda, `[x]` = selesai. Audit terakhir 1 Oktober 2026.
 
 ---
 

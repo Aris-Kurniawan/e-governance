@@ -46,6 +46,10 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - State `404` "Klaster tidak ditemukan" untuk ID tak dikenal.
 
 ### Diubah
+- **Status Pengerjaan Task Frontend di TASK_GUIDE (`docs/frontend/TASK_GUIDE.md`)**:
+  - Menambahkan seksi **Status Pengerjaan**: tabel status seluruh task F1.1–F4.4 hasil audit terhadap kode (1 Oktober 2026) plus daftar **Detail Task Tertunda (belum selesai / terlewat)** berformat checklist dengan target file/rute dan pendukung yang sudah tersedia.
+  - Task tertunda tercatat: F3.1 sisa (`InstitutionalStepper` + list klaster), **F3.2 Voting** (target `DetailKlaster.tsx` §A3 — pendukung `voteKlaster`/`VoteResponse`/mock sudah ada), F3.3 Status Tindak Lanjut (halaman status + `useStatusPolling` belum terpasang), F3.4 sisa (override prioritas §B2, update status penanganan §B3), dan seluruh Fase 4 (F4.1–F4.4); deviasi minor F1.1 (routing di `App.tsx`) & F1.5 (folder institusional kosong) ikut dicatat.
+  - `Update terakhir` TASK_GUIDE diperbarui dari 15 September 2026 menjadi 1 Oktober 2026.
 - **Antrian Validasi: Strip Filter Fungsional & Data Klaster Diperluas (`src/pages/dinas/AntrianValidasi.tsx`, `src/mocks/dinasData.ts`)**:
   - Strip filter kini berfungsi: 4 tab status (Belum Ditinjau / Mismatch Terverifikasi / Kejadian Baru / Ditolak) dengan badge hitung `tabCounts`, dropdown sekolah (`schoolOptions`, `aria-label="Filter berdasarkan sekolah"`), slider **Prioritas Min** (`min=0 max=90 step=5`, label `N+`), serta pencarian tersinkron URL `?search=` — semua di-`useMemo` `filteredKlasters` dengan auto-pilih kartu pertama saat filter berubah, counter "X Klaster", footer "Menampilkan X dari Y klaster isu aktif", dan empty state 0 hasil.
   - Kartu klaster: galeri bukti MinIO berlabel "BUKTI LAPORAN"; label "Terpilih di Inspector" dihapus (rincian di bagian **Dihapus**).
