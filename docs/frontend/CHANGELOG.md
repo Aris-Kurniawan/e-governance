@@ -46,6 +46,10 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - State `404` "Klaster tidak ditemukan" untuk ID tak dikenal.
 
 ### Diubah
+- **Aset Logo SIMAKIS Baru & Pemasangan di Header/Footer (`public/logo-*`, `index.html`, `src/layouts/{AuthLayout,DinasLayout,PublicLayout,WargaLayout}.tsx`, `src/pages/dinas/LoginDinas.tsx`)**:
+  - Aset logo diganti: `logo-simakis.svg` baru (geometris huruf S dengan gradien brand #1E40AF → #06B6D4) plus empat berkas PNG (`logo-simakis-icon/clean/transparent/logo-simakis.png`) yang dikompres ulang; favicon `index.html` kini menunjuk `/logo-simakis-icon.png` (sebelumnya `vite.svg`).
+  - Logo dipasang di kotak putih bersudut pada header `PublicLayout`, `WargaLayout` & `AuthLayout` (menggantikan inisial "S"), `DinasLayout`, dan `LoginDinas` (wadah 11–12, teks brand naik ke `text-base/lg font-extrabold`), lengkap dengan fallback `onError` ke `/logo-simakis.png`; blok logo footer `PublicLayout` ikut memakai ikon yang sama.
+  - `npm run build` sukses.
 - **Teks Tabel Matriks Integritas Dashboard Wilayah Satu Baris (`src/pages/warga/DashboardWilayah.tsx`)**:
   - Class `whitespace-nowrap` ditambahkan ke elemen `<table>` sehingga seluruh sel (header RUANG KELAS/LAB IPA-KIMIA/STATUS INTEGRITAS, nama sekolah, baris NPSN · Negeri, pill metrik "1 Rusak"/"−1 R.Teori", dan badge status) tidak lagi turun baris; bila lebar layar kurang, tabel dapat digulir horizontal via pembungkus `overflow-x-auto`.
   - `npm run build` sukses; `/laporan/wilayah` → HTTP 200.

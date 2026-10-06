@@ -12,15 +12,20 @@ export default function PublicLayout() {
       <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2.5">
-              <img
-                src="/logo-simakis.png"
-                alt="Logo SIMAKIS"
-                className="h-9 w-9 object-contain"
-              />
+            <Link to="/" className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-sm shrink-0">
+                <img
+                  src="/logo-simakis-icon.png"
+                  alt="Logo SIMAKIS"
+                  className="h-full w-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "/logo-simakis.png";
+                  }}
+                />
+              </div>
               <div className="leading-tight">
-                <span className="text-sm font-bold text-[#0B3052] tracking-tight">SIMAKIS</span>
-                <span className="block text-[10px] font-medium text-slate-400">Kec. Lamongan</span>
+                <span className="text-base font-extrabold text-[#0B3052] tracking-tight">SIMAKIS</span>
+                <span className="block text-[11px] font-medium text-slate-400">Kec. Lamongan</span>
               </div>
             </Link>
 
@@ -82,15 +87,18 @@ export default function PublicLayout() {
       <footer className="bg-[#07162C] text-slate-400 border-t border-slate-800">
         <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 text-sm md:grid-cols-4">
           <div>
-            <div className="mb-4 flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1 shadow-sm overflow-hidden">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm overflow-hidden shrink-0">
                 <img
-                  src="/logo-simakis.png"
+                  src="/logo-simakis-icon.png"
                   alt="Logo SIMAKIS"
                   className="h-full w-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "/logo-simakis.png";
+                  }}
                 />
               </div>
-              <span className="font-bold text-white text-base tracking-tight">SIMAKIS</span>
+              <span className="font-extrabold text-white text-lg tracking-tight">SIMAKIS</span>
             </div>
             <p className="leading-relaxed text-slate-400 text-xs sm:text-sm">
               Sistem Informasi Masukan dan Klasterisasi Isu Sekolah — audit partisipatif sarana

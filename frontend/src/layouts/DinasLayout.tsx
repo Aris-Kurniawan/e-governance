@@ -291,7 +291,7 @@ export default function DinasLayout() {
           {/* Brand Header */}
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
             <Link to="/dinas/dashboard" className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1.5 shadow-sm shrink-0">
+              <div className="h-12 w-12 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1.5 shadow-sm shrink-0">
                 <img
                   src="/logo-simakis-icon.png"
                   alt="Logo SIMAKIS"
