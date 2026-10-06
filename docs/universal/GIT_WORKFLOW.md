@@ -111,8 +111,8 @@ parsial dan integration checkpoint di akhir tiap fase (`ROADMAP.md`).
 
 | Branch | Fungsi | Siapa yang push langsung? |
 |---|---|---|
-| `main` | Versi stabil & terverifikasi | Tidak ada — hanya lewat merge dari `develop` |
-| `develop` | Titik integrasi frontend & backend | Tidak ada — hanya lewat Pull Request |
+| `main` | Versi stabil & terverifikasi | Tidak ada — hanya lewat merge dari `development` |
+| `development` | Titik integrasi frontend & backend | Tidak ada — hanya lewat Pull Request |
 
 **Branch kerja (contoh per Fase — lihat `ROADMAP.md`):**
 
@@ -132,28 +132,65 @@ dari `main`.
 | Branch | Tujuan Utama |
 |---|---|
 | **`main`** | Menjamin selalu ada **satu versi yang aman didemokan/dinilai** kapan saja tanpa perlu cek dulu apakah sedang ada kerjaan setengah jadi — krusial menjelang UAT dan submission akhir (`PRD.md` §11). |
-| **`develop`** | Titik integrasi tempat pekerjaan Aris (backend/AI/dataset) dan Dimas (frontend) benar-benar ketemu dan dites bareng, sebelum dianggap "selesai". Tanpa ini, masalah kontrak `INTERFACES.md` yang meleset baru ketahuan dekat `main` — jauh lebih mahal diperbaiki. |
+| **`development`** | Titik integrasi tempat pekerjaan Aris (backend/AI/dataset) dan Dimas (frontend) benar-benar ketemu dan dites bareng, sebelum dianggap "selesai". Tanpa ini, masalah kontrak `INTERFACES.md` yang meleset baru ketahuan dekat `main` — jauh lebih mahal diperbaiki. |
 | **`feature/<nama>-<deskripsi>`** (per task, bukan per orang) | Tiap perubahan bisa **direview dan di-revert secara terisolasi** — kalau satu bagian (mis. step UMAP di `ai_pipeline/`) ternyata perlu dirombak, tidak perlu membatalkan fitur lain yang sudah beres. |
 | **Konvensi nama `<nama>-<deskripsi>`** | Dengan tim cuma 2 orang, ini tetap berguna untuk melacak riwayat: siapa mengerjakan apa, tanpa perlu buka isi branch satu-satu saat review PR partner. |
-| **`hotfix/<deskripsi>` dari `main`** | Jalur cepat untuk perbaikan mendesak dekat tenggat (mis. bug ditemukan H-1 sebelum UAT) tanpa menunggu siklus penuh `feature → develop → main`. |
+| **`hotfix/<deskripsi>` dari `main`** | Jalur cepat untuk perbaikan mendesak dekat tenggat (mis. bug ditemukan H-1 sebelum UAT) tanpa menunggu siklus penuh `feature → development → main`. |
 
 ---
 
 ## 5. Alur Kerja
 
-1. Buat branch dari `develop` sesuai daftar §4 (atau task baru dengan pola
+1. Buat branch dari `development` sesuai daftar §4 (atau task baru dengan pola
    nama yang sama).
 2. Kerja bebas di dalam folder modul sendiri (§3).
 3. Kalau kerjaan menyentuh kontrak (§3, baris "Butuh koordinasi: Ya") —
    update `INTERFACES.md` atau `DECISIONS.md` dulu, dapat konfirmasi
    partner, baru lanjut kode.
-4. Pull Request ke `develop` — **wajib** direview oleh partner (Aris
+4. Pull Request ke `development` — **wajib** direview oleh partner (Aris
    review Dimas, atau sebaliknya) sebelum merge, minimal cek apakah
    menabrak batas §3, bukan harus paham detail teknis area partner.
 5. Integration checkpoint di akhir tiap Fase (`ROADMAP.md`) — semua
-   branch aktif digabung ke `develop` dan dites bareng end-to-end.
-6. `develop` → `main` cuma dilakukan menjelang milestone resmi (akhir
+   branch aktif digabung ke `development` dan dites bareng end-to-end.
+6. `development` → `main` cuma dilakukan menjelang milestone resmi (akhir
    Fase 4, UAT, submission), bukan tiap hari.
+
+---
+
+## 5a. Cara Merge ke `development`
+
+**Keputusan:** Integration checkpoint memakai branch **`development`**
+(nama riil di repo — bukan `develop`), di-merge lokal lalu push manual
+(CI/CD belum ada, lihat §6). Ditulis setelah merge pertama Fase 4
+(backend + frontend → development, 6 Okt 2026) supaya langkah &
+aturan konfliknya tidak hilang.
+
+**Langkah:**
+
+1. Update branch sendiri dulu supaya tidak menyeret kode basi:
+   ```bash
+   git checkout frontend            # atau backend
+   git fetch --all --prune
+   git pull --ff-only
+   ```
+2. Merge **satu sisi per commit** menuju `development`:
+   ```bash
+   git checkout development
+   git merge frontend               # selesai & hijau, baru: git merge backend
+   ```
+3. **Resolusi konflik per kelas file:**
+
+   | Kelas file | Ambil | Catatan |
+   |---|---|---|
+   | Kontrak: `docs/universal/INTERFACES.md`, `docs/frontend/API_CLIENT.md` | Ikut **kode backend aktual** (keputusan F4.5) + konfirmasi partner (§3) | Jangan ubah kontrak sepihak |
+   | Docs milik pihak: `docs/frontend/*`, `docs/backend/*` | Ambil milik pihaknya (branch pemilik) | Kecuali baris kontrak di atas |
+   | Konflik "seluruh baris padahal isi sama" | Cek `git diff --ignore-cr-at-eol` dulu | Biasanya beda EOL (CRLF↔LF), bukan beda isi |
+
+4. **Verifikasi sebelum commit merge — wajib hijau:**
+   - Backend: `cd backend && ./venv/bin/python -m pytest tests/ -q` (87 skenario)
+   - Frontend: `cd frontend && npm ci && npm run build`
+5. Push manual dari mesin yang punya kredensial:
+   `git push origin frontend development`
 
 ---
 

@@ -309,6 +309,10 @@ status penanganan (§B3, loop "masih berlangsung").
 
 ## FASE 4 — Integrasi & Finalisasi (Minggu 12–14)
 
+> **Sebelum mulai F4.1:** baca `docs/universal/GIT_WORKFLOW.md` §5a —
+> alur merge ke branch `development` + aturan resolusi konflik (kontrak
+> `INTERFACES.md` mengikuti kode backend; docs ikut milik masing-masing pihak).
+
 ### F4.1 — Ganti Mock → API Asli
 
 **Deliverable:** Semua `src/mocks/` diganti `src/lib/api/` tanpa mengubah
