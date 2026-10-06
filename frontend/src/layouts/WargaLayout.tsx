@@ -52,7 +52,7 @@ export default function WargaLayout() {
 
       {/* ── Footer ringkas ── */}
       <footer className="border-t border-border bg-surface-alt px-6 py-4 text-center text-xs text-ink-tertiary">
-        &copy; 2026 SIMAKIS &middot; PSDKP Lamongan PENS &middot; Disdik Kab. Lamongan
+        &copy; 2026 SIMAKIS Disdik Kab. Lamongan
       </footer>
     </div>
   )
@@ -62,11 +62,10 @@ function Nav({ to, label, active }: { to: string; label: string; active: boolean
   return (
     <Link
       to={to}
-      className={`rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
-        active
+      className={`rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${active
           ? "bg-primary text-white"
           : "text-ink-secondary hover:bg-surface-alt hover:text-ink"
-      }`}
+        }`}
     >
       {label}
     </Link>

@@ -46,6 +46,10 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - State `404` "Klaster tidak ditemukan" untuk ID tak dikenal.
 
 ### Diubah
+- **Footer Ringkas PublicLayout & WargaLayout (`src/layouts/PublicLayout.tsx`, `src/layouts/WargaLayout.tsx`)**:
+  - Kredit footer disederhanakan: `© 2026 SIMAKIS · PSDKP Lamongan PENS · Disdik Kab. Lamongan` menjadi `© 2026 SIMAKIS · Disdik Kab. Lamongan` (PublicLayout) dan `© 2026 SIMAKIS Disdik Kab. Lamongan` (WargaLayout) — kredit PSDKP Lamongan PENS dihapus dari keduanya.
+  - Format className komponen `Nav` di `WargaLayout` dirapikan ulang tanpa perubahan perilaku.
+  - `npm run build` sukses.
 - **Aset Logo SIMAKIS Baru & Pemasangan di Header/Footer (`public/logo-*`, `index.html`, `src/layouts/{AuthLayout,DinasLayout,PublicLayout,WargaLayout}.tsx`, `src/pages/dinas/LoginDinas.tsx`)**:
   - Aset logo diganti: `logo-simakis.svg` baru (geometris huruf S dengan gradien brand #1E40AF → #06B6D4) plus empat berkas PNG (`logo-simakis-icon/clean/transparent/logo-simakis.png`) yang dikompres ulang; favicon `index.html` kini menunjuk `/logo-simakis-icon.png` (sebelumnya `vite.svg`).
   - Logo dipasang di kotak putih bersudut pada header `PublicLayout`, `WargaLayout` & `AuthLayout` (menggantikan inisial "S"), `DinasLayout`, dan `LoginDinas` (wadah 11–12, teks brand naik ke `text-base/lg font-extrabold`), lengkap dengan fallback `onError` ke `/logo-simakis.png`; blok logo footer `PublicLayout` ikut memakai ikon yang sama.

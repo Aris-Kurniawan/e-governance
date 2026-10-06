@@ -134,7 +134,7 @@ export default function PublicLayout() {
           </div>
         </div>
         <div className="border-t border-white/10 px-6 py-4 text-center text-xs text-slate-500">
-          &copy; 2026 SIMAKIS &middot; PSDKP Lamongan PENS &middot; Disdik Kab. Lamongan
+          &copy; 2026 SIMAKIS &middot; Disdik Kab. Lamongan
         </div>
       </footer>
     </div>
