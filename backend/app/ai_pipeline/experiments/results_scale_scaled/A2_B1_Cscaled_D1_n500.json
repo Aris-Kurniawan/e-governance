@@ -1,0 +1,78 @@
+{
+  "config": {
+    "n": 500,
+    "variant_a": "A2",
+    "variant_b": "B1",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 22,
+      "min_samples": 11
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.6431633234024048,
+    "davies_bouldin": 0.5060965105961777,
+    "ari": 0.41286503977961103,
+    "nmi": 0.5169339570830372,
+    "purity": 0.7386018237082067,
+    "homogeneity": 0.5705083786161845,
+    "completeness": 0.4725577337438621,
+    "v_measure": 0.5169339570830372,
+    "noise_ratio": 0.342
+  },
+  "n_clusters": 8,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "air sehingga listrik diputus sempat",
+      "kategori": "sanitasi_air"
+    },
+    "1": {
+      "label_teks": "jumlah sangat toilet sejak lama",
+      "kategori": "sanitasi_air"
+    },
+    "2": {
+      "label_teks": "tidak pembelajaran ada di akses",
+      "kategori": "akses_lahan"
+    },
+    "3": {
+      "label_teks": "siswa tidak ada bersih di",
+      "kategori": "belum_terklasifikasi"
+    },
+    "4": {
+      "label_teks": "sekolah rusak di beberapa titik",
+      "kategori": "belum_terklasifikasi"
+    },
+    "5": {
+      "label_teks": "kelas perlu mengelupas cat dan",
+      "kategori": "ruang_belajar"
+    },
+    "6": {
+      "label_teks": "tidak dan ruang yang rusak",
+      "kategori": "ruang_belajar"
+    },
+    "7": {
+      "label_teks": "kegiatan belajar dan kelas terganggu",
+      "kategori": "ruang_belajar"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 500,
+    "variant_a": "A2",
+    "method": "tfidf",
+    "variant_b": "B1",
+    "umap": true,
+    "min_cluster_size": 22,
+    "min_samples": 11,
+    "nmi": 0.5169,
+    "ari": 0.4129,
+    "purity": 0.7386,
+    "noise_ratio": 0.342,
+    "n_clusters": 8,
+    "runtime_sec": 1.33
+  }
+}

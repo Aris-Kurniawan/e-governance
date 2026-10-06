@@ -70,7 +70,7 @@ prasyarat.
 
 | Kode | Nama Fitur | Deskripsi | Requirement Utama | Role Terkait |
 |---|---|---|---|---|
-| FEAT-001 | Direktori & Profil Sekolah | Informasi dan pencarian data sekolah | Pencarian nama/alamat; data siswa, rasio guru, kondisi sarana; sumber & tanggal pembaruan data; penanda potensi masalah | Warga Umum, Warga Terverifikasi |
+| FEAT-001 | Direktori & Profil Sekolah | Informasi dan pencarian data sekolah | Pencarian nama/alamat; kondisi sarana; sumber & tanggal pembaruan data; penanda potensi masalah *(rasio guru & data siswa tidak ditampilkan di v1 per scope infrastruktur‑only – lihat DECISIONS.md D-20)* | Warga Umum, Warga Terverifikasi |
 | FEAT-002 | Dashboard Wilayah | Ringkasan kondisi pendidikan satu wilayah | Jumlah sekolah & klaster aktif; daftar klaster prioritas; sekolah dengan isu terbanyak | Verifikator Dinas, Kepala Dinas |
 | FEAT-003 | Pelaporan Isu | Warga melaporkan masalah pada sekolah tertentu | Laporan terhubung ke sekolah; kategori masalah; lampiran foto opsional; riwayat laporan pengguna | Warga Terverifikasi, Komite Sekolah |
 | FEAT-004 | Klasterisasi Isu | Pengelompokan laporan berbasis AI/NLP | Pengelompokan otomatis; penyajian sebagai klaster; verifikasi klaster oleh Verifikator | Sistem (AI), Verifikator Dinas |

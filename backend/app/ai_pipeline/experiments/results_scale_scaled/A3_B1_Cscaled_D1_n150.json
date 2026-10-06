@@ -1,0 +1,58 @@
+{
+  "config": {
+    "n": 150,
+    "variant_a": "A3",
+    "variant_b": "B1",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 12,
+      "min_samples": 6
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.34979623556137085,
+    "davies_bouldin": 0.8404872241631521,
+    "ari": 0.20906692994023693,
+    "nmi": 0.4106831199399356,
+    "purity": 0.5,
+    "homogeneity": 0.30702793966511543,
+    "completeness": 0.6200003999966227,
+    "v_measure": 0.41068311993993567,
+    "noise_ratio": 0.29333333333333333
+  },
+  "n_clusters": 3,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "sudah listrik padam instalasi karena",
+      "kategori": "utilitas"
+    },
+    "1": {
+      "label_teks": "air di pendidikan musim saat",
+      "kategori": "sanitasi_air"
+    },
+    "2": {
+      "label_teks": "tidak dan sekolah rusak kelas",
+      "kategori": "ruang_belajar"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 150,
+    "variant_a": "A3",
+    "method": "minilm",
+    "variant_b": "B1",
+    "umap": true,
+    "min_cluster_size": 12,
+    "min_samples": 6,
+    "nmi": 0.4107,
+    "ari": 0.2091,
+    "purity": 0.5,
+    "noise_ratio": 0.2933,
+    "n_clusters": 3,
+    "runtime_sec": 11.48
+  }
+}

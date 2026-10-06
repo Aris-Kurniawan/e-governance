@@ -1,0 +1,58 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A1",
+    "variant_b": "B1",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 6,
+      "min_samples": 3
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.46726542711257935,
+    "davies_bouldin": 0.7871328193976832,
+    "ari": 0.47991494657214107,
+    "nmi": 0.6925376640425939,
+    "purity": 0.631578947368421,
+    "homogeneity": 0.5715062452338818,
+    "completeness": 0.8786053666991588,
+    "v_measure": 0.6925376640425938,
+    "noise_ratio": 0.15555555555555556
+  },
+  "n_clusters": 3,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "listrik kali terputus lambat jaringan",
+      "kategori": "utilitas"
+    },
+    "1": {
+      "label_teks": "dan sekolah rusak berbahaya sudah",
+      "kategori": "belum_terklasifikasi"
+    },
+    "2": {
+      "label_teks": "jumlah air siswa tidak dan",
+      "kategori": "sanitasi_air"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 45,
+    "variant_a": "A1",
+    "method": "indobert",
+    "variant_b": "B1",
+    "umap": true,
+    "min_cluster_size": 6,
+    "min_samples": 3,
+    "nmi": 0.6925,
+    "ari": 0.4799,
+    "purity": 0.6316,
+    "noise_ratio": 0.1556,
+    "n_clusters": 3,
+    "runtime_sec": 29.84
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "config": {
+    "n": 150,
+    "variant_a": "A1",
+    "variant_b": "B2",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 12,
+      "min_samples": 6
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": -1.0,
+    "davies_bouldin": 999.0,
+    "ari": 0.0,
+    "nmi": 0.0,
+    "purity": 0.0,
+    "homogeneity": 0.0,
+    "completeness": 0.0,
+    "v_measure": 0.0,
+    "noise_ratio": 1.0
+  },
+  "n_clusters": 0,
+  "cluster_meta": {
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 150,
+    "variant_a": "A1",
+    "method": "indobert",
+    "variant_b": "B2",
+    "umap": false,
+    "min_cluster_size": 12,
+    "min_samples": 6,
+    "nmi": 0.0,
+    "ari": 0.0,
+    "purity": 0.0,
+    "noise_ratio": 1.0,
+    "n_clusters": 0,
+    "runtime_sec": 14.09
+  }
+}

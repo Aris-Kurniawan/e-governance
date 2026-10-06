@@ -1,0 +1,80 @@
+{
+  "config": "A3_B3_C2_D3",
+  "variants": {
+    "embedding": "A3",
+    "reduction": "B3",
+    "clustering": "C2",
+    "labeling": "D3"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.13343358039855957,
+    "davies_bouldin": 1.8081409541731488,
+    "ari": -0.030173727522096922,
+    "nmi": 0.21183491434660578,
+    "purity": 0.55,
+    "homogeneity": 0.26675114650451853,
+    "completeness": 0.17566968247328607,
+    "v_measure": 0.21183491434660578,
+    "noise_ratio": 0.1111111111111111
+  },
+  "n_clusters": 7,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "internet",
+      "sering",
+      "sering terputus",
+      "lambat",
+      "terputus"
+    ],
+    "1": [
+      "langit",
+      "kelas",
+      "banyak",
+      "langit langit",
+      "sebagian belum"
+    ],
+    "2": [
+      "berbahaya",
+      "listrik",
+      "kabel",
+      "masuk",
+      "jalan masuk"
+    ],
+    "3": [
+      "rusak",
+      "rusak bisa",
+      "bisa dikunci",
+      "gerbang rusak",
+      "gerbang"
+    ],
+    "4": [
+      "memadai",
+      "ruang",
+      "guru",
+      "uks",
+      "peralatan"
+    ],
+    "5": [
+      "jumlah",
+      "air",
+      "tempat",
+      "tempat cuci",
+      "bersih"
+    ],
+    "6": [
+      "rusak",
+      "titik keamanan",
+      "rusak beberapa",
+      "titik",
+      "terancam"
+    ]
+  },
+  "runtime_sec": 0.04,
+  "generated_at": "2026-09-29T11:24:11"
+}

@@ -1,0 +1,54 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A1",
+    "variant_b": "B1"
+  },
+  "runs": [
+    {
+      "n": 45,
+      "variant_a": "A1",
+      "method": "indobert",
+      "variant_b": "B1",
+      "umap": true,
+      "min_cluster_size": 3,
+      "min_samples": 2,
+      "nmi": 0.6511,
+      "ari": 0.4658,
+      "purity": 0.6842,
+      "noise_ratio": 0.1556,
+      "n_clusters": 4,
+      "runtime_sec": 0.02
+    },
+    {
+      "n": 45,
+      "variant_a": "A1",
+      "method": "indobert",
+      "variant_b": "B1",
+      "umap": true,
+      "min_cluster_size": 5,
+      "min_samples": 2,
+      "nmi": 0.6416,
+      "ari": 0.4705,
+      "purity": 0.6571,
+      "noise_ratio": 0.2222,
+      "n_clusters": 3,
+      "runtime_sec": 0.01
+    },
+    {
+      "n": 45,
+      "variant_a": "A1",
+      "method": "indobert",
+      "variant_b": "B1",
+      "umap": true,
+      "min_cluster_size": 8,
+      "min_samples": 4,
+      "nmi": 0.538,
+      "ari": 0.3788,
+      "purity": 0.64,
+      "noise_ratio": 0.4444,
+      "n_clusters": 2,
+      "runtime_sec": 0.01
+    }
+  ]
+}

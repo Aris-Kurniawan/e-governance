@@ -1,0 +1,106 @@
+{
+  "config": {
+    "n": 1500,
+    "variant_a": "A1",
+    "variant_b": "B1",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 38,
+      "min_samples": 19
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.6816219091415405,
+    "davies_bouldin": 0.6462749752537033,
+    "ari": 0.33522357462628904,
+    "nmi": 0.5988238448909209,
+    "purity": 0.8562653562653563,
+    "homogeneity": 0.7971416505356996,
+    "completeness": 0.4795247311508171,
+    "v_measure": 0.598823844890921,
+    "noise_ratio": 0.4573333333333333
+  },
+  "n_clusters": 15,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "listrik sudah padam karena kabel",
+      "kategori": "utilitas"
+    },
+    "1": {
+      "label_teks": "sekolah tidak untuk seluruh ruangan",
+      "kategori": "ruang_belajar"
+    },
+    "2": {
+      "label_teks": "terputus lambat internet jaringan dan",
+      "kategori": "utilitas"
+    },
+    "3": {
+      "label_teks": "dari lab 50 komputer persen",
+      "kategori": "ruang_belajar"
+    },
+    "4": {
+      "label_teks": "sangat dan pintu privasi toilet",
+      "kategori": "sanitasi_air"
+    },
+    "5": {
+      "label_teks": "anak area dan bermain berbahaya",
+      "kategori": "belum_terklasifikasi"
+    },
+    "6": {
+      "label_teks": "pakai berat kondisi wc guru",
+      "kategori": "sanitasi_air"
+    },
+    "7": {
+      "label_teks": "kelas sudah perlu cat dinding",
+      "kategori": "ruang_belajar"
+    },
+    "8": {
+      "label_teks": "tidak layak ibadah tempat dan",
+      "kategori": "penunjang"
+    },
+    "9": {
+      "label_teks": "hujan saat sekolah rusak akses",
+      "kategori": "akses_lahan"
+    },
+    "10": {
+      "label_teks": "siswa air di keselamatan bagi",
+      "kategori": "sanitasi_air"
+    },
+    "11": {
+      "label_teks": "tidak higienis kantin dan langit",
+      "kategori": "penunjang"
+    },
+    "12": {
+      "label_teks": "yang ruang perabot banyak guru",
+      "kategori": "ruang_belajar"
+    },
+    "13": {
+      "label_teks": "beberapa di titik pagar keamanan",
+      "kategori": "akses_lahan"
+    },
+    "14": {
+      "label_teks": "belajar kegiatan ruang kelas sehingga",
+      "kategori": "ruang_belajar"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 1500,
+    "variant_a": "A1",
+    "method": "indobert",
+    "variant_b": "B1",
+    "umap": true,
+    "min_cluster_size": 38,
+    "min_samples": 19,
+    "nmi": 0.5988,
+    "ari": 0.3352,
+    "purity": 0.8563,
+    "noise_ratio": 0.4573,
+    "n_clusters": 15,
+    "runtime_sec": 58.19
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "config": {
+    "n": 500,
+    "variant_a": "A1",
+    "variant_b": "B1",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 22,
+      "min_samples": 11
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.6047230362892151,
+    "davies_bouldin": 0.6455536920336602,
+    "ari": 0.44217209195988366,
+    "nmi": 0.6183161598143215,
+    "purity": 0.7918660287081339,
+    "homogeneity": 0.7150472527633029,
+    "completeness": 0.5446379220998422,
+    "v_measure": 0.6183161598143215,
+    "noise_ratio": 0.164
+  },
+  "n_clusters": 9,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "tidak ada menghambat pembelajaran internet",
+      "kategori": "utilitas"
+    },
+    "1": {
+      "label_teks": "listrik sudah padam instalasi kabel",
+      "kategori": "utilitas"
+    },
+    "2": {
+      "label_teks": "air wc siswa tidak ada",
+      "kategori": "sanitasi_air"
+    },
+    "3": {
+      "label_teks": "sekolah saat hujan halaman musim",
+      "kategori": "akses_lahan"
+    },
+    "4": {
+      "label_teks": "tidak memadai tempat ada ruang",
+      "kategori": "ruang_belajar"
+    },
+    "5": {
+      "label_teks": "belajar kegiatan kelas ruang langit",
+      "kategori": "ruang_belajar"
+    },
+    "6": {
+      "label_teks": "dan berbahaya tidak banyak perabot",
+      "kategori": "belum_terklasifikasi"
+    },
+    "7": {
+      "label_teks": "dan pecah kelas sudah kondisi",
+      "kategori": "ruang_belajar"
+    },
+    "8": {
+      "label_teks": "kelas dan perlu tidak bisa",
+      "kategori": "ruang_belajar"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 500,
+    "variant_a": "A1",
+    "method": "indobert",
+    "variant_b": "B1",
+    "umap": true,
+    "min_cluster_size": 22,
+    "min_samples": 11,
+    "nmi": 0.6183,
+    "ari": 0.4422,
+    "purity": 0.7919,
+    "noise_ratio": 0.164,
+    "n_clusters": 9,
+    "runtime_sec": 35.21
+  }
+}

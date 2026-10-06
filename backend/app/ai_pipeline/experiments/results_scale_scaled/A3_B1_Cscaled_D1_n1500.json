@@ -1,0 +1,114 @@
+{
+  "config": {
+    "n": 1500,
+    "variant_a": "A3",
+    "variant_b": "B1",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 38,
+      "min_samples": 19
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.6213680505752563,
+    "davies_bouldin": 0.68569521659487,
+    "ari": 0.2840690824252655,
+    "nmi": 0.5409642277783016,
+    "purity": 0.8106960950764007,
+    "homogeneity": 0.7339964169819155,
+    "completeness": 0.42832098411556024,
+    "v_measure": 0.5409642277783016,
+    "noise_ratio": 0.21466666666666667
+  },
+  "n_clusters": 17,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "internet dan jaringan lambat terputus",
+      "kategori": "utilitas"
+    },
+    "1": {
+      "label_teks": "tidak bermain anak area dan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "2": {
+      "label_teks": "jumlah toilet pintu privasi dan",
+      "kategori": "sanitasi_air"
+    },
+    "3": {
+      "label_teks": "sudah tulis papan seadanya diganti",
+      "kategori": "belum_terklasifikasi"
+    },
+    "4": {
+      "label_teks": "sekolah tempat ibadah dan rusak",
+      "kategori": "penunjang"
+    },
+    "5": {
+      "label_teks": "pakai berat kondisi wc dalam",
+      "kategori": "sanitasi_air"
+    },
+    "6": {
+      "label_teks": "dari lab persen lebih komputer",
+      "kategori": "ruang_belajar"
+    },
+    "7": {
+      "label_teks": "tidak higienis kantin dan sekolah",
+      "kategori": "penunjang"
+    },
+    "8": {
+      "label_teks": "saat sumber kering musim kemarau",
+      "kategori": "belum_terklasifikasi"
+    },
+    "9": {
+      "label_teks": "rusak saat musim akses jalan",
+      "kategori": "akses_lahan"
+    },
+    "10": {
+      "label_teks": "dan berlubang masuk jalan berbahaya",
+      "kategori": "akses_lahan"
+    },
+    "11": {
+      "label_teks": "halaman sekolah menyebabkan tersumbat dan",
+      "kategori": "akses_lahan"
+    },
+    "12": {
+      "label_teks": "siswa tidak ada di wc",
+      "kategori": "sanitasi_air"
+    },
+    "13": {
+      "label_teks": "sudah tidak rusak kelas sekolah",
+      "kategori": "ruang_belajar"
+    },
+    "14": {
+      "label_teks": "kelas kegiatan belajar di beberapa",
+      "kategori": "ruang_belajar"
+    },
+    "15": {
+      "label_teks": "langit dan kelas belum pecah",
+      "kategori": "ruang_belajar"
+    },
+    "16": {
+      "label_teks": "sudah listrik padam kabel karena",
+      "kategori": "utilitas"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 1500,
+    "variant_a": "A3",
+    "method": "minilm",
+    "variant_b": "B1",
+    "umap": true,
+    "min_cluster_size": 38,
+    "min_samples": 19,
+    "nmi": 0.541,
+    "ari": 0.2841,
+    "purity": 0.8107,
+    "noise_ratio": 0.2147,
+    "n_clusters": 17,
+    "runtime_sec": 49.59
+  }
+}

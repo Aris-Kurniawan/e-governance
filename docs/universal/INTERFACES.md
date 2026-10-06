@@ -9,9 +9,12 @@
 **Base URL (dev):** `http://localhost:8000` (`VITE_API_BASE_URL`, lihat
 `frontend/SETUP.md` §5)
 **Format:** JSON, `Content-Type: application/json` (kecuali endpoint
-upload file — lihat §7).
+upload file — lihat §10).
 **Auth:** Bearer JWT di header `Authorization: Bearer <token>` untuk semua
 endpoint kecuali yang ditandai **Publik**.
+
+**Health check (tanpa auth):** `GET /` · `GET /health` · `GET /api/health`
+→ `{ "status": "healthy" }` — dipakai Docker Compose `healthcheck` (F4.6).
 
 ---
 
@@ -149,13 +152,50 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
     "nama": "string",
     "alamat": "string",
     "jenjang": "string",
+    "status_sekolah": "Negeri | Swasta",
+    "akreditasi": "string | null",
+    "nama_kepsek": "string | null",
+    "jumlah_isu_aktif": 0,
+    "penanda_masalah": "aman | perlu_perhatian | kritis",
+    "rasio_guru_siswa": "1:16",
+    "rasio_spm_terpenuhi": true,
+    "jumlah_pd": 642,
+    "jumlah_ptk": 40,
+    "jumlah_rombel": 28,
+    "utilitas_kapasitas_belajar": 89.4,
     "data_resmi": {
       "sumber": "Dapodik",
-      "tanggal_pembaruan": "2026-01-15",
-      "rasio_guru_siswa": "1:20",
-      "kondisi_sarana": [
-        { "nama_ruang": "string", "kondisi": "baik | rusak_ringan | rusak_sedang | rusak_berat" }
-      ]
+      "tanggal_pembaruan": "2026-09-13",
+      "tanggal_verifikasi_baseline": "2026-08-01"
+    },
+    "kondisi_sarana": [
+      {
+        "nama_ruang": "Ruang Kelas",
+        "jumlah": 30,
+        "baik": 20,
+        "rusak_ringan": 0,
+        "rusak_sedang": 0,
+        "rusak_berat": 10,
+        "perlu_verifikasi": false,
+        "ada_sanggahan": false
+      },
+      {
+        "nama_ruang": "Perpustakaan",
+        "jumlah": 1,
+        "baik": 1,
+        "rusak_ringan": 0,
+        "rusak_sedang": 0,
+        "rusak_berat": 0,
+        "perlu_verifikasi": false,
+        "ada_sanggahan": false
+      }
+    ],
+    "ringkasan_sarpras": {
+      "total_unit": 38,
+      "total_baik": 30,
+      "total_rusak_ringan": 5,
+      "total_rusak_sedang": 0,
+      "total_rusak_berat": 3
     },
     "klaster_isu": [
       { "klaster_id": "string", "kategori": "string", "skor_prioritas": 0, "status": "string" }
@@ -164,12 +204,61 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
 }
 ```
 
+**Catatan penting untuk implementasi v1 (september 2026):**
+- `data_resmi` blok (sumber, tanggal_pembaruan, tanggal_verifikasi_baseline) **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di schema. Datanya tersedia di kolom `sekolah.sumber_data` dan `sekolah.tanggal_pembaruan_data` di DB.
+- `ada_sanggahan` pada setiap item `kondisi_sarana` **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di contoh response. Endpoint untuk menghitung ada sanggahan tersedia di `GET /sekolah/{npsn}/sanggahan`.
+- `penanda_masalah` di response saat ini mengembalikan `"normal"` (bukan `aman | perlu_perhatian | kritis` seperti di kontrak). Nilai threshold dan logika perhitungan belum diputuskan — lihat `INTERFACES.md` §11.
+- `jumlah_isu_aktif` saat ini selalu `0` — belum dihitung oleh backend.
+- **Field berikut dikirim dengan nilai default (null/0) dan tidak dirender di frontend v1** karena data Dapodik tidak di-ingest per scope infrastruktur-only:
+  - `rasio_guru_siswa` → `null`
+  - `rasio_spm_terpenuhi` → `false`
+  - `jumlah_pd`, `jumlah_ptk`, `jumlah_rombel` → `0`
+  - `utilitas_kapasitas_belajar` → `0.0`
+  > **Penjelasan scope:** Platform SIMAKIS v1 fokus pada **infrastructure advocacy** — laporan isu terkait kondisi fisik sarana/prasarana. Data jumlah siswa, guru, dan rombel tidak di-ingest dari Dapodik karena tidak terkait langsung dengan ketersediaan infrastruktur.
+- Frontend v1 hanya menampilkan:
+  - **Audit Sarpras**: kartu ringkasan kondisi sarana (donut chart + detail per ruang)
+  - **Profil Dapodik**: akreditasi, nama kepala sekolah, jenjang, status sekolah
+  - **Isu & Klaster Warga**: empty state sampai Fase D (klasterisasi AI)
+
+**Catatan teknis (umum):**
+- `kondisi_sarana` berbentuk **agregat per jenis ruang** (bukan per ruang
+  individual) — mengikuti bentuk data Dapodik yang memang agregat.
+- `rasio_guru_siswa` = `jumlah_pd / jumlah_ptk`, `rasio_spm_terpenuhi` =
+  rasio memenuhi standar jenjang (SD/SMA 1:20, SMP 1:25).
+- `utilitas_kapasitas_belajar` = `(jumlah_rombel × 32) / jumlah_pd × 100`.
+- `ada_sanggahan` = ada laporan warga (`status_sanggahan = menunggu` atau
+  `divalidasi`) menargetkan `nama_ruang` tersebut.
+- `perlu_verifikasi` = data Dapodik inkonsisten (`jumlah kondisi > jumlah
+  unit`) — lihat `backend/DATABASE_SCHEMA.md` §5.
+- **Aturan render FE** — FE **tidak boleh** merender angka `0`/`null` dari
+  field yang ditandai "tidak diimplementasi di v1" di atas sebagai angka
+  valid (mis. menampilkan "0 Rombongan Belajar"). Field tersebut di-hide,
+  bukan ditampilkan sebagai angka nol.
+- **Endpoint sanggahan** — warga melaporkan kondisi berbeda dari Dapodik
+  langsung dari kartu fasilitas (lihat §4.1).
+
+---
+
+## 2.1 Sanggahan Sarpras (`/sekolah/{npsn}/sanggahan`)
+
+| Method | Endpoint | Akses | Deskripsi |
+|---|---|---|---|
+| POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | Kirim sanggahan (via laporan biasa, teks bebas; `fasilitas_terkait=nama_ruang` terisi otomatis dari kartu, `kondisi_dilaporkan=...`) |
+| GET | `/sekolah/{npsn}/sanggahan` | Publik | Riwayat sanggahan untuk satu sekolah |
+
+**Catatan:** tombol "Sanggah Data Ini" di kartu fasilitas mengarah ke
+`POST /laporan` dengan `fasilitas_terkait` terisi otomatis dan
+`kondisi_dilaporkan` dipilih warga. **Tidak ada** endpoint terpisah untuk
+sanggahan — memakai jalur laporan yang sama (`PRD.md` §3.1, cross-check
+Dapodik).
+
 ---
 
 ## 3. Dashboard Wilayah — FEAT-002 (`/dashboard`)
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
+| GET | `/dashboard/prioritas` | Publik | List klaster urut skor prioritas (opsional `?status=&limit=`) |
 | GET | `/dashboard/wilayah` | `verifikator_dinas`, `kepala_dinas` | Ringkasan kondisi wilayah |
 
 response `200`:
@@ -197,14 +286,14 @@ response `200`:
 | POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | Kirim laporan baru |
 | GET | `/laporan/riwayat` | `warga_terverifikasi`, `komite_sekolah` | Riwayat laporan milik sendiri |
 | GET | `/laporan/{id}` | Pemilik laporan, `verifikator_dinas`, `kepala_dinas` | Detail satu laporan |
-| POST | `/laporan/{id}/foto` | Pemilik laporan | Upload foto bukti (`multipart/form-data`, lihat §7) |
+| POST | `/upload/laporan?laporan_id={id}` | Pemilik laporan | Upload foto bukti (`multipart/form-data`, field `file` — lihat §10) |
 
 **`POST /laporan`** — request:
 ```json
 {
   "sekolah_npsn": "string",
-  "kategori": "infrastruktur_sarana | ketersediaan_tenaga_pengajar | lainnya",
-  "fasilitas_terkait": "string | null",   // wajib diisi jika kategori = infrastruktur_sarana (PAGE_STATES.md §A4)
+  "fasilitas_terkait": "string | null",
+  "kondisi_dilaporkan": "baik | rusak_ringan | rusak_sedang | rusak_berat | null",
   "deskripsi": "string"
 }
 ```
@@ -214,49 +303,108 @@ response `201`:
   "data": {
     "laporan_id": "string",
     "tracking_id": "string",
-    "status": "menunggu_verifikasi",
-    "cross_check": {
-      "tersedia": true,
-      "data_dapodik": "string | null"   // null kalau kategori = lainnya (tidak ada cross-check, PRD.md §3.1)
-    }
+    "status": "menunggu",
+    "created_at": "ISO8601"
   }
 }
 ```
 
 ---
 
-## 5. Klasterisasi Isu — FEAT-004 (`/klaster`)
+## 5. Klasterisasi Isu — FEAT-004 (`/klaster`, `/ai`)
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
-| GET | `/klaster` | Publik | List klaster (per sekolah/kategori) |
-| GET | `/klaster/{id}` | Publik | Detail klaster + laporan anggota |
-| POST | `/klaster/{id}/verifikasi` | `verifikator_dinas` | Tetapkan hasil verifikasi (§B1) |
+| GET | `/klaster` | Publik | List klaster (filter `?sekolah_npsn=&kategori=&status_verifikasi=&page=&page_size=`) |
+| GET | `/klaster/{id}` | Publik | Detail klaster + daftar laporan anggota |
+| PUT | `/klaster/{id}/verifikasi` | `verifikator_dinas` | Tetapkan hasil verifikasi (param **query**: `status`, `alasan`) |
+| GET | `/klaster/{id}/riwayat` | Publik | Riwayat status (append-only) — lihat §7 |
+| POST | `/ai/cluster` | `admin`, `verifikator_dinas` | Trigger clustering manual (`?force_reprocess=true` opsional) |
+| GET | `/ai/status` | `admin`, `verifikator_dinas` | Status pipeline (jumlah laporan belum terklaster, total klaster) |
 
-**`POST /klaster/{id}/verifikasi`** — request:
+**`GET /klaster`** — response `200`:
 ```json
 {
-  "hasil": "perlu_info_tambahan | tidak_terverifikasi | terverifikasi",
-  "alasan": "string"   // WAJIB jika hasil = tidak_terverifikasi (PAGE_STATES.md §C.1); opsional untuk hasil lain
+  "data": [
+    {
+      "klaster_id": "string",
+      "label": "string | null",
+      "kategori": "ruang_belajar | sanitasi_air | utilitas | akses_lahan | penunjang | belum_terklasifikasi",
+      "sekolah_npsn": "string",
+      "skor_keparahan": 0,
+      "skor_prioritas": 0,
+      "jumlah_vote_terhitung": 0,
+      "status_verifikasi": "menunggu_verifikasi | tidak_terverifikasi | terverifikasi",
+      "status_penanganan": "string | null",
+      "urutan_prioritas_override": "int | null"
+    }
+  ],
+  "meta": { "page": 1, "page_size": 20, "total_items": 0, "total_pages": 0 }
 }
 ```
+Urut `skor_prioritas` descending (null di akhir). `page_size` maks 100.
+
+**`GET /klaster/{id}`** — response `200`:
+```json
+{
+  "data": {
+    "klaster_id": "string",
+    "label": "string | null",
+    "kategori": "string",
+    "sekolah_npsn": "string",
+    "sekolah_nama": "string | null",
+    "skor_keparahan": 0,
+    "skor_prioritas": 0,
+    "jumlah_vote_terhitung": 0,
+    "status_verifikasi": "string",
+    "status_penanganan": "string | null",
+    "urutan_prioritas_override": "int | null",
+    "created_at": "ISO8601",
+    "laporan": [
+      {
+        "laporan_id": "string",
+        "fasilitas_terkait": "string | null",
+        "kondisi_dilaporkan": "string | null",
+        "deskripsi": "string",
+        "created_at": "ISO8601"
+      }
+    ]
+  }
+}
+```
+Klaster tidak ada → `404 NOT_FOUND`.
+
+**`PUT /klaster/{id}/verifikasi`** — param **query** (bukan body JSON):
+`?status=terverifikasi|tidak_terverifikasi|perlu_info_tambahan&alasan=string`
+
+- `status` tidak valid → `400 VALIDATION_ERROR`
+- `status != terverifikasi` tanpa `alasan` → `400 VALIDATION_ERROR`
+- Klaster tidak ada → `404 NOT_FOUND`
+
 response `200`:
 ```json
-{ "data": { "klaster_id": "string", "status": "menunggu_verifikasi | tidak_terverifikasi | terverifikasi" } }
+{ "data": { "klaster_id": "string", "status": "string", "message": "string" } }
 ```
-Validasi: jika `hasil = tidak_terverifikasi` dan `alasan` kosong → `422 REASON_REQUIRED`.
+
+**`POST /ai/cluster`** — response `200`:
+```json
+{ "data": { "klaster_created": 0, "message": "Clustering triggered. Created N klaster." } }
+```
+Pipeline inline memakai konfigurasi optimal ablation (A2+B1+C2+D1).
 
 ---
 
-## 6. Voting Prioritas — FEAT-005 (`/klaster/{id}/vote`)
+## 6. Voting Prioritas — FEAT-005 (`/vote`)
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
-| POST | `/klaster/{id}/vote` | `warga_terverifikasi`, `komite_sekolah` | Vote klaster (satu akun satu suara) |
-| GET | `/klaster/{id}/vote/status` | User login | Cek status vote sendiri pada klaster ini |
+| POST | `/vote?klaster_id={id}` | `warga_terverifikasi`, `komite_sekolah` | Vote klaster (satu akun satu suara) |
+| GET | `/vote/status/{klaster_id}` | User login | Cek status vote sendiri pada klaster ini |
+| PUT | `/vote/klaster/{id}/skor` | `admin` | Hitung ulang skor prioritas klaster |
+| PUT | `/vote/klaster/{id}/override?urutan_prioritas=&alasan=` | `kepala_dinas` | Override urutan prioritas manual (lihat §7) |
 
-**`POST /klaster/{id}/vote`** — request: `{}` (tidak butuh body, cukup auth)
-response `201`:
+**`POST /vote`** — param **query**: `klaster_id` (tidak butuh body, cukup auth)
+response `200`:
 ```json
 {
   "data": {
@@ -266,7 +414,22 @@ response `201`:
   }
 }
 ```
-Jika sudah pernah vote → `409 ALREADY_VOTED`.
+Klaster tidak ada → `404 NOT_FOUND`. Jika sudah pernah vote → `409 ALREADY_VOTED`.
+
+**`GET /vote/status/{klaster_id}`** — response `200`:
+```json
+{
+  "data": {
+    "has_voted": true,
+    "status_vote": "pending | terhitung | null",
+    "vote_id": "string | null"
+  }
+}
+```
+
+**`PUT /vote/klaster/{id}/skor`** — tanpa param; hitung ulang `skor_prioritas`
+dari laporan anggota + jumlah vote →
+`{ "data": { "klaster_id": "string", "skor_prioritas": 0, "jumlah_vote_terhitung": 0 } }`
 
 **Skor prioritas** (dibaca lewat `GET /klaster/{id}`, field `skor_prioritas`)
 dihitung backend sebagai `skor_keparahan_dapodik + jumlah_vote_terhitung`
@@ -275,48 +438,46 @@ client**, murni angka hasil dari backend.
 
 ---
 
-## 7. Accountability / Status — FEAT-006 (`/klaster/{id}/status`, `/prioritas`)
+## 7. Accountability / Status — FEAT-006 (`/klaster/{id}/status`, `/vote/.../override`)
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
-| GET | `/klaster/{id}/status` | Publik | Riwayat status tindak lanjut (append-only) |
-| PATCH | `/klaster/{id}/prioritas` | `kepala_dinas` | Override urutan prioritas manual |
-| PATCH | `/klaster/{id}/penanganan` | `verifikator_dinas` (petugas) | Update status penanganan |
+| POST | `/klaster/{id}/status?status=&alasan=` | `verifikator_dinas`, `kepala_dinas` | Update status penanganan / verifikasi (bisa dipanggil berulang) |
+| GET | `/klaster/{id}/riwayat` | Publik | Riwayat status tindak lanjut (append-only) |
+| PUT | `/vote/klaster/{id}/override?urutan_prioritas=&alasan=` | `kepala_dinas` | Override urutan prioritas manual |
 
-**`PATCH /klaster/{id}/prioritas`** — request:
-```json
-{
-  "urutan_prioritas_baru": 1,
-  "alasan_override": "string"   // WAJIB (PRD.md §4, PAGE_STATES.md §B2)
-}
-```
-Kosong → `422 REASON_REQUIRED`.
+**`PUT /vote/klaster/{id}/override`** — param **query**:
+- `urutan_prioritas` (int, wajib)
+- `alasan` (string, wajib — PRD.md §4, PAGE_STATES.md §B2)
 
-**`PATCH /klaster/{id}/penanganan`** — request:
-```json
-{
-  "hasil": "selesai | masih_berlangsung | tidak_dapat_ditindaklanjuti",
-  "catatan": "string | null",   // opsional untuk "masih_berlangsung"
-  "alasan": "string | null"     // WAJIB jika hasil = tidak_dapat_ditindaklanjuti
-}
-```
+Tanpa `alasan` → `422 REASON_REQUIRED`.
+
 response `200`:
 ```json
-{ "data": { "klaster_id": "string", "status_penanganan": "string", "updated_at": "ISO8601" } }
+{ "data": { "klaster_id": "string", "urutan_prioritas_override": 1, "alasan_override": "string" } }
+```
+
+**`POST /klaster/{id}/status`** — param **query**:
+- `status` (wajib): `menunggu_verifikasi | perlu_info_tambahan | tidak_terverifikasi | terverifikasi | dalam_antrian_prioritas | dalam_proses | selesai | tidak_dapat_ditindaklanjuti`
+- `alasan` (opsional — **wajib** jika `status` = `tidak_terverifikasi` atau `tidak_dapat_ditindaklanjuti`)
+
+Status tidak valid → `400 VALIDATION_ERROR`; `alasan` kosong untuk status
+tersebut → `422 REASON_REQUIRED`; klaster tidak ada → `404 NOT_FOUND`.
+
+response `200`:
+```json
+{ "data": { "klaster_id": "string", "status": "string", "message": "Status updated to ..." } }
 ```
 **Catatan penting:** endpoint ini **bisa dipanggil berulang kali** untuk
-`hasil = masih_berlangsung` (loop, `FLOWS.md` §2, `PAGE_STATES.md` §B3/§C.3)
+`status = dalam_proses` (loop, `FLOWS.md` §2, `PAGE_STATES.md` §B3/§C.3)
 — frontend tidak boleh mem-build ini sebagai form sekali submit.
 
-**`GET /klaster/{id}/status`** — response `200`:
+**`GET /klaster/{id}/riwayat`** — response `200`:
 ```json
 {
-  "data": {
-    "status_terkini": "menunggu_verifikasi | tidak_terverifikasi | dalam_antrian_prioritas | dalam_proses | selesai | tidak_dapat_ditindaklanjuti",
-    "riwayat": [
-      { "status": "string", "alasan": "string | null", "timestamp": "ISO8601" }
-    ]
-  }
+  "data": [
+    { "status": "string", "alasan": "string | null", "timestamp": "ISO8601" }
+  ]
 }
 ```
 Riwayat **append-only** — tidak ada endpoint `DELETE` untuk status
@@ -373,14 +534,17 @@ diimplementasikan sampai ada keputusan lanjutan.
 
 ## 10. Upload File (Foto Bukti)
 
-- Endpoint: `POST /laporan/{id}/foto`
+- Endpoint: `POST /upload/laporan?laporan_id={id}` dan `DELETE /upload/{storage_key}`
 - `Content-Type: multipart/form-data`, field `file` (image, maks — *tentukan
   batas ukuran, belum diputuskan, lihat §11*)
+- Akses: pemilik laporan atau `verifikator_dinas`/`kepala_dinas`/`admin`
+- Hapus: `DELETE /upload/{storage_key}` (param path = key hasil upload)
 - Disimpan ke MinIO/S3 (`ARCHITECTURE.md` §4.2, §5.1) — response hanya
   berisi referensi, **bukan** data biner:
 ```json
 { "data": { "foto_id": "string", "url": "string" } }
 ```
+- `laporan_id` tidak ada → `404 NOT_FOUND`; bukan pemilik → `403 FORBIDDEN`
 
 ---
 

@@ -1,0 +1,3524 @@
+{
+  "metadata": {
+    "n": 500,
+    "seed": 542,
+    "kategori_counts": {
+      "ruang_belajar": 100,
+      "sanitasi_air": 100,
+      "utilitas": 100,
+      "akses_lahan": 100,
+      "penunjang": 100
+    },
+    "teknik_counts": {
+      "sinonim": 124,
+      "parafrase": 135,
+      "gaya": 108,
+      "konteks": 133,
+      "gabung_topik": 0
+    },
+    "pool_template_size": 185,
+    "generated_at": "2026-10-03T21:42:35.375305"
+  },
+  "documents": [
+    {
+      "id": "d0290",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan kerap terputus. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0469",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0369",
+      "kategori": "akses_lahan",
+      "teks": "Pagar satuan pendidikan sobek di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Pagar_satuan_pendidi",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0434",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak aman dan tidak higienis. diperparah oleh kondisi cuaca",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0242",
+      "kategori": "utilitas",
+      "teks": "menghambat pembelajaran Tidak ada akses internet di satuan pendidikan",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0169",
+      "kategori": "sanitasi_air",
+      "teks": "gak layak pakai WC guru dalam kondisi rusak berat",
+      "sumber_template": "sanitasi_air_tidak_layak_pakai_WC",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0347",
+      "kategori": "akses_lahan",
+      "teks": "Batas tanah sekolah belum dipagar dengan baik. berbahaya bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Batas_tanah_sekolah_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0209",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0082",
+      "kategori": "ruang_belajar",
+      "teks": "Langit-langit kelas ambruk sebagian, belum diperbaiki. bahaya buat keselamatan siswa",
+      "sumber_template": "ruang_belajar_Langit-langit_kelas_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0295",
+      "kategori": "utilitas",
+      "teks": "Listrik sering padam karena instalasi kabel sudah tua. berbahaya bagi keselamatan siswa. perlu perhatian segera dari dinas",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0395",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak parah saat musim hujan. Selain itu, pagar sekolah rusak di beberapa titik, keamanan terancam. dapat menimbulkan kecelakaan",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0171",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada sabun dan air bersih di tempat cuci tangan. berbahaya bagi keselamatan siswa. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Tidak_ada_sabun_dan_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0477",
+      "kategori": "penunjang",
+      "teks": "Tidak ada tempat sampah memadai di area sekolah. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_tempat_sam",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0025",
+      "kategori": "ruang_belajar",
+      "teks": "Dinding kelas berlubang dan cat mengelupas, perlu dibenahi. Selain itu, pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0309",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang satuan pendidikan rusak dan tidak bisa dikunci. diperparah oleh kondisi cuaca",
+      "sumber_template": "akses_lahan_Gerbang_satuan_pendi",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0053",
+      "kategori": "ruang_belajar",
+      "teks": "banyak kursi patah Perabot kelas gak layak",
+      "sumber_template": "ruang_belajar_Perabot_kelas_gak_la",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0041",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas rembes sehingga kegiatan belajar terganggu. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0143",
+      "kategori": "sanitasi_air",
+      "teks": "WC guru dalam kondisi pecah berat, gak layak pakai",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0327",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah berlumpur dan tergenang saat hujan. diperparah oleh kondisi cuaca",
+      "sumber_template": "akses_lahan_Halaman_sekolah_berl",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0313",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju satuan pendidikan hancur parah saat musim hujan",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0480",
+      "kategori": "penunjang",
+      "teks": "Sarana olahraga sangat terbatas, lapangan pecah. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Sarana_olahraga_sang",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0134",
+      "kategori": "sanitasi_air",
+      "teks": "WC guru dalam kondisi rusak berat, gak layak pakai. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0006",
+      "kategori": "ruang_belajar",
+      "teks": "Atap ruang kelas tiris saat hujan, plafon rusak di beberapa titik. Selain itu, lantai keramik kelas pecah dan retak, berbahaya bagi siswa",
+      "sumber_template": "ruang_belajar_Atap_ruang_kelas_boc",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0311",
+      "kategori": "akses_lahan",
+      "teks": "Area parkir kurang cukup dan tidak aman",
+      "sumber_template": "akses_lahan_Area_parkir_kurang_c",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0355",
+      "kategori": "akses_lahan",
+      "teks": "Pagar satuan pendidikan rusak di beberapa titik, keamanan terancam. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "akses_lahan_Pagar_satuan_pendidi",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0335",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah sobek parah saat musim hujan. Selain itu, pagar sekolah sobek di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0467",
+      "kategori": "penunjang",
+      "teks": "Tidak ada tempat sampah memadai di area sekolah. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_tempat_sam",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0342",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak parah saat musim hujan. berbahaya bagi keselamatan siswa. sudah berlangsung sejak lama",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0221",
+      "kategori": "utilitas",
+      "teks": "Listrik sering kali padam karena instalasi kabel sudah tua",
+      "sumber_template": "utilitas_Listrik_sering_kali_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0439",
+      "kategori": "penunjang",
+      "teks": "Ruang serbaguna sekolah rusak atapnya. menjadi keluhan warga sekitar",
+      "sumber_template": "penunjang_Ruang_serbaguna_seko",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0281",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0449",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. perlu penanganan mendesak",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0485",
+      "kategori": "penunjang",
+      "teks": "Tidak ada tempat sampah memadai di area sekolah. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "penunjang_Tidak_ada_tempat_sam",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0208",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan banyak terjadi kali terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0365",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk instansi pendidikan berlubang dan berbahaya",
+      "sumber_template": "akses_lahan_Jalan_masuk_instansi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0493",
+      "kategori": "penunjang",
+      "teks": "perabot ruang guru banyak yang rusak Area bermain anak tidak layak dan berbahaya. Selain itu",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0007",
+      "kategori": "ruang_belajar",
+      "teks": "Meja dan kursi murid banyak yang rusak tidak bisa digunakan",
+      "sumber_template": "ruang_belajar_Meja_dan_kursi_murid",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0486",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak aman dan berbahaya. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0263",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0417",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah instansi pendidikan retak dan tidak layak",
+      "sumber_template": "penunjang_Tempat_ibadah_instan",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0468",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak aman dan tidak higienis",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0055",
+      "kategori": "ruang_belajar",
+      "teks": "Kondisi perpustakaan memprihatinkan, buku usang dan rak pecah. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "ruang_belajar_Kondisi_perpustakaan",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0378",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak serius saat musim hujan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0024",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah hancur lebih dari 50 persen",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0132",
+      "kategori": "sanitasi_air",
+      "teks": "tidak layak pakai WC guru dalam kondisi rusak berat. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "sanitasi_air_tidak_layak_pakai_WC",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0087",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah sobek lebih dari 50 persen. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0174",
+      "kategori": "sanitasi_air",
+      "teks": "WC guru dalam kondisi rusak berat, tidak layak pakai. berbahaya bagi keselamatan siswa. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0239",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di instansi pendidikan, menghambat pembelajaran",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0283",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam. bahaya buat keselamatan siswa",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0448",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah pecah dan tidak layak. Selain itu, tidak ada ruang guru yang memadai",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0250",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering kali terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0348",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah patah parah saat musim hujan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0078",
+      "kategori": "ruang_belajar",
+      "teks": "Laboratorium IPA tidak memiliki meja praktik yang memadai. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Laboratorium_IPA_tid",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0416",
+      "kategori": "penunjang",
+      "teks": "Tidak ada tempat sampah memadai di area sekolah. mengganggu kegiatan belajar mengajar. perlu penanganan mendesak",
+      "sumber_template": "penunjang_Tidak_ada_tempat_sam",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0158",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet rusak dan belum tersedia privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_rusak_d",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0173",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada air bersih di WC sekolah, siswa kesulitan. bahaya buat keselamatan siswa",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0245",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. sudah berlangsung sejak lama. dapat menimbulkan kecelakaan",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0166",
+      "kategori": "sanitasi_air",
+      "teks": "Toilet siswa rusak, gak bisa dipakai sebagian. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "sanitasi_air_Toilet_siswa_rusak,_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0052",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah hancur lebih dari 50 persen",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0106",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada sabun dan air bersih di tempat cuci tangan. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Tidak_ada_sabun_dan_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0179",
+      "kategori": "sanitasi_air",
+      "teks": "Toilet siswa rusak, gak bisa dipakai sebagian. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "sanitasi_air_Toilet_siswa_rusak,_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0196",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah siswa. sudah berlangsung sejak lama. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0236",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0384",
+      "kategori": "akses_lahan",
+      "teks": "Drainase sekolah tersumbat menyebabkan banjir. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "akses_lahan_Drainase_sekolah_ter",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0142",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air satuan pendidikan kering saat musim kemarau. perlu perhatian segera dari dinas",
+      "sumber_template": "sanitasi_air_Sumber_air_satuan_pe",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0473",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah patah dan tidak layak. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0455",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak layak pakai dan tidak higienis",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0249",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0478",
+      "kategori": "penunjang",
+      "teks": "Ruang UKS tidak memiliki peralatan medis memadai. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Ruang_UKS_tidak_memi",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0159",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada sabun dan air bersih di tempat cuci tangan. berbahaya bagi keselamatan siswa. perlu perhatian segera dari dinas",
+      "sumber_template": "sanitasi_air_Tidak_ada_sabun_dan_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0102",
+      "kategori": "sanitasi_air",
+      "teks": "siswa kesulitan Tidak ada air bersih di WC satuan pendidikan",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0374",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak parah saat musim hujan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0422",
+      "kategori": "penunjang",
+      "teks": "Ruang UKS tidak memiliki peralatan medis memadai. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Ruang_UKS_tidak_memi",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0183",
+      "kategori": "sanitasi_air",
+      "teks": "siswa kesulitan Tidak ada air bersih di WC sekolah",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0219",
+      "kategori": "utilitas",
+      "teks": "Daya listrik sekolah tidak cukup untuk seluruh ruangan",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0465",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan gak layak. menjadi keluhan warga sekitar",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0172",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah peserta didik",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0072",
+      "kategori": "ruang_belajar",
+      "teks": "Lantai keramik kelas pecah dan retak, risiko tinggi bagi peserta didik",
+      "sumber_template": "ruang_belajar_Lantai_keramik_kelas",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0238",
+      "kategori": "utilitas",
+      "teks": "Instalasi listrik belum sesuai standar keamanan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Instalasi_listrik_be",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0391",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang sekolah rusak dan tidak bisa dikunci. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Gerbang_sekolah_rusa",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0459",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah hancur dan tidak layak. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0241",
+      "kategori": "utilitas",
+      "teks": "Daya listrik sekolah tidak cukup untuk seluruh ruangan. berbahaya bagi keselamatan siswa. berbahaya bagi keselamatan siswa",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0484",
+      "kategori": "penunjang",
+      "teks": "Ruang UKS tidak memiliki peralatan medis memadai. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Ruang_UKS_tidak_memi",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0121",
+      "kategori": "sanitasi_air",
+      "teks": "tidak layak pakai. berbahaya bagi keselamatan siswa WC guru dalam kondisi rusak berat",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0124",
+      "kategori": "sanitasi_air",
+      "teks": "siswa kesulitan Tidak ada air bersih di WC sekolah. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_siswa_kesulitan_Tida",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0023",
+      "kategori": "ruang_belajar",
+      "teks": "perlu dibenahi Dinding kelas berlubang dan cat mengelupas",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0165",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0129",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0496",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak gak layak pakai dan berbahaya",
+      "sumber_template": "penunjang_Area_bermain_anak_ga",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0277",
+      "kategori": "utilitas",
+      "teks": "Instalasi listrik belum sesuai standar keamanan. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Instalasi_listrik_be",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0460",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak layak dan berbahaya",
+      "sumber_template": "penunjang_Area_bermain_anak_ga",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0194",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet hancur dan tidak ada privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_hancur_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0364",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah genangan dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0186",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet pecah dan tidak ada privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_pecah_d",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0015",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab udah pecah lebih dari 50 persen",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_udah",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0269",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan banyak terjadi terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0026",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas sempit, jumlah siswa melebihi kapasitas",
+      "sumber_template": "ruang_belajar_Ruang_kelas_sempit,_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0446",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak layak pakai dan tidak higienis",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0258",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering kali terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0107",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang. sudah berlangsung sejak lama. perlu perhatian segera dari dinas",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0487",
+      "kategori": "penunjang",
+      "teks": "tidak ada ruang guru yang memadai Tempat ibadah sekolah rusak dan tidak layak. Selain itu",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0259",
+      "kategori": "utilitas",
+      "teks": "Instalasi listrik belum sesuai standar keamanan. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Instalasi_listrik_be",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0398",
+      "kategori": "akses_lahan",
+      "teks": "Pagar sekolah rusak di beberapa titik, keamanan terancam. Selain itu, halaman sekolah becek dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Pagar_sekolah_rusak_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0367",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk satuan pendidikan berlubang dan membahayakan",
+      "sumber_template": "akses_lahan_Jalan_masuk_sekolah_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0151",
+      "kategori": "sanitasi_air",
+      "teks": "siswa kesulitan Tidak ada air bersih di WC satuan pendidikan",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0415",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah gak memadai dan tidak higienis",
+      "sumber_template": "penunjang_Kantin_sekolah_gak_l",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0085",
+      "kategori": "ruang_belajar",
+      "teks": "Papan tulis kelas udah rusak dan diganti seadanya",
+      "sumber_template": "ruang_belajar_Papan_tulis_kelas_su",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0412",
+      "kategori": "penunjang",
+      "teks": "Ruang serbaguna sekolah rusak atapnya. berbahaya bagi keselamatan siswa. menjadi keluhan warga sekitar",
+      "sumber_template": "penunjang_Ruang_serbaguna_seko",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0011",
+      "kategori": "ruang_belajar",
+      "teks": "Perabot kelas tidak layak, banyak kursi patah",
+      "sumber_template": "ruang_belajar_Perabot_kelas_gak_la",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0223",
+      "kategori": "utilitas",
+      "teks": "Listrik sering padam karena instalasi kabel sudah tua. dapat menimbulkan kecelakaan",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0021",
+      "kategori": "ruang_belajar",
+      "teks": "kunci hancur Pintu kelas sudah tidak bisa ditutup dengan baik",
+      "sumber_template": "ruang_belajar_Pintu_kelas_sudah_ti",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0400",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak gak layak dan berbahaya. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0466",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan tidak aman",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0031",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas merembes sehingga kegiatan belajar terganggu. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0211",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0361",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju instansi pendidikan rusak parah saat musim hujan. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_i",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0418",
+      "kategori": "penunjang",
+      "teks": "Ruang serbaguna sekolah rusak atapnya. sudah berlangsung sejak lama. dapat menimbulkan kecelakaan",
+      "sumber_template": "penunjang_Ruang_serbaguna_seko",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0294",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0203",
+      "kategori": "utilitas",
+      "teks": "Listrik sering kali padam karena instalasi kabel sudah tua",
+      "sumber_template": "utilitas_Listrik_sering_kali_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0116",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air sekolah kering saat musim kemarau. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_Sumber_air_sekolah_k",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0376",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah becek dan tergenang saat hujan. diperparah oleh kondisi cuaca",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0431",
+      "kategori": "penunjang",
+      "teks": "Kantin satuan pendidikan tidak aman dan tidak higienis",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0057",
+      "kategori": "ruang_belajar",
+      "teks": "jumlah murid melebihi kapasitas Ruang kelas sempit",
+      "sumber_template": "ruang_belajar_Ruang_kelas_sempit,_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0013",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0232",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering terputus. berbahaya bagi keselamatan siswa",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0411",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0144",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air satuan pendidikan kering saat musim kemarau. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Sumber_air_sekolah_k",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0300",
+      "kategori": "akses_lahan",
+      "teks": "Pagar sekolah pecah di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Pagar_sekolah_rusak_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0244",
+      "kategori": "utilitas",
+      "teks": "Stop kontak di kelas pecah dan tidak aman. perlu perhatian segera dari dinas",
+      "sumber_template": "utilitas_Stop_kontak_di_kelas",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0494",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. mengganggu kegiatan belajar mengajar. menjadi keluhan warga sekitar",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0122",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0276",
+      "kategori": "utilitas",
+      "teks": "Stop kontak di kelas pecah dan tidak aman. perlu perhatian segera dari dinas",
+      "sumber_template": "utilitas_Stop_kontak_di_kelas",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0336",
+      "kategori": "akses_lahan",
+      "teks": "Area parkir tidak memadai dan tidak aman. berbahaya bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Area_parkir_tidak_me",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0305",
+      "kategori": "akses_lahan",
+      "teks": "Area parkir tidak memadai dan tidak aman. sudah berlangsung sejak lama. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Area_parkir_tidak_me",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0035",
+      "kategori": "ruang_belajar",
+      "teks": "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan. mengacaukan kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Jendela_kaca_kelas_p",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0034",
+      "kategori": "ruang_belajar",
+      "teks": "Atap ruang kelas tiris saat hujan, plafon rusak di beberapa titik. Selain itu, lantai keramik kelas pecah dan retak, berbahaya bagi siswa",
+      "sumber_template": "ruang_belajar_Atap_ruang_kelas_boc",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0262",
+      "kategori": "utilitas",
+      "teks": "Lampu penerangan kelas banyak yang mati. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Lampu_penerangan_kel",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0421",
+      "kategori": "penunjang",
+      "teks": "Ruang UKS tidak memiliki peralatan medis memadai",
+      "sumber_template": "penunjang_Ruang_UKS_tidak_memi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0362",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah becek dan tergenang saat hujan. berbahaya bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0315",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk instansi pendidikan berlubang dan berbahaya",
+      "sumber_template": "akses_lahan_Jalan_masuk_instansi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0045",
+      "kategori": "ruang_belajar",
+      "teks": "Pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak. sudah berlangsung sejak lama. dapat menimbulkan kecelakaan",
+      "sumber_template": "ruang_belajar_Pintu_kelas_sudah_ti",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0058",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas merembes sehingga kegiatan belajar terganggu. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0284",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam. bahaya buat keselamatan siswa",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0028",
+      "kategori": "ruang_belajar",
+      "teks": "Dinding kelas berlubang dan cat mengelupas, perlu renovasi. Selain itu, pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0358",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk instansi pendidikan berlubang dan berbahaya",
+      "sumber_template": "akses_lahan_Jalan_masuk_instansi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0285",
+      "kategori": "utilitas",
+      "teks": "Listrik sering padam karena instalasi kabel sudah tua. berbahaya bagi keselamatan siswa",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0438",
+      "kategori": "penunjang",
+      "teks": "Sarana olahraga sangat kurang, lapangan rusak. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Sarana_olahraga_sang",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0326",
+      "kategori": "akses_lahan",
+      "teks": "Pagar sekolah rusak di beberapa titik, keamanan terancam. Selain itu, halaman sekolah becek dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Pagar_sekolah_rusak_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0408",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak layak dan berbahaya. sudah berlangsung sejak lama. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0271",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0435",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. berbahaya bagi keselamatan siswa. dapat menimbulkan kecelakaan",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0453",
+      "kategori": "penunjang",
+      "teks": "Ruang serbaguna sekolah hancur atapnya",
+      "sumber_template": "penunjang_Ruang_serbaguna_seko",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0207",
+      "kategori": "utilitas",
+      "teks": "Daya listrik instansi pendidikan tidak cukup untuk seluruh ruangan",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0205",
+      "kategori": "utilitas",
+      "teks": "Stop kontak di kelas pecah dan tidak aman",
+      "sumber_template": "utilitas_Stop_kontak_di_kelas",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0135",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada sabun dan air bersih di tempat cuci tangan. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Tidak_ada_sabun_dan_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0115",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah siswa. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0020",
+      "kategori": "ruang_belajar",
+      "teks": "Lantai keramik kelas pecah dan retak, tidak aman bagi siswa. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Lantai_keramik_kelas",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0032",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah rusak lebih dari 50 persen. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0086",
+      "kategori": "ruang_belajar",
+      "teks": "Meja dan kursi siswa banyak yang rusak gak bisa dipakai",
+      "sumber_template": "ruang_belajar_Meja_dan_kursi_siswa",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0266",
+      "kategori": "utilitas",
+      "teks": "Stop kontak di kelas rusak dan tidak aman. perlu penanganan mendesak",
+      "sumber_template": "utilitas_Stop_kontak_di_kelas",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0426",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak memadai pakai dan tidak higienis",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0065",
+      "kategori": "ruang_belajar",
+      "teks": "kunci rusak. sudah berlangsung sejak lama Pintu kelas sudah tidak bisa ditutup dengan baik",
+      "sumber_template": "ruang_belajar_Pintu_kelas_sudah_ti",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0098",
+      "kategori": "ruang_belajar",
+      "teks": "Perabot kelas gak layak, banyak kursi patah. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "ruang_belajar_Perabot_kelas_gak_la",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0318",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak parah saat musim hujan. berbahaya bagi keselamatan siswa. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0252",
+      "kategori": "utilitas",
+      "teks": "Listrik banyak terjadi padam karena instalasi kabel sudah lama",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0405",
+      "kategori": "penunjang",
+      "teks": "Ruang UKS tidak memiliki peralatan medis memadai. bahaya buat keselamatan siswa",
+      "sumber_template": "penunjang_Ruang_UKS_tidak_memi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0385",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang instansi pendidikan rusak dan tidak bisa dikunci",
+      "sumber_template": "akses_lahan_Gerbang_instansi_pen",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0101",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah anak didik. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0163",
+      "kategori": "sanitasi_air",
+      "teks": "WC guru dalam kondisi rusak berat berat, tidak layak pakai. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0128",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air satuan pendidikan kering saat musim kemarau",
+      "sumber_template": "sanitasi_air_Sumber_air_satuan_pe",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0168",
+      "kategori": "sanitasi_air",
+      "teks": "siswa kesulitan Tidak ada air bersih di WC sekolah",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0324",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah becek dan tergenang saat hujan. perlu perhatian segera dari dinas",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0217",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus. menghambat kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0470",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang tenaga pengajar banyak yang hancur",
+      "sumber_template": "penunjang_Perabot_ruang_guru_b",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0312",
+      "kategori": "akses_lahan",
+      "teks": "Tidak ada jalur khusus untuk siswa disabilitas. dapat menimbulkan kecelakaan",
+      "sumber_template": "akses_lahan_Tidak_ada_jalur_khus",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0377",
+      "kategori": "akses_lahan",
+      "teks": "Area parkir kurang cukup dan tidak aman. menjadi keluhan warga sekitar",
+      "sumber_template": "akses_lahan_Area_parkir_kurang_c",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0003",
+      "kategori": "ruang_belajar",
+      "teks": "jumlah siswa melebihi kapasitas. sudah berlangsung sejak lama Ruang kelas sempit",
+      "sumber_template": "ruang_belajar_Ruang_kelas_sempit,_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0488",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak layak pakai dan berbahaya. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0462",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah patah dan tidak layak. Selain itu, tidak ada ruang guru yang memadai",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0152",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air sekolah kering saat musim kemarau. berbahaya bagi keselamatan siswa. diperparah oleh kondisi cuaca",
+      "sumber_template": "sanitasi_air_Sumber_air_sekolah_k",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0181",
+      "kategori": "sanitasi_air",
+      "teks": "tidak layak pakai WC guru dalam kondisi pecah berat",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0119",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0004",
+      "kategori": "ruang_belajar",
+      "teks": "Papan tulis kelas sudah rusak dan diganti seadanya. sudah berlangsung sejak lama. diperparah oleh kondisi cuaca",
+      "sumber_template": "ruang_belajar_Papan_tulis_kelas_su",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0260",
+      "kategori": "utilitas",
+      "teks": "Listrik sering kali padam karena instalasi kabel sudah tua. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0442",
+      "kategori": "penunjang",
+      "teks": "lapangan pecah Sarana olahraga sangat terbatas",
+      "sumber_template": "penunjang_Sarana_olahraga_sang",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0491",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak layak pakai dan tidak higienis. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0060",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu. berbahaya bagi keselamatan siswa. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0425",
+      "kategori": "penunjang",
+      "teks": "Ruang UKS tidak memiliki peralatan medis memadai. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Ruang_UKS_tidak_memi",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0274",
+      "kategori": "utilitas",
+      "teks": "Instalasi listrik belum sesuai standar keamanan. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Instalasi_listrik_be",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0255",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering terputus. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0388",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk sekolah berlubang dan risiko tinggi. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Jalan_masuk_sekolah_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0237",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0304",
+      "kategori": "akses_lahan",
+      "teks": "keamanan terancam. sudah berlangsung sejak lama Pagar sekolah rusak di beberapa titik",
+      "sumber_template": "akses_lahan_Pagar_sekolah_rusak_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0214",
+      "kategori": "utilitas",
+      "teks": "Daya listrik sekolah tidak cukup untuk seluruh ruangan. bahaya buat keselamatan siswa",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0054",
+      "kategori": "ruang_belajar",
+      "teks": "Dinding kelas berlubang dan cat mengelupas, perlu dibenahi. Selain itu, pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0162",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet hancur dan tidak ada privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_hancur_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0264",
+      "kategori": "utilitas",
+      "teks": "Listrik kerap padam karena instalasi kabel sudah tua. perlu perhatian segera dari dinas",
+      "sumber_template": "utilitas_Listrik_kerap_padam_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0233",
+      "kategori": "utilitas",
+      "teks": "Listrik kerap kali padam karena instalasi kabel sudah tua",
+      "sumber_template": "utilitas_Listrik_sering_kali_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0349",
+      "kategori": "akses_lahan",
+      "teks": "Pagar instansi pendidikan rusak di beberapa titik, keamanan terancam. dapat menimbulkan kecelakaan",
+      "sumber_template": "akses_lahan_Pagar_instansi_pendi",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0427",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah patah dan tidak layak. Selain itu, tidak ada ruang guru yang memadai",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0333",
+      "kategori": "akses_lahan",
+      "teks": "Pagar sekolah hancur di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Pagar_sekolah_hancur",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0056",
+      "kategori": "ruang_belajar",
+      "teks": "Atap ruang kelas bocor saat hujan, plafon rusak di beberapa titik. Selain itu, lantai keramik kelas pecah dan retak, berbahaya bagi siswa",
+      "sumber_template": "ruang_belajar_Atap_ruang_kelas_boc",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0067",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah sobek lebih dari 50 persen. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0394",
+      "kategori": "akses_lahan",
+      "teks": "Halaman satuan pendidikan licin dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Halaman_sekolah_lici",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0059",
+      "kategori": "ruang_belajar",
+      "teks": "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan. Selain itu, kondisi perpustakaan memprihatinkan, buku usang dan rak rusak. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Jendela_kaca_kelas_p",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0257",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0176",
+      "kategori": "sanitasi_air",
+      "teks": "tidak layak pakai WC guru dalam kondisi rusak berat. dapat menimbulkan kecelakaan",
+      "sumber_template": "sanitasi_air_tidak_layak_pakai_WC",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0096",
+      "kategori": "ruang_belajar",
+      "teks": "bahaya buat siswa Lantai keramik kelas pecah dan retak",
+      "sumber_template": "ruang_belajar_berbahaya_bagi_siswa",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0010",
+      "kategori": "ruang_belajar",
+      "teks": "Langit-langit kelas ambruk sebagian, belum diperbaiki",
+      "sumber_template": "ruang_belajar_Langit-langit_kelas_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0495",
+      "kategori": "penunjang",
+      "teks": "Tidak ada tempat sampah memadai di area satuan pendidikan",
+      "sumber_template": "penunjang_Tidak_ada_tempat_sam",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0040",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah patah lebih dari 50 persen",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0127",
+      "kategori": "sanitasi_air",
+      "teks": "Saluran pembuangan WC tersumbat dan bau menyengat. berbahaya bagi keselamatan siswa. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Saluran_pembuangan_W",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0338",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah becek dan tergenang saat hujan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0164",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0090",
+      "kategori": "ruang_belajar",
+      "teks": "Meja dan kursi siswa banyak yang rusak gak bisa dipakai",
+      "sumber_template": "ruang_belajar_Meja_dan_kursi_siswa",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0225",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan banyak terjadi kali terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0117",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air satuan pendidikan kering saat musim kemarau",
+      "sumber_template": "sanitasi_air_Sumber_air_sekolah_k",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0432",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak layak dan berbahaya. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0182",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada air bersih di WC sekolah, siswa kesulitan. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0156",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet rusak dan tidak ada privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_rusak_d",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0175",
+      "kategori": "sanitasi_air",
+      "teks": "jumlah toilet sangat kurang dibanding jumlah siswa Saluran pembuangan WC tersumbat dan bau menyengat. Selain itu",
+      "sumber_template": "sanitasi_air_Saluran_pembuangan_W",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0190",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah peserta didik. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0479",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. bahaya buat keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0112",
+      "kategori": "sanitasi_air",
+      "teks": "WC guru dalam kondisi rusak berat, gak layak pakai pakai",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0428",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang pendidik banyak yang rusak. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "penunjang_Perabot_ruang_pendid",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0406",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. perlu penanganan mendesak",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0383",
+      "kategori": "akses_lahan",
+      "teks": "Batas tanah sekolah belum dipagar dengan baik. berbahaya bagi keselamatan siswa. perlu perhatian segera dari dinas",
+      "sumber_template": "akses_lahan_Batas_tanah_sekolah_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0189",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada sabun dan air bersih di tempat cuci tangan. bahaya buat keselamatan siswa",
+      "sumber_template": "sanitasi_air_Tidak_ada_sabun_dan_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0114",
+      "kategori": "sanitasi_air",
+      "teks": "tidak layak pakai pakai WC guru dalam kondisi rusak berat",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0161",
+      "kategori": "sanitasi_air",
+      "teks": "Keran air di area satuan pendidikan banyak yang mati",
+      "sumber_template": "sanitasi_air_Keran_air_di_area_sa",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0296",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan kerap terputus. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0321",
+      "kategori": "akses_lahan",
+      "teks": "Halaman satuan pendidikan becek dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Halaman_satuan_pendi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0401",
+      "kategori": "penunjang",
+      "teks": "Ruang serbaguna sekolah rusak atapnya",
+      "sumber_template": "penunjang_Ruang_serbaguna_seko",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0195",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air instansi pendidikan kering saat musim kemarau",
+      "sumber_template": "sanitasi_air_Sumber_air_instansi_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0206",
+      "kategori": "utilitas",
+      "teks": "Listrik kerap padam karena instalasi kabel sudah tua. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0191",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air satuan pendidikan kering saat musim kemarau. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "sanitasi_air_Sumber_air_satuan_pe",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0353",
+      "kategori": "akses_lahan",
+      "teks": "Talang air tersumbat menyebabkan genangan di halaman",
+      "sumber_template": "akses_lahan_Talang_air_tersumbat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0139",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0458",
+      "kategori": "penunjang",
+      "teks": "Ruang UKS tidak memiliki peralatan medis memadai. berbahaya bagi keselamatan siswa. menjadi keluhan warga sekitar",
+      "sumber_template": "penunjang_Ruang_UKS_tidak_memi",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0363",
+      "kategori": "akses_lahan",
+      "teks": "Talang air tersumbat menyebabkan genangan di halaman",
+      "sumber_template": "akses_lahan_Talang_air_tersumbat",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0360",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk instansi pendidikan berlubang dan membahayakan",
+      "sumber_template": "akses_lahan_Jalan_masuk_sekolah_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0403",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang guru banyak yang patah. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "penunjang_Perabot_ruang_guru_b",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0341",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah berlumpur dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Halaman_sekolah_berl",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0498",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. berbahaya bagi keselamatan siswa. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0303",
+      "kategori": "akses_lahan",
+      "teks": "Tidak ada jalur khusus untuk siswa disabilitas. berbahaya bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Tidak_ada_jalur_khus",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0332",
+      "kategori": "akses_lahan",
+      "teks": "Tidak ada jalur khusus untuk peserta didik disabilitas",
+      "sumber_template": "akses_lahan_Tidak_ada_jalur_khus",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0108",
+      "kategori": "sanitasi_air",
+      "teks": "WC guru dalam kondisi pecah berat, gak layak pakai",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0387",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah becek dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0061",
+      "kategori": "ruang_belajar",
+      "teks": "perlu renovasi Dinding kelas berlubang dan cat mengelupas. perlu perhatian segera dari dinas",
+      "sumber_template": "ruang_belajar_perlu_renovasi_Dindi",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0073",
+      "kategori": "ruang_belajar",
+      "teks": "Dinding kelas berlubang dan cat mengelupas, perlu renovasi. Selain itu, pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0392",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah becek dan tergenang saat hujan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0424",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak layak dan berbahaya. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0201",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam. berbahaya bagi keselamatan siswa. perlu perhatian segera dari dinas",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0076",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab udah rusak lebih dari 50 persen",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0033",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0048",
+      "kategori": "ruang_belajar",
+      "teks": "Langit-langit kelas ambruk sebagian, belum dibenerin. perlu perhatian segera dari dinas",
+      "sumber_template": "ruang_belajar_Langit-langit_kelas_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0212",
+      "kategori": "utilitas",
+      "teks": "menghambat pembelajaran. sudah berlangsung sejak lama Tidak ada akses internet di sekolah",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0441",
+      "kategori": "penunjang",
+      "teks": "Tidak ada tempat sampah memadai di area sekolah. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_tempat_sam",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0298",
+      "kategori": "utilitas",
+      "teks": "Listrik sering padam karena instalasi kabel sudah tua. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0193",
+      "kategori": "sanitasi_air",
+      "teks": "Keran air di area satuan pendidikan banyak yang mati. diperparah oleh kondisi cuaca",
+      "sumber_template": "sanitasi_air_Keran_air_di_area_sa",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0451",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang guru banyak yang pecah. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "penunjang_Perabot_ruang_guru_b",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0275",
+      "kategori": "utilitas",
+      "teks": "Daya listrik sekolah tidak cukup untuk seluruh ruangan. berbahaya bagi keselamatan siswa. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0329",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk sekolah berlubang dan berbahaya. berbahaya bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Jalan_masuk_sekolah_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0265",
+      "kategori": "utilitas",
+      "teks": "Listrik sering kali padam karena instalasi kabel sudah tua",
+      "sumber_template": "utilitas_Listrik_sering_kali_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0000",
+      "kategori": "ruang_belajar",
+      "teks": "Kondisi perpustakaan memprihatinkan, buku usang dan rak hancur. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Kondisi_perpustakaan",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0482",
+      "kategori": "penunjang",
+      "teks": "Kantin instansi pendidikan tidak layak pakai dan tidak higienis",
+      "sumber_template": "penunjang_Kantin_instansi_pend",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0443",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak aman dan berbahaya",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0447",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan gak layak",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0328",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah licin dan tergenang saat hujan. berbahaya bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0138",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada air bersih di WC sekolah, siswa kesulitan. berbahaya bagi keselamatan siswa. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0036",
+      "kategori": "ruang_belajar",
+      "teks": "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan. Selain itu, kondisi perpustakaan memprihatinkan, buku usang dan rak rusak. diperparah oleh kondisi cuaca",
+      "sumber_template": "ruang_belajar_Jendela_kaca_kelas_p",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0256",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0153",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada sabun dan air bersih di tempat cuci tangan. bahaya buat keselamatan siswa",
+      "sumber_template": "sanitasi_air_Tidak_ada_sabun_dan_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0125",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet rusak dan belum tersedia privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_rusak_d",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0306",
+      "kategori": "akses_lahan",
+      "teks": "Drainase sekolah tersumbat menyebabkan banjir",
+      "sumber_template": "akses_lahan_Drainase_sekolah_ter",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0009",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah rusak lebih dari 50 persen. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0302",
+      "kategori": "akses_lahan",
+      "teks": "Drainase sekolah tersumbat menyebabkan banjir. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Drainase_sekolah_ter",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0320",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah berlumpur dan tergenang saat hujan. berbahaya bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Halaman_sekolah_berl",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0083",
+      "kategori": "ruang_belajar",
+      "teks": "Perabot kelas gak layak, banyak kursi patah. perlu perhatian segera dari dinas",
+      "sumber_template": "ruang_belajar_Perabot_kelas_gak_la",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0343",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak parah saat musim hujan. Selain itu, pagar sekolah rusak di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0339",
+      "kategori": "akses_lahan",
+      "teks": "Tidak ada jalur khusus untuk siswa disabilitas. berbahaya bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Tidak_ada_jalur_khus",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0351",
+      "kategori": "akses_lahan",
+      "teks": "Talang air tersumbat menyebabkan genangan di halaman. tidak aman bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Talang_air_tersumbat",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0113",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC merembes sehingga air terbuang. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0492",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan gak layak",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0457",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang pendidik banyak yang rusak",
+      "sumber_template": "penunjang_Perabot_ruang_pendid",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0334",
+      "kategori": "akses_lahan",
+      "teks": "Talang air tersumbat menyebabkan genangan di halaman. sudah berlangsung sejak lama",
+      "sumber_template": "akses_lahan_Talang_air_tersumbat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0307",
+      "kategori": "akses_lahan",
+      "teks": "keamanan terancam Pagar satuan pendidikan rusak di beberapa titik",
+      "sumber_template": "akses_lahan_Pagar_satuan_pendidi",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0043",
+      "kategori": "ruang_belajar",
+      "teks": "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Jendela_kaca_kelas_p",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0005",
+      "kategori": "ruang_belajar",
+      "teks": "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan. Selain itu, kondisi perpustakaan memprihatinkan, buku usang dan rak rusak berat",
+      "sumber_template": "ruang_belajar_Jendela_kaca_kelas_p",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0291",
+      "kategori": "utilitas",
+      "teks": "Stop kontak di kelas rusak dan tidak aman",
+      "sumber_template": "utilitas_Stop_kontak_di_kelas",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0289",
+      "kategori": "utilitas",
+      "teks": "Daya listrik sekolah tidak cukup untuk seluruh ruangan. Selain itu, tidak ada akses internet di sekolah, menghambat pembelajaran",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0476",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang pendidik banyak yang patah",
+      "sumber_template": "penunjang_Perabot_ruang_pendid",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0049",
+      "kategori": "ruang_belajar",
+      "teks": "perlu renovasi Dinding kelas berlubang dan cat mengelupas. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "ruang_belajar_perlu_renovasi_Dindi",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0450",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang tenaga pengajar banyak yang hancur",
+      "sumber_template": "penunjang_Perabot_ruang_guru_b",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0066",
+      "kategori": "ruang_belajar",
+      "teks": "Pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak. berbahaya bagi keselamatan siswa. dapat menimbulkan kecelakaan",
+      "sumber_template": "ruang_belajar_Pintu_kelas_sudah_ti",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0167",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada air bersih di WC sekolah, siswa kesulitan",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0464",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah retak dan gak layak",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0267",
+      "kategori": "utilitas",
+      "teks": "Listrik sering padam karena instalasi kabel sudah tua. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0382",
+      "kategori": "akses_lahan",
+      "teks": "Tidak ada jalur khusus untuk siswa disabilitas",
+      "sumber_template": "akses_lahan_Tidak_ada_jalur_khus",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0316",
+      "kategori": "akses_lahan",
+      "teks": "Pagar satuan pendidikan rusak di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Pagar_satuan_pendidi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0147",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah peserta didik",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0077",
+      "kategori": "ruang_belajar",
+      "teks": "Lantai keramik kelas pecah dan retak, berbahaya bagi siswa. sudah berlangsung sejak lama. perlu perhatian segera dari dinas",
+      "sumber_template": "ruang_belajar_Lantai_keramik_kelas",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0204",
+      "kategori": "utilitas",
+      "teks": "Kabel listrik terkelupas dan berbahaya bagi siswa. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Kabel_listrik_terkel",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0160",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0414",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang pendidik banyak yang hancur",
+      "sumber_template": "penunjang_Perabot_ruang_guru_b",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0227",
+      "kategori": "utilitas",
+      "teks": "Instalasi listrik belum sesuai standar keamanan. sudah berlangsung sejak lama. perlu penanganan mendesak",
+      "sumber_template": "utilitas_Instalasi_listrik_be",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0198",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air satuan pendidikan kering saat musim kemarau",
+      "sumber_template": "sanitasi_air_Sumber_air_satuan_pe",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0293",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0216",
+      "kategori": "utilitas",
+      "teks": "menghambat pembelajaran. mengganggu kegiatan belajar mengajar Tidak ada akses internet di sekolah",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0097",
+      "kategori": "ruang_belajar",
+      "teks": "Dinding kelas berlubang dan cat mengelupas, perlu renovasi",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0210",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0430",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan tidak layak. Selain itu, tidak ada ruang guru yang memadai. menjadi keluhan warga sekitar",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0092",
+      "kategori": "ruang_belajar",
+      "teks": "Papan tulis kelas udah rusak dan diganti seadanya. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Papan_tulis_kelas_su",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0380",
+      "kategori": "akses_lahan",
+      "teks": "Batas tanah instansi pendidikan belum dipagar dengan baik",
+      "sumber_template": "akses_lahan_Batas_tanah_instansi",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0413",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang guru banyak yang hancur. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "penunjang_Perabot_ruang_guru_b",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0325",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk instansi pendidikan berlubang dan risiko tinggi",
+      "sumber_template": "akses_lahan_Jalan_masuk_sekolah_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0030",
+      "kategori": "ruang_belajar",
+      "teks": "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "ruang_belajar_Jendela_kaca_kelas_p",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0330",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju satuan pendidikan rusak parah saat musim hujan",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0064",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu. sudah berlangsung sejak lama. perlu penanganan mendesak",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0419",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak aman dan berbahaya",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0155",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air instansi pendidikan kering saat musim kemarau. menjadi keluhan warga sekitar",
+      "sumber_template": "sanitasi_air_Sumber_air_instansi_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0027",
+      "kategori": "ruang_belajar",
+      "teks": "perlu renovasi Dinding kelas berlubang dan cat mengelupas",
+      "sumber_template": "ruang_belajar_perlu_renovasi_Dindi",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0397",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang instansi pendidikan rusak dan tidak bisa dikunci. dapat menimbulkan kecelakaan",
+      "sumber_template": "akses_lahan_Gerbang_instansi_pen",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0200",
+      "kategori": "utilitas",
+      "teks": "Listrik sering padam karena instalasi kabel sudah tua. berbahaya bagi keselamatan siswa. diperparah oleh kondisi cuaca",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0497",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang guru banyak yang pecah",
+      "sumber_template": "penunjang_Perabot_ruang_guru_b",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0170",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC rembes sehingga air terbuang. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0248",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. mengganggu kegiatan belajar mengajar. diperparah oleh kondisi cuaca",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0286",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0002",
+      "kategori": "ruang_belajar",
+      "teks": "Langit-langit kelas ambruk sebagian, belum diperbaiki",
+      "sumber_template": "ruang_belajar_Langit-langit_kelas_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0199",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air instansi pendidikan kering saat musim kemarau",
+      "sumber_template": "sanitasi_air_Sumber_air_sekolah_k",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0099",
+      "kategori": "ruang_belajar",
+      "teks": "belum dibenerin Langit-langit kelas ambruk sebagian",
+      "sumber_template": "ruang_belajar_Langit-langit_kelas_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0130",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah peserta didik",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0088",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab udah rusak lebih dari 50 persen. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0399",
+      "kategori": "akses_lahan",
+      "teks": "Talang air tersumbat menyebabkan genangan di halaman. sudah berlangsung sejak lama",
+      "sumber_template": "akses_lahan_Talang_air_tersumbat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0461",
+      "kategori": "penunjang",
+      "teks": "Ruang serbaguna sekolah rusak atapnya. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Ruang_serbaguna_seko",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0126",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada sabun dan air bersih di tempat cuci tangan. sudah berlangsung sejak lama. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "sanitasi_air_Tidak_ada_sabun_dan_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0235",
+      "kategori": "utilitas",
+      "teks": "Listrik sering padam karena instalasi kabel sudah tua. tidak ada anggaran untuk perbaikan",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0213",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering kali terputus. berbahaya bagi keselamatan siswa",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0409",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan gak layak",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0373",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang instansi pendidikan rusak dan tidak bisa dikunci. dapat menimbulkan kecelakaan",
+      "sumber_template": "akses_lahan_Gerbang_instansi_pen",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0051",
+      "kategori": "ruang_belajar",
+      "teks": "jumlah murid melebihi kapasitas Ruang kelas sempit",
+      "sumber_template": "ruang_belajar_Ruang_kelas_sempit,_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0371",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak berat parah saat musim hujan. Selain itu, pagar sekolah rusak berat di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0074",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab udah rusak lebih dari 50 persen",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_udah",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0029",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah rusak lebih dari 50 persen. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0322",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang sekolah rusak dan tidak bisa dikunci. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Gerbang_sekolah_rusa",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0390",
+      "kategori": "akses_lahan",
+      "teks": "Pagar instansi pendidikan rusak di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Pagar_instansi_pendi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0463",
+      "kategori": "penunjang",
+      "teks": "Tidak ada tempat sampah memadai di area satuan pendidikan",
+      "sumber_template": "penunjang_Tidak_ada_tempat_sam",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0091",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas sempit, jumlah anak didik melebihi kapasitas",
+      "sumber_template": "ruang_belajar_Ruang_kelas_sempit,_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0273",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan kerap terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0231",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. Selain itu, kabel listrik terkelupas dan berbahaya bagi siswa",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0243",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam. sudah berlangsung sejak lama. perlu penanganan mendesak",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0140",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet hancur dan tidak ada privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_rusak_d",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0046",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah pecah lebih dari 50 persen. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0475",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. bahaya buat keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0310",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang instansi pendidikan rusak dan tidak bisa dikunci",
+      "sumber_template": "akses_lahan_Gerbang_instansi_pen",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0323",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk sekolah berlubang dan risiko tinggi. perlu perhatian segera dari dinas",
+      "sumber_template": "akses_lahan_Jalan_masuk_sekolah_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0359",
+      "kategori": "akses_lahan",
+      "teks": "Tidak ada jalur khusus untuk peserta didik disabilitas",
+      "sumber_template": "akses_lahan_Tidak_ada_jalur_khus",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0069",
+      "kategori": "ruang_belajar",
+      "teks": "buku usang dan rak pecah Kondisi perpustakaan memprihatinkan",
+      "sumber_template": "ruang_belajar_Kondisi_perpustakaan",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0240",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di instansi pendidikan, menghambat pembelajaran. perlu penanganan mendesak",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0340",
+      "kategori": "akses_lahan",
+      "teks": "Talang air tersumbat menyebabkan genangan di halaman. membahayakan bagi keselamatan siswa",
+      "sumber_template": "akses_lahan_Talang_air_tersumbat",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0018",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah hancur lebih dari 50 persen",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0282",
+      "kategori": "utilitas",
+      "teks": "Listrik sering padam karena instalasi kabel sudah lama",
+      "sumber_template": "utilitas_Listrik_sering_padam",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0080",
+      "kategori": "ruang_belajar",
+      "teks": "buku usang dan rak hancur Kondisi perpustakaan memprihatinkan",
+      "sumber_template": "ruang_belajar_Kondisi_perpustakaan",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0071",
+      "kategori": "ruang_belajar",
+      "teks": "Langit-langit kelas ambruk sebagian, belum dibenerin. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Langit-langit_kelas_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0019",
+      "kategori": "ruang_belajar",
+      "teks": "berbahaya bagi siswa Lantai keramik kelas pecah dan retak",
+      "sumber_template": "ruang_belajar_berbahaya_bagi_siswa",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0261",
+      "kategori": "utilitas",
+      "teks": "Daya listrik instansi pendidikan tidak cukup untuk seluruh ruangan",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0437",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak gak layak dan membahayakan",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0280",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan kerap terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0111",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air satuan pendidikan kering saat musim kemarau",
+      "sumber_template": "sanitasi_air_Sumber_air_satuan_pe",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0062",
+      "kategori": "ruang_belajar",
+      "teks": "Kondisi perpustakaan memprihatinkan, buku usang dan rak pecah. dapat menimbulkan kecelakaan",
+      "sumber_template": "ruang_belajar_Kondisi_perpustakaan",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0187",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah siswa. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0375",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang instansi pendidikan rusak berat dan tidak bisa dikunci",
+      "sumber_template": "akses_lahan_Gerbang_instansi_pen",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0177",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air satuan pendidikan kering saat musim kemarau",
+      "sumber_template": "sanitasi_air_Sumber_air_satuan_pe",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0184",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air instansi pendidikan kering saat musim kemarau. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "sanitasi_air_Sumber_air_instansi_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0037",
+      "kategori": "ruang_belajar",
+      "teks": "Langit-langit kelas ambruk sebagian, belum diperbaiki. berbahaya bagi keselamatan siswa. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Langit-langit_kelas_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0292",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering kali kali terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0436",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang pendidik banyak yang retak",
+      "sumber_template": "penunjang_Perabot_ruang_pendid",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0044",
+      "kategori": "ruang_belajar",
+      "teks": "berbahaya bagi siswa Lantai keramik kelas pecah dan retak",
+      "sumber_template": "ruang_belajar_berbahaya_bagi_siswa",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0410",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak layak dan berbahaya. Selain itu, perabot ruang guru banyak yang hancur",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0131",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0490",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0357",
+      "kategori": "akses_lahan",
+      "teks": "Gerbang satuan pendidikan rusak dan tidak bisa dikunci. perlu penanganan mendesak",
+      "sumber_template": "akses_lahan_Gerbang_satuan_pendi",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0331",
+      "kategori": "akses_lahan",
+      "teks": "keamanan terancam Pagar sekolah rusak di beberapa titik",
+      "sumber_template": "akses_lahan_Pagar_sekolah_rusak_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0429",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan tidak aman",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0379",
+      "kategori": "akses_lahan",
+      "teks": "Talang air tersumbat menyebabkan genangan di halaman. sudah berlangsung sejak lama",
+      "sumber_template": "akses_lahan_Talang_air_tersumbat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0014",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab sudah rusak lebih dari 50 persen. mengganggu kegiatan belajar mengajar. perlu perhatian segera dari dinas",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0393",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju satuan pendidikan rusak parah saat musim hujan",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0050",
+      "kategori": "ruang_belajar",
+      "teks": "Lantai keramik kelas pecah dan retak, bahaya buat siswa. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Lantai_keramik_kelas",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0445",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan tidak layak. perlu perhatian segera dari dinas",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0070",
+      "kategori": "ruang_belajar",
+      "teks": "Dinding kelas berlubang dan cat mengelupas, perlu renovasi",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0218",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. Selain itu, kabel listrik terkelupas dan berbahaya bagi siswa",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0093",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu. bahaya buat keselamatan siswa",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0381",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak parah saat musim hujan. sudah berlangsung sejak lama",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0081",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu. bahaya buat keselamatan siswa",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0454",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak layak pakai pakai dan tidak higienis",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0254",
+      "kategori": "utilitas",
+      "teks": "Listrik kerap padam karena instalasi kabel sudah tua",
+      "sumber_template": "utilitas_Listrik_kerap_padam_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0094",
+      "kategori": "ruang_belajar",
+      "teks": "Papan tulis kelas sudah rusak dan diganti seadanya. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Papan_tulis_kelas_su",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0022",
+      "kategori": "ruang_belajar",
+      "teks": "bahaya buat siswa Lantai keramik kelas pecah dan retak",
+      "sumber_template": "ruang_belajar_berbahaya_bagi_siswa",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0109",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah peserta didik",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0386",
+      "kategori": "akses_lahan",
+      "teks": "Drainase sekolah tersumbat menyebabkan banjir. sudah berlangsung sejak lama",
+      "sumber_template": "akses_lahan_Drainase_sekolah_ter",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0154",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat terbatas dibanding jumlah peserta didik",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0354",
+      "kategori": "akses_lahan",
+      "teks": "Pagar sekolah rusak di beberapa titik, keamanan terancam. perlu perhatian segera dari dinas",
+      "sumber_template": "akses_lahan_Pagar_sekolah_rusak_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0047",
+      "kategori": "ruang_belajar",
+      "teks": "Komputer di lab udah rusak lebih dari 50 persen. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Komputer_di_lab_suda",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0483",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0226",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0301",
+      "kategori": "akses_lahan",
+      "teks": "keamanan terancam Pagar sekolah hancur di beberapa titik",
+      "sumber_template": "akses_lahan_Pagar_sekolah_hancur",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0433",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0202",
+      "kategori": "utilitas",
+      "teks": "Instalasi listrik belum sesuai standar keamanan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Instalasi_listrik_be",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0185",
+      "kategori": "sanitasi_air",
+      "teks": "siswa kesulitan Tidak ada air bersih di WC sekolah. menjadi keluhan warga sekitar",
+      "sumber_template": "sanitasi_air_siswa_kesulitan_Tida",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0444",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah gak layak dan tidak higienis. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0133",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah siswa. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0110",
+      "kategori": "sanitasi_air",
+      "teks": "tidak layak pakai. berbahaya bagi keselamatan siswa WC guru dalam kondisi rusak berat",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0149",
+      "kategori": "sanitasi_air",
+      "teks": "Toilet siswa rusak, gak bisa dipakai sebagian. diperparah oleh kondisi cuaca",
+      "sumber_template": "sanitasi_air_Toilet_siswa_rusak,_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0423",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak tidak layak dan berbahaya. Selain itu, perabot ruang guru banyak yang rusak. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0372",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah becek dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0352",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk sekolah berlubang dan berbahaya",
+      "sumber_template": "akses_lahan_Jalan_masuk_sekolah_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0499",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak aman dan tidak higienis. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0481",
+      "kategori": "penunjang",
+      "teks": "Tidak ada tempat sampah memadai di area sekolah. mengganggu kegiatan belajar mengajar. perlu perhatian segera dari dinas",
+      "sumber_template": "penunjang_Tidak_ada_tempat_sam",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0068",
+      "kategori": "ruang_belajar",
+      "teks": "Meja dan kursi siswa banyak yang rusak gak bisa dipakai. dapat menimbulkan kecelakaan",
+      "sumber_template": "ruang_belajar_Meja_dan_kursi_siswa",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0278",
+      "kategori": "utilitas",
+      "teks": "Tagihan listrik menunggak sehingga sempat diputus",
+      "sumber_template": "utilitas_Tagihan_listrik_menu",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0192",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet hancur dan tidak ada privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_hancur_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0120",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah siswa. Selain itu, pintu toilet rusak dan tidak ada privasi. perlu perhatian segera dari dinas",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0270",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering terputus. berbahaya bagi keselamatan siswa. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0246",
+      "kategori": "utilitas",
+      "teks": "Instalasi listrik belum sesuai standar keamanan. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Instalasi_listrik_be",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0317",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk instansi pendidikan berlubang dan berbahaya",
+      "sumber_template": "akses_lahan_Jalan_masuk_instansi",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0407",
+      "kategori": "penunjang",
+      "teks": "Ruang serbaguna sekolah rusak atapnya",
+      "sumber_template": "penunjang_Ruang_serbaguna_seko",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0234",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering terputus. berbahaya bagi keselamatan siswa. menjadi keluhan warga sekitar",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0123",
+      "kategori": "sanitasi_air",
+      "teks": "tidak layak pakai. berbahaya bagi keselamatan siswa WC guru dalam kondisi rusak berat",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0215",
+      "kategori": "utilitas",
+      "teks": "Daya listrik sekolah tidak cukup untuk seluruh ruangan. Selain itu, tidak ada akses internet di sekolah, menghambat pembelajaran",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0148",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet hancur dan tidak ada privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_hancur_",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0366",
+      "kategori": "akses_lahan",
+      "teks": "Area parkir tidak memadai dan tidak aman",
+      "sumber_template": "akses_lahan_Area_parkir_kurang_c",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0197",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air instansi pendidikan kering saat musim kemarau. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "sanitasi_air_Sumber_air_instansi_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0146",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet rusak dan tidak ada privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_rusak_d",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0178",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0288",
+      "kategori": "utilitas",
+      "teks": "Instalasi listrik belum sesuai standar keamanan. sudah berlangsung sejak lama",
+      "sumber_template": "utilitas_Instalasi_listrik_be",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0299",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. mengganggu kegiatan belajar mengajar. diperparah oleh kondisi cuaca",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0157",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet retak dan belum tersedia privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_rusak_d",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0287",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di instansi pendidikan, menghambat pembelajaran",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0456",
+      "kategori": "penunjang",
+      "teks": "Area bermain anak gak layak dan berbahaya. Selain itu, perabot ruang guru banyak yang rusak",
+      "sumber_template": "penunjang_Area_bermain_anak_ti",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0253",
+      "kategori": "utilitas",
+      "teks": "menghambat pembelajaran. mengganggu kegiatan belajar mengajar Tidak ada akses internet di sekolah",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0103",
+      "kategori": "sanitasi_air",
+      "teks": "Saluran pembuangan WC tersumbat dan bau menyengat. risiko tinggi bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_Saluran_pembuangan_W",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0251",
+      "kategori": "utilitas",
+      "teks": "Daya listrik sekolah tidak cukup untuk seluruh ruangan. membahayakan bagi keselamatan siswa",
+      "sumber_template": "utilitas_Daya_listrik_sekolah",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0337",
+      "kategori": "akses_lahan",
+      "teks": "Pagar instansi pendidikan sobek di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Pagar_instansi_pendi",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0368",
+      "kategori": "akses_lahan",
+      "teks": "Pagar sekolah rusak di beberapa titik, keamanan terancam. Selain itu, halaman sekolah becek dan tergenang saat hujan. dapat menimbulkan kecelakaan",
+      "sumber_template": "akses_lahan_Pagar_sekolah_rusak_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0420",
+      "kategori": "penunjang",
+      "teks": "Sarana olahraga sangat terbatas, lapangan rusak. berbahaya bagi keselamatan siswa. perlu penanganan mendesak",
+      "sumber_template": "penunjang_Sarana_olahraga_sang",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0137",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah siswa. sudah berlangsung sejak lama. terjadi di beberapa ruangan sekaligus",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0474",
+      "kategori": "penunjang",
+      "teks": "Sarana olahraga sangat terbatas, lapangan rusak. sudah berlangsung sejak lama",
+      "sumber_template": "penunjang_Sarana_olahraga_sang",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0228",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam. berbahaya bagi keselamatan siswa",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0472",
+      "kategori": "penunjang",
+      "teks": "Sarana olahraga sangat sangat kurang, lapangan pecah",
+      "sumber_template": "penunjang_Sarana_olahraga_sang",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0150",
+      "kategori": "sanitasi_air",
+      "teks": "Tidak ada air bersih di WC sekolah, siswa kesulitan. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0396",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah berlumpur dan tergenang saat hujan. diperparah oleh kondisi cuaca",
+      "sumber_template": "akses_lahan_Halaman_sekolah_berl",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0104",
+      "kategori": "sanitasi_air",
+      "teks": "Pintu toilet rusak dan belum tersedia privasi",
+      "sumber_template": "sanitasi_air_Pintu_toilet_rusak_d",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0346",
+      "kategori": "akses_lahan",
+      "teks": "Area parkir tidak memadai dan tidak aman. sudah berlangsung sejak lama. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Area_parkir_tidak_me",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0008",
+      "kategori": "ruang_belajar",
+      "teks": "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan. Selain itu, kondisi perpustakaan memprihatinkan, buku usang dan rak rusak",
+      "sumber_template": "ruang_belajar_Jendela_kaca_kelas_p",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0012",
+      "kategori": "ruang_belajar",
+      "teks": "Dinding kelas berlubang dan cat mengelupas, perlu dibenahi. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0230",
+      "kategori": "utilitas",
+      "teks": "Lampu penerangan kelas banyak yang mati. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "utilitas_Lampu_penerangan_kel",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0038",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0440",
+      "kategori": "penunjang",
+      "teks": "Tidak ada ruang guru yang memadai. bahaya buat keselamatan siswa",
+      "sumber_template": "penunjang_Tidak_ada_ruang_guru",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0370",
+      "kategori": "akses_lahan",
+      "teks": "Drainase instansi pendidikan tersumbat menyebabkan banjir",
+      "sumber_template": "akses_lahan_Drainase_instansi_pe",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0141",
+      "kategori": "sanitasi_air",
+      "teks": "Jumlah toilet sangat kurang dibanding jumlah siswa. sudah berlangsung sejak lama",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0118",
+      "kategori": "sanitasi_air",
+      "teks": "Sumber air sekolah kering saat musim kemarau. berbahaya bagi keselamatan siswa",
+      "sumber_template": "sanitasi_air_Sumber_air_sekolah_k",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0089",
+      "kategori": "ruang_belajar",
+      "teks": "perlu renovasi Dinding kelas berlubang dan cat mengelupas",
+      "sumber_template": "ruang_belajar_perlu_renovasi_Dindi",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0356",
+      "kategori": "akses_lahan",
+      "teks": "Drainase satuan pendidikan tersumbat menyebabkan banjir. sudah berlangsung sejak lama",
+      "sumber_template": "akses_lahan_Drainase_sekolah_ter",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0001",
+      "kategori": "ruang_belajar",
+      "teks": "Jendela kaca kelas pecah dan belum diganti sudah 6 bulan",
+      "sumber_template": "ruang_belajar_Jendela_kaca_kelas_p",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0017",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas sempit, jumlah siswa melebihi kapasitas. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Ruang_kelas_sempit,_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0016",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas sempit, jumlah anak didik melebihi kapasitas. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Ruang_kelas_sempit,_",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0042",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas tiris sehingga kegiatan belajar terganggu. berbahaya bagi keselamatan siswa",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0308",
+      "kategori": "akses_lahan",
+      "teks": "Halaman instansi pendidikan becek dan tergenang saat hujan. dapat menimbulkan kecelakaan",
+      "sumber_template": "akses_lahan_Halaman_instansi_pen",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0229",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di sekolah, menghambat pembelajaran. mengganggu kegiatan belajar mengajar. dapat menimbulkan kecelakaan",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0389",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sasudah tuan pendidikan becek dan tergenang saat hujan",
+      "sumber_template": "akses_lahan_Halaman_satuan_pendi",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0105",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0145",
+      "kategori": "sanitasi_air",
+      "teks": "siswa kesulitan Tidak ada air bersih di WC sekolah",
+      "sumber_template": "sanitasi_air_Tidak_ada_air_bersih",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0136",
+      "kategori": "sanitasi_air",
+      "teks": "Bak air WC bocor sehingga air terbuang. dapat menimbulkan kecelakaan",
+      "sumber_template": "sanitasi_air_Bak_air_WC_bocor_seh",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0402",
+      "kategori": "penunjang",
+      "teks": "Kantin sekolah tidak layak pakai dan tidak higienis. berbahaya bagi keselamatan siswa",
+      "sumber_template": "penunjang_Kantin_sekolah_tidak",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0404",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan tidak layak. berbahaya bagi keselamatan siswa. perlu perhatian segera dari dinas",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0075",
+      "kategori": "ruang_belajar",
+      "teks": "Kondisi perpustakaan memprihatinkan, buku usang dan rak hancur",
+      "sumber_template": "ruang_belajar_Kondisi_perpustakaan",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0222",
+      "kategori": "utilitas",
+      "teks": "Belum ada genset cadangan saat listrik padam. berbahaya bagi keselamatan siswa. perlu perhatian segera dari dinas",
+      "sumber_template": "utilitas_Belum_ada_genset_cad",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0319",
+      "kategori": "akses_lahan",
+      "teks": "Jalan masuk sekolah berlubang dan berbahaya. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Jalan_masuk_sekolah_",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0180",
+      "kategori": "sanitasi_air",
+      "teks": "WC guru dalam kondisi pecah berat, tidak memadai pakai",
+      "sumber_template": "sanitasi_air_WC_guru_dalam_kondis",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0489",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan tidak layak. berbahaya bagi keselamatan siswa. perlu perhatian segera dari dinas",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0063",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0095",
+      "kategori": "ruang_belajar",
+      "teks": "Ruang kelas bocor sehingga kegiatan belajar terganggu. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Ruang_kelas_bocor_se",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0297",
+      "kategori": "utilitas",
+      "teks": "Stop kontak di kelas retak dan tidak aman",
+      "sumber_template": "utilitas_Stop_kontak_di_kelas",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0220",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering terputus. mengganggu kegiatan belajar mengajar. dapat menimbulkan kecelakaan",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0344",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah rusak parah saat musim hujan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0084",
+      "kategori": "ruang_belajar",
+      "teks": "Dinding kelas berlubang dan cat mengelupas, perlu renovasi. Selain itu, pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak",
+      "sumber_template": "ruang_belajar_Dinding_kelas_berlub",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0079",
+      "kategori": "ruang_belajar",
+      "teks": "kunci rusak. berbahaya bagi keselamatan siswa Pintu kelas sudah tidak bisa ditutup dengan baik",
+      "sumber_template": "ruang_belajar_Pintu_kelas_sudah_ti",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0039",
+      "kategori": "ruang_belajar",
+      "teks": "Pintu kelas sudah tidak bisa ditutup dengan baik, kunci rusak berat. sudah berlangsung sejak lama",
+      "sumber_template": "ruang_belajar_Pintu_kelas_sudah_ti",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0268",
+      "kategori": "utilitas",
+      "teks": "Listrik sering kali padam karena instalasi kabel sudah tua",
+      "sumber_template": "utilitas_Listrik_sering_kali_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0452",
+      "kategori": "penunjang",
+      "teks": "Perabot ruang pendidik banyak yang hancur",
+      "sumber_template": "penunjang_Perabot_ruang_guru_b",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0188",
+      "kategori": "sanitasi_air",
+      "teks": "siswa kesulitan Tidak ada air bersih di WC sekolah",
+      "sumber_template": "sanitasi_air_siswa_kesulitan_Tida",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0100",
+      "kategori": "sanitasi_air",
+      "teks": "pintu toilet rusak dan tidak ada privasi Jumlah toilet sangat kurang dibanding jumlah siswa. Selain itu",
+      "sumber_template": "sanitasi_air_Jumlah_toilet_sangat",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0471",
+      "kategori": "penunjang",
+      "teks": "Tempat ibadah sekolah rusak dan tidak layak",
+      "sumber_template": "penunjang_Tempat_ibadah_sekola",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0314",
+      "kategori": "akses_lahan",
+      "teks": "Pagar sekolah rusak di beberapa titik, keamanan terancam",
+      "sumber_template": "akses_lahan_Pagar_sekolah_rusak_",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0247",
+      "kategori": "utilitas",
+      "teks": "Tidak ada akses internet di instansi pendidikan, menghambat pembelajaran",
+      "sumber_template": "utilitas_Tidak_ada_akses_inte",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0345",
+      "kategori": "akses_lahan",
+      "teks": "Akses jalan menuju sekolah pecah parah saat musim hujan. mengganggu kegiatan belajar mengajar",
+      "sumber_template": "akses_lahan_Akses_jalan_menuju_s",
+      "variasi": "sinonim"
+    },
+    {
+      "id": "d0272",
+      "kategori": "utilitas",
+      "teks": "Jaringan internet lambat dan sering kali terputus",
+      "sumber_template": "utilitas_Jaringan_internet_la",
+      "variasi": "parafrase"
+    },
+    {
+      "id": "d0350",
+      "kategori": "akses_lahan",
+      "teks": "Halaman sekolah becek dan tergenang saat hujan. bahaya buat keselamatan siswa",
+      "sumber_template": "akses_lahan_Halaman_sekolah_bece",
+      "variasi": "gaya"
+    },
+    {
+      "id": "d0279",
+      "kategori": "utilitas",
+      "teks": "Stop kontak di kelas rusak dan tidak aman. dapat menimbulkan kecelakaan",
+      "sumber_template": "utilitas_Stop_kontak_di_kelas",
+      "variasi": "konteks"
+    },
+    {
+      "id": "d0224",
+      "kategori": "utilitas",
+      "teks": "Stop kontak di kelas patah dan tidak aman",
+      "sumber_template": "utilitas_Stop_kontak_di_kelas",
+      "variasi": "sinonim"
+    }
+  ]
+}

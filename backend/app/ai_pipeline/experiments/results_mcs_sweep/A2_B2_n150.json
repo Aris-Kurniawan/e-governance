@@ -1,0 +1,99 @@
+{
+  "config": {
+    "n": 150,
+    "variant_a": "A2",
+    "variant_b": "B2"
+  },
+  "runs": [
+    {
+      "n": 150,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B2",
+      "umap": false,
+      "min_cluster_size": 3,
+      "min_samples": 2,
+      "nmi": 0.6166,
+      "ari": 0.2782,
+      "purity": 0.9386,
+      "noise_ratio": 0.24,
+      "n_clusters": 23,
+      "runtime_sec": 0.05
+    },
+    {
+      "n": 150,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B2",
+      "umap": false,
+      "min_cluster_size": 5,
+      "min_samples": 2,
+      "nmi": 0.6364,
+      "ari": 0.3981,
+      "purity": 0.8488,
+      "noise_ratio": 0.4267,
+      "n_clusters": 11,
+      "runtime_sec": 0.03
+    },
+    {
+      "n": 150,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B2",
+      "umap": false,
+      "min_cluster_size": 8,
+      "min_samples": 4,
+      "nmi": 0.5585,
+      "ari": 0.3642,
+      "purity": 0.5932,
+      "noise_ratio": 0.6067,
+      "n_clusters": 3,
+      "runtime_sec": 0.03
+    },
+    {
+      "n": 150,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B2",
+      "umap": false,
+      "min_cluster_size": 12,
+      "min_samples": 6,
+      "nmi": 0.0,
+      "ari": 0.0,
+      "purity": 0.0,
+      "noise_ratio": 1.0,
+      "n_clusters": 0,
+      "runtime_sec": 0.01
+    },
+    {
+      "n": 150,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B2",
+      "umap": false,
+      "min_cluster_size": 20,
+      "min_samples": 10,
+      "nmi": 0.0,
+      "ari": 0.0,
+      "purity": 0.0,
+      "noise_ratio": 1.0,
+      "n_clusters": 0,
+      "runtime_sec": 0.01
+    },
+    {
+      "n": 150,
+      "variant_a": "A2",
+      "method": "tfidf",
+      "variant_b": "B2",
+      "umap": false,
+      "min_cluster_size": 30,
+      "min_samples": 15,
+      "nmi": 0.0,
+      "ari": 0.0,
+      "purity": 0.0,
+      "noise_ratio": 1.0,
+      "n_clusters": 0,
+      "runtime_sec": 0.02
+    }
+  ]
+}

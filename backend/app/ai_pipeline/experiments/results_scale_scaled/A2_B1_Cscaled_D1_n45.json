@@ -1,0 +1,62 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A2",
+    "variant_b": "B1",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 6,
+      "min_samples": 3
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.3619799315929413,
+    "davies_bouldin": 0.9764225717929605,
+    "ari": 0.12548987919680013,
+    "nmi": 0.2793253582432519,
+    "purity": 0.4864864864864865,
+    "homogeneity": 0.2581000126645499,
+    "completeness": 0.30435453223870934,
+    "v_measure": 0.27932535824325194,
+    "noise_ratio": 0.17777777777777778
+  },
+  "n_clusters": 4,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "instansi pendidikan dan sumber air",
+      "kategori": "sanitasi_air"
+    },
+    "1": {
+      "label_teks": "kegiatan belajar mengganggu mengajar listrik",
+      "kategori": "utilitas"
+    },
+    "2": {
+      "label_teks": "jumlah sejak sudah lama berlangsung",
+      "kategori": "belum_terklasifikasi"
+    },
+    "3": {
+      "label_teks": "siswa tidak keselamatan berbahaya bagi",
+      "kategori": "belum_terklasifikasi"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 45,
+    "variant_a": "A2",
+    "method": "tfidf",
+    "variant_b": "B1",
+    "umap": true,
+    "min_cluster_size": 6,
+    "min_samples": 3,
+    "nmi": 0.2793,
+    "ari": 0.1255,
+    "purity": 0.4865,
+    "noise_ratio": 0.1778,
+    "n_clusters": 4,
+    "runtime_sec": 0.19
+  }
+}

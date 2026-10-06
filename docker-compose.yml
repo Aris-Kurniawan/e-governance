@@ -1,0 +1,76 @@
+# docker-compose.yml untuk produksi SIMAKIS (F4.6)
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    image: simakis-backend:prod
+    container_name: simakis-backend
+    env_file: .env.production
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - simakis-network
+    # Health check sudah di Dockerfile, tapi Docker Compose juga bisa pakai
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  mysql:
+    image: mysql:8
+    container_name: simakis-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: simakis
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-prod_root_pass}
+      MYSQL_USER: ${MYSQL_USER:-simakis}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-prod_simakis_pass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/alembic/versions:/docker-entrypoint-initdb.d:ro  # Untuk migrasi via init script
+    networks:
+      - simakis-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: --default-authentication-plugin=mysql_native_password
+
+  minio:
+    image: minio/minio
+    container_name: simakis-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"   # API endpoint (backend menghubungi ini)
+      - "9001:9001"   # Web console (opsional untuk debug)
+    networks:
+      - simakis-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mysql_data:
+  minio_data:
+
+networks:
+  simakis-network:
+    driver: bridge

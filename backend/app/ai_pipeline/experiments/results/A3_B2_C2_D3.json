@@ -1,0 +1,66 @@
+{
+  "config": "A3_B2_C2_D3",
+  "variants": {
+    "embedding": "A3",
+    "reduction": "B2",
+    "clustering": "C2",
+    "labeling": "D3"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.19096995890140533,
+    "davies_bouldin": 1.4896143158828639,
+    "ari": 0.009631728045325779,
+    "nmi": 0.3555186081516288,
+    "purity": 0.5833333333333334,
+    "homogeneity": 0.39470269079993514,
+    "completeness": 0.32341191263262825,
+    "v_measure": 0.3555186081516288,
+    "noise_ratio": 0.4666666666666667
+  },
+  "n_clusters": 5,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "internet",
+      "sering terputus",
+      "lambat sering",
+      "terputus",
+      "lambat"
+    ],
+    "1": [
+      "rusak",
+      "memadai",
+      "guru",
+      "ruang",
+      "banyak"
+    ],
+    "2": [
+      "jumlah",
+      "air",
+      "sabun air",
+      "tangan",
+      "cuci"
+    ],
+    "3": [
+      "gerbang rusak",
+      "rusak",
+      "rusak bisa",
+      "bisa",
+      "dikunci"
+    ],
+    "4": [
+      "langit",
+      "kelas",
+      "sebagian belum",
+      "langit langit",
+      "langit kelas"
+    ]
+  },
+  "runtime_sec": 0.03,
+  "generated_at": "2026-09-29T11:24:11"
+}

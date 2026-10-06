@@ -1,0 +1,122 @@
+{
+  "config": {
+    "n": 1500,
+    "variant_a": "A2",
+    "variant_b": "B1",
+    "variant_c": "C_scaled",
+    "hdbscan_params": {
+      "min_cluster_size": 38,
+      "min_samples": 19
+    },
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.6730428338050842,
+    "davies_bouldin": 0.644338847143559,
+    "ari": 0.2744267313616181,
+    "nmi": 0.5703936445804043,
+    "purity": 0.8300711743772242,
+    "homogeneity": 0.7970720910742918,
+    "completeness": 0.44409730528801905,
+    "v_measure": 0.5703936445804044,
+    "noise_ratio": 0.25066666666666665
+  },
+  "n_clusters": 19,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "siswa tidak ada di wc",
+      "kategori": "sanitasi_air"
+    },
+    "1": {
+      "label_teks": "tersumbat drainase menyebabkan banjir pendidikan",
+      "kategori": "akses_lahan"
+    },
+    "2": {
+      "label_teks": "tidak higienis dan kantin layak",
+      "kategori": "penunjang"
+    },
+    "3": {
+      "label_teks": "ruang sempit melebihi kelas kapasitas",
+      "kategori": "ruang_belajar"
+    },
+    "4": {
+      "label_teks": "kegiatan belajar ruang sehingga terganggu",
+      "kategori": "ruang_belajar"
+    },
+    "5": {
+      "label_teks": "sudah listrik instalasi padam karena",
+      "kategori": "utilitas"
+    },
+    "6": {
+      "label_teks": "tidak sekolah untuk ada di",
+      "kategori": "belum_terklasifikasi"
+    },
+    "7": {
+      "label_teks": "kelas sudah perlu cat dinding",
+      "kategori": "ruang_belajar"
+    },
+    "8": {
+      "label_teks": "kelas dan siswa retak lantai",
+      "kategori": "ruang_belajar"
+    },
+    "9": {
+      "label_teks": "terputus internet jaringan lambat dan",
+      "kategori": "utilitas"
+    },
+    "10": {
+      "label_teks": "sumber musim air kering kemarau",
+      "kategori": "sanitasi_air"
+    },
+    "11": {
+      "label_teks": "dari lab 50 komputer persen",
+      "kategori": "ruang_belajar"
+    },
+    "12": {
+      "label_teks": "sudah dan seadanya tulis papan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "13": {
+      "label_teks": "di beberapa sekolah titik keamanan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "14": {
+      "label_teks": "saat hujan jalan menuju akses",
+      "kategori": "akses_lahan"
+    },
+    "15": {
+      "label_teks": "pakai berat kondisi wc dalam",
+      "kategori": "sanitasi_air"
+    },
+    "16": {
+      "label_teks": "masuk jalan dan berlubang berbahaya",
+      "kategori": "akses_lahan"
+    },
+    "17": {
+      "label_teks": "dan tidak layak rusak tempat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "18": {
+      "label_teks": "yang ruang banyak perabot guru",
+      "kategori": "ruang_belajar"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 1500,
+    "variant_a": "A2",
+    "method": "tfidf",
+    "variant_b": "B1",
+    "umap": true,
+    "min_cluster_size": 38,
+    "min_samples": 19,
+    "nmi": 0.5704,
+    "ari": 0.2744,
+    "purity": 0.8301,
+    "noise_ratio": 0.2507,
+    "n_clusters": 19,
+    "runtime_sec": 6.35
+  }
+}

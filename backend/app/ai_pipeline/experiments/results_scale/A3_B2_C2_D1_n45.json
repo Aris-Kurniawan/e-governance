@@ -1,0 +1,60 @@
+{
+  "config": {
+    "n": 45,
+    "variant_a": "A3",
+    "variant_b": "B2",
+    "variant_c": "C2",
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.18384405970573425,
+    "davies_bouldin": 1.546910278981328,
+    "ari": 0.29970821175489787,
+    "nmi": 0.6079467932013051,
+    "purity": 0.7619047619047619,
+    "homogeneity": 0.6292881573442768,
+    "completeness": 0.5880054695066725,
+    "v_measure": 0.607946793201305,
+    "noise_ratio": 0.5333333333333333
+  },
+  "n_clusters": 5,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "kali terputus lambat jaringan internet",
+      "kategori": "utilitas"
+    },
+    "1": {
+      "label_teks": "kegiatan belajar listrik mengganggu mengajar",
+      "kategori": "utilitas"
+    },
+    "2": {
+      "label_teks": "sudah sejak lama berlangsung dan",
+      "kategori": "belum_terklasifikasi"
+    },
+    "3": {
+      "label_teks": "air sekolah siswa ada bersih",
+      "kategori": "sanitasi_air"
+    },
+    "4": {
+      "label_teks": "tempat ibadah layak dan gak",
+      "kategori": "penunjang"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 45,
+    "variant_a": "A3",
+    "method": "minilm",
+    "variant_b": "B2",
+    "umap": false,
+    "nmi": 0.6079,
+    "ari": 0.2997,
+    "purity": 0.7619,
+    "noise_ratio": 0.5333,
+    "n_clusters": 5,
+    "runtime_sec": 14.04
+  }
+}

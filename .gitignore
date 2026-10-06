@@ -31,12 +31,16 @@ wheels/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+*.db
 
 # Datasets & Scraping Raw (large files)
 backend/app/dataset/raw/*
 !backend/app/dataset/raw/.gitkeep
 debug_page.html
 dapodik_lamongan_raw.json
+
+# Ablation study cache (derivable, rebuild via run_ablation.py)
+backend/app/ai_pipeline/experiments/cache/
 
 # Node & Frontend
 node_modules/

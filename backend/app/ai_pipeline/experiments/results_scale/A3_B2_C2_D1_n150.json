@@ -1,0 +1,144 @@
+{
+  "config": {
+    "n": 150,
+    "variant_a": "A3",
+    "variant_b": "B2",
+    "variant_c": "C2",
+    "variant_d": "D1"
+  },
+  "metrics": {
+    "silhouette": 0.3200458586215973,
+    "davies_bouldin": 1.1322092812850768,
+    "ari": 0.2246978407722862,
+    "nmi": 0.6316737458262036,
+    "purity": 0.9629629629629629,
+    "homogeneity": 0.9469383376735389,
+    "completeness": 0.4738985093718169,
+    "v_measure": 0.6316737458262036,
+    "noise_ratio": 0.28
+  },
+  "n_clusters": 26,
+  "cluster_meta": {
+    "0": {
+      "label_teks": "sangat lapangan sarana olahraga kurang",
+      "kategori": "penunjang"
+    },
+    "1": {
+      "label_teks": "tersumbat banjir drainase menyebabkan sekolah",
+      "kategori": "akses_lahan"
+    },
+    "2": {
+      "label_teks": "kelas berlubang renovasi dinding mengelupas",
+      "kategori": "ruang_belajar"
+    },
+    "3": {
+      "label_teks": "sudah tulis seadanya dan kelas",
+      "kategori": "ruang_belajar"
+    },
+    "4": {
+      "label_teks": "tidak pakai wc guru kondisi",
+      "kategori": "sanitasi_air"
+    },
+    "5": {
+      "label_teks": "ada pembelajaran tidak di akses",
+      "kategori": "akses_lahan"
+    },
+    "6": {
+      "label_teks": "terputus jaringan dan lambat internet",
+      "kategori": "utilitas"
+    },
+    "7": {
+      "label_teks": "siswa wc tidak di ada",
+      "kategori": "sanitasi_air"
+    },
+    "8": {
+      "label_teks": "listrik padam saat belum ada",
+      "kategori": "utilitas"
+    },
+    "9": {
+      "label_teks": "sudah listrik instalasi padam karena",
+      "kategori": "utilitas"
+    },
+    "10": {
+      "label_teks": "di lebih 50 lab persen",
+      "kategori": "ruang_belajar"
+    },
+    "11": {
+      "label_teks": "titik terancam pagar keamanan di",
+      "kategori": "akses_lahan"
+    },
+    "12": {
+      "label_teks": "tidak kantin dan higienis aman",
+      "kategori": "penunjang"
+    },
+    "13": {
+      "label_teks": "yang ruang guru mengganggu kegiatan",
+      "kategori": "ruang_belajar"
+    },
+    "14": {
+      "label_teks": "air terbuang wc bak sehingga",
+      "kategori": "sanitasi_air"
+    },
+    "15": {
+      "label_teks": "jumlah toilet sangat dibanding siswa",
+      "kategori": "sanitasi_air"
+    },
+    "16": {
+      "label_teks": "sumber musim saat kering air",
+      "kategori": "sanitasi_air"
+    },
+    "17": {
+      "label_teks": "tidak dan area bermain anak",
+      "kategori": "belum_terklasifikasi"
+    },
+    "18": {
+      "label_teks": "kegiatan belajar bocor terganggu sehingga",
+      "kategori": "belum_terklasifikasi"
+    },
+    "19": {
+      "label_teks": "sempit kapasitas melebihi ruang jumlah",
+      "kategori": "ruang_belajar"
+    },
+    "20": {
+      "label_teks": "tersumbat talang menyebabkan air halaman",
+      "kategori": "sanitasi_air"
+    },
+    "21": {
+      "label_teks": "tidak ada sampah memadai tempat",
+      "kategori": "belum_terklasifikasi"
+    },
+    "22": {
+      "label_teks": "tidak tempat ibadah dan rusak",
+      "kategori": "penunjang"
+    },
+    "23": {
+      "label_teks": "sekolah dan berlubang jalan masuk",
+      "kategori": "akses_lahan"
+    },
+    "24": {
+      "label_teks": "tergenang dan saat halaman hujan",
+      "kategori": "akses_lahan"
+    },
+    "25": {
+      "label_teks": "sekolah saat hujan jalan menuju",
+      "kategori": "akses_lahan"
+    },
+    "-1": {
+      "label_teks": "(noise/outlier)",
+      "kategori": "belum_terklasifikasi"
+    }
+  },
+  "summary": {
+    "n": 150,
+    "variant_a": "A3",
+    "method": "minilm",
+    "variant_b": "B2",
+    "umap": false,
+    "nmi": 0.6317,
+    "ari": 0.2247,
+    "purity": 0.963,
+    "noise_ratio": 0.28,
+    "n_clusters": 26,
+    "runtime_sec": 12.21
+  }
+}

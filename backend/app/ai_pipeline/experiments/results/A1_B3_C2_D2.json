@@ -1,0 +1,66 @@
+{
+  "config": "A1_B3_C2_D2",
+  "variants": {
+    "embedding": "A1",
+    "reduction": "B3",
+    "clustering": "C2",
+    "labeling": "D2"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "46ff8dc4",
+  "n_docs": 45,
+  "metrics": {
+    "silhouette": 0.12919069826602936,
+    "davies_bouldin": 1.743231639351644,
+    "ari": -0.07303286905701427,
+    "nmi": 0.12464212241903212,
+    "purity": 0.5714285714285714,
+    "homogeneity": 0.13202338936953573,
+    "completeness": 0.11804250944240319,
+    "v_measure": 0.12464212241903211,
+    "noise_ratio": 0.06666666666666667
+  },
+  "n_clusters": 5,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "dan berbahaya",
+      "berbahaya",
+      "dan",
+      "listrik",
+      "kabel listrik"
+    ],
+    "1": [
+      "sekolah",
+      "dan",
+      "tidak",
+      "sekolah rusak",
+      "rusak"
+    ],
+    "2": [
+      "tidak",
+      "dan",
+      "banyak",
+      "yang",
+      "rusak"
+    ],
+    "3": [
+      "langit",
+      "kelas",
+      "belum diperbaiki",
+      "langit langit",
+      "sebagian belum"
+    ],
+    "4": [
+      "tidak",
+      "sekolah",
+      "dan",
+      "air",
+      "jumlah"
+    ]
+  },
+  "runtime_sec": 0.04,
+  "generated_at": "2026-09-29T11:19:56"
+}
