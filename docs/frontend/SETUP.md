@@ -104,8 +104,9 @@ VITE_API_BASE_URL=http://localhost:8000
 VITE_MAP_TILE_URL=https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
 ```
 
-`VITE_API_BASE_URL` belum benar-benar dipakai sampai `API_CLIENT.md` dibuat —
-disiapkan lebih dulu supaya tidak perlu ubah konfigurasi environment belakangan.
+`VITE_API_BASE_URL` dipakai `src/lib/api/client.ts` sebagai base URL semua
+request ke backend. Kalau env ini tidak diisi, kodenya memakai default
+`http://localhost:8000`.
 
 `VITE_MAP_TILE_URL` pakai tile OpenStreetMap gratis (tidak perlu API key),
 sesuai keputusan Leaflet + OSM di `ARCHITECTURE.md`.
@@ -137,11 +138,50 @@ pola yang sudah ada.
 
 ## 7. Menjalankan proyek
 
+### 7.1 Backend + frontend sekaligus (disarankan)
+
+Dari **root repo**, satu perintah menyalakan keduanya:
+
 ```bash
+npm install     # sekali saja, mengunduh concurrently + wait-on
 npm run dev
 ```
 
-Default jalan di `http://localhost:5173`.
+Dua pane berjalan berdampingan:
+
+| Pane | Isi |
+|---|---|
+| `backend` (biru) | `uvicorn app.main:app --reload --port 8000` |
+| `frontend` (hijau) | menunggu `GET /health` backend, lalu `vite` di `:5173` |
+
+Backend butuh **±30 detik** start (memuat model embedding), jadi pane
+frontend menunggu backend sehat dulu sebelum Vite dijalankan. `Ctrl+C`
+mematikan keduanya. Kalau backend gagal start, `-k` ikut mematikan pane
+frontend agar tidak menggantung.
+
+> Jalankan dari **WSL**, bukan PowerShell di `\wsl.localhost` — script memakai
+> `cd backend &&` dan path POSIX.
+>
+> Backend tetap perlu CORS untuk mode ini: origins dev dicakup lewat
+> `CORS_ORIGINS` di `backend/.env.example`.
+
+### 7.2 Masing-masing (kalau hanya satu yang perlu)
+
+```bash
+npm run dev:frontend        # hanya frontend
+npm run dev:backend:only    # hanya backend
+npm run build:frontend      # build produksi frontend
+npm run test:backend        # pytest backend
+```
+
+Atau dari masing-masing folder seperti biasa (`cd frontend && npm run dev`).
+
+### 7.3 Dependency root
+
+`package.json` di root hanya berisi tooling pengembangan monorepo
+(`concurrently`, `wait-on`) — bukan dependensi aplikasi. Dependensi
+frontend tetap di `frontend/package.json`, backend di
+`backend/requirements.txt`.
 
 Script lain yang perlu ada di `package.json`:
 

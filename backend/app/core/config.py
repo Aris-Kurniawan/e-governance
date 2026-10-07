@@ -39,4 +39,11 @@ class Settings(BaseSettings):
     # AI Pipeline
     EMBEDDING_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
 
+    # CORS — hanya relevan untuk pengembangan lokal, ketika frontend Vite
+    # (:5173) memanggil API ini (:8000) langsung dari browser.
+    # Format di .env harus JSON, contoh:
+    #   CORS_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
+    # Produksi dilayani same-origin di belakang reverse proxy → biarkan kosong.
+    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
 settings = Settings()

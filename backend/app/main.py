@@ -6,6 +6,7 @@ FastAPI application factory.
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -59,6 +60,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         },
     )
 
+
+# ── CORS — hanya untuk pengembangan lokal (frontend Vite :5173 → API :8000) ───
+# Produksi dilayani same-origin di belakang reverse proxy, jadi daftar origin
+# boleh dikosongkan lewat env `CORS_ORIGINS=[]`.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Registrasi Router
 app.include_router(auth.router)
