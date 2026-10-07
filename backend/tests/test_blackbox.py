@@ -160,6 +160,12 @@ class TestSekolahPublic:
         assert isinstance(body["data"], list)
         assert set(body["meta"]) >= {"page", "page_size", "total_items", "total_pages"}
 
+    def test_sekolah_page_size_100_diterima(self, test_client):
+        """INTERFACES.md §0.2 — page_size maks 100 (regresi: pernah le=50)."""
+        r = test_client.get("/sekolah", params={"page_size": 100})
+        assert r.status_code == 200, r.text
+        assert r.json()["meta"]["page_size"] == 100
+
     def test_search_sekolah(self, test_client, db_session):
         make_sekolah(db_session)
         r = test_client.get("/sekolah", params={"search": "Blackbox"})

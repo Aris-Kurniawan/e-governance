@@ -82,6 +82,10 @@ MINIO_BUCKET=simakis-media
 
 # AI Pipeline
 EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
+
+# CORS — hanya untuk dev lokal (frontend Vite :5173 → API :8000).
+# Format WAJIB JSON. Produksi: `[]` karena FE & BE satu origin.
+CORS_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
 ```
 
 > **Belum ditentukan:** durasi `JWT_EXPIRE_MINUTES` yang final dan
@@ -123,10 +127,40 @@ tersebut dulu.
 
 ---
 
+## 7a. Akun Dev Dinas (wajib untuk menguji alur verifikasi)
+
+Endpoint verifikasi/override klaster dibatasi RBAC (`INTERFACES.md` §5, §7):
+hanya `verifikator_dinas` dan `kepala_dinas` yang boleh mengubah status. Basis
+data pengembangan hanya berisi akun `admin`, sehingga **alur verifikasi tidak
+dapat diuji tanpa akun peran khusus** — `admin` memang mendapat `403`.
+
+Buat akunnya (idempotent, aman diulang):
+
+```bash
+cd backend && ./venv/bin/python scripts/seed_dinas_accounts.py
+```
+
+| Peran | Email | Password |
+|---|---|---|
+| `verifikator_dinas` | `verifikator@simakis.id` | `Verifikator123!` |
+| `kepala_dinas` | `kepala.dinas@simakis.id` | `KepalaDinas123!` |
+| `admin` | `admin@simakis.id` | `Admin123!` |
+
+> Kredensial ini **hanya untuk lingkungan lokal** — jangan dipakai di produksi.
+
+---
+
 ## 8. Menjalankan Server
 
 ```bash
 uvicorn app.main:app --reload --port 8000
+```
+
+Atau, dari **root repo**, sekaligus menyalakan backend + frontend:
+
+```bash
+npm install   # sekali saja
+npm run dev   # backend :8000 + frontend :5173
 ```
 Dokumentasi API otomatis (Swagger) tersedia di
 `http://localhost:8000/docs` — **bukan pengganti** `INTERFACES.md`, cuma

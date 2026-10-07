@@ -24,7 +24,7 @@ def list_sekolah(
     search: Optional[str] = Query(None, description="Cari nama sekolah"),
     jenjang: Optional[str] = Query(None, description="Filter jenjang: SD, SMP, SMA, SMK"),
     page: int = Query(1, ge=1, description="Halaman"),
-    page_size: int = Query(10, ge=1, le=50, description="Jumlah per halaman"),
+    page_size: int = Query(10, ge=1, le=100, description="Jumlah per halaman"),
     db: Session = Depends(get_db),
 ):
     """Daftar sekolah dengan filter dan pagination."""

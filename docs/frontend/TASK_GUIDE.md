@@ -46,7 +46,7 @@ Status diverifikasi terhadap kode pada 1 Oktober 2026.
 | F3.2 | Voting | **Belum** | Tidak ada UI vote di halaman mana pun — pendukung API/mock sudah siap (lihat detail di bawah) |
 | F3.3 | Status Tindak Lanjut | **Belum** | Belum ada halaman/rute status publik per klaster; `useStatusPolling` sudah ada tetapi belum dipakai |
 | F3.4 | Portal Pemerintah | **Sebagian** | `DinasLayout` (spesifikasi menyebut `PemerintahLayout`), DashboardKadis, verifikasi klaster §B1 (AntrianValidasi) ✓; override prioritas §B2 & update status §B3 belum |
-| F4.1 | Ganti Mock → API Asli | **Belum** | Seluruh halaman masih memakai `src/mocks/` |
+| F4.1 | Ganti Mock → API Asli | **✅ Selesai** | `src/lib/api/` dipakai 14 halaman; `src/mocks/` dihapus; `npm run build` hijau; smoke test kontrak 14/14 |
 | F4.2 | Black-box Testing | **Belum** | Belum ada catatan pengujian state `PAGE_STATES.md` |
 | F4.3 | Perf & Aksesibilitas | **Belum** | Rute masih import statis (belum lazy-load); audit Lighthouse belum |
 | F4.4 | Dokumentasi Final | **Belum** | — |
@@ -70,7 +70,7 @@ Status diverifikasi terhadap kode pada 1 Oktober 2026.
 - [ ] **F3.4 — sisa**: override prioritas (`PAGE_STATES.md §B2` — tombol kolom
   AKSI di `TabelVerifikasi.tsx` saat ini belum punya handler) dan update status
   penanganan + loop "masih berlangsung" (§B3).
-- [ ] **F4.1 — Ganti Mock → API Asli**: seluruh pemakaian `src/mocks/` diganti
+- [x] **F4.1 — Ganti Mock → API Asli**: ✅ selesai — seluruh pemakaian `src/mocks/` diganti
   `src/lib/api/` tanpa mengubah struktur komponen.
 - [ ] **F4.2 — Black-box Testing**: uji manual seluruh state `PAGE_STATES.md`
   (normal & gagal).
@@ -313,10 +313,24 @@ status penanganan (§B3, loop "masih berlangsung").
 > alur merge ke branch `development` + aturan resolusi konflik (kontrak
 > `INTERFACES.md` mengikuti kode backend; docs ikut milik masing-masing pihak).
 
-### F4.1 — Ganti Mock → API Asli
+### F4.1 — Ganti Mock → API Asli ✅ SELESAI (2026-10-07)
 
 **Deliverable:** Semua `src/mocks/` diganti `src/lib/api/` tanpa mengubah
 struktur komponen. Cek ulang `API_CLIENT.md` §4 (token) & §5 (per halaman).
+
+**Hasil eksekusi:**
+- Lapis API baru `src/lib/api/` (client, errors, types, auth, sekolah, laporan,
+  klaster, vote, dashboard) + `src/lib/utils.ts` untuk helper `cn()`.
+- 14 halaman dimigrasikan: warga (Dashboard, Direktori, DetailSekolah,
+  FormLaporan, DetailKlaster, ModalFormLaporan, Login) & dinas (AntrianValidasi,
+  DinasLayout, DashboardKadis, PetaSebaranDinas, CetakRingkasanEksekutif,
+  IngestDataCsv). `AuthContext` memakai login/`GET /auth/me` sungguhan.
+- `src/mocks/` (7 berkas) dihapus; tidak ada lagi import `@/mocks/*`.
+- Verifikasi: `npm run build` (tsc + vite) sukses, 2323 modul; smoke test
+  kontrak terhadap backend hidup **14/14 lulus**.
+- **9 deviasi kontrak / gap data** ditemukan dan dicatat di
+  `docs/frontend/CHANGELOG.md` § *Catatan Deviasi Kontrak & Gap Data* — perlu
+  keputusan Aris + Dimas sebelum mengubah `INTERFACES.md`.
 
 ---
 

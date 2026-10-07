@@ -19,6 +19,32 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
 ## [Belum Rilis]
 
 ### Ditambahkan
+- **Tooling Dev Monorepo: `npm run dev` menyalakan backend + frontend sekaligus**:
+  - **`package.json` baru di root repo** — hanya berisi tooling pengembangan, bukan dependensi aplikasi (dependensi FE tetap di `frontend/`, BE di `backend/requirements.txt`).
+  - `npm run dev` menjalankan dua proses berdampingan lewat `concurrently` (pane `backend` biru + `frontend` hijau): `uvicorn app.main:app --reload --port 8000` dan Vite di `:5173`.
+  - **`wait-on` menahan pane frontend** sampai `GET /health` backend balas 200 — penting karena backend memuat model embedding dan butuh ±30 detik start. Prefix `http-get://` dipakai (bukan `http://`) karena `wait-on` default memakai HTTP HEAD, sedangkan endpoint `/health` hanya menerima GET.
+  - `Ctrl+C` mematikan keduanya; flag `-k` memastikan pane frontend ikut mati kalau backend gagal start (tidak menggantung sampai timeout).
+  - Script tambahan: `dev:backend:only`, `dev:frontend:only`, `build:frontend`, `test:backend`.
+- **CORS middleware di backend (`app/main.py`, `app/core/config.py`)** — prasyarat agar browser boleh memanggil API dari origin Vite:
+  - `CORSMiddleware` dipasang dengan `allow_origins` dari setting `CORS_ORIGINS`, `allow_credentials=True`, `allow_methods=["*"]`, `allow_headers=["*"]`.
+  - Default Setting: `http://localhost:5173` + `http://127.0.0.1:5173`. Format di `.env` harus JSON; produksi disaranankan `[]` karena FE & BE dilayani same-origin di belakang reverse proxy.
+  - Terverifikasi: preflight `OPTIONS /sekolah` dengan `Origin: http://localhost:5173` → `access-control-allow-origin: http://localhost:5173`; `GET /sekolah` → 200 dengan 62 sekolah; `POST /auth/login` → 200 role `admin`; pytest tetap 87/87.
+- **Perbaikan `.gitignore`: `lib/` → `/lib/`** — aturan `lib/` (warisan template setuptools Python) tanpa tanda akar cocok dengan folder `lib` di kedalaman mana pun, sehingga **`frontend/src/lib/` ikut ter-ignore** dan seluruh lapisan API F4.1 (11 file) tidak muncul di `git status`. Di-root-kan agar hanya artifact Python di root yang diabaikan; `CRLF` file dipertahankan; `.venv/` tetap ter-ignore lewat aturannya sendiri.
+
+### Ditambahkan
+- **F4.1 — Integrasi FE↔BE: Ganti Mock dengan API Nyata (`src/lib/api/*`)**:
+  - **Lapis API baru** `src/lib/api/` sebagai satu-satunya jalan FE ke backend (kontrak: `docs/universal/INTERFACES.md`):
+    - `client.ts` — fetch wrapper:FQ lewat amplop `{data, meta}`, pasang `Authorization: Bearer` otomatis dari `tokenStore`, **refresh token otomatis sekali** saat 401 lalu mengulang request, pemetaan error respons ke `ApiError`, dan penanda `ApiError.isAuthError`.
+    - `errors.ts` — `ApiError` + `ApiErrorCode` sesuai INTERFACES.md §0.3 (`VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `ALREADY_VOTED`, `REASON_REQUIRED`, `INTERNAL_ERROR`, `NETWORK_ERROR`).
+    - `types.ts` — seluruh type respons (Auth, Sekolah, Laporan, Klaster, Vote, Status, Dashboard, `AsyncState` untuk `useFetch`).
+    - Modul domain: `auth.ts`, `sekolah.ts`, `laporan.ts`, `klaster.ts`, `vote.ts`, `dashboard.ts`, plus `index.ts` sebagai barrel import.
+  - **`src/lib/utils.ts`** — helper `cn()` (clsx + tailwind-merge); memperbaiki 12 komponen `ui/*` yang gagal build karena modul ini belum pernah ada.
+  - `useFetch`/`useStatusPolling` (sudah ada) kini benar-benar terpakai karena sumber datanya API.
+  - **Smoke test kontrak 14/14 lulus** terhadap backend yang sedang berjalan: setiap field wajib pada `types.ts` diverifikasi cocok dengan respons nyata (`GET /auth/me`, `/sekolah`, `/sekolah/{npsn}`, `/sekolah/{npsn}/sanggahan`, `/klaster`, `/klaster/{id}`, `/klaster/{id}/riwayat`, `/dashboard/prioritas`, `/dashboard/wilayah`, `/ai/status`, `/ingest/riwayat`, plus pemetaan error 404/401).
+  - **Halaman warga di-migrate ke API**: `Dashboard.tsx` (KPI & daftar sekolah dari `GET /sekolah`, riwayat laporan dari `GET /laporan/riwayat`), `Direktori.tsx` (pencarian & paginasi kini **server-side** via `?search=&jenjang=&page=&page_size=`), `DetailSekolah.tsx` (3 kartu D-20 dari `GET /sekolah/{npsn}`: kondisi sarana + ringkasan sarpras, profil Dapodik, klaster isu dari `GET /klaster?sekolah_npsn=`), `FormLaporan.tsx`, `DetailKlaster.tsx` (`GET /klaster/{id}`), `ModalFormLaporan.tsx`.
+  - **Halaman dinas di-migrate ke API**: `AntrianValidasi.tsx` (antrean dari `GET /klaster`, detail + laporan anggota dari `GET /klaster/{id}`, jejak status dari `GET /klaster/{id}/riwayat`, **tombol keputusan memanggil `PUT /klaster/{id}/verifikasi?status=&alasan=`**), `DinasLayout.tsx` (pencarian global: sekolah via `GET /sekolah?search=`, klaster dari `GET /klaster?page_size=100`), `DashboardKadis.tsx`, `PetaSebaranDinas.tsx`, `CetakRingkasanEksekutif.tsx`, `IngestDataCsv.tsx` (pemilih berkas CSV asli + pratinjau hasil parse + unggah via `POST /ingest/dapodik`, riwayat dari `GET /ingest/riwayat`).
+  - **`src/context/AuthContext.tsx` ditulis ulang**: `mock-jwt-token` dihapus; login kini `POST /auth/login` → token disimpan di `tokenStore`, profil diambil dari `GET /auth/me`, `isLoading`, `role`, `roleLabel`, `refreshUser()`, dan `logout()` yang benar-benar membersihkan token.
+  - **`src/pages/warga/Login.tsx`**: login sungguhan ke backend dengan pesan error dari server (bukan lagi delay simulasi + user palsu).
 - **Fitur Filter Jenjang & Ekspor CSV pada Matriks Integritas Dashboard Wilayah (`src/pages/warga/DashboardWilayah.tsx`)**:
   - Tombol **Filter Jenjang** sebelumnya hanya tampilan (tanpa `onClick`); kini membuka dropdown pilihan `Semua / SD / SMP / SMA / SMK` (komponen `Select` shadcn) yang menyaring baris tabel matriks secara langsung — label tombol berubah menjadi `Jenjang: <pilihan>` dengan aksen biru saat filter aktif.
   - Tombol **Unduh CSV** kini mengekspor baris hasil filter menjadi berkas `matriks_integritas_sarpras_<jenjang?>_<tanggal>.csv` (kolom NPSN, Nama Sekolah, Jenjang, Ruang Kelas, Lab IPA/Kimia, Perpustakaan, Sanitasi/Toilet, Status Integritas), mengikuti pola ekspor CSV Direktori Sekolah.
@@ -142,12 +168,40 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - Input NIK terenkripsi 16-digit sah, dropdown kelurahan/desa domisili di Lamongan, serta banner jaminan keamanan data anak UU PDP No. 27/2022.
 
 ### Dihapus
+- **F4.1 — Seluruh data mock dihapus (`src/mocks/`, 7 berkas)**:
+  - `auth.ts`, `sekolah.ts`, `sekolahDirektori.ts` (710 baris), `klaster.ts`, `laporan.ts`, `status.ts`, `dinasData.ts` (590 baris) — tidak ada lagi import `@/mocks/*` di seluruh `src/`.
+  - Angka demo yang sebelumnya dipajang sebagai fakta (jumlah isu, tren bulanan, checksum berkas, "20 sekolah terp%", nomor tiket, baseline per fasilitas, foto, jejak audit) **tidak lagi muncul**; diganti data API atau empty state jujur.
+  - Dampak: `npm run build` (tsc + vite) tetap sukses, 2323 modul, tanpa error TypeScript.
+- **Tombol "Lihat NIK Penuh" pada Antrian Validasi (`src/pages/dinas/AntrianValidasi.tsx`)**:
+  - Backend tidak pernah mengirim NIK pada respons mana pun (INTERFACES.md §1, PDP Vault), sehingga tombol buka-samar NIK beserta state `revealedNiks` dihapus. Baris laporan kini menampilkan sumber fasilitas dan catatan "NIK tidak ditampilkan (UU PDP No. 27/2022)".
 - **Label "Terpilih di Inspector" pada Kartu Klaster Antrian Validasi (`src/pages/dinas/AntrianValidasi.tsx`)**:
   - Label indikator **"Terpilih di Inspector →"** di footer kartu klaster (muncul saat kartu dipilih) dihapus dari seluruh kartu *Antrian Isu Terklaster*; baris metrik kini hanya menampilkan jumlah laporan warga dan dukungan warga.
   - Impor ikon `ArrowRight` ikut dihapus karena tidak lagi dipakai (aturan `noUnusedLocals`).
   - `npm run build` sukses; `/dinas/antrian` → HTTP 200.
 
 ### Diperbaiki
+- **Dashboard Dinas tidak menampilkan "nol palsu" saat backend tak terjangkau** (`/dinas/dashboard`, `/dinas/peta`):
+  - **Gejala:** dashboard tampil utuh tetapi semua angka `0` ("0 dari … sekolah terdaftar", "Klaster terbaru diproses: 0") tanpa penjelasan apa pun — tampak seperti backend tidak tersambung, padahal tidak ada tanda errors anywhere.
+  - **Akar masalah:** `DashboardKadis` dan `PetaSebaranDinas` tidak punya state `loading`/`error` sama sekali, sehingga kegagalan API dihitung sebagai data kosong (nilai default `0`). disembunyikannya juga angka mock sisa ("Cakupan 100%", "dari 24 sekolah terdaftar") yang selalu tampil apa pun kondisi server.
+  - **Perbaikan:** kedua halaman kini punya tiga state — `loading` ("Memuat ringkasan eksekutif…"), `error` (pesan dari backend + petunjuk menjalankan backend di `localhost:8000` + tombol Coba Lagi), dan success. Angka mock sisa dihapus; "Sinkron Dapodik" tetap "Belum tersedia" karena memang tidak ada endpointnya.
+  - **Timeout pada API client (`src/lib/api/client.ts`):** setiap request dibatasi 15 detik (`VITE_API_TIMEOUT_MS`) lewat `AbortController`. Tanpa ini `fetch` ke backend mati bisa menggantung **134 detik** di WSL sehingga UI terkunci di status "memuat" tanpa umpan balik. Timeout dilaporkan sebagai `NETWORK_ERROR` dengan pesan yang menyebutkan durasinya; abort dari pemanggil (unmount/StrictMode) tetap diteruskan.
+  - **Perbaikan batas `page_size` (`backend/app/routers/sekolah.py`):** `GET /sekolah` membalas `400 VALIDATION_ERROR` untuk `page_size > 50`, padahal `INTERFACES.md` §0.2 menetapkan maks 100 (dan `GET /klaster` sudah 100).FE memanggil `page_size: 100` sehingga dashboard gagal total dengan pesan "Input tidak valid". Batas dinaikkan ke 100 agar sesuai kontrak, FE ditambah clamp `page_size` ke rentang 1–100, plus regression test `test_sekolah_page_size_100_diterima`.
+  - **Perbaikan WSL:** script `npm run dev` kini menjalankan uvicorn dengan `--host 0.0.0.0` (sebelumnya `127.0.0.1` saja) agar backend terjangkau dari browser Windows lewat localhost forwarding; Vite juga diberi `--host 0.0.0.0`.
+
+- **Aksi verifikasi di Antrian Validasi kini gated per role + alasan dari petugas (`/dinas/antrian`)**:
+  - **Gejala:** ketiga tombol aksi (Verifikasi Mismatch / Tandai Kejadian Baru / Tolak Sanggahan) selalu gagal — tanpa login/backend mati muncul "Tidak dapat terhubung ke server", dengan login `admin` muncul "Not enough permissions". Tombol tetap aktif untuk pengunjung biasa sehingga error teknis tampil tanpa penjelasan.
+  - **Akar masalah:** `PUT /klaster/{id}/verifikasi` dibatasi `RoleChecker(["verifikator_dinas"])` (`app/routers/klaster.py:27`), sementara basis data pengembangan hanya berisi akun `admin` — sehingga **tidak ada akun pun yang dapat menjalankan alur verifikasi**. `admin` memang tidak berwenang sesuai kontrak.
+  - **Perbaikan FE:** (1) `useAuth()` dipakai untuk menyimpan `role`; aksi verifikasi hanya dirender untuk `verifikator_dinas`, selain itu tampil kartu penjelasan yang menyebut peran pengunjung dan why aksi tidak tersedia — tombol tidak lagi menembak request pasti gagal; (2) `alasan` tidak lagi diisi kalimat otomatis, tetapi dari **pilihan cepat** (4 preset: tidak ditemukan saat verifikasi lapangan / laporan duplikat / di luar ruang lingkup / data belum cukup) plus **catatan bebas opsional**, disusun `"preset — catatan"` dan dikirim apa adanya.
+  - **Perbaikan backend/data:** script baru `backend/scripts/seed_dinas_accounts.py` (idempotent) membuat akun `verifikator_dinas` & `kepala_dinas`; dicatat di `docs/backend/SETUP.md` §7a.
+  - **Verifikasi:** `tsc` 0 error · build sukses · uji Chromium — tamu & `admin` melihat kartu penjelasan tanpa tombol, `verifikator_dinas` mendapat alur penuh (panel alasan, tombol submit nonaktif sampai preset dipilih, catatan digabung) dan `PUT` terkirim `?status=tidak_terverifikasi&alasan=Laporan duplikat dengan klaster lain — Sudah terverifikasi lapangan, kondisi aktual masih baik.`; alasan utuh tersimpan di `GET /klaster/{id}/riwayat`. Data produksi dipulihkan ke `menunggu_verifikasi` 100/100 setelah pengujian.
+  - **Deviasi kontrak ditemukan:** `INTERFACES.md` §5 menyebut `422 REASON_REQUIRED` untuk `alasan` kosong, backend sebenarnya membalas `400 VALIDATION_ERROR` dengan pesan "alasan wajib jika status != terverifikasi".
+
+- **Perbaikan: halaman Antrian Validasi (`/dinas/antrian`) gagal dimuat — "Terjadi kendala tak terduga"**:
+  - **Gejala:** seluruh panel halaman tertangkap `ErrorBoundary` dengan pesan "Halaman ini gagal dimuat"; tombol *Muat Ulang* tidak menolong karena kondisi salahnya berulang.
+  - **Akar masalah (regresi F4.1):** `selectedKlaster` dihitung dengan fallback berantai (`find` → `filteredKlasters[0]` → `daftarKlasterDinasTerisi[0]`) dan tipe-nya diklaim `KlasterIsuDinas` padahal bisa `undefined`. Bagian IIFE di panel kanan langsung membaca `k.kategori`/`k.skor`. Saat data mock masih sinkron, array selalu terisi; setelah migrasi ke API, `useFetch` mengembalikan `[]` selama status `loading` → renderer crash di render pertama. Dulu tertangkap `ErrorBoundary` sehingga sulit dilacak sumbernya.
+  - **Perbaikan:** (1) tipe menjadi `KlasterIsuDinas | undefined`; (2) tiga guard sebelum render utama — `loading` ("Memuat antrean klaster…"), `error` (pesan server + tombol Coba Lagi), dan `Belum ada klaster untuk ditinjau`; (3) `detailKlaster` & `riwayatStatus` tidak lagi menembak endpoint dengan id kosong (sebelumnya `GET /klaster/` → 404 sia-sia saat mount); (4) auto-pilih klaster pertama saat daftar tiba, memulihkan perilaku pra-refactor dan membuat panel kanan langsung terisi; (5) penjaga `k?.kategori` di IIFE.
+  - **Verifikasi:** `tsc` 0 error · `npm run build` sukses · uji Chromium (Playwright) pada `/dinas/antrian` → 100 kartu klaster ter-render, panel kanan terisi, **0 `pageerror`**; klik kartu memicu `GET /klaster/{id}` + `GET /klaster/{id}/riwayat?page_size=100`; sapu 8 rute (`/`, `/direktori`, `/sekolah/:npsn`, `/klaster/:id`, `/dashboard`, `/dinas/antrian`, `/dinas/peta`, `/dinas/ringkasan`) → 8/8 tanpa `ErrorBoundary`.
+
 - **Tampilan Filter Jenjang & Pill Matriks Dashboard Wilayah (`src/pages/warga/DashboardWilayah.tsx`, `src/components/ui/select.tsx`)**:
   - `SelectTrigger` shadcn: kelas `[&>span]:line-clamp-1` dihapus dan ikon chevron diberi `shrink-0 ml-1.5` sehingga label trigger ("Filter Jenjang" / "Jenjang: <pilihan>") tidak terpotong satu baris.
   - Trigger Filter Jenjang kini `inline-flex whitespace-nowrap` dengan ikon `Filter shrink-0` terpisah dari label, teks tetap satu baris pada lebar sempit.
@@ -160,6 +214,22 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - `npm run build` sukses; `/`, `/laporan/baru`, `/sekolah/20532361` → HTTP 200.
 
 ---
+
+### Catatan Deviasi Kontrak & Gap Data (hasil F4.1)
+
+Ditemukan saat mengintegrasikan FE ke backend yang berjalan. Butuh keputusan Aris + Dimas (`GIT_WORKFLOW.md` §3) sebelum ada perubahan kontrak:
+
+| # | Temuan | Impact ke FE | Usulan |
+|---|---|---|---|
+| 1 | `GET /sekolah` mengirim `penanda_masalah` yang **selalu bernilai `"normal"`**; nilai `aman`/`perlu_perhatian`/`kritis` ada di INTERFACES §2 tapi backend belum menghitungnya | Filter "Status Integritas" di Direktori & badge kartu sekolah tidak akan pernah menyaring | Backend menghitung `penanda_masalah` (atau FE menyembunyikan filter tersebut) |
+| 2 | `rasio_guru_siswa` selalu `null`; `jumlah_pd`/`jumlah_ptk`/`jumlah_rombel` = 0; `utilitas_kapasitas_belajar` = 0.0; `jumlah_isu_aktif` = 0; `klaster_isu` = `[]` | Sesuai AGENTS.md §Scope FINAL, FE **tidak** merender angka ini sebagai data valid | FE sudah menyesuaikan tampilan (angka tersebut disembunyikan); backend mengisi bila memungkinkan |
+| 3 | `GET /dashboard/wilayah` hanya mengizinkan `verifikator_dinas` & `kepala_dinas` — **`admin` mendapat 403** | `admin` tidak bisa membuka ringkasan wilayah | Tambahkan `admin` ke RBAC endpoint tersebut |
+| 4 | Kolom `sekolah.lintang` & `sekolah.bujur` **NULL untuk 62/62 sekolah**, dan tidak diekspos API | Peta Sebaran (warga & dinas) tidak bisa menampilkan pin sekolah | Re-scraping koordinat dari Dapodik + expose di `GET /sekolah` |
+| 5 | Tidak ada endpoint riwayat isu **per bulan** | Grafik tren bulanan & kolom tren di laporan cetak → empty state | Endpoint agregat bulanan, atau scraper turun permanen |
+| 6 | `GET /klaster` tidak punya parameter `search` | Pencarian klaster di `DinasLayout` dicocokkan di sisi klien (100 klaster, masih wajar) | Tambahkan `?search=` bila data tumbuh |
+| 7 | Backend tidak mengirim nomor tiket, kecamatan, email sekolah, tanggal audit, baseline per fasilitas, TF-IDF keywords, foto, atau jejak audit klaster | Field tersebut tampil "Belum tersedia" di Antrian Validasi & Detail Sekolah | Putuskan: tambah field, atau hapus kolom UI tsb |
+| 8 | `POST /auth/login` menerima **email + password** (INTERFACES §1), sedangkan form login FE sebelumnya menanyakan **NIK** | Form login diubah ke email | Kalau NIK harus jadi identitas login, perlu kontrak baru (login by NIK) |
+| 9 | `POST /laporan` tidak lagi menerima field `kategori` (kolom di-drop di Fase A) | Field `kategori` dihapus dari form & mock | Keduanya sudah sinkron |
 
 ## [0.1.0] - 2026-09-15
 
