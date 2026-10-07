@@ -12,13 +12,20 @@ export default function WargaLayout() {
       <header className="sticky top-0 z-30 border-b border-border bg-surface/80 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-8">
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-xs font-bold text-white">
-                S
+            <Link to="/dashboard" className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white border border-slate-200/80 p-1.5 shadow-sm shrink-0 overflow-hidden">
+                <img
+                  src="/logo-simakis-icon.png"
+                  alt="Logo SIMAKIS"
+                  className="h-full w-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "/logo-simakis.png";
+                  }}
+                />
               </div>
               <div className="leading-tight">
-                <span className="text-body-sm font-bold text-primary">SIMAKIS</span>
-                <span className="block text-[10px] text-ink-tertiary">Kec. Lamongan</span>
+                <span className="text-base font-extrabold text-[#0B3052] tracking-tight">SIMAKIS</span>
+                <span className="block text-[11px] font-medium text-slate-400">Kec. Lamongan</span>
               </div>
             </Link>
 
@@ -45,7 +52,7 @@ export default function WargaLayout() {
 
       {/* ── Footer ringkas ── */}
       <footer className="border-t border-border bg-surface-alt px-6 py-4 text-center text-xs text-ink-tertiary">
-        &copy; 2026 SIMAKIS &middot; PSDKP Lamongan PENS &middot; Disdik Kab. Lamongan
+        &copy; 2026 SIMAKIS Disdik Kab. Lamongan
       </footer>
     </div>
   )
@@ -55,11 +62,10 @@ function Nav({ to, label, active }: { to: string; label: string; active: boolean
   return (
     <Link
       to={to}
-      className={`rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
-        active
+      className={`rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${active
           ? "bg-primary text-white"
           : "text-ink-secondary hover:bg-surface-alt hover:text-ink"
-      }`}
+        }`}
     >
       {label}
     </Link>

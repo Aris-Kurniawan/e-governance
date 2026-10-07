@@ -46,6 +46,23 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - State `404` "Klaster tidak ditemukan" untuk ID tak dikenal.
 
 ### Diubah
+- **Status Pengerjaan Task Frontend di TASK_GUIDE (`docs/frontend/TASK_GUIDE.md`)**:
+  - Menambahkan seksi **Status Pengerjaan**: tabel status seluruh task F1.1–F4.4 hasil audit terhadap kode (1 Oktober 2026) plus daftar **Detail Task Tertunda (belum selesai / terlewat)** berformat checklist dengan target file/rute dan pendukung yang sudah tersedia.
+  - Task tertunda tercatat: F3.1 sisa (`InstitutionalStepper` + list klaster), **F3.2 Voting** (target `DetailKlaster.tsx` §A3 — pendukung `voteKlaster`/`VoteResponse`/mock sudah ada), F3.3 Status Tindak Lanjut (halaman status + `useStatusPolling` belum terpasang), F3.4 sisa (override prioritas §B2, update status penanganan §B3), dan seluruh Fase 4 (F4.1–F4.4); deviasi minor F1.1 (routing di `App.tsx`) & F1.5 (folder institusional kosong) ikut dicatat.
+  - `Update terakhir` TASK_GUIDE diperbarui dari 15 September 2026 menjadi 1 Oktober 2026.
+- **Antrian Validasi: Strip Filter Fungsional & Data Klaster Diperluas (`src/pages/dinas/AntrianValidasi.tsx`, `src/mocks/dinasData.ts`)**:
+  - Strip filter kini berfungsi: 4 tab status (Belum Ditinjau / Mismatch Terverifikasi / Kejadian Baru / Ditolak) dengan badge hitung `tabCounts`, dropdown sekolah (`schoolOptions`, `aria-label="Filter berdasarkan sekolah"`), slider **Prioritas Min** (`min=0 max=90 step=5`, label `N+`), serta pencarian tersinkron URL `?search=` — semua di-`useMemo` `filteredKlasters` dengan auto-pilih kartu pertama saat filter berubah, counter "X Klaster", footer "Menampilkan X dari Y klaster isu aktif", dan empty state 0 hasil.
+  - Kartu klaster: galeri bukti MinIO berlabel "BUKTI LAPORAN"; label "Terpilih di Inspector" dihapus (rincian di bagian **Dihapus**).
+  - `daftarKlasterDinas` diperluas 5 → 7 klaster (entri baru `kls-006`, `kls-007`) plus pembaruan field entri lama (+347 baris) untuk menopang filter.
+  - `npm run build` sukses.
+- **Footer Ringkas PublicLayout & WargaLayout (`src/layouts/PublicLayout.tsx`, `src/layouts/WargaLayout.tsx`)**:
+  - Kredit footer disederhanakan: `© 2026 SIMAKIS · PSDKP Lamongan PENS · Disdik Kab. Lamongan` menjadi `© 2026 SIMAKIS · Disdik Kab. Lamongan` (PublicLayout) dan `© 2026 SIMAKIS Disdik Kab. Lamongan` (WargaLayout) — kredit PSDKP Lamongan PENS dihapus dari keduanya.
+  - Format className komponen `Nav` di `WargaLayout` dirapikan ulang tanpa perubahan perilaku.
+  - `npm run build` sukses.
+- **Aset Logo SIMAKIS Baru & Pemasangan di Header/Footer (`public/logo-*`, `index.html`, `src/layouts/{AuthLayout,DinasLayout,PublicLayout,WargaLayout}.tsx`, `src/pages/dinas/LoginDinas.tsx`)**:
+  - Aset logo diganti: `logo-simakis.svg` baru (geometris huruf S dengan gradien brand #1E40AF → #06B6D4) plus empat berkas PNG (`logo-simakis-icon/clean/transparent/logo-simakis.png`) yang dikompres ulang; favicon `index.html` kini menunjuk `/logo-simakis-icon.png` (sebelumnya `vite.svg`).
+  - Logo dipasang di kotak putih bersudut pada header `PublicLayout`, `WargaLayout` & `AuthLayout` (menggantikan inisial "S"), `DinasLayout`, dan `LoginDinas` (wadah 11–12, teks brand naik ke `text-base/lg font-extrabold`), lengkap dengan fallback `onError` ke `/logo-simakis.png`; blok logo footer `PublicLayout` ikut memakai ikon yang sama.
+  - `npm run build` sukses.
 - **Teks Tabel Matriks Integritas Dashboard Wilayah Satu Baris (`src/pages/warga/DashboardWilayah.tsx`)**:
   - Class `whitespace-nowrap` ditambahkan ke elemen `<table>` sehingga seluruh sel (header RUANG KELAS/LAB IPA-KIMIA/STATUS INTEGRITAS, nama sekolah, baris NPSN · Negeri, pill metrik "1 Rusak"/"−1 R.Teori", dan badge status) tidak lagi turun baris; bila lebar layar kurang, tabel dapat digulir horizontal via pembungkus `overflow-x-auto`.
   - `npm run build` sukses; `/laporan/wilayah` → HTTP 200.
@@ -124,7 +141,18 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - Integrasi kotak verifikasi Dapodik peserta didik (dropdown sekolah, validasi NISN 10-digit dengan badge status, area unggah foto kartu pelajar berbingkai dashed hijau).
   - Input NIK terenkripsi 16-digit sah, dropdown kelurahan/desa domisili di Lamongan, serta banner jaminan keamanan data anak UU PDP No. 27/2022.
 
+### Dihapus
+- **Label "Terpilih di Inspector" pada Kartu Klaster Antrian Validasi (`src/pages/dinas/AntrianValidasi.tsx`)**:
+  - Label indikator **"Terpilih di Inspector →"** di footer kartu klaster (muncul saat kartu dipilih) dihapus dari seluruh kartu *Antrian Isu Terklaster*; baris metrik kini hanya menampilkan jumlah laporan warga dan dukungan warga.
+  - Impor ikon `ArrowRight` ikut dihapus karena tidak lagi dipakai (aturan `noUnusedLocals`).
+  - `npm run build` sukses; `/dinas/antrian` → HTTP 200.
+
 ### Diperbaiki
+- **Tampilan Filter Jenjang & Pill Matriks Dashboard Wilayah (`src/pages/warga/DashboardWilayah.tsx`, `src/components/ui/select.tsx`)**:
+  - `SelectTrigger` shadcn: kelas `[&>span]:line-clamp-1` dihapus dan ikon chevron diberi `shrink-0 ml-1.5` sehingga label trigger ("Filter Jenjang" / "Jenjang: <pilihan>") tidak terpotong satu baris.
+  - Trigger Filter Jenjang kini `inline-flex whitespace-nowrap` dengan ikon `Filter shrink-0` terpisah dari label, teks tetap satu baris pada lebar sempit.
+  - Pill metrik matriks dirapikan jadi angka saja: `"1 Rusak"` → `"1"`, `"-2 Unit"` → `"2"`, `"-1 R.Teori"` → `"1"`.
+  - `npm run build` sukses.
 - **Gerbang Login Tombol "Mulai Laporkan Temuan" di Beranda (`src/pages/warga/Landing.tsx`)**:
   - Tombol hero **Mulai Laporkan Temuan** sebelumnya selalu `navigate("/sekolah")` tanpa memeriksa sesi, padahal `AuthRequiredModal` sudah ter-mount tetapi tidak pernah dibuka — warga dapat memulai alur pelaporan tanpa masuk akun, tidak sesuai catatan entri "Proteksi & Gerbang Autentikasi Pelaporan" di changelog ini.
   - Kini `handleMulaiLapor` mengecek sesi: belum login → modal *Wajib Masuk / Daftar Akun* terbuka dengan `redirect=/laporan/baru&action=report`; sudah login → langsung diarahkan ke form pelaporan.

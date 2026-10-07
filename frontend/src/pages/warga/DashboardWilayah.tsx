@@ -37,7 +37,7 @@ const matriksSekolah: BarisMatriks[] = [
     nama: "SMAN 1 Sukodadi",
     jenjang: "SMA",
     ruangKelas: { label: "18", tone: "baik" },
-    labIpa: { label: "1 Rusak", tone: "kritis" },
+    labIpa: { label: "1", tone: "kritis" },
     perpus: { label: "1", tone: "baik" },
     sanitasi: { label: "8", tone: "baik" },
     status: "Mismatch Kritis",
@@ -49,7 +49,7 @@ const matriksSekolah: BarisMatriks[] = [
     ruangKelas: { label: "24", tone: "baik" },
     labIpa: { label: "2", tone: "baik" },
     perpus: { label: "1", tone: "baik" },
-    sanitasi: { label: "-2 Unit", tone: "minor" },
+    sanitasi: { label: "2", tone: "minor" },
     status: "Selisih Minor",
   },
   {
@@ -66,7 +66,7 @@ const matriksSekolah: BarisMatriks[] = [
     npsn: "20506450",
     nama: "SMKN 1 Lamongan",
     jenjang: "SMK",
-    ruangKelas: { label: "-1 R.Teori", tone: "minor" },
+    ruangKelas: { label: "1", tone: "minor" },
     labIpa: { label: "5", tone: "baik" },
     perpus: { label: "1", tone: "baik" },
     sanitasi: { label: "12", tone: "baik" },
@@ -333,14 +333,14 @@ export default function DashboardWilayah() {
                   <Select value={filterJenjang} onValueChange={setFilterJenjang}>
                     <SelectTrigger
                       aria-label="Filter jenjang sekolah"
-                      className={`h-8 w-auto gap-2 rounded-lg border-slate-200 bg-white px-3 text-xs font-medium shadow-sm ${
+                      className={`h-8 w-auto gap-2 rounded-lg border-slate-200 bg-white px-3 text-xs font-medium shadow-sm whitespace-nowrap inline-flex items-center ${
                         filterJenjang !== "Semua"
                           ? "border-blue-300 bg-blue-50 text-[#0B3052]"
                           : "text-slate-700"
                       }`}
                     >
-                      <span className="inline-flex items-center gap-1.5">
-                        <Filter className="h-3.5 w-3.5" />
+                      <Filter className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                      <span className="whitespace-nowrap">
                         {filterJenjang === "Semua"
                           ? "Filter Jenjang"
                           : `Jenjang: ${filterJenjang}`}

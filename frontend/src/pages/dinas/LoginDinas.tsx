@@ -49,7 +49,7 @@ export default function LoginDinas() {
       <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-6 py-3.5 z-10">
         <div className="mx-auto max-w-7xl flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1.5 shadow-sm shrink-0">
+            <div className="h-12 w-12 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1.5 shadow-sm shrink-0">
               <img
                 src="/logo-simakis-icon.png"
                 alt="Logo SIMAKIS"
@@ -61,7 +61,7 @@ export default function LoginDinas() {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-[#0B3052] text-sm tracking-tight">SIMAKIS</span>
+                <span className="font-extrabold text-[#0B3052] text-base tracking-tight">SIMAKIS</span>
                 <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#0B3052] border border-blue-200/70">
                   PORTAL RESMI
                 </span>

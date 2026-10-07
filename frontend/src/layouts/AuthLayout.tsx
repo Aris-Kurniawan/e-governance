@@ -16,8 +16,8 @@ export default function AuthLayout() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-sm font-bold text-white border border-white/20 shadow-sm">
-              S
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 border border-white/20 shadow-sm overflow-hidden">
+              <img src="/logo-simakis-icon.png" alt="S" className="h-10 w-10 object-contain" />
             </div>
             <div className="leading-tight">
               <div className="flex items-center gap-2">
