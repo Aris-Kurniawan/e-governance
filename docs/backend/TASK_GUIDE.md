@@ -1,4 +1,4 @@
--# TASK_GUIDE.md — Backend SIMAKIS
+  -# TASK_GUIDE.md — Backend SIMAKIS
 
 > Panduan tugas backend per fitur berdasarkan `PRD.md`, `ROADMAP.md`,
 > dan `DATABASE_SCHEMA.md`. Dokumen ini menjadi **single source of truth**
@@ -1217,7 +1217,7 @@ user admin + verifikator) — siap dilayani ke frontend.
 
 ---
 
-### F4.2 — Black-box Testing ✅ SELESAI (sisi backend, 2026-10-05)
+### F4.2 — Black-box Testing
 
 **Metodologi:** Uji fungsi sistem tanpa melihat kode internal.
 
@@ -1226,62 +1226,52 @@ user admin + verifikator) — siap dilayani ke frontend.
 - Jalur gagal (error handling)
 - Edge cases
 
-**Deliverable:** Seluruh skenario kritikal lulus. ✅ — 48 skenario di
-`backend/tests/test_blackbox.py` (9 kelas: envelope, auth, sekolah, laporan,
-klaster, vote, verifikasi, dashboard/audit, upload); 87/87 pytest total.
-4 temuan awal → diperbaiki di F4.4 (lihat CHANGELOG §3.18).
-Pengujian sisi FE berjalan bersama F4.1.
+**Deliverable:** Seluruh skenario kritikal lulus.
 
 ---
 
-### F4.3 — Evaluasi Klasterisasi ✅ SELESAI (metrik otomatis, 2026-10-05)
+### F4.3 — Evaluasi Klasterisasi
 
 **Metrik:**
-- Silhouette Score ✅ — rata-rata +0.1385 (20 sekolah multi-klaster) → positif
-- Davies-Bouldin Index ✅ — rata-rata 1.5364 (< 2.0)
-- Validasi manual oleh Verifikator ⏳ — menunggu F4.1 (endpoint `/api/klaster/{id}/verifikasi`)
+- Silhouette Score
+- Davies-Bouldin Index
+- Validasi manual oleh Verifikator
 
-**Deliverable:** Skor metrik positif, mayoritas klaster relevan. ✅ (lihat CHANGELOG §3.15, script: `scripts/evaluate_clustering.py`)
-
----
-
-### F4.4 — Fix Bug ✅ SELESAI (2026-10-05)
-
-**Deliverable:** Semua temuan testing diperbaiki. ✅ — 5 temuan backend
-diperbaiki & 87/87 lulus: (1) `NULLS LAST` crash di MySQL (klaster + 2
-dashboard), (2) `GET /audit/log` crash API SQLAlchemy 1.x, (3) envelope
-`data` dilengkapi di laporan create/detail + sekolah detail, (4) sanggahan
-jadi Publik sesuai INTERFACES §2.1, (5) `/dashboard/wilayah` dipasangi guard
-dinas sesuai spec F3.22/PRD FEAT-002. Detail: CHANGELOG §3.18.
-Temuan baru pengujian FE → F4.4 lanjutan.
+**Deliverable:** Skor metrik positif, mayoritas klaster relevan.
 
 ---
 
-### F4.5 — Dokumentasi API Final ✅ SELESAI (2026-10-05)
+### F4.4 — Fix Bug
 
-**Deliverable:** Swagger + `INTERFACES.md` sinkron dengan kode. ✅
-
-**Catatan eksekusi:** kontrak disinkronkan **ke arah kode** (keputusan Aris):
-- `INTERFACES.md` §0–§10 ditulis ulang mengikuti path & param aktual (query-param style vote/verifikasi/status).
-- 2 endpoint baru diimplementasi: `GET /klaster` (list + pagination) & `GET /klaster/{id}` (detail + laporan anggota) — `app/routers/klaster.py`.
-- 4 endpoint sebelumnya tak terdokumentasi: `POST /ai/cluster`, `GET /ai/status`, `GET /dashboard/prioritas`, `PUT /vote/klaster/{id}/skor`.
-- Health check `GET /`, `/health`, `/api/health` didokumentasikan (untuk F4.6 Docker healthcheck).
-- `API_CLIENT.md` §4 catatan deviasi ditandai sudah sinkron.
-- Verifikasi: 31 endpoint di `openapi.json` = dokumentasi; pytest 39/39.
+**Deliverable:** Semua temuan testing diperbaiki.
 
 ---
 
-### F4.6 — Docker Compose ✅ SELESAI (2026-10-05)
+### F4.5 — Dokumentasi API Final
 
-**Deliverable:** `docker-compose.yml` untuk deploy. ✅
+**Deliverable:** Swagger + `INTERFACES.md` sinkron dengan kode.
 
-**File yang dibuat:**
-- `docker-compose.yml` (3 service: backend, MySQL 8, MinIO)
-- `backend/Dockerfile` (Python 3.14 slim, pre-download model embedding, healthcheck)
-- `.dockerignore`
-- `.env.production.example` (template prod)
+---
 
-(Lihat `DEPLOYMENT.md` dan CHANGELOG §3.17 untuk instruksi deploy).
+### F4.6 — Docker Compose
+
+```yaml
+# Ringkasan struktur
+services:
+  backend:
+    build: ./backend
+    env_file: .env.production
+    ports: ["8000:8000"]
+    depends_on: [mysql, minio]
+
+  mysql:
+    image: mysql:8
+
+  minio:
+    image: minio/minio
+```
+
+**Deliverable:** `docker-compose.yml` untuk deploy.
 
 ---
 
