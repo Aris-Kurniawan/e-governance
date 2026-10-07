@@ -215,6 +215,25 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
 
 ---
 
+### Catatan: Halaman yang Masih Pakai Data Demo (F4.1 belum 100%)
+
+Menghapus `src/mocks/` tidak menutup semua sumber data demo.Sapuan seluruh
+18 route (Chromium) tidak menemukan crash, tetapi **5 halaman** masih
+merender data contoh yang tertanam langsung di JSX — bukan lewat `@/mocks/`:
+
+| Halaman | Data demo | Endpoint yang tersedia |
+|---|---|---|
+| `src/pages/warga/DashboardWilayah.tsx` | `matriksSekolah` (24 sekolah) + KPI cakupan | `GET /sekolah`, `GET /klaster` |
+| `src/pages/warga/RiwayatLaporan.tsx` | kartu laporan contoh tertanam di markup | `GET /laporan/riwayat` |
+| `src/pages/dinas/TabelVerifikasi.tsx` | baris verifikasi (SMAN 1 Sukodadi, dll.) | `GET /klaster` |
+| `src/pages/dinas/LaporanSkorKbm.tsx` | baris skor KBM & efisiensi | belum ada endpoint (butuh kontrak) |
+| `src/pages/dinas/LogAuditPdp.tsx` | `logEntries` | `GET /audit/log` |
+
+Catatan: 4 dari 5 halaman punya endpoint yang sebenarnya; `LaporanSkorKbm`
+butuh endpoint baru (skor KBM belum ada di backend) sehingga butuh keputusan
+kontrak lebih dulu. Halaman yang sudah bersih: `Landing.tsx`, `Login.tsx`,
+`Registrasi.tsx`, `TentangData.tsx`.
+
 ### Catatan Deviasi Kontrak & Gap Data (hasil F4.1)
 
 Ditemukan saat mengintegrasikan FE ke backend yang berjalan. Butuh keputusan Aris + Dimas (`GIT_WORKFLOW.md` §3) sebelum ada perubahan kontrak:

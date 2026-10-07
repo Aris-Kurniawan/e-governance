@@ -46,7 +46,7 @@ Status diverifikasi terhadap kode pada 1 Oktober 2026.
 | F3.2 | Voting | **Belum** | Tidak ada UI vote di halaman mana pun — pendukung API/mock sudah siap (lihat detail di bawah) |
 | F3.3 | Status Tindak Lanjut | **Belum** | Belum ada halaman/rute status publik per klaster; `useStatusPolling` sudah ada tetapi belum dipakai |
 | F3.4 | Portal Pemerintah | **Sebagian** | `DinasLayout` (spesifikasi menyebut `PemerintahLayout`), DashboardKadis, verifikasi klaster §B1 (AntrianValidasi) ✓; override prioritas §B2 & update status §B3 belum |
-| F4.1 | Ganti Mock → API Asli | **✅ Selesai** | `src/lib/api/` dipakai 14 halaman; `src/mocks/` dihapus; `npm run build` hijau; smoke test kontrak 14/14 |
+| F4.1 | Ganti Mock → API Asli | **⚠️ 90%** | `src/lib/api/` dipakai 14 halaman; `src/mocks/` dihapus; build hijau; smoke test 14/14. **Sisa:** 5 halaman masih pakai data demo inline — `DashboardWilayah`, `RiwayatLaporan`, `TabelVerifikasi`, `LaporanSkorKbm`, `LogAuditPdp` (lihat CHANGELOG § *Halaman yang Masih Pakai Data Demo*) |
 | F4.2 | Black-box Testing | **Belum** | Belum ada catatan pengujian state `PAGE_STATES.md` |
 | F4.3 | Perf & Aksesibilitas | **Belum** | Rute masih import statis (belum lazy-load); audit Lighthouse belum |
 | F4.4 | Dokumentasi Final | **Belum** | — |
