@@ -1,71 +1,93 @@
-import React, { createContext, useContext, useState } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
+import { login as apiLogin, logout as apiLogout, me as apiMe, isLoggedIn } from "@/lib/api/auth"
+import type { Role, UserMe } from "@/lib/api/types"
+import { ROLE_LABEL } from "@/lib/api/types"
 
-export interface AuthUser {
-  id: string
-  nama: string
-  nik: string
-  peran: string
-  email?: string
-}
+/**
+ * F4.1 — Authenticate state.
+ *
+ * Token JWT disimpan di `@/lib/api/client` (`tokenStore`, localStorage) dan
+ * dipasang otomatis ke header `Authorization` oleh client. Context ini
+ * hanya menyimpan profil user untuk kebutuhan UI.
+ *
+ * Kontrak: INTERFACES.md §1. Field `nik` tidak pernah disimpan di sisi FE.
+ */
 
 interface AuthContextType {
-  user: AuthUser | null
+  user: UserMe | null
   isAuthenticated: boolean
-  login: (userData?: Partial<AuthUser>) => void
+  isLoading: boolean
+  role: Role | null
+  roleLabel: string | null
+  /** Login ke backend. Throw `ApiError` kalau kredensial ditolak. */
+  login: (email: string, password: string) => Promise<UserMe>
+  /** Ambil ulang profil dari `GET /auth/me` (setelah refresh/halaman reload). */
+  refreshUser: () => Promise<void>
   logout: () => void
-}
-
-const STORAGE_KEY_USER = "simakis_auth_user"
-const STORAGE_KEY_TOKEN = "simakis_auth_token"
-
-const defaultMockUser: AuthUser = {
-  id: "usr-001",
-  nama: "Siti Aminah",
-  nik: "3524015809920003",
-  peran: "Warga Terverifikasi",
-  email: "siti.aminah@warga.lamongan.go.id"
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
+  const [user, setUser] = useState<UserMe | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(() => isLoggedIn())
+
+  // Saat halaman di-reload dengan token tersimpan,Validasi token tetap hidup
+  // dengan mengambil profil dari `GET /auth/me`. 401 → token dianggap mati,
+  // client.ts sudah membersihkannya, jadi kita tinggal kosongkan state.
+  useEffect(() => {
+    if (!isLoggedIn() || user) return
+    let cancelled = false
+    apiMe()
+      .then((data) => {
+        if (!cancelled) setUser(data)
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  const login = useCallback(async (email: string, password: string) => {
+    await apiLogin(email, password)
+    const profile = await apiMe()
+    setUser(profile)
+    setIsLoading(false)
+    return profile
+  }, [])
+
+  const refreshUser = useCallback(async () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_USER)
-      return saved ? JSON.parse(saved) : null
+      setUser(await apiMe())
     } catch {
-      return null
+      setUser(null)
     }
-  })
+  }, [])
 
-  const isAuthenticated = !!user
-
-  const login = (userData?: Partial<AuthUser>) => {
-    const newUser: AuthUser = {
-      ...defaultMockUser,
-      ...userData,
-    }
-    setUser(newUser)
-    try {
-      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(newUser))
-      localStorage.setItem(STORAGE_KEY_TOKEN, "mock-jwt-token-lamongan-2026")
-    } catch {
-      // ignore storage errors
-    }
-  }
-
-  const logout = () => {
+  const logout = useCallback(() => {
+    apiLogout()
     setUser(null)
-    try {
-      localStorage.removeItem(STORAGE_KEY_USER)
-      localStorage.removeItem(STORAGE_KEY_TOKEN)
-    } catch {
-      // ignore storage errors
-    }
-  }
+    setIsLoading(false)
+  }, [])
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        role: user?.role ?? null,
+        roleLabel: user ? ROLE_LABEL[user.role] : null,
+        login,
+        refreshUser,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

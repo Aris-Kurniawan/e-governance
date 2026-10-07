@@ -5,8 +5,76 @@ import ModalFormLaporan from "@/components/composite/ModalFormLaporan"
 import AuthRequiredModal from "@/components/composite/AuthRequiredModal"
 import StatusBadge from "@/components/composite/StatusBadge"
 import { useAuth } from "@/context/AuthContext"
-import { getSekolahBaseline, type FasilitasBaseline } from "@/mocks/sekolahDirektori"
-import { klasterList } from "@/mocks/klaster"
+import { useMemo } from "react"
+import { useFetch } from "@/hooks/useFetch"
+import { detailSekolah } from "@/lib/api/sekolah"
+import { listKlaster } from "@/lib/api/klaster"
+import type { SekolahDetail } from "@/lib/api/types"
+
+/**
+ * F4.1 — tampilan detail sekolah dibangun dari `GET /sekolah/{npsn}`
+ * (INTERFACES.md §2). Backend v1 belum mengirim baseline per-fasilitas
+ * perbandingan, kode wilayah, email sekolah, maupun tanggal audit, sehingga
+ * field tersebut tampil sebagai "Belum tersedia" — bukan data rekaan.
+ * Rasio guru:siswa & jumlah忽略了/tenaga sengaja tidak dirender sebagai angka
+ * karena nilainya belum valid (AGENTS.md §Scope FINAL).
+ */
+type TipeFasilitas = "baik" | "ringan" | "berat" | "sanggahan"
+
+interface FasilitasBaseline {
+  nama: string
+  jumlah: string
+  kondisi: string
+  tipe: TipeFasilitas
+  catatan?: string
+}
+
+interface BaselineView {
+  npsn: string
+  nama: string
+  jenjang: string
+  alamat: string
+  status: "Selisih Kritis" | "Selisih Minor" | "Data Sesuai"
+  statusBadge: string
+  audit: string
+  akreditasi: string
+  kepalaSekolah: string
+  kodeWilayah: string
+  email: string
+  tahunAjaran: string
+  dokumentasiTahun: string
+  faktaLabel: string
+  faktaCatatan: string
+  totalUnit: number
+  totalBaik: number
+  persenBaik: number
+  persenRingan: number
+  persenBerat: number
+  fasilitas: FasilitasBaseline[]
+  temuan: { tipe: "kritis" | "minor" | "sesuai"; judul: string; deskripsi: string }
+}
+
+const TIDAK_ADA = "Belum tersedia"
+
+/** Turunkan kondisi terburuk dari angka Dapodik per jenis ruang. */
+const keTipeFasilitas = (s: SekolahDetail["kondisi_sarana"][number]): TipeFasilitas => {
+  if (s.kondisi_rusak_berat > 0) return "berat"
+  if (s.kondisi_rusak_sedang > 0) return "berat"
+  if (s.kondisi_rusak_ringan > 0) return "ringan"
+  return "baik"
+}
+
+const LABELS: Record<TipeFasilitas, string> = {
+  baik: "Baik",
+  ringan: "Rusak Ringan",
+  berat: "Rusak Sedang / Berat",
+  sanggahan: "Perlu Verifikasi",
+}
+
+function persen(nilai: number, total: number): number {
+  if (total <= 0) return 0
+  return Math.round((nilai / total) * 100)
+}
 import {
   ChevronRight,
   MapPin,
@@ -61,7 +129,68 @@ export default function DetailSekolah() {
   const [isModalLaporanOpen, setIsModalLaporanOpen] = useState(false)
   const [isAuthRequiredOpen, setIsAuthRequiredOpen] = useState(false)
 
-  const baseline = getSekolahBaseline(npsn || "")
+  const { state: sekolahState } = useFetch(
+    () => detailSekolah(npsn ?? ""),
+    [npsn],
+  )
+  const { state: klasterState } = useFetch(
+    () => listKlaster({ sekolah_npsn: npsn ?? "", page_size: 50 }),
+    [npsn],
+  )
+
+  const baseline: BaselineView | null = useMemo(() => {
+    if (sekolahState.status !== "success") return null
+    const d = sekolahState.data
+    const r = d.ringkasan_sarpras
+    const status: BaselineView["status"] =
+      d.penanda_masalah === "kritis"
+        ? "Selisih Kritis"
+        : d.penanda_masalah === "perlu_perhatian"
+        ? "Selisih Minor"
+        : "Data Sesuai"
+    return {
+      npsn: d.npsn,
+      nama: d.nama,
+      jenjang: d.jenjang,
+      alamat: d.alamat,
+      status,
+      statusBadge: status === "Data Sesuai" ? "Data Sesuai" : status,
+      audit: TIDAK_ADA,
+      akreditasi: d.akreditasi ?? TIDAK_ADA,
+      kepalaSekolah: d.nama_kepsek ?? TIDAK_ADA,
+      kodeWilayah: TIDAK_ADA,
+      email: TIDAK_ADA,
+      tahunAjaran: TIDAK_ADA,
+      dokumentasiTahun: TIDAK_ADA,
+      faktaLabel: "Kondisi sarana Dapodik",
+      faktaCatatan:
+        r.total_unit > 0
+          ? `${r.total_unit} unit sarpras tercatat, ${r.total_baik} dalam kondisi baik.`
+          : "Belum ada data kondisi sarana untuk sekolah ini.",
+      totalUnit: r.total_unit,
+      totalBaik: r.total_baik,
+      persenBaik: persen(r.total_baik, r.total_unit),
+      persenRingan: persen(r.total_rusak_ringan, r.total_unit),
+      persenBerat: persen(r.total_rusak_sedang + r.total_rusak_berat, r.total_unit),
+      fasilitas: d.kondisi_sarana.map((s) => {
+        const tipe = keTipeFasilitas(s)
+        return {
+          nama: s.nama_ruang,
+          jumlah: `${s.jumlah} unit`,
+          kondisi: LABELS[tipe],
+          tipe,
+          catatan: s.perlu_verifikasi ? "Perlu verifikasi lapangan" : undefined,
+        }
+      }),
+      temuan: {
+        tipe: status === "Selisih Kritis" ? "kritis" : status === "Selisih Minor" ? "minor" : "sesuai",
+        judul: status,
+        deskripsi:
+          "Perbandingan data Dapodik dengan laporan warga belum tersedia di backend v1. " +
+          "Kartu ini menampilkan kondisi sarana Dapodik apa adanya.",
+      },
+    }
+  }, [sekolahState])
 
   // Otomatis buka form laporan jika baru login dengan query action=report
   useEffect(() => {
@@ -76,6 +205,42 @@ export default function DetailSekolah() {
     } else {
       setIsModalLaporanOpen(true)
     }
+  }
+
+  if (sekolahState.status === "loading") {
+    return (
+      <div className="bg-[#F8FAFC] min-h-screen flex items-center justify-center px-6">
+        <p className="text-sm text-slate-500">Memuat data sekolah...</p>
+      </div>
+    )
+  }
+
+  if (sekolahState.status === "error") {
+    const notFound = sekolahState.code === "NOT_FOUND"
+    return (
+      <div className="bg-[#F8FAFC] min-h-screen flex items-center justify-center px-6">
+        <div className="text-center space-y-4">
+          <p className="text-2xl font-extrabold text-slate-900">
+            {notFound ? "Sekolah tidak ditemukan" : "Gagal memuat data sekolah"}
+          </p>
+          <p className="text-sm text-slate-500">
+            {notFound ? (
+              <>
+                NPSN <span className="font-mono font-semibold text-slate-700">{npsn}</span> tidak terdaftar di
+                Direktori Sekolah Kecamatan Lamongan.
+              </>
+            ) : (
+              sekolahState.message
+            )}
+          </p>
+          <Link to="/sekolah">
+            <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white text-sm cursor-pointer">
+              Kembali ke Direktori Sekolah
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   if (!baseline) {
@@ -111,7 +276,8 @@ export default function DetailSekolah() {
       : "bg-emerald-500"
 
   // Kartu 3 — Isu & Klaster Warga: daftar klaster_isu milik sekolah ini
-  const klasterSekolah = klasterList.filter((k) => k.sekolah_npsn === baseline.npsn)
+  const klasterSekolah =
+    klasterState.status === "success" ? klasterState.data.data : []
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
@@ -309,8 +475,8 @@ export default function DetailSekolah() {
                             <span className={`rounded px-1.5 py-0.5 text-[10px] font-black ${skorBadgeCls(k.skor_prioritas)}`}>
                               Skor {k.skor_prioritas}
                             </span>
-                            <StatusBadge status={k.status} />
-                            <span className="text-[10px] text-slate-500">{k.jumlah_laporan} laporan</span>
+                            <StatusBadge status={k.status_verifikasi} />
+                            <span className="text-[10px] text-slate-500">{k.jumlah_vote_terhitung} dukungan warga</span>
                           </div>
                         </div>
                         <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-blue-600" />

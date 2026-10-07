@@ -17,7 +17,54 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react"
-import { sekolahDirektoriList } from "@/mocks/sekolahDirektori"
+import { useFetch } from "@/hooks/useFetch"
+import { listSekolah } from "@/lib/api/sekolah"
+import type { SekolahList } from "@/lib/api/types"
+
+/**
+ * F4.1 — baris tabel diperluas dari respons `GET /sekolah`.
+ *
+ * Backend v1 mengirim `penanda_masalah` yang selalu bernilai "normal"
+ * (AGENTS.md §Scope FINAL) dan tidak mengirim tanggal audit per sekolah,
+ * sehingga label status diturunkan dari `penanda_masalah` dan kolom audit
+ * diisi "Belum tersedia" — bukan angka rekaan.
+ */
+type StatusIntegritas = "Selisih Kritis" | "Selisih Minor" | "Data Sesuai"
+
+interface StatBaris {
+  label: string
+  val: string
+  desc?: string
+  valueClass?: string
+  descClass?: string
+}
+
+interface TemuanBaris {
+  tipe: "kritis" | "minor" | "sesuai"
+  judul: string
+  deskripsi: string
+}
+
+interface SekolahBaris extends SekolahList {
+  status: StatusIntegritas
+  statusBadge: string
+  audit: string
+  stats: StatBaris[]
+  temuan: TemuanBaris
+}
+
+/** Backend v1 tidak mengirim baseline Dapodik per sekolah, sehingga kartu
+ *  statistik & temuan diisi "Belum tersedia" alih-alih angka tiruan. */
+const TIDAK_ADA = "Belum tersedia"
+
+const keStatusIntegritas = (p: string): StatusIntegritas =>
+  p === "kritis" ? "Selisih Kritis" : p === "perlu_perhatian" ? "Selisih Minor" : "Data Sesuai"
+
+const LABEL_STATUS: Record<StatusIntegritas, string> = {
+  "Selisih Kritis": "Selisih Kritis",
+  "Selisih Minor": "Selisih Minor",
+  "Data Sesuai": "Data Sesuai",
+}
 
 export default function Direktori() {
   const [search, setSearch] = useState("")
@@ -26,38 +73,64 @@ export default function Direktori() {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const pageSize = 6
 
-  // Filter logika: nama, npsn, alamat, jenjang, dan integritas
-  const filteredSekolah = useMemo(() => {
-    return sekolahDirektoriList.filter((s) => {
-      // Jenjang matching
-      let matchJenjang = true
-      if (jenjang === "SD/MI") {
-        matchJenjang = s.jenjang === "SD" || s.jenjang === "MI"
-      } else if (jenjang === "SMP/MTs") {
-        matchJenjang = s.jenjang === "SMP" || s.jenjang === "MTs"
-      } else if (jenjang === "SMA/SMK") {
-        matchJenjang = s.jenjang === "SMA" || s.jenjang === "SMK"
-      }
+  // Pencarian, filter jenjang, dan paginasi dijalankan di server
+  // (`GET /sekolah?search=&jenjang=&page=&page_size=`) — INTERFACES.md §2.
+  const jenjangApi = jenjang === "Semua" ? undefined : jenjang.split("/")[0]
 
-      // Status Integritas matching
-      let matchStatus = true
-      if (statusIntegritas !== "Semua Status") {
-        matchStatus = s.status === statusIntegritas
-      }
+  const { state: sekolahState } = useFetch(
+    () =>
+      listSekolah({
+        search: search.trim() || undefined,
+        jenjang: jenjangApi,
+        page: currentPage,
+        page_size: pageSize,
+      }),
+    [search, jenjang, currentPage],
+  )
 
-      // Search matching (nama, npsn, alamat)
-      let matchSearch = true
-      if (search.trim()) {
-        const q = search.toLowerCase().trim()
-        matchSearch =
-          s.nama.toLowerCase().includes(q) ||
-          s.npsn.includes(q) ||
-          s.alamat.toLowerCase().includes(q)
-      }
+  const semuaSekolah: SekolahBaris[] = useMemo(
+    () =>
+      sekolahState.status === "success"
+        ? sekolahState.data.data.map((s) => {
+            const status = keStatusIntegritas(String(s.penanda_masalah))
+            const tipe: TemuanBaris["tipe"] =
+              status === "Selisih Kritis" ? "kritis" : status === "Selisih Minor" ? "minor" : "sesuai"
+            return {
+              ...s,
+              status,
+              statusBadge: LABEL_STATUS[status],
+              audit: TIDAK_ADA,
+              stats: [
+                { label: "Isu Aktif", val: String(s.jumlah_isu_aktif ?? 0), desc: "dari laporan warga" },
+                { label: "Kondisi Sarpras", val: TIDAK_ADA, desc: "ringkasan tersedia di detail" },
+                { label: "Klaster Isu", val: TIDAK_ADA, desc: "belum terpopulate di backend" },
+              ],
+              temuan: {
+                tipe,
+                judul: LABEL_STATUS[status],
+                deskripsi:
+                  "Baseline Dapodik per sekolah belum tersedia di backend v1, sehingga perbandingan data " +
+                  "tidak dapat ditampilkan. Buka detail sekolah untuk melihat data sarpras yang tercatat.",
+              },
+            }
+          })
+        : [],
+    [sekolahState],
+  )
 
-      return matchJenjang && matchStatus && matchSearch
-    })
-  }, [search, jenjang, statusIntegritas])
+  // Filter status integritas tetap diterapkan di sisi FE karena tidak punya
+  // padanan query param di backend. Backend v1 selalu mengirim "normal",
+  // sehingga memilih "Selisih Kritis"/"Selisih Minor" akan kosong — itu jujur,
+  // bukan bug.
+  const filteredSekolah = useMemo(
+    () =>
+      statusIntegritas === "Semua Status"
+        ? semuaSekolah
+        : semuaSekolah.filter((s) => s.status === statusIntegritas),
+    [semuaSekolah, statusIntegritas],
+  )
+
+  const totalItems = sekolahState.status === "success" ? sekolahState.data.meta.total_items : 0
 
   const handleSearchChange = (val: string) => {
     setSearch(val)
@@ -82,16 +155,13 @@ export default function Direktori() {
   }
 
   // Hitungan statistik dinamis
-  const kritisCount = useMemo(() => filteredSekolah.filter((s) => s.status === "Selisih Kritis").length, [filteredSekolah])
-  const minorCount = useMemo(() => filteredSekolah.filter((s) => s.status === "Selisih Minor").length, [filteredSekolah])
-  const sesuaiCount = useMemo(() => filteredSekolah.filter((s) => s.status === "Data Sesuai").length, [filteredSekolah])
+  const kritisCount = useMemo(() => semuaSekolah.filter((s) => s.status === "Selisih Kritis").length, [semuaSekolah])
+  const minorCount = useMemo(() => semuaSekolah.filter((s) => s.status === "Selisih Minor").length, [semuaSekolah])
+  const sesuaiCount = useMemo(() => semuaSekolah.filter((s) => s.status === "Data Sesuai").length, [semuaSekolah])
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredSekolah.length / pageSize))
-  const paginatedSekolah = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filteredSekolah.slice(start, start + pageSize)
-  }, [filteredSekolah, currentPage, pageSize])
+  // Pagination mengikuti `meta` dari backend.
+  const totalPages = sekolahState.status === "success" ? sekolahState.data.meta.total_pages : 1
+  const paginatedSekolah = filteredSekolah
 
   // Ekspor CSV dari sekolah hasil filter
   const handleExportCsv = () => {
@@ -130,7 +200,7 @@ export default function Direktori() {
                 Direktori Sekolah Kecamatan Lamongan
               </h1>
               <p className="text-slate-500 text-sm mt-1">
-                Menampilkan {filteredSekolah.length} lembaga pendidikan resmi terdaftar dalam pangkalan data Dapodik Kemendikdasmen wilayah Kec. Lamongan.
+                Menampilkan {totalItems} lembaga pendidikan resmi terdaftar dalam pangkalan data Dapodik Kemendikdasmen wilayah Kec. Lamongan.
               </p>
             </div>
 
@@ -145,7 +215,7 @@ export default function Direktori() {
 
           <div className="flex items-center justify-between pt-2 text-xs text-slate-600 border-t border-slate-100 flex-wrap gap-2">
             <div className="flex items-center gap-3 font-medium">
-              <span><strong>{filteredSekolah.length}</strong> Lembaga Ditampilkan</span>
+              <span><strong>{totalItems}</strong> Lembaga Terdaftar</span>
               <span>·</span>
               <span className="text-rose-700 font-bold">{kritisCount} Selisih Kritis</span>
               <span>·</span>
@@ -345,7 +415,7 @@ export default function Direktori() {
             {totalPages > 1 && (
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
                 <div className="text-xs text-slate-500">
-                  Menampilkan <span className="font-semibold text-slate-700">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-slate-700">{Math.min(currentPage * pageSize, filteredSekolah.length)}</span> dari <span className="font-semibold text-slate-700">{filteredSekolah.length}</span> sekolah
+                  Menampilkan <span className="font-semibold text-slate-700">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-slate-700">{Math.min(currentPage * pageSize, totalItems)}</span> dari <span className="font-semibold text-slate-700">{totalItems}</span> sekolah
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Button

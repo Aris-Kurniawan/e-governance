@@ -1,7 +1,8 @@
 import { Link, useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import StatusBadge from "@/components/composite/StatusBadge"
-import { klasterList, klasterDetailMap } from "@/mocks/klaster"
+import { useFetch } from "@/hooks/useFetch"
+import { detailKlaster } from "@/lib/api/klaster"
 import {
   ChevronRight,
   ArrowLeft,
@@ -11,11 +12,20 @@ import {
   Inbox,
 } from "lucide-react"
 
-// Label kategori klaster — konsisten dengan Kartu 3 Detail Sekolah
+// Label kategori klaster — memakai taksonomi backend v1 (INTERFACES.md §5).
 const KATEGORI_LABEL: Record<string, string> = {
-  infrastruktur_sarana: "Infrastruktur / Sarana",
-  ketersediaan_tenaga_pengajar: "Ketersediaan Tenaga Pengajar",
-  lainnya: "Lainnya",
+  ruang_belajar: "Ruang Belajar",
+  sanitasi_air: "Sanitasi & Air Bersih",
+  utilitas: "Utilitas",
+  akses_lahan: "Akses Lahan",
+  penunjang: "Sarana Penunjang",
+  belum_terklasifikasi: "Belum Terklasifikasi",
+}
+
+function formatTanggal(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
 }
 
 function prioritasLabel(skor: number): string {
@@ -41,28 +51,58 @@ const STATUS_PENJELASAN: Record<string, string> = {
 
 export default function DetailKlaster() {
   const { klasterId } = useParams<{ klasterId: string }>()
-  const klaster = klasterList.find((k) => k.klaster_id === klasterId)
+  const { state, refetch } = useFetch(
+    () => detailKlaster(klasterId ?? ""),
+    [klasterId],
+  )
 
-  if (!klaster) {
+  // ── Memuat / gagal ────────────────────────────────────────────────────────
+  if (state.status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-sm text-slate-500">
+        Memuat data klaster...
+      </div>
+    )
+  }
+
+  if (state.status === "error") {
+    const notFound = state.code === "NOT_FOUND"
     return (
       <div className="bg-[#F8FAFC] min-h-screen flex items-center justify-center px-6">
         <div className="text-center space-y-4">
-          <p className="text-2xl font-extrabold text-slate-900">Klaster tidak ditemukan</p>
-          <p className="text-sm text-slate-500">
-            ID klaster <span className="font-mono font-semibold text-slate-700">{klasterId}</span> tidak terdaftar.
+          <p className="text-2xl font-extrabold text-slate-900">
+            {notFound ? "Klaster tidak ditemukan" : "Gagal memuat klaster"}
           </p>
-          <Link to="/sekolah">
-            <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white text-sm cursor-pointer">
-              Kembali ke Direktori Sekolah
-            </Button>
-          </Link>
+          <p className="text-sm text-slate-500">
+            {notFound ? (
+              <>
+                ID klaster <span className="font-mono font-semibold text-slate-700">{klasterId}</span> tidak terdaftar.
+              </>
+            ) : (
+              state.message
+            )}
+          </p>
+          <div className="flex justify-center gap-3">
+            {!notFound && (
+              <Button onClick={refetch} className="bg-[#0B3052] hover:bg-[#07213A] text-white text-sm">
+                Coba Lagi
+              </Button>
+            )}
+            <Link to="/sekolah">
+              <Button variant="outline" className="text-sm">
+                Kembali ke Direktori Sekolah
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     )
   }
 
-  const detail = klasterDetailMap[klaster.klaster_id]
-  const laporanAnggota = detail?.laporan_anggota ?? []
+  if (state.status === "empty") return null
+
+  const klaster = state.data
+  const laporanAnggota = klaster.laporan ?? []
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
@@ -73,7 +113,7 @@ export default function DetailKlaster() {
             <Link to="/sekolah" className="text-slate-600 hover:text-[#0B3052]">Direktori Sekolah</Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
             <Link to={`/sekolah/${klaster.sekolah_npsn}`} className="text-slate-600 hover:text-[#0B3052] truncate max-w-[240px]">
-              {klaster.sekolah_nama}
+              {klaster.sekolah_nama ?? klaster.sekolah_npsn}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
             <span className="font-bold text-slate-900">Klaster Isu</span>
@@ -104,19 +144,19 @@ export default function DetailKlaster() {
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                   {KATEGORI_LABEL[klaster.kategori] ?? klaster.kategori}
                 </h1>
-                <StatusBadge status={klaster.status} />
+                <StatusBadge status={klaster.status_verifikasi} />
               </div>
 
               <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 pt-1">
                 <span className="flex items-center gap-1.5">
                   <FileText className="h-4 w-4 text-slate-400 shrink-0" />
-                  {klaster.jumlah_laporan} laporan warga tergabung
+                  {laporanAnggota.length} laporan warga tergabung
                 </span>
                 <Link
                   to={`/sekolah/${klaster.sekolah_npsn}`}
                   className="flex items-center gap-1.5 font-semibold text-[#0B3052] hover:underline"
                 >
-                  {klaster.sekolah_nama}
+                  {klaster.sekolah_nama ?? klaster.sekolah_npsn}
                   <span className="font-mono text-slate-400 font-normal">NPSN {klaster.sekolah_npsn}</span>
                 </Link>
               </div>
@@ -132,7 +172,7 @@ export default function DetailKlaster() {
           <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 flex items-start gap-2.5 text-xs text-slate-600 leading-relaxed">
             <Info className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
             <span>
-              {STATUS_PENJELASAN[klaster.status] ?? "Status klaster isu terkini."} Skor prioritas dihitung dari
+              {STATUS_PENJELASAN[klaster.status_verifikasi] ?? "Status klaster isu terkini."} Skor prioritas dihitung dari
               keparahan laporan dan dukungan warga — bukan domisili pelapor.
             </span>
           </div>
@@ -148,7 +188,7 @@ export default function DetailKlaster() {
               </p>
             </div>
             <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 shrink-0">
-              {laporanAnggota.length} dari {klaster.jumlah_laporan} laporan
+              {laporanAnggota.length} laporan
             </span>
           </div>
 
@@ -165,9 +205,9 @@ export default function DetailKlaster() {
               {laporanAnggota.map((lap) => (
                 <li key={lap.laporan_id} className="rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3.5 space-y-1.5">
                   <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <span className="font-mono text-xs font-bold text-slate-700">{lap.tracking_id}</span>
+                    <span className="font-mono text-xs font-bold text-slate-700">{lap.laporan_id.slice(0, 8)}</span>
                     <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                      <CalendarDays className="h-3.5 w-3.5 text-slate-400" /> {lap.tanggal}
+                      <CalendarDays className="h-3.5 w-3.5 text-slate-400" /> {formatTanggal(lap.created_at)}
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 leading-relaxed">{lap.deskripsi}</p>

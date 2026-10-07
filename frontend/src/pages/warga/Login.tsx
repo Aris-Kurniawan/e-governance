@@ -14,31 +14,32 @@ export default function Login() {
   const registered = searchParams.get("registered")
 
   const { login } = useAuth()
-  const [nik, setNik] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!nik || !password) return
+    if (!email || !password) return
     setLoading(true)
-    
-    // Mock authentication delay
-    await new Promise((r) => setTimeout(r, 600))
-    login({
-      nama: "Siti Aminah",
-      nik: nik.trim() || "3524015809920003",
-      peran: "Warga Terverifikasi",
-    })
-    setLoading(false)
-
-    if (redirect) {
-      const destination = action
-        ? `${redirect}${redirect.includes("?") ? "&" : "?"}action=${action}`
-        : redirect
-      navigate(destination)
-    } else {
-      navigate("/dashboard")
+    setError(null)
+    try {
+      // Kontrak INTERFACES.md §1: login memakai email + password.
+      await login(email.trim(), password)
+      if (redirect) {
+        const destination = action
+          ? `${redirect}${redirect.includes("?") ? "&" : "?"}action=${action}`
+          : redirect
+        navigate(destination)
+      } else {
+        navigate("/dashboard")
+      }
+    } catch (err) {
+      // Pesan dari backend sudah human-readable (INTERFACES.md §0.1).
+      setError(err instanceof Error ? err.message : "Gagal masuk. Coba lagi.")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -79,13 +80,13 @@ export default function Login() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
           <label className="text-body-sm font-medium text-ink">
-            16-Digit NIK <span className="text-danger-text">*</span>
+            Email Terdaftar <span className="text-danger-text">*</span>
           </label>
           <Input
-            type="text"
-            placeholder="Contoh: 3524015809920003"
-            value={nik}
-            onChange={(e) => setNik(e.target.value)}
+            type="email"
+            placeholder="nama@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="mt-1"
             required
           />
@@ -113,6 +114,12 @@ export default function Login() {
           <Checkbox id="remember" defaultChecked />
           <label htmlFor="remember" className="text-body-sm text-ink-secondary">Ingat sesi masuk saya di perangkat ini (30 hari)</label>
         </div>
+
+        {error && (
+          <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-xs text-red-800">
+            {error}
+          </div>
+        )}
 
         <Button type="submit" className="w-full bg-[#0B3052] hover:bg-[#07213A] text-white cursor-pointer" disabled={loading}>
           {loading ? "Memvalidasi..." : "Masuk ke Akun"}

@@ -25,8 +25,21 @@ import {
   Ticket,
   BadgeCheck
 } from "lucide-react"
-import { daftarKlasterDinas } from "@/mocks/dinasData"
-import { sekolahDirektoriList } from "@/mocks/sekolahDirektori"
+import { useFetch } from "@/hooks/useFetch"
+import { listKlaster } from "@/lib/api/klaster"
+import { listSekolah } from "@/lib/api/sekolah"
+import type { KlasterListItem, SekolahList } from "@/lib/api/types"
+
+/**
+ * F4.1 — pencarian global dinas memakai data backend:
+ * sekolah dicari lewat `GET /sekolah?search=` (pencarian di sisi server),
+ * klaster diambil dari `GET /klaster?page_size=100` lalu dicocokkan di sisi
+ * klien karena endpoint klaster tidak punya parameter `search`.
+ * Backend tidak menyimpan koordinat/kecamatan per sekolah pada respons, jadi
+ * field tersebut tidak ditampilkan di ringkasan hasil.
+ */
+type HasilKlaster = KlasterListItem & { nomorTiket: string }
+type HasilSekolah = SekolahList
 import {
   Dialog,
   DialogContent,
@@ -178,32 +191,43 @@ export default function DinasLayout() {
     }
   }, [])
 
-  // Search results calculation
+  // Search results calculation — hanya aktif ketika ada query.
+  const q = searchQuery.trim()
+  const { state: klasterState } = useFetch(
+    () => listKlaster({ page_size: 100 }),
+    [q],
+  )
+  const { state: sekolahState } = useFetch(
+    () => listSekolah({ search: q || undefined, page_size: 4 }),
+    [q],
+  )
+
   const searchResults = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    if (!q) return { klaster: [], sekolah: [], total: 0 }
+    if (!q) return { klaster: [] as HasilKlaster[], sekolah: [] as HasilSekolah[], total: 0 }
+    const needle = q.toLowerCase()
 
-    const klasterMatches = daftarKlasterDinas.filter((item) =>
-      item.nomorTiket.toLowerCase().includes(q) ||
-      item.sekolah.toLowerCase().includes(q) ||
-      item.npsn.includes(q) ||
-      item.judul.toLowerCase().includes(q) ||
-      item.kategori.toLowerCase().includes(q)
-    ).slice(0, 4)
+    const klasterMatches: HasilKlaster[] = (
+      klasterState.status === "success" ? klasterState.data.data : []
+    )
+      .map((k) => ({ ...k, nomorTiket: k.klaster_id.slice(0, 8).toUpperCase() }))
+      .filter(
+        (k) =>
+          k.nomorTiket.toLowerCase().includes(needle) ||
+          k.sekolah_npsn.includes(needle) ||
+          (k.label ?? "").toLowerCase().includes(needle) ||
+          k.kategori.toLowerCase().includes(needle),
+      )
+      .slice(0, 4)
 
-    const sekolahMatches = sekolahDirektoriList.filter((item) =>
-      item.nama.toLowerCase().includes(q) ||
-      item.npsn.includes(q) ||
-      item.jenjang.toLowerCase().includes(q) ||
-      item.alamat.toLowerCase().includes(q)
-    ).slice(0, 4)
+    const sekolahMatches: HasilSekolah[] =
+      sekolahState.status === "success" ? sekolahState.data.data.slice(0, 4) : []
 
     return {
       klaster: klasterMatches,
       sekolah: sekolahMatches,
       total: klasterMatches.length + sekolahMatches.length,
     }
-  }, [searchQuery])
+  }, [q, klasterState, sekolahState])
 
   const handleSelectKlaster = (id: string) => {
     setIsSearchOpen(false)
@@ -442,8 +466,8 @@ export default function DinasLayout() {
                         </div>
                         {searchResults.klaster.map((item) => (
                           <div
-                            key={item.id}
-                            onClick={() => handleSelectKlaster(item.id)}
+                            key={item.klaster_id}
+                            onClick={() => handleSelectKlaster(item.klaster_id)}
                             className="p-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group flex items-start justify-between gap-3"
                           >
                             <div className="min-w-0">
@@ -452,25 +476,27 @@ export default function DinasLayout() {
                                   {item.nomorTiket}
                                 </span>
                                 <span className="font-semibold text-xs text-slate-800 truncate group-hover:text-blue-600 transition-colors">
-                                  {item.sekolah}
+                                  {item.sekolah_npsn}
                                 </span>
                               </div>
-                              <p className="text-[11px] text-slate-500 truncate">{item.judul}</p>
+                              <p className="text-[11px] text-slate-500 truncate">
+                                {item.label ?? "Klaster isu"}
+                              </p>
                               <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                                NPSN: {item.npsn} · {item.kecamatan}
+                                NPSN: {item.sekolah_npsn} · {item.kategori}
                               </div>
                             </div>
                             <div className="shrink-0 text-right">
                               <span
                                 className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                                  item.skor >= 70
+                                  item.skor_prioritas >= 70
                                     ? "bg-rose-50 text-rose-700 border-rose-200"
-                                    : item.skor >= 40
+                                    : item.skor_prioritas >= 40
                                     ? "bg-amber-50 text-amber-700 border-amber-200"
                                     : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                 }`}
                               >
-                                SKOR {item.skor}
+                                SKOR {item.skor_prioritas}
                               </span>
                             </div>
                           </div>
@@ -508,14 +534,14 @@ export default function DinasLayout() {
                             <div className="shrink-0">
                               <span
                                 className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                                  item.status === "Selisih Kritis"
+                                  item.penanda_masalah === "kritis"
                                     ? "bg-rose-50 text-rose-700 border-rose-200"
-                                    : item.status === "Selisih Minor"
+                                    : item.penanda_masalah === "perlu_perhatian"
                                     ? "bg-amber-50 text-amber-700 border-amber-200"
                                     : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                 }`}
                               >
-                                {item.status}
+                                {item.penanda_masalah}
                               </span>
                             </div>
                           </div>

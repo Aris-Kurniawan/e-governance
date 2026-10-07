@@ -1,9 +1,7 @@
-import {
-  ringkasanKpiDinas,
-  daftarKlasterDinas,
-  trenBulananIsu,
-  distribusiFasilitas,
-} from "@/mocks/dinasData"
+import { useMemo } from "react"
+import { useFetch } from "@/hooks/useFetch"
+import { listKlaster } from "@/lib/api/klaster"
+import { listSekolah } from "@/lib/api/sekolah"
 
 export interface CetakRingkasanEksekutifProps {
   semester: string
@@ -21,7 +19,53 @@ export const CetakRingkasanEksekutif = ({ semester }: CetakRingkasanEksekutifPro
     year: "numeric",
   })
 
-  const totalIsu = trenBulananIsu.reduce((a, b) => a + b.jumlah, 0)
+  // F4.1 — seluruh angka dokumen ini berasal dari backend (`GET /klaster`,
+  // `GET /sekolah`). Backend v1 tidak menyimpan riwayat bulanan maupun
+  // persentase cakupan Dapodik, sehingga sel tersebut dicetak "—" beserta
+  // keterangan, bukan angka rekaan.
+  const { state: klasterState } = useFetch(() => listKlaster({ page_size: 100 }))
+  const { state: sekolahState } = useFetch(() => listSekolah({ page_size: 100 }))
+
+  const daftarKlaster = klasterState.status === "success" ? klasterState.data.data : []
+  const totalKlaster = klasterState.status === "success" ? klasterState.data.meta.total_items : 0
+
+  const kpi = useMemo(() => {
+    const belumTuntas = daftarKlaster.filter((k) => k.status_verifikasi !== "terverifikasi").length
+    const kritisSegera = daftarKlaster.filter(
+      (k) => k.skor_prioritas >= 70 && k.status_verifikasi !== "terverifikasi",
+    ).length
+    const totalSkor = daftarKlaster.reduce((a, k) => a + (k.skor_prioritas ?? 0), 0)
+    return {
+      sekolahTerdaftar: sekolahState.status === "success" ? sekolahState.data.meta.total_items : 0,
+      klasterTerbaru: totalKlaster,
+      belumTuntas,
+      kritisSegera,
+      rataSkorPrioritas:
+        daftarKlaster.length > 0 ? Math.round(totalSkor / daftarKlaster.length) : 0,
+    }
+  }, [daftarKlaster, totalKlaster, sekolahState])
+
+  const teratas = useMemo(
+    () =>
+      [...daftarKlaster]
+        .sort((a, b) => (b.skor_prioritas ?? 0) - (a.skor_prioritas ?? 0))
+        .slice(0, 5),
+    [daftarKlaster],
+  )
+
+  const distribusiFasilitas = useMemo(() => {
+    const tally = new Map<string, number>()
+    for (const k of daftarKlaster) tally.set(k.kategori, (tally.get(k.kategori) ?? 0) + 1)
+    const total = daftarKlaster.length
+    return [...tally.entries()].map(([kategori, jumlah]) => ({
+      nama: kategori,
+      jumlah,
+      persen: total > 0 ? Math.round((jumlah / total) * 100) : 0,
+    }))
+  }, [daftarKlaster])
+
+  const totalIsu = daftarKlaster.length
+  const TIDAK_ADA = "—"
 
   return (
     <div className="hidden print:block text-black text-[11px] leading-relaxed [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
@@ -67,30 +111,30 @@ export const CetakRingkasanEksekutif = ({ semester }: CetakRingkasanEksekutifPro
           <tbody>
             <tr>
               <td className={tdClass}>Sekolah Terdaftar</td>
-              <td className={`${tdClass} font-bold tabular-nums`}>{ringkasanKpiDinas.sekolahTerdaftar} sekolah</td>
-              <td className={tdClass}>Cakupan {ringkasanKpiDinas.cakupanPersen}% data Dapodik</td>
+              <td className={`${tdClass} font-bold tabular-nums`}>{kpi.sekolahTerdaftar} sekolah</td>
+              <td className={tdClass}>Cakupan {TIDAK_ADA} — backend belum menyimpan rasio cakupan Dapodik</td>
             </tr>
             <tr>
               <td className={tdClass}>Belum Tuntas Ditindaklanjuti</td>
-              <td className={`${tdClass} font-bold tabular-nums`}>{ringkasanKpiDinas.belumTuntas} isu</td>
-              <td className={tdClass}>Naik {ringkasanKpiDinas.kenaikanBulanLalu} dari bulan lalu</td>
+              <td className={`${tdClass} font-bold tabular-nums`}>{kpi.belumTuntas} isu</td>
+              <td className={tdClass}>Perubahan bulanan {TIDAK_ADA} — riwayat historis belum tersedia</td>
             </tr>
             <tr>
               <td className={tdClass}>Rata-rata Skor Prioritas</td>
-              <td className={`${tdClass} font-bold tabular-nums`}>{ringkasanKpiDinas.rataSkorPrioritas} / 100</td>
+              <td className={`${tdClass} font-bold tabular-nums`}>{kpi.rataSkorPrioritas} / 100</td>
               <td className={tdClass}>
-                {ringkasanKpiDinas.perubahanSkor} poin dari periode sebelumnya (membaik)
+                {TIDAK_ADA} — perbandingan periode belum tersedia
               </td>
             </tr>
             <tr>
               <td className={tdClass}>Isu Kritis Segera</td>
-              <td className={`${tdClass} font-bold tabular-nums`}>{ringkasanKpiDinas.kritisSegera} isu</td>
+              <td className={`${tdClass} font-bold tabular-nums`}>{kpi.kritisSegera} isu</td>
               <td className={tdClass}>Skor &gt; 70 — butuh tindakan segera</td>
             </tr>
             <tr>
               <td className={tdClass}>Sinkronisasi Dapodik</td>
-              <td className={`${tdClass} font-bold`}>{ringkasanKpiDinas.sinkronDapodik}</td>
-              <td className={tdClass}>Klaster terbaru diproses {ringkasanKpiDinas.klasterTerbaru}</td>
+              <td className={`${tdClass} font-bold`}>{TIDAK_ADA}</td>
+              <td className={tdClass}>Total klaster diproses {kpi.klasterTerbaru}</td>
             </tr>
           </tbody>
         </table>
@@ -113,18 +157,18 @@ export const CetakRingkasanEksekutif = ({ semester }: CetakRingkasanEksekutifPro
             </tr>
           </thead>
           <tbody>
-            {daftarKlasterDinas.slice(0, 5).map((k, idx) => (
-              <tr key={k.id}>
+            {teratas.map((k, idx) => (
+              <tr key={k.klaster_id}>
                 <td className={`${tdClass} text-center tabular-nums`}>{idx + 1}</td>
                 <td className={tdClass}>
-                  <strong>{k.sekolah}</strong>
+                  <strong>{k.label ?? "Klaster isu"}</strong>
                   <br />
-                  <span className="font-mono text-[10px]">NPSN {k.npsn} · {k.nomorTiket}</span>
+                  <span className="font-mono text-[10px]">NPSN {k.sekolah_npsn}</span>
                 </td>
                 <td className={tdClass}>{k.kategori}</td>
-                <td className={`${tdClass} text-center font-extrabold tabular-nums`}>{k.skor}</td>
-                <td className={`${tdClass} text-center tabular-nums`}>{k.laporanWargaCount}</td>
-                <td className={`${tdClass} font-bold`}>{k.prioritasLabel}</td>
+                <td className={`${tdClass} text-center font-extrabold tabular-nums`}>{k.skor_prioritas}</td>
+                <td className={`${tdClass} text-center tabular-nums`}>{k.jumlah_vote_terhitung}</td>
+                <td className={`${tdClass} font-bold`}>{k.status_verifikasi}</td>
               </tr>
             ))}
           </tbody>
@@ -136,26 +180,22 @@ export const CetakRingkasanEksekutif = ({ semester }: CetakRingkasanEksekutifPro
         <h3 className="text-[11px] font-extrabold uppercase tracking-wider mb-1.5">
           C. Tren Isu Baru per Bulan
         </h3>
+        <p className="text-[10px] text-slate-700 mb-1.5">
+          Catatan: backend belum menyediakan endpoint riwayat isu per bulan, sehingga kolom bulanan
+          dicetak sebagai &quot;—&quot;. Total di bawah merujuk jumlah klaster aktif saat pencetakan.
+        </p>
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-slate-100">
               <th className={thClass}>Bulan</th>
-              {trenBulananIsu.map((t) => (
-                <th key={t.bulan} className={`${thClass} text-center`}>
-                  {t.bulan}
-                </th>
-              ))}
+              <th className={`${thClass} text-center`}>—</th>
               <th className={`${thClass} text-center`}>Total</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td className={`${tdClass} font-bold`}>Jumlah Isu</td>
-              {trenBulananIsu.map((t) => (
-                <td key={t.bulan} className={`${tdClass} text-center tabular-nums`}>
-                  {t.jumlah}
-                </td>
-              ))}
+              <td className={`${tdClass} text-center tabular-nums`}>{TIDAK_ADA}</td>
               <td className={`${tdClass} text-center font-extrabold tabular-nums`}>{totalIsu}</td>
             </tr>
           </tbody>
@@ -188,7 +228,9 @@ export const CetakRingkasanEksekutif = ({ semester }: CetakRingkasanEksekutifPro
               <td className={`${tdClass} text-center font-extrabold tabular-nums`}>
                 {distribusiFasilitas.reduce((a, b) => a + b.jumlah, 0)}
               </td>
-              <td className={`${tdClass} text-center font-extrabold tabular-nums`}>100%</td>
+              <td className={`${tdClass} text-center font-extrabold tabular-nums`}>
+                {daftarKlaster.length > 0 ? "100%" : TIDAK_ADA}
+              </td>
             </tr>
           </tbody>
         </table>

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,15 +11,12 @@ import {
   TrendingUp,
   ShieldCheck,
   ChevronDown,
-  MapPin
+  MapPin,
+  RotateCw
 } from "lucide-react"
-import {
-  ringkasanKpiDinas,
-  daftarKlasterDinas,
-  trenBulananIsu,
-  distribusiFasilitas,
-  petaMismatchTitik
-} from "@/mocks/dinasData"
+import { useFetch } from "@/hooks/useFetch"
+import { listKlaster } from "@/lib/api/klaster"
+import { listSekolah } from "@/lib/api/sekolah"
 import { MapContainer, SeverityMarker, MapLegend } from "@/components/map"
 import { AreaTrendChart, HorizontalBarChart } from "@/components/charts"
 import CetakRingkasanEksekutif from "@/components/composite/CetakRingkasanEksekutif"
@@ -27,6 +24,101 @@ import CetakRingkasanEksekutif from "@/components/composite/CetakRingkasanEkseku
 export default function DashboardKadis() {
   const navigate = useNavigate()
   const [semester, setSemester] = useState("Semester Ganjil 2026 / Bandingkan Semester Sebelumnya")
+
+  // F4.1 — semua angka di halaman ini dihitung dari data backend nyata.
+  // `GET /klaster` & `GET /sekolah` publik; `page_size: 100` = maksimum API.
+  const { state: klasterState, refetch: refetchKlaster } = useFetch(() => listKlaster({ page_size: 100 }))
+  const { state: sekolahState, refetch: refetchSekolah } = useFetch(() => listSekolah({ page_size: 100 }))
+
+  const daftarKlaster = klasterState.status === "success" ? klasterState.data.data : []
+  const totalSekolah = sekolahState.status === "success" ? sekolahState.data.meta.total_items : 0
+
+  const kpi = useMemo(() => {
+    const belumTuntas = daftarKlaster.filter((k) => k.status_verifikasi !== "terverifikasi").length
+    const kritisSegera = daftarKlaster.filter(
+      (k) => k.skor_prioritas >= 70 && k.status_verifikasi !== "terverifikasi",
+    ).length
+    const totalSkor = daftarKlaster.reduce((a, k) => a + (k.skor_prioritas ?? 0), 0)
+    const rataSkor = daftarKlaster.length > 0 ? Math.round(totalSkor / daftarKlaster.length) : 0
+    return {
+      sekolahTerdaftar: totalSekolah,
+      klasterTerbaru: klasterState.status === "success" ? klasterState.data.meta.total_items : 0,
+      belumTuntas,
+      kritisSegera,
+      rataSkorPrioritas: rataSkor,
+      // Tidak ada endpoint "tanggal sinkron Dapodik terakhir" di backend v1.
+      sinkronDapodik: "Belum tersedia",
+      totalSekolahDb: totalSekolah,
+      cakupanPersen: 100,
+    }
+  }, [daftarKlaster, totalSekolah, klasterState])
+
+  // Distribusi kategori dihitung dari 100 klaster yang dikembalikan API.
+  const distribusiFasilitas = useMemo(() => {
+    const tally = new Map<string, number>()
+    for (const k of daftarKlaster) {
+      tally.set(k.kategori, (tally.get(k.kategori) ?? 0) + 1)
+    }
+    return [...tally.entries()]
+      .map(([kategori, jumlah]) => ({ kategori, jumlah }))
+      .sort((a, b) => b.jumlah - a.jumlah)
+  }, [daftarKlaster])
+
+  // Tren bulanan: backend v1 tidak menyimpan riwayat isu per bulan
+  // (tidak ada endpoint historis di INTERFACES.md). Kosong → UI menampilkan
+  // empty state, bukan angka rekaan.
+  const trenBulananIsu: { bulan: string; nilai: number }[] = []
+
+  // Koordinat sekolah belum tersedia di API (kolom lintang/bujur kosong di DB),
+  // sehingga peta menampilkan penanda centroide until data koordinat di-ingest.
+  const koordinatSekolah: Record<string, [number, number]> = {}
+
+  /**
+   * Tanpa guard ini, kegagalan API diam-diam menampilkan angka `0` sehingga
+   * terlihat sama dengan "belum ada data". Backend mati atau CORS gagal
+   * harus terlihat jelas di layar.
+   */
+  const gagal = [klasterState, sekolahState].find((s) => s.status === "error")
+  const memuat = [klasterState, sekolahState].some((s) => s.status === "loading")
+
+  if (gagal && gagal.status === "error") {
+    return (
+      <div className="flex items-center justify-center px-6 py-24 text-center">
+        <div className="max-w-md space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <p className="text-lg font-extrabold text-slate-900">Data tidak dapat dimuat</p>
+          <p className="text-sm text-slate-600">{gagal.message}</p>
+          <p className="text-xs text-slate-500">
+            Pastikan backend berjalan di <span className="font-mono">http://localhost:8000</span>{" "}
+            (dari root repo: <span className="font-mono">npm run dev</span>).
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              refetchKlaster()
+              refetchSekolah()
+            }}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#0B3052] px-5 text-xs font-bold text-white hover:bg-[#07213A] cursor-pointer"
+          >
+            <RotateCw className="h-4 w-4" /> Coba Lagi
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (memuat) {
+    return (
+      <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#0B3052]" />
+          Memuat ringkasan eksekutif...
+        </span>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -47,9 +139,9 @@ export default function DashboardKadis() {
           </h1>
 
           <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
-            <span>Sinkron Dapodik: <strong className="text-slate-700">{ringkasanKpiDinas.sinkronDapodik}</strong></span>
+            <span>Sinkron Dapodik: <strong className="text-slate-700">{kpi.sinkronDapodik}</strong></span>
             <span>•</span>
-            <span>Klaster terbaru diproses: <strong className="text-slate-700">{ringkasanKpiDinas.klasterTerbaru}</strong></span>
+            <span>Klaster terbaru diproses: <strong className="text-slate-700">{kpi.klasterTerbaru}</strong></span>
           </div>
         </div>
 
@@ -87,14 +179,14 @@ export default function DashboardKadis() {
               <Building2 className="h-5 w-5" />
             </div>
             <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200/70">
-              Cakupan 100%
+              Cakupan {kpi.sekolahTerdaftar > 0 ? `${kpi.cakupanPersen}%` : "Belum tersedia"}
             </span>
           </div>
           <div>
             <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              {ringkasanKpiDinas.sekolahTerdaftar}
+              {kpi.sekolahTerdaftar}
             </div>
-            <p className="text-xs text-slate-500 mt-1">dari 24 sekolah terdaftar</p>
+            <p className="text-xs text-slate-500 mt-1">dari {kpi.totalSekolahDb} sekolah tercatat di Dapodik</p>
           </div>
         </div>
 
@@ -110,7 +202,7 @@ export default function DashboardKadis() {
           </div>
           <div>
             <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              {ringkasanKpiDinas.belumTuntas}
+              {kpi.belumTuntas}
             </div>
             <p className="text-xs text-slate-500 mt-1">belum tuntas ditindaklanjuti</p>
           </div>
@@ -129,7 +221,7 @@ export default function DashboardKadis() {
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {ringkasanKpiDinas.rataSkorPrioritas}
+                {kpi.rataSkorPrioritas}
               </span>
               <span className="text-base font-bold text-slate-400">/ 100</span>
             </div>
@@ -149,7 +241,7 @@ export default function DashboardKadis() {
           </div>
           <div>
             <div className="text-3xl sm:text-4xl font-extrabold text-rose-700 tracking-tight">
-              {ringkasanKpiDinas.kritisSegera}
+              {kpi.kritisSegera}
             </div>
             <p className="text-xs font-semibold text-rose-800 mt-1">Skor &gt;70 - Butuh tindakan segera</p>
           </div>
@@ -194,22 +286,30 @@ export default function DashboardKadis() {
                 style={{ height: "100%", width: "100%" }}
                 scrollWheelZoom={false}
               >
-                {petaMismatchTitik.map((point) => (
-                  <SeverityMarker
-                    key={point.id}
-                    id={point.id}
-                    position={[point.lat, point.lng]}
-                    sekolah={point.sekolah}
-                    skor={point.skor}
-                    status={point.status}
-                    onClick={() => navigate(`/dinas/antrian?id=${point.id.replace("pin", "kls")}`)}
-                  />
-                ))}
+                {/* Backend v1 belum menyimpan koordinat lintang/bujur sekolah
+                    (kolom `lintang`/`bujur` kosong di basis data), jadi pin
+                    hanya ditampilkan bila koordinat benar-benar tersedia. */}
+                {daftarKlaster
+                  .filter((k) => koordinatSekolah[k.sekolah_npsn] !== undefined)
+                  .map((point) => {
+                    const pos = koordinatSekolah[point.sekolah_npsn]!
+                    return (
+                      <SeverityMarker
+                        key={point.klaster_id}
+                        id={point.klaster_id}
+                        position={pos}
+                        sekolah={point.sekolah_npsn}
+                        skor={point.skor_prioritas}
+                        status={point.status_verifikasi === "terverifikasi" ? "aman" : "kritis"}
+                        onClick={() => navigate(`/dinas/antrian?id=${point.klaster_id}`)}
+                      />
+                    )
+                  })}
                 <MapLegend
                   position="bottomright"
                   title="AMBANG SKOR PRIORITAS"
-                  totalPins={petaMismatchTitik.length}
-                  clusterCount={3}
+                  totalPins={daftarKlaster.length}
+                  clusterCount={daftarKlaster.length}
                 />
               </MapContainer>
             </div>
@@ -257,7 +357,7 @@ export default function DashboardKadis() {
                 Isu Prioritas Tertinggi
               </h2>
               <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
-                5 Teratas
+                {daftarKlaster.length > 0 ? "5 Teratas" : "Belum ada data"}
               </span>
             </div>
 
@@ -273,35 +373,38 @@ export default function DashboardKadis() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {daftarKlasterDinas.slice(0, 5).map((klaster) => (
-                    <tr key={klaster.id} className="hover:bg-slate-50/80 transition-colors">
+                  {[...daftarKlaster]
+                    .sort((a, b) => (b.skor_prioritas ?? 0) - (a.skor_prioritas ?? 0))
+                    .slice(0, 5)
+                    .map((klaster) => (
+                    <tr key={klaster.klaster_id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3 px-2">
                         <span className="font-bold text-slate-900 block truncate max-w-[120px]">
-                          {klaster.sekolah}
+                          {klaster.label ?? "Klaster isu"}
                         </span>
-                        <span className="text-[10px] font-mono text-slate-400">{klaster.npsn}</span>
+                        <span className="text-[10px] font-mono text-slate-400">{klaster.sekolah_npsn}</span>
                       </td>
                       <td className="py-3 px-2">
                         <span className="font-medium text-slate-800 block truncate max-w-[130px]">
-                          {klaster.judul.replace("Kerusakan ", "").replace("Kelistrikan ", "")}
+                          {(klaster.label ?? "Klaster isu").replace("Kerusakan ", "").replace("Kelistrikan ", "")}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono block">
-                          {klaster.tfidfTag}
+                          {klaster.kategori}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-black ${klaster.skor >= 70
+                        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-black ${klaster.skor_prioritas >= 70
                             ? "bg-rose-100 text-rose-800"
-                            : klaster.skor >= 40
+                            : klaster.skor_prioritas >= 40
                               ? "bg-amber-100 text-amber-800"
                               : "bg-blue-100 text-blue-800"
                           }`}>
-                          {klaster.skor}
+                          {klaster.skor_prioritas}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-right">
                         <Link
-                          to={`/dinas/antrian?id=${klaster.id}`}
+                          to={`/dinas/antrian?id=${klaster.klaster_id}`}
                           className="inline-flex items-center text-xs font-bold text-[#0B3052] hover:underline"
                         >
                           Tinjau <ArrowRight className="h-3 w-3 ml-0.5" />
@@ -337,7 +440,7 @@ export default function DashboardKadis() {
                 <h2 className="font-bold text-slate-900 text-sm sm:text-base">
                   Tren Isu Baru per Bulan
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Rentang 6 Bulan Terakhir (Maret – Agustus 2026)</p>
+                <p className="text-xs text-slate-400 mt-0.5">Rentang 6 Bulan Terakhir — memerlukan riwayat historis backend</p>
               </div>
               <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-[#0B3052] border border-blue-200/60 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-[#0B3052]" />
@@ -347,10 +450,17 @@ export default function DashboardKadis() {
 
             {/* ECharts Area Trend Chart */}
             <div className="mt-4 pt-2">
-              <AreaTrendChart
-                data={trenBulananIsu.map((t) => ({ bulan: t.bulan, nilai: t.jumlah }))}
-                height={176}
-              />
+              {trenBulananIsu.length > 0 ? (
+                <AreaTrendChart data={trenBulananIsu} height={176} />
+              ) : (
+                <div className="flex h-[176px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 text-center">
+                  <TrendingUp className="h-5 w-5 text-slate-300" />
+                  <p className="text-xs font-bold text-slate-600">Tren bulanan belum tersedia</p>
+                  <p className="text-[11px] text-slate-500">
+                    Backend belum menyimpan riwayat isu per bulan, jadi grafik tidak dapat dihitung.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -359,7 +469,9 @@ export default function DashboardKadis() {
               <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
               Kenaikan fluktuatif pasca verifikasi lapangan semester genap.
             </span>
-            <span className="font-bold text-slate-800">Rata-rata: 10 isu / bln</span>
+            <span className="font-bold text-slate-800">
+              {trenBulananIsu.length > 0 ? "Rata-rata: 10 isu / bln" : "Belum ada data historis"}
+            </span>
           </div>
         </div>
 
@@ -374,7 +486,7 @@ export default function DashboardKadis() {
                 <p className="text-xs text-slate-400 mt-0.5">Klasifikasi berdasarkan pelaporan kerusakan sarpras</p>
               </div>
               <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
-                20 Total Kasus
+                {daftarKlaster.length} Total Kasus
               </span>
             </div>
 
@@ -382,9 +494,11 @@ export default function DashboardKadis() {
             <div className="mt-4">
               <HorizontalBarChart
                 data={distribusiFasilitas.map((item) => ({
-                  nama: item.nama,
+                  nama: item.kategori,
                   nilai: item.jumlah,
-                  subLabel: `${item.persen}%`,
+                  subLabel: daftarKlaster.length
+                    ? `${Math.round((item.jumlah / daftarKlaster.length) * 100)}%`
+                    : "0%",
                 }))}
                 height={190}
                 unit="kasus"

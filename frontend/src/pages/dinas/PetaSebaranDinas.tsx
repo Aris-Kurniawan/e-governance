@@ -15,7 +15,9 @@ import {
   BarChart2,
   GripHorizontal,
 } from "lucide-react"
-import { petaMismatchTitik, trenBulananIsu, distribusiFasilitas } from "@/mocks/dinasData"
+import { useMemo } from "react"
+import { useFetch } from "@/hooks/useFetch"
+import { listKlaster } from "@/lib/api/klaster"
 import { MapContainer, SeverityMarker, MapLegend } from "@/components/map"
 import { AreaTrendChart, HorizontalBarChart } from "@/components/charts"
 
@@ -38,6 +40,14 @@ interface PointItem {
   radius: string
 }
 
+/**
+ * F4.1 — backend v1 belum menyimpan koordinat lintang/bujur sekolah
+ * (kolom `sekolah.lintang`/`bujur` kosong di basis data) dan belum punya
+ * endpoint riwayat isu per bulan. Keduanya ditampilkan sebagai empty state,
+ * bukan titik/angka rekaan.
+ */
+const TIDAK_ADA = "—"
+
 export default function PetaSebaranDinas() {
   const navigate = useNavigate()
   const mapWrapperRef = useRef<HTMLDivElement>(null)
@@ -56,6 +66,12 @@ export default function PetaSebaranDinas() {
   const [jenjang, setJenjang] = useState<string>("Semua Jenjang")
   const [status, setStatus] = useState<string>("Semua Status (Mismatch & Baru)")
   const [onlyMismatch, setOnlyMismatch] = useState<boolean>(true)
+
+  const { state: klasterState, refetch: refetchKlaster } = useFetch(() => listKlaster({ page_size: 100 }))
+  const daftarKlaster = klasterState.status === "success" ? klasterState.data.data : []
+
+  // Titik peta membutuhkan koordinat; backend belum mengirimnya → kosong.
+  const petaMismatchTitik: PointItem[] = []
 
   const selectedPoint = petaMismatchTitik.find((p) => p.id === selectedPointId) as PointItem | undefined
 
@@ -167,12 +183,62 @@ export default function PetaSebaranDinas() {
     }
   }
 
-  const trenData = trenBulananIsu.map((t) => ({ bulan: t.bulan, nilai: t.jumlah }))
+  // Tren bulanan tidak tersedia di backend v1 (tidak ada endpoint historis).
+  const trenData: { bulan: string; nilai: number }[] = []
+
+  // Distribusi kategori dihitung dari klaster nyata yang dikembalikan API.
+  const distribusiFasilitas = useMemo(() => {
+    const tally = new Map<string, number>()
+    for (const k of daftarKlaster) tally.set(k.kategori, (tally.get(k.kategori) ?? 0) + 1)
+    const total = daftarKlaster.length
+    return [...tally.entries()].map(([kategori, jumlah]) => ({
+      nama: kategori,
+      jumlah,
+      persen: total > 0 ? Math.round((jumlah / total) * 100) : 0,
+    }))
+  }, [daftarKlaster])
+
   const distribusiData = distribusiFasilitas.map((d) => ({
     nama: d.nama,
     nilai: d.jumlah,
-    subLabel: `${d.persen}%`,
+    subLabel: daftarKlaster.length > 0 ? `${d.persen}%` : TIDAK_ADA,
   }))
+
+  /**
+   * Guard berikut mencegah kegagalan API tampil sebagai "nol data" — backend
+   * mati atau CORS gagal harus terlihat jelas, bukan disamarkan angka 0.
+   */
+  if (klasterState.status === "error") {
+    return (
+      <div className="flex items-center justify-center px-6 py-24 text-center">
+        <div className="max-w-md space-y-3">
+          <p className="text-lg font-extrabold text-slate-900">Peta tidak dapat dimuat</p>
+          <p className="text-sm text-slate-600">{klasterState.message}</p>
+          <p className="text-xs text-slate-500">
+            Pastikan backend berjalan di <span className="font-mono">http://localhost:8000</span>.
+          </p>
+          <button
+            type="button"
+            onClick={refetchKlaster}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#0B3052] px-5 text-xs font-bold text-white hover:bg-[#07213A] cursor-pointer"
+          >
+            <RotateCw className="h-4 w-4" /> Coba Lagi
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (klasterState.status === "loading") {
+    return (
+      <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#0B3052]" />
+          Memuat data sebaran...
+        </span>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -327,7 +393,7 @@ export default function PetaSebaranDinas() {
           <MapLegend
             position="bottomright"
             totalPins={petaMismatchTitik.length}
-            clusterCount={3}
+            clusterCount={daftarKlaster.length}
           />
         </MapContainer>
 
@@ -541,8 +607,8 @@ export default function PetaSebaranDinas() {
           />
 
           <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-            <span>Ruang Kelas &amp; Laboratorium mendominasi isu aktif.</span>
-            <span className="font-bold text-slate-800">5 Kategori</span>
+            <span>{daftarKlaster.length > 0 ? "Distribusi dihitung dari klasifikasi klaster backend." : "Belum ada klaster untuk dihitung."}</span>
+            <span className="font-bold text-slate-800">{distribusiFasilitas.length} Kategori</span>
           </div>
         </div>
       </div>
@@ -552,17 +618,17 @@ export default function PetaSebaranDinas() {
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-[#0B3052] shrink-0" />
           <span>
-            Protokol Audit Spasial: RFC-3161 Time-Stamp Authority terhubung dengan server Bappeda Kab. Lamongan.
+            Protokol Audit Spasial: pencatatan waktu tanda tangan digital belum diaktifkan pada backend v1.
           </span>
         </div>
 
         <div className="flex items-center gap-4 text-slate-500 font-medium text-xs">
           <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            GIS Service: Aktif (0.42s)
+            GIS Service: {daftarKlaster.length > 0 ? "aktif" : "menunggu data"}
           </span>
           <span>â€¢</span>
-          <span className="font-mono text-[11px]">Layer: {petaMismatchTitik.length} Titik / {petaMismatchTitik.filter(p => p.status === "kritis").length} Mismatch Kritis</span>
+          <span className="font-mono text-[11px]">Layer: {petaMismatchTitik.length} Titik / {daftarKlaster.length} Klaster terdata</span>
         </div>
       </div>
     </div>

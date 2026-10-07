@@ -18,6 +18,7 @@ export default function FormLaporan() {
   const [deskripsi, setDeskripsi] = useState("")
   const [loading, setLoading] = useState(false)
   const [trackingId, setTrackingId] = useState<string | null>(null)
+  const [errorGagal, setErrorGagal] = useState<string | null>(null)
 
   const { state: sekolahState } = useFetch(
     () => (npsn.trim() ? detailSekolah(npsn.trim()) : Promise.resolve(null as unknown as SekolahDetail)),
@@ -33,13 +34,13 @@ export default function FormLaporan() {
     try {
       const res = await kirimLaporan({
         sekolah_npsn: npsn,
-        kategori,
-        fasilitas_terkait: kategori === "infrastruktur_sarana" ? fasilitas : null,
+        fasilitas_terkait: fasilitas || null,
         deskripsi,
       })
       setTrackingId(res.tracking_id)
-    } catch {
-      // TODO: handle toast error
+      setErrorGagal(null)
+    } catch (err) {
+      setErrorGagal(err instanceof Error ? err.message : "Gagal mengirim laporan.")
     } finally {
       setLoading(false)
     }
@@ -134,21 +135,32 @@ export default function FormLaporan() {
           />
         </div>
 
-        {/* Cross-check box */}
-        {sekolah && kategori === "infrastruktur_sarana" && (
-          <ComparisonBox title="Data Dapodik Pembanding" source={`Sumber: ${sekolah.data_resmi.sumber}`}>
+        {/* Cross-check box — data pembanding dari Dapodik (backend §2).
+            Rasio guru:siswa sengaja disembunyikan saat null: backend v1 belum
+            punya data tersebut (AGENTS.md §Scope FINAL). */}
+        {sekolah && (
+          <ComparisonBox title="Data Dapodik Pembanding" source="Sumber: Dapodik">
             <p className="text-body-sm text-ink-secondary">
-              Rasio guru:siswa {sekolah.data_resmi.rasio_guru_siswa}. Kondisi sarana:{" "}
-              {sekolah.data_resmi.kondisi_sarana.map((k) => `${k.nama_ruang} (${k.kondisi})`).join(", ")}.
+              {sekolah.ringkasan_sarpras.total_unit > 0 ? (
+                <>
+                  Total {sekolah.ringkasan_sarpras.total_unit} unit sarpras,{" "}
+                  {sekolah.ringkasan_sarpras.total_baik} dalam kondisi baik.{" "}
+                  {sekolah.kondisi_sarana
+                    .slice(0, 4)
+                    .map((k) => `${k.nama_ruang} (${k.jumlah} unit)`)
+                    .join(", ")}
+                  .
+                </>
+              ) : (
+                "Belum ada data kondisi sarana untuk sekolah ini."
+              )}
             </p>
           </ComparisonBox>
         )}
-        {kategori === "ketersediaan_tenaga_pengajar" && sekolah && (
-          <ComparisonBox title="Data Rasio Guru:Siswa" source={`Sumber: ${sekolah.data_resmi.sumber}`}>
-            <p className="text-body-sm text-ink-secondary">
-              Rasio guru:siswa saat ini: <span className="font-semibold">{sekolah.data_resmi.rasio_guru_siswa}</span>
-            </p>
-          </ComparisonBox>
+        {errorGagal && (
+          <p role="alert" className="rounded-md border border-danger/30 bg-danger-light px-3 py-2 text-body-sm text-danger-text">
+            {errorGagal}
+          </p>
         )}
 
         <Button type="submit" className="w-full bg-primary text-white hover:bg-primary/90" disabled={loading || !npsn || !deskripsi}>

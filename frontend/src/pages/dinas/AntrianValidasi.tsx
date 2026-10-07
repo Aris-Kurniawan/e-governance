@@ -5,8 +5,6 @@ import {
   CheckCircle2,
   Bell,
   XCircle,
-  Eye,
-  EyeOff,
   Building2,
   Users,
   ChevronDown,
@@ -27,7 +25,75 @@ import {
   Clock,
   Hash
 } from "lucide-react"
-import { daftarKlasterDinas, KlasterIsuDinas } from "@/mocks/dinasData"
+import { useFetch } from "@/hooks/useFetch"
+import { useAuth } from "@/context/AuthContext"
+import { ROLE_LABEL } from "@/lib/api/types"
+import { detailKlaster, listKlaster, verifikasiKlaster, riwayatStatus } from "@/lib/api/klaster"
+import { ApiError } from "@/lib/api/errors"
+import type { KlasterDetail, KlasterListItem } from "@/lib/api/types"
+
+/**
+ * F4.1 — tampilan antrean verifikasi dibangun dari `GET /klaster` (publik,
+ * urut skor prioritas) dan `GET /klaster/{id}` untuk detail.
+ *
+ * Backend v1 tidak mengirim nomor tiket, kecamatan, TF-IDF keywords, baseline
+ * Dapodik per-banding, foto MinIO, maupun jejak audit klaster — field tersebut
+ * tampil "Belum tersedia". Tab antrean memakai dimensi yang benar-benar ada di
+ * backend, yaitu `status_verifikasi`.
+ */
+const TIDAK_ADA = "Belum tersedia"
+
+type PrioritasLabel = "PRIORITAS KRITIS" | "TINGGI" | "SEDANG" | "RENDAH"
+
+const kePrioritas = (skor: number): PrioritasLabel =>
+  skor >= 70 ? "PRIORITAS KRITIS" : skor >= 40 ? "TINGGI" : skor >= 20 ? "SEDANG" : "RENDAH"
+
+interface KlasterIsuDinas {
+  id: string
+  nomorTiket: string
+  judul: string
+  sekolah: string
+  npsn: string
+  kecamatan: string
+  kategori: string
+  tipeBadge: string
+  skor: number
+  prioritasLabel: PrioritasLabel
+  laporanWargaCount: number | string
+  dukunganCount: number
+  diperbarui: string
+  tfidfTag: string
+  statusVerifikasi: string
+  baselineDapodik: { kondisi: string; tanggalUpdate: string; volume: string; detail: string }
+  faktaLapangan: { kondisi: string; deskripsiFisik: string; keteranganKbm: string; dampak: string }
+  laporanWargaVault: { isi: string; nikMasked: string; namaWarga: string }[]
+  fotoMinio: { id: string; url: string; caption: string; timestamp: string }[]
+  auditTrail: { waktu: string; judul: string; keterangan: string; status: string }[]
+}
+
+/** Adaptor: `KlasterListItem` (API) → bentuk yang dipakai komponen ini. */
+const keTampilan = (k: KlasterListItem): KlasterIsuDinas => ({
+  id: k.klaster_id,
+  nomorTiket: k.klaster_id.slice(0, 8).toUpperCase(),
+  judul: k.label ?? "Klaster isu belum terklasifikasi",
+  sekolah: k.sekolah_npsn,
+  npsn: k.sekolah_npsn,
+  kecamatan: TIDAK_ADA,
+  kategori: k.kategori,
+  tipeBadge: k.status_verifikasi,
+  skor: k.skor_prioritas,
+  prioritasLabel: kePrioritas(k.skor_prioritas),
+  laporanWargaCount: TIDAK_ADA,
+  dukunganCount: k.jumlah_vote_terhitung,
+  diperbarui: TIDAK_ADA,
+  tfidfTag: k.kategori,
+  statusVerifikasi: k.status_verifikasi,
+  baselineDapodik: { kondisi: TIDAK_ADA, tanggalUpdate: TIDAK_ADA, volume: TIDAK_ADA, detail: TIDAK_ADA },
+  faktaLapangan: { kondisi: TIDAK_ADA, deskripsiFisik: TIDAK_ADA, keteranganKbm: TIDAK_ADA, dampak: TIDAK_ADA },
+  laporanWargaVault: [],
+  fotoMinio: [],
+  auditTrail: [],
+})
 
 export default function AntrianValidasi() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -35,40 +101,133 @@ export default function AntrianValidasi() {
   const urlSearch = searchParams.get("search") || ""
 
   const [activeTab, setActiveTab] = useState<string>("belum_ditinjau")
-  const [selectedKlasterId, setSelectedKlasterId] = useState<string>(
-    urlId || daftarKlasterDinas[0]?.id || "kls-001"
-  )
+  const [selectedKlasterId, setSelectedKlasterId] = useState<string>(urlId ?? "")
   const [selectedSchool, setSelectedSchool] = useState<string>("Semua Sekolah")
   const [prioritySlider, setPrioritySlider] = useState<number>(0)
 
   // Masking state for PDP Vault
-  const [revealedNiks, setRevealedNiks] = useState<{ [key: number]: boolean }>({})
   const [decisionFeedback, setDecisionFeedback] = useState<string | null>(null)
+  /** Aksi yang sedang menunggu alasan dari petugas (null = tidak ada). */
+  const [aksiMenungguAlasan, setAksiMenungguAlasan] = useState<"baru" | "tolak" | null>(null)
+  const [alasanPreset, setAlasanPreset] = useState<string>("")
+  const [alasanCatatan, setAlasanCatatan] = useState<string>("")
   const [previewImage, setPreviewImage] = useState<{ url: string; caption: string } | null>(null)
 
-  // Update selected cluster when URL parameter changes
+  /**
+   * Hanya `verifikator_dinas` yang boleh menjalankan aksi verifikasi —
+   * sesuai RBAC backend `PUT /klaster/{id}/verifikasi`
+   * (`INTERFACES.md` §5). Tanpa gate ini, pengunjung biasa mendapat error
+   * 401/403 dari server yang tidak menjelaskan apa yang harus dilakukan.
+   */
+  const { user: authUser } = useAuth()
+  const bolehVerifikasi = authUser?.role === "verifikator_dinas"
+
+  /** Pilihan cepat alasan — endpoint menolak alasan kosong (VALIDATION_ERROR). */
+  const PRESET_ALASAN = [
+    "Tidak ditemukan saat verifikasi lapangan",
+    "Laporan duplikat dengan klaster lain",
+    "Di luar ruang lingkup verifikasi dinas",
+    "Data belum cukup untuk diverifikasi",
+  ] as const
+
+  // Select cluster from URL parameter, or fall back to the first one loaded.
+  // Wajib bergantung pada `daftarKlasterDinas`: saat pertama dirender datanya
+  // masih kosong (status loading), sehingga pencocokan tidak akan pernah terjadi bila dependensi hanya `urlId`.
+  const { state: listState, refetch: refetchList } = useFetch(() => listKlaster({ page_size: 100 }))
+  const daftarKlasterDinas: KlasterIsuDinas[] = useMemo(
+    () => (listState.status === "success" ? listState.data.data.map(keTampilan) : []),
+    [listState],
+  )
+
+  const { state: detailState } = useFetch(
+    () => (selectedKlasterId ? detailKlaster(selectedKlasterId) : Promise.resolve(null)),
+    [selectedKlasterId],
+  )
+  const { state: riwayatState } = useFetch(
+    () => (selectedKlasterId ? riwayatStatus(selectedKlasterId) : Promise.resolve(null)),
+    [selectedKlasterId],
+  )
+
+  const detail: KlasterDetail | null =
+    detailState.status === "success" && detailState.data ? detailState.data : null
+
+  /**
+   * Pemilihan klaster: coba dulu dari `?id=` di URL; kalau tidak ada (atau ID
+   * tidak dikenal) pilih klaster pertama. Bergantung pada `daftarKlasterDinas`
+   * supaya baru berjalan setelah data tiba — sebelumnya hanya bergantung pada
+   * `urlId`, sehingga saat daftar masih kosong (status loading) tidak pernah
+   * ada yang terpilih dan panel kanan gagal render.
+   */
   useEffect(() => {
+    if (daftarKlasterDinas.length === 0) return
     if (urlId) {
-      const match = daftarKlasterDinas.find((k) => k.id.toLowerCase() === urlId.toLowerCase() || k.nomorTiket.toLowerCase() === urlId.toLowerCase())
+      const needle = urlId.toLowerCase()
+      const match = daftarKlasterDinas.find(
+        (k) => k.id.toLowerCase() === needle || k.nomorTiket.toLowerCase() === needle,
+      )
       if (match) {
-        setSelectedKlasterId(match.id)
+        if (match.id !== selectedKlasterId) setSelectedKlasterId(match.id)
+        return
       }
     }
-  }, [urlId])
+    if (!selectedKlasterId) setSelectedKlasterId(daftarKlasterDinas[0].id)
+  }, [urlId, daftarKlasterDinas, selectedKlasterId])
 
-  // Extract unique school names from data
+  /**
+   * Laporan anggota & riwayat status berasal dari `GET /klaster/{id}` dan
+   * `GET /klaster/{id}/riwayat`. NIK sengaja tidak ditampilkan: backend
+   * tidak pernah mengirimnya (INTERFACES.md §1, PDP Vault).
+   */
+  const laporanAnggota = useMemo(
+    () =>
+      (detail?.laporan ?? []).map((l) => ({
+        isi: l.deskripsi,
+        nikMasked: "Tidak ditampilkan",
+        namaWarga: l.fasilitas_terkait ?? "Fasilitas umum",
+      })),
+    [detail],
+  )
+
+  const jejakAudit = useMemo(
+    () =>
+      (riwayatState.status === "success" ? riwayatState.data ?? [] : []).map((r) => ({
+        waktu: r.timestamp,
+        judul: r.status,
+        keterangan: r.alasan ?? "Tanpa keterangan",
+        status: "proses",
+      })),
+    [riwayatState],
+  )
+
+  const daftarKlasterDinasTerisi = useMemo(
+    () =>
+      daftarKlasterDinas.map((k) =>
+        k.id === selectedKlasterId
+          ? {
+              ...k,
+              laporanWargaCount: laporanAnggota.length,
+              laporanWargaVault: laporanAnggota,
+              auditTrail: jejakAudit,
+              diperbarui: detail?.created_at ?? TIDAK_ADA,
+            }
+          : k,
+      ),
+    [daftarKlasterDinas, selectedKlasterId, laporanAnggota, jejakAudit, detail],
+  )
+
   const schoolOptions = useMemo(() => {
     const schools = Array.from(new Set(daftarKlasterDinas.map((k) => k.sekolah)))
     return ["Semua Sekolah", ...schools]
-  }, [])
+  }, [daftarKlasterDinas])
 
   // Filtered clusters based on active tab, school, priority, and search
   const filteredKlasters = useMemo(() => {
-    return daftarKlasterDinas.filter((k) => {
-      // Tab filter
-      if (activeTab === "mismatch" && k.tipeBadge !== "Mismatch") return false
-      if (activeTab === "kejadian_baru" && k.tipeBadge !== "Kejadian Baru") return false
-      if (activeTab === "ditolak" && k.tipeBadge !== "Ditolak") return false
+    return daftarKlasterDinasTerisi.filter((k) => {
+      // Tab filter — memakai status_verifikasi yang benar-benar dikirim backend.
+      if (activeTab === "belum_ditinjau" && k.statusVerifikasi !== "menunggu_verifikasi") return false
+      if (activeTab === "mismatch" && k.statusVerifikasi !== "terverifikasi") return false
+      if (activeTab === "kejadian_baru" && k.statusVerifikasi !== "perlu_info_tambahan") return false
+      if (activeTab === "ditolak" && k.statusVerifikasi !== "tidak_terverifikasi") return false
 
       // School filter
       if (selectedSchool !== "Semua Sekolah" && k.sekolah !== selectedSchool) {
@@ -88,22 +247,29 @@ export default function AntrianValidasi() {
         const matchNpsn = k.npsn.includes(query)
         const matchTicket = k.nomorTiket.toLowerCase().includes(query)
         const matchKec = k.kecamatan.toLowerCase().includes(query)
-        if (!matchTitle && !matchSchool && !matchNpsn && !matchTicket && !matchKec) {
+        const matchKategori = k.kategori.toLowerCase().includes(query)
+        if (!matchTitle && !matchSchool && !matchNpsn && !matchTicket && !matchKec && !matchKategori) {
           return false
         }
       }
 
       return true
     })
-  }, [activeTab, selectedSchool, prioritySlider, urlSearch])
+  }, [activeTab, selectedSchool, prioritySlider, urlSearch, daftarKlasterDinasTerisi])
 
   // Selected cluster object
-  const selectedKlaster: KlasterIsuDinas = useMemo(() => {
-    const found = daftarKlasterDinas.find((k) => k.id === selectedKlasterId)
+  /**
+   * Klaster yang sedang dipilih. Sengaja bertipe `| undefined`: saat daftar
+   * masih dimuat (atau gagal), tidak ada klaster terpilih — sebelumnya tipe
+   * diklaim `KlasterIsuDinas` sehingga renderer lolos dari pemeriksaan
+   * TypeScript lalu crash saat membaca `.kategori`.
+   */
+  const selectedKlaster: KlasterIsuDinas | undefined = useMemo(() => {
+    const found = daftarKlasterDinasTerisi.find((k) => k.id === selectedKlasterId)
     if (found) return found
     if (filteredKlasters.length > 0) return filteredKlasters[0]
-    return daftarKlasterDinas[0]
-  }, [selectedKlasterId, filteredKlasters])
+    return daftarKlasterDinasTerisi[0]
+  }, [selectedKlasterId, filteredKlasters, daftarKlasterDinasTerisi])
 
   const handleSelectKlaster = (id: string) => {
     setSelectedKlasterId(id)
@@ -112,45 +278,106 @@ export default function AntrianValidasi() {
       next.set("id", id)
       return next
     })
-    // Reset revealed NIKs when switching cluster
-    setRevealedNiks({})
   }
 
-  const toggleNik = (idx: number) => {
-    setRevealedNiks((prev) => ({ ...prev, [idx]: !prev[idx] }))
-  }
-
-  const handleDecision = (type: "mismatch" | "baru" | "tolak") => {
-    if (type === "mismatch") {
+  /**
+   * Aksi verifikasi memanggil `PUT /klaster/{id}/verifikasi?status=&alasan=`
+   * (INTERFACES.md §5). Backend mewajibkan `alasan` untuk status selain
+   * `terverifikasi` — kalau kosong, backend membalas 400 `VALIDATION_ERROR`.
+   * Alasan disusun dari pilihan cepat + catatan bebas milik petugas, bukan
+   * kalimat otomatis, supaya jejak audit benar-benar menjelaskan keputusan.
+   */
+  const handleDecision = async (
+    type: "mismatch" | "baru" | "tolak",
+    alasan?: string,
+  ) => {
+    if (!bolehVerifikasi) return
+    if (!selectedKlasterId) return
+    const peta = {
+      mismatch: { status: "terverifikasi" },
+      baru: { status: "perlu_info_tambahan" },
+      tolak: { status: "tidak_terverifikasi" },
+    } as const
+    const { status } = peta[type]
+    try {
+      const res = await verifikasiKlaster(selectedKlasterId, status, alasan)
+      setDecisionFeedback(`Klaster ${res.klaster_id}: ${res.message}`)
+      setAksiMenungguAlasan(null)
+      setAlasanPreset("")
+      setAlasanCatatan("")
+    } catch (err) {
       setDecisionFeedback(
-        `Klaster ${selectedKlaster.nomorTiket} (${selectedKlaster.sekolah}) berhasil diverifikasi sebagai Mismatch Sarpras Resmi. Dokumen diteruskan ke Tim Perencanaan DAK.`
-      )
-    } else if (type === "baru") {
-      setDecisionFeedback(
-        `Klaster ${selectedKlaster.nomorTiket} (${selectedKlaster.sekolah}) ditandai sebagai Kejadian Baru di Lapangan. Jadwal audit fisik lapangan diterbitkan.`
-      )
-    } else {
-      setDecisionFeedback(
-        `Sanggahan pada klaster ${selectedKlaster.nomorTiket} ditolak dengan catatan verifikator. Alasan penolakan diarsipkan ke Log Audit PDP.`
+        err instanceof ApiError ? `Gagal menyimpan: ${err.message}` : "Gagal menyimpan verifikasi.",
       )
     }
-    setTimeout(() => {
-      setDecisionFeedback(null)
-    }, 4500)
+    setTimeout(() => setDecisionFeedback(null), 6000)
+  }
+
+  /** Kirim aksi yang butuh alasan setelah petugas mengisi panel alasan. */
+  const submitDenganAlasan = async () => {
+    if (!alasanPreset) return
+    const alasan = alasanCatatan.trim()
+      ? `${alasanPreset} — ${alasanCatatan.trim()}`
+      : alasanPreset
+    await handleDecision(aksiMenungguAlasan ?? "tolak", alasan)
   }
 
   // Count per tab
   const tabCounts = useMemo(() => {
-    const mismatchCount = daftarKlasterDinas.filter((k) => k.tipeBadge === "Mismatch").length
-    const baruCount = daftarKlasterDinas.filter((k) => k.tipeBadge === "Kejadian Baru").length
-    const tolakCount = daftarKlasterDinas.filter((k) => k.tipeBadge === "Ditolak").length
+    const hitung = (status: string) =>
+      daftarKlasterDinas.filter((k) => k.statusVerifikasi === status).length
     return {
-      belum_ditinjau: daftarKlasterDinas.length,
-      mismatch: mismatchCount,
-      kejadian_baru: baruCount,
-      ditolak: tolakCount || 0,
+      belum_ditinjau: hitung("menunggu_verifikasi"),
+      mismatch: hitung("terverifikasi"),
+      kejadian_baru: hitung("perlu_info_tambahan"),
+      ditolak: hitung("tidak_terverifikasi"),
     }
-  }, [])
+  }, [daftarKlasterDinas])
+
+// ── State sebelum render utama ────────────────────────────────────────────
+  // Tanpa guard ini, `selectedKlaster` bisa `undefined` saat daftar belum
+  // termuat dan renderer di bawah akan crash (ditangkap ErrorBoundary).
+  if (listState.status === "loading") {
+    return (
+      <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#0B3052]" />
+          Memuat antrean klaster...
+        </span>
+      </div>
+    )
+  }
+
+  if (listState.status === "error") {
+    return (
+      <div className="flex items-center justify-center px-6 py-24 text-center">
+        <div className="space-y-3">
+          <p className="text-lg font-extrabold text-slate-900">Gagal memuat antrean klaster</p>
+          <p className="text-sm text-slate-600">{listState.message}</p>
+          <button
+            type="button"
+            onClick={refetchList}
+            className="inline-flex h-10 items-center rounded-xl bg-[#0B3052] px-5 text-xs font-bold text-white hover:bg-[#07213A] cursor-pointer"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!selectedKlaster) {
+    return (
+      <div className="flex items-center justify-center px-6 py-24 text-center">
+        <div className="space-y-2">
+          <p className="text-lg font-extrabold text-slate-900">Belum ada klaster untuk ditinjau</p>
+          <p className="text-sm text-slate-600">
+            Antrean verifikasi terisi setelah laporan warga dikelompokkan oleh pipeline AI.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -160,10 +387,10 @@ export default function AntrianValidasi() {
           {/* Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
             {[
-              { id: "belum_ditinjau", label: "Belum Ditinjau", count: tabCounts.belum_ditinjau, badgeClass: "bg-rose-100 text-rose-700" },
-              { id: "mismatch", label: "Mismatch Terverifikasi", count: tabCounts.mismatch, badgeClass: "bg-slate-100 text-slate-700" },
-              { id: "kejadian_baru", label: "Kejadian Baru", count: tabCounts.kejadian_baru, badgeClass: "bg-blue-100 text-blue-700" },
-              { id: "ditolak", label: "Ditolak", count: tabCounts.ditolak, badgeClass: "bg-slate-100 text-slate-700" },
+              { id: "belum_ditinjau", label: "Menunggu Verifikasi", count: tabCounts.belum_ditinjau, badgeClass: "bg-rose-100 text-rose-700" },
+              { id: "mismatch", label: "Terverifikasi", count: tabCounts.mismatch, badgeClass: "bg-slate-100 text-slate-700" },
+              { id: "kejadian_baru", label: "Perlu Info Tambahan", count: tabCounts.kejadian_baru, badgeClass: "bg-blue-100 text-blue-700" },
+              { id: "ditolak", label: "Tidak Terverifikasi", count: tabCounts.ditolak, badgeClass: "bg-slate-100 text-slate-700" },
             ].map((t) => (
               <button
                 key={t.id}
@@ -409,7 +636,7 @@ export default function AntrianValidasi() {
           )}
 
             <div className="text-center text-xs text-slate-400 pt-2 pb-1">
-              Menampilkan {filteredKlasters.length} dari {daftarKlasterDinas.length} klaster isu aktif
+              Menampilkan {filteredKlasters.length} dari {daftarKlasterDinasTerisi.length} klaster isu aktif
             </div>
           </div>{/* end scrollable list */}
         </div>
@@ -497,7 +724,7 @@ export default function AntrianValidasi() {
               }
             }
 
-            const p = getPalette(k.kategori)
+            const p = getPalette(k?.kategori ?? "")
 
             const priorityColor = k.skor >= 70
               ? 'bg-rose-50 text-rose-800 border-rose-200 [&>span]:bg-rose-600'
@@ -581,31 +808,122 @@ export default function AntrianValidasi() {
                 </div>
 
                 {/* ── Decision Buttons ───────────────────────────── */}
-                <div className="grid gap-2.5 sm:grid-cols-3">
-                  <Button
-                    onClick={() => handleDecision("mismatch")}
-                    className="h-11 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                  >
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                    <span>Verifikasi Mismatch</span>
-                  </Button>
-                  <Button
-                    onClick={() => handleDecision("baru")}
-                    variant="outline"
-                    className="h-11 bg-blue-50/70 hover:bg-blue-100 text-blue-900 border-blue-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                  >
-                    <Bell className="h-4 w-4 text-blue-600" />
-                    <span>Tandai Kejadian Baru</span>
-                  </Button>
-                  <Button
-                    onClick={() => handleDecision("tolak")}
-                    variant="outline"
-                    className="h-11 bg-rose-50/70 hover:bg-rose-100 text-rose-800 border-rose-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                  >
-                    <XCircle className="h-4 w-4 text-rose-600" />
-                    <span>Tolak Sanggahan</span>
-                  </Button>
-                </div>
+                {!bolehVerifikasi ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-[11px] leading-relaxed text-amber-900">
+                    <span className="font-bold">Aksi verifikasi tidak tersedia.</span>{" "}
+                    {authUser
+                      ? `Peran Anda (${ROLE_LABEL[authUser.role]}) tidak berwenang memverifikasi klaster — `
+                      : "Anda belum masuk — "}
+                    aksi ini khusus untuk <strong>Verifikator Dinas</strong>. Halaman ini tetap bisa dibaca
+                    siapa saja; hanya petugas yang dapat mengubah status klaster.
+                  </div>
+                ) : (
+                  <div className="grid gap-2.5 sm:grid-cols-3">
+                    <Button
+                      onClick={() => handleDecision("mismatch")}
+                      className="h-11 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                    >
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <span>Verifikasi Mismatch</span>
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setAksiMenungguAlasan("baru")
+                        setAlasanPreset("")
+                        setAlasanCatatan("")
+                      }}
+                      variant="outline"
+                      className="h-11 bg-blue-50/70 hover:bg-blue-100 text-blue-900 border-blue-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                    >
+                      <Bell className="h-4 w-4 text-blue-600" />
+                      <span>Tandai Kejadian Baru</span>
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setAksiMenungguAlasan("tolak")
+                        setAlasanPreset("")
+                        setAlasanCatatan("")
+                      }}
+                      variant="outline"
+                      className="h-11 bg-rose-50/70 hover:bg-rose-100 text-rose-800 border-rose-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                    >
+                      <XCircle className="h-4 w-4 text-rose-600" />
+                      <span>Tolak Sanggahan</span>
+                    </Button>
+                  </div>
+                )}
+
+                {/* Panel alasan — backend mewajibkan `alasan` untuk status
+                    selain `terverifikasi` (INTERFACES.md §5). */}
+                {aksiMenungguAlasan && bolehVerifikasi && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">
+                          {aksiMenungguAlasan === "tolak"
+                            ? "Alasan penolakan klaster"
+                            : "Alasan permintaan info tambahan"}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Alasan tersimpan di riwayat klaster sebagai jejak audit — pilih alasan utama,
+                          lalu tambahkan catatan bila perlu.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAksiMenungguAlasan(null)}
+                        className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                        aria-label="Batal"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {PRESET_ALASAN.map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setAlasanPreset(preset)}
+                          className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold cursor-pointer transition-colors ${
+                            alasanPreset === preset
+                              ? "border-[#0B3052] bg-[#0B3052] text-white"
+                              : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+
+                    <textarea
+                      value={alasanCatatan}
+                      onChange={(e) => setAlasanCatatan(e.target.value)}
+                      rows={2}
+                      placeholder="Catatan tambahan (opsional), mis. lokasi genau atau kronologi singkat."
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[11px] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0B3052]"
+                    />
+
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAksiMenungguAlasan(null)}
+                        className="text-[11px] h-8"
+                      >
+                        Batal
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={submitDenganAlasan}
+                        disabled={!alasanPreset}
+                        className="text-[11px] h-8 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold disabled:opacity-40"
+                      >
+                        {aksiMenungguAlasan === "tolak" ? "Tolak & Simpan Alasan" : "Simpan & Minta Info"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* ── Comparison Box (themed right card) ─────────── */}
                 <div className="space-y-2">
@@ -661,19 +979,19 @@ export default function AntrianValidasi() {
                   </div>
                   <div className="space-y-2.5">
                     {k.laporanWargaVault.map((item, idx) => {
-                      const isRevealed = !!revealedNiks[idx]
                       return (
                         <div key={idx} className="rounded-lg bg-white p-3 border border-white/80 shadow-sm space-y-2">
                           <p className="text-xs text-slate-700 leading-relaxed italic">"{item.isi}"</p>
                           <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
                             <div className="font-mono text-slate-600">
-                              NIK: <strong>{isRevealed ? item.nikFull : item.nikMasked}</strong>
-                              {isRevealed && <span className="ml-2 font-sans text-[10px] text-slate-400">({item.namaWarga})</span>}
+                              Sumber: <strong>{item.namaWarga}</strong>
+                              <span className="ml-2 font-sans text-[10px] text-slate-400">
+                                NIK tidak ditampilkan (UU PDP No. 27/2022)
+                              </span>
                             </div>
-                            <button type="button" onClick={() => toggleNik(idx)}
-                              className={`text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer ${p.accentText}`}>
-                              {isRevealed ? <><EyeOff className="h-3 w-3" /> Sembunyikan</> : <><Eye className="h-3 w-3" /> Lihat NIK Penuh</>}
-                            </button>
+                            <span className="font-mono text-[10px] text-slate-400">
+                              {detail?.created_at?.slice(0, 10) ?? ""}
+                            </span>
                           </div>
                         </div>
                       )

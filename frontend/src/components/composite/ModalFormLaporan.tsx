@@ -39,6 +39,7 @@ export default function ModalFormLaporan({
   const [isAnonim, setIsAnonim] = useState(true)
   const [loading, setLoading] = useState(false)
   const [trackingId, setTrackingId] = useState<string | null>(null)
+  const [errorGagal, setErrorGagal] = useState<string | null>(null)
   const [fotoFile, setFotoFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
 
@@ -52,6 +53,7 @@ export default function ModalFormLaporan({
     setIsAnonim(true)
     setFotoFile(null)
     setTrackingId(null)
+    setErrorGagal(null)
     setLoading(false)
   }
 
@@ -81,15 +83,16 @@ export default function ModalFormLaporan({
 
     setLoading(true)
     try {
-      const res = await kirimLaporan({
+const res = await kirimLaporan({
         sekolah_npsn: displayNpsn,
-        kategori: "infrastruktur_sarana",
-        fasilitas_terkait: null,
+        fasilitas_terkait: lokasiSpesifik || null,
         deskripsi,
       })
       setTrackingId(res.tracking_id)
-    } catch {
-      setTrackingId(`TRK-LAM-${Math.floor(100000 + Math.random() * 900000)}`)
+      setErrorGagal(null)
+    } catch (err) {
+      // Fail keras: jangan fabricate tracking_id — user harus tahu gagal.
+      setErrorGagal(err instanceof Error ? err.message : "Gagal mengirim laporan.")
     } finally {
       setLoading(false)
     }
@@ -105,7 +108,7 @@ export default function ModalFormLaporan({
               <CheckCircle2 className="h-10 w-10 text-emerald-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">Audit Berhasil Dikirim (Simulasi)</h2>
+              <h2 className="text-xl font-bold text-slate-900">Laporan Berhasil Dikirim</h2>
               <p className="mt-2 text-sm text-slate-600">
                 Laporan audit kamu sudah diterima dan sedang menunggu verifikasi oleh tim audit partisipatif.
               </p>
@@ -128,6 +131,14 @@ export default function ModalFormLaporan({
         ) : (
           /* ── Tampilan Form Laporan ── */
           <div>
+            {errorGagal && (
+              <div
+                role="alert"
+                className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+              >
+                {errorGagal}
+              </div>
+            )}
             {/* ── Header ── */}
             <div className="px-6 pt-5 pb-4 relative">
               {/* Badge tahap */}
