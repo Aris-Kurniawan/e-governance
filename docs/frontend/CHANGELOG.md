@@ -31,6 +31,21 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - Terverifikasi: preflight `OPTIONS /sekolah` dengan `Origin: http://localhost:5173` → `access-control-allow-origin: http://localhost:5173`; `GET /sekolah` → 200 dengan 62 sekolah; `POST /auth/login` → 200 role `admin`; pytest tetap 87/87.
 - **Perbaikan `.gitignore`: `lib/` → `/lib/`** — aturan `lib/` (warisan template setuptools Python) tanpa tanda akar cocok dengan folder `lib` di kedalaman mana pun, sehingga **`frontend/src/lib/` ikut ter-ignore** dan seluruh lapisan API F4.1 (11 file) tidak muncul di `git status`. Di-root-kan agar hanya artifact Python di root yang diabaikan; `CRLF` file dipertahankan; `.venv/` tetap ter-ignore lewat aturannya sendiri.
 
+### Diubah
+- **Login Dinas nyata — tombol verifikasi tidak muncul untuk akun pemerintah (`src/pages/dinas/LoginDinas.tsx`)**:
+  - **Akar masalah**: `handleSubmit` di `LoginDinas` hanya `setTimeout(600ms)` lalu `navigate("/dinas/dashboard")` — **tidak pernah memanggil API**, sehingga token tidak pernah tersimpan dan `AntrianValidasi` (gate `role === "verifikator_dinas"`) selalu menampilkan banner "Aksi verifikasi tidak tersedia" bahkan untuk verifikator. Terkonfirmasi via reproduksi Chromium: login `/dinas/login` → `localStorage` kosong untuk ketiga akun.
+  - **Perbaikan**: form kini memakai `useAuth().login()` (`POST /auth/login` + `GET /auth/me`, kontrak INTERFACES.md §1) dengan pesan error backend ditampilkan di banner merah, dan redirect berdasarkan role (`verifikator_dinas`/`kepala_dinas`/`admin` → `/dinas/dashboard`, selain itu → `/dashboard`).
+  - **Field NIP diganti Email Dinas** (backend hanya menerima email — deviasi #8); input tanpa `@` ditolak client-side dengan pesan yang menjelaskan format. **Field 2FA/RFC 6238 dihapus** karena backend tidak punya implementasi 2FA.
+  - **Verifikasi**: `npx tsc --noEmit` bersih, `npm run build` sukses (37 s), alur Chromium penuh (`/dinas/login` → antrian → Verifikasi Mismatch → feedback sukses, 0 `pageerror`) lulus untuk akun verifikator; admin & kepala tetap tidak melihat tombol (**by design** — RBAC `PUT /klaster/{id}/verifikasi` khusus `verifikator_dinas`).
+- **F4.1 (lanjutan) — Empat halaman terakhir di-wire ke API nyata; sisa data demo 5 → 1 halaman**:
+  - **`RiwayatLaporan.tsx` → `GET /laporan/riwayat`** (+ `GET /sekolah` untuk pemetaan NPSN → nama sekolah). Tiga kartu rekaan `REP-2026-001..003` dihapus; kartu kini `.map()` dari data nyata: `tracking_id`, badge `status_sanggahan` (3 warna), `fasilitas_terkait`, `deskripsi`, `created_at` (format `id-ID`), `kondisi_dilaporan`. Filter tab berubah dari "Dalam Verifikasi / Menunggu Audit Fisik / Selesai" (tidak punya sumber data) menjadi **Menunggu / Tervalidasi / Ditolak** — enum asli backend `STATUS_SANGGHAN_ENUM`. KPI "TOTAL LAPORAN / SEDANG DITERIMA" dari `meta.total_items`; pagination memakai `meta` (batas `page_size` 50 sesuai backend). Ditambah state `loading`/`error`+Coba Lagi, panel tamu bila belum login, dan catatan bahwa angka tab hanya berlaku untuk 50 laporan yang termuat (backend belum punya endpoint agregat status).
+  - **`LogAuditPdp.tsx` → `GET /audit/log`** (`admin`, `kepala_dinas`). Array `logEntries` 10 entri rekaan dihapus. Yang dihapus karena tidak ada sumber data: tipe aktivitas (`NIK_ACCESS`/`DECRYPT_VAULT`/dst.), status entri (sukses/gagal/peringatan), alamat IP, hash TSA RFC-3161, nama aktór, badge **"COMPLIANT"**, sertifikat `CERT-PDP-SIMAKIS-2026-08A`, klaim retensi "5 Tahun", dan penyebutan BSSN Digital Trust CA / AES-256-GCM. Stats diganti angka yang benar-benar dikirim (`meta.total_items`, entri halaman ini, halaman `x / y`, sumber data). Banner sekarang menjelaskan cakupan field yang benar-benar direkam.
+  - **`DashboardWilayah.tsx` → `GET /sekolah` + `GET /klaster` + `GET /dashboard/prioritas`** (ketiganya **publik**; `GET /dashboard/wilayah` sengaja tidak dipakai karena khusus dinas dan akan 403 untuk warga di rute `/laporan/wilayah`). `matriksSekolah` 5 baris rekaan diganti seluruh 62 sekolah. Kolom jumlah ruang kelas/lab/perpustakaan/sanitasi dihapus (butuh 1 request per sekolah, tidak tersedia di endpoint list) dan diganti: jumlah klaster, klaster belum terverifikasi, skor tertinggi, serta **Status Integritas turunan** (`tidak_terverifikasi` → Mismatch Kritis; `menunggu_verifikasi`/`perlu_info_tambahan` → Selisih Minor; selain itu → Sesuai). KPI "Cakupan 100%" / "6 Sekolah" / "42 Isu / 87,5%" diganti angka backend (62 sekolah, 62 sekolah berklaster, 100 klaster + persentase terverifikasi). Widget "Temuan Kritis Teratas" memakai `GET /dashboard/prioritas` (3 teratas, tanpa klaim "38 warga memvalidasi"); peta Unsplash + pin rekaan diganti **Sebaran Klaster per Kategori** dari `GET /klaster` (kolom koordinat sekolah memang kosong di DB). Tabel "Daftar Laporan Klaster Isu Terkini" memakai data nyata dengan tautan `/klaster/{id}`. Ekspor CSV dan filter jenjang tetap berfungsi di atas data nyata. Ditambah state `loading`/`error`+Coba Lagi.
+  - **`TabelVerifikasi.tsx` → `GET /klaster` + `GET /sekolah`**. `tabelRows` 10 baris rekaan dihapus. Kolom "Kondisi Dapodik vs Lapangan", "Verifikator", tanggal verifikasi, dan nomor tiket `KLS-2026-xxxx` dihapus (tidak dikirim endpoint); kolom baru: Status Penanganan, Dukungan warga (`jumlah_vote_terhitung`), tautan Detail ke `/klaster/{id}`. Tab status memakai enum asli (`menunggu_verifikasi` / `perlu_info_tambahan` / `tidak_terverifikasi` / `terverifikasi`) menggantikan "Mismatch / Kejadian Baru / Menunggu / Ditolak". Tombol "Ekspor CSV" yang sebelumnya mati kini benar-benar mengekspor baris hasil filter; tombol "Filter Lanjutan" yang tidak berfungsi dihapus. Tautan "Verifikasi" hanya muncul untuk role `verifikator_dinas`. Ditambah state `loading`/`error`+Coba Lagi.
+  - **Perbaikan tipe layer API**: `DashboardWilayah` di `types.ts` memakai field yang tidak pernah dikirim backend (`klaster_aktif`, `sekolah_dengan_isu_terbanyak`, item berbentuk `DashboardPrioritasItem`) — dikoreksi menjadi `jumlah_klaster_aktif`, `sekolah_isu_terbanyak`, dan item `{klaster_id, sekolah_nama, skor_prioritas}` sesuai `INTERFACES.md` §3. `auditLog()` bertipe `Page<AuditLogEntry>` dengan field nyata `{audit_id, aksi, actor_user_id?, actor_role?, target, timestamp}` (sebelumnya `id`/`objek_tipe`/`detail`/`created_at` yang tidak ada).
+  - **Bug `useFetch` pada endpoint berpaginasi ditemukan**: `useFetch` menandai `empty` hanya bila data berupa array kosong; `Page<T>` (objek) selalu berstatus `success`, sehingga empty state tidak pernah tampil. Ditangani lokal di kedua halaman (`entries.length === 0` → empty state, `filtered.length === 0` → "tidak ada yang cocok") tanpa mengubah perilaku `useFetch` untuk 14 halaman lain.
+  - **Verifikasi**: `npx tsc --noEmit` bersih, `npm run build` sukses (33 s), smoke test Chromium 4 halaman tanpa `ErrorBoundary`/`pageerror`/console error dan tanpa sisa mock (kecuali `Bambang H., S.T.` yang berasal dari `DinasLayout.tsx`, bukan dari 4 halaman ini — lihat Catatan Terbuka).
+
 ### Ditambahkan
 - **F4.1 — Integrasi FE↔BE: Ganti Mock dengan API Nyata (`src/lib/api/*`)**:
   - **Lapis API baru** `src/lib/api/` sebagai satu-satunya jalan FE ke backend (kontrak: `docs/universal/INTERFACES.md`):
@@ -217,22 +232,29 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
 
 ### Catatan: Halaman yang Masih Pakai Data Demo (F4.1 belum 100%)
 
-Menghapus `src/mocks/` tidak menutup semua sumber data demo.Sapuan seluruh
+Menghapus `src/mocks/` tidak menutup semua sumber data demo. Sapuan seluruh
 18 route (Chromium) tidak menemukan crash, tetapi **5 halaman** masih
 merender data contoh yang tertanam langsung di JSX — bukan lewat `@/mocks/`:
 
-| Halaman | Data demo | Endpoint yang tersedia |
-|---|---|---|
-| `src/pages/warga/DashboardWilayah.tsx` | `matriksSekolah` (24 sekolah) + KPI cakupan | `GET /sekolah`, `GET /klaster` |
-| `src/pages/warga/RiwayatLaporan.tsx` | kartu laporan contoh tertanam di markup | `GET /laporan/riwayat` |
-| `src/pages/dinas/TabelVerifikasi.tsx` | baris verifikasi (SMAN 1 Sukodadi, dll.) | `GET /klaster` |
-| `src/pages/dinas/LaporanSkorKbm.tsx` | baris skor KBM & efisiensi | belum ada endpoint (butuh kontrak) |
-| `src/pages/dinas/LogAuditPdp.tsx` | `logEntries` | `GET /audit/log` |
+| Halaman | Data demo | Endpoint yang tersedia | Status |
+|---|---|---|---|
+| `src/pages/warga/DashboardWilayah.tsx` | `matriksSekolah` (24 sekolah) + KPI cakupan | `GET /sekolah`, `GET /klaster` | ✅ sudah di-wire |
+| `src/pages/warga/RiwayatLaporan.tsx` | kartu laporan contoh tertanam di markup | `GET /laporan/riwayat` | ✅ sudah di-wire |
+| `src/pages/dinas/TabelVerifikasi.tsx` | baris verifikasi (SMAN 1 Sukodadi, dll.) | `GET /klaster` | ✅ sudah di-wire |
+| `src/pages/dinas/LogAuditPdp.tsx` | `logEntries` | `GET /audit/log` | ✅ sudah di-wire |
+| `src/pages/dinas/LaporanSkorKbm.tsx` | baris skor KBM & efisiensi | belum ada endpoint (butuh kontrak) | ⏳ **sisa 1 halaman** |
 
-Catatan: 4 dari 5 halaman punya endpoint yang sebenarnya; `LaporanSkorKbm`
-butuh endpoint baru (skor KBM belum ada di backend) sehingga butuh keputusan
-kontrak lebih dulu. Halaman yang sudah bersih: `Landing.tsx`, `Login.tsx`,
-`Registrasi.tsx`, `TentangData.tsx`.
+Catatan: 4 halaman yang tadinya tersisa sudah selesai di-wire pada
+8 Oktober 2026 (lihat entri "F4.1 (lanjutan)" di atas). `LaporanSkorKbm`
+tetap terblokir karena backend belum punya endpoint skor KBM — butuh
+keputusan kontrak lebih dulu. Halaman yang sudah bersih sejak awal:
+`Landing.tsx`, `Login.tsx`, `Registrasi.tsx`, `TentangData.tsx`.
+
+**Sisa data demo di luar daftar halaman** (ditemukan saat wiring 8 Okt 2026):
+`DinasLayout.tsx` masih menampilkan nama petugas rekaan **"Bambang H., S.T."**
+(2 tempat) dan `CetakRingkasanEksekutif.tsx` menandatangani cetakan dengan
+nama yang sama — keduanya harus membaca `user` dari `useAuth()`. Belum
+disentuh pada sesi ini karena berada di luar 4 halaman yang ditugaskan.
 
 ### Catatan Deviasi Kontrak & Gap Data (hasil F4.1)
 

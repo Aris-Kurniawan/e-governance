@@ -46,7 +46,7 @@ Status diverifikasi terhadap kode pada 1 Oktober 2026.
 | F3.2 | Voting | **Belum** | Tidak ada UI vote di halaman mana pun — pendukung API/mock sudah siap (lihat detail di bawah) |
 | F3.3 | Status Tindak Lanjut | **Belum** | Belum ada halaman/rute status publik per klaster; `useStatusPolling` sudah ada tetapi belum dipakai |
 | F3.4 | Portal Pemerintah | **Sebagian** | `DinasLayout` (spesifikasi menyebut `PemerintahLayout`), DashboardKadis, verifikasi klaster §B1 (AntrianValidasi) ✓; override prioritas §B2 & update status §B3 belum |
-| F4.1 | Ganti Mock → API Asli | **⚠️ 90%** | `src/lib/api/` dipakai 14 halaman; `src/mocks/` dihapus; build hijau; smoke test 14/14. **Sisa:** 5 halaman masih pakai data demo inline — `DashboardWilayah`, `RiwayatLaporan`, `TabelVerifikasi`, `LaporanSkorKbm`, `LogAuditPdp` (lihat CHANGELOG § *Halaman yang Masih Pakai Data Demo*) |
+| F4.1 | Ganti Mock → API Asli | **⚠️ 95%** | `src/lib/api/` dipakai 18 halaman; `src/mocks/` dihapus; build hijau; smoke test 14/14 + 4 halaman lanjutan. **Sisa:** 1 halaman masih pakai data demo inline — `LaporanSkorKbm` (belum ada endpoint skor KBM di backend, butuh keputusan kontrak). 4 halaman yang sebelumnya tersisa sudah di-wire 8 Okt 2026: `DashboardWilayah`, `RiwayatLaporan`, `TabelVerifikasi`, `LogAuditPdp` (lihat CHANGELOG § *Halaman yang Masih Pakai Data Demo*) |
 | F4.2 | Black-box Testing | **Belum** | Belum ada catatan pengujian state `PAGE_STATES.md` |
 | F4.3 | Perf & Aksesibilitas | **Belum** | Rute masih import statis (belum lazy-load); audit Lighthouse belum |
 | F4.4 | Dokumentasi Final | **Belum** | — |
@@ -70,8 +70,9 @@ Status diverifikasi terhadap kode pada 1 Oktober 2026.
 - [ ] **F3.4 — sisa**: override prioritas (`PAGE_STATES.md §B2` — tombol kolom
   AKSI di `TabelVerifikasi.tsx` saat ini belum punya handler) dan update status
   penanganan + loop "masih berlangsung" (§B3).
-- [x] **F4.1 — Ganti Mock → API Asli**: ✅ selesai — seluruh pemakaian `src/mocks/` diganti
-  `src/lib/api/` tanpa mengubah struktur komponen.
+- [x] **F4.1 — Ganti Mock → API Asli**: ⚠️ 95% — seluruh pemakaian `src/mocks/` diganti
+  `src/lib/api/` tanpa mengubah struktur komponen. Sisa: `LaporanSkorKbm`
+  (belum ada endpoint skor KBM di backend).
 - [ ] **F4.2 — Black-box Testing**: uji manual seluruh state `PAGE_STATES.md`
   (normal & gagal).
 - [ ] **F4.3 — Perf & Aksesibilitas**: lazy-load route, audit Lighthouse
@@ -313,7 +314,7 @@ status penanganan (§B3, loop "masih berlangsung").
 > alur merge ke branch `development` + aturan resolusi konflik (kontrak
 > `INTERFACES.md` mengikuti kode backend; docs ikut milik masing-masing pihak).
 
-### F4.1 — Ganti Mock → API Asli ✅ SELESAI (2026-10-07)
+### F4.1 — Ganti Mock → API Asli ⚠️ 95% (2026-10-07, dilanjutkan 2026-10-08)
 
 **Deliverable:** Semua `src/mocks/` diganti `src/lib/api/` tanpa mengubah
 struktur komponen. Cek ulang `API_CLIENT.md` §4 (token) & §5 (per halaman).
@@ -331,6 +332,18 @@ struktur komponen. Cek ulang `API_CLIENT.md` §4 (token) & §5 (per halaman).
 - **9 deviasi kontrak / gap data** ditemukan dan dicatat di
   `docs/frontend/CHANGELOG.md` § *Catatan Deviasi Kontrak & Gap Data* — perlu
   keputusan Aris + Dimas sebelum mengubah `INTERFACES.md`.
+
+**Lanjutan 2026-10-08 — 4 halaman terakhir:**
+- `DashboardWilayah.tsx`, `RiwayatLaporan.tsx`, `TabelVerifikasi.tsx`, dan
+  `LogAuditPdp.tsx` di-wire ke API nyata; data contoh inline dihapus.
+- Kolom/filter yang tidak punya sumber data di backend ikut dibuang
+  (detailnya di `docs/frontend/CHANGELOG.md` § *F4.1 (lanjutan)*), dan tipe
+  `DashboardWilayah` + `AuditLogEntry` di `lib/api/types.ts` dikoreksi agar
+  cocok dengan respons backend.
+- Verifikasi: `tsc --noEmit` bersih, `npm run build` sukses, smoke test
+  Chromium 4 halaman tanpa crash/console error.
+- **Sisa 1 halaman:** `LaporanSkorKbm.tsx` — backend belum punya endpoint
+  skor KBM, jadi terblokir keputusan kontrak (F4.1 → 95%).
 
 ---
 
