@@ -19,6 +19,13 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
 ## [Belum Rilis]
 
 ### Ditambahkan
+- **Fitur Voting pada Tabel "Daftar Laporan Klaster Isu Terkini" (`src/pages/warga/DashboardWilayah.tsx`)**:
+  - Tombol **Vote** pada setiap baris klaster isu: klik → centang hijau "✓ Vote" + counter dukungan naik; klik lagi untuk membatalkan (toggle −1).
+  - **Gerbang autentikasi konsisten**: pengunjung belum login langsung membuka `AuthRequiredModal` (bukan vote palsu); setelah login vote aktif.
+  - Tabel di-refactor dari 4 baris JSX hardcoded menjadi array `KLASTER_ISU_LIST` (type `KlasterIsuRow`) + `.map()`, sehingga baris, counter vote, dan label berbagi satu sumber data.
+  - Judul isu kini menjadi tautan, kolom AKSI berpindah dari "Tinjau Isu" menjadi tombol Vote, dan pill filter diubah ke bentuk `rounded-full`.
+  - Catatan: vote masih di state lokal (`useState`) — pemanggilan API `POST /klaster/{id}/vote` (F3.2 penuh di halaman Detail Klaster) menyusul.
+  - `npm run build` (tsc + vite) sukses.
 - **Tooling Dev Monorepo: `npm run dev` menyalakan backend + frontend sekaligus**:
   - **`package.json` baru di root repo** — hanya berisi tooling pengembangan, bukan dependensi aplikasi (dependensi FE tetap di `frontend/`, BE di `backend/requirements.txt`).
   - `npm run dev` menjalankan dua proses berdampingan lewat `concurrently` (pane `backend` biru + `frontend` hijau): `uvicorn app.main:app --reload --port 8000` dan Vite di `:5173`.

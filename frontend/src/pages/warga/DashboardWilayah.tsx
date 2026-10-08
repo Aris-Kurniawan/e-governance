@@ -14,7 +14,8 @@ import {
   Shield, 
   Clock,
   Plus,
-  Lock
+  Lock,
+  Check
 } from "lucide-react"
 
 type ToneMatriks = "baik" | "minor" | "kritis" | "netral"
@@ -98,12 +99,111 @@ const STATUS_SEL: Record<BarisMatriks["status"], string> = {
 
 const OPSI_JENJANG = ["Semua", "SD", "SMP", "SMA", "SMK"] as const
 
+interface KlasterIsuRow {
+  id: string
+  kode: string
+  judul: string
+  wargaTerverifikasi: number
+  keterangan: string
+  sekolah: string
+  kategori: string
+  kategoriBadgeCls: string
+  tanggal: string
+  urgensi: string
+  urgensiBadgeCls: string
+  urgensiDotCls: string
+}
+
+const KLASTER_ISU_LIST: KlasterIsuRow[] = [
+  {
+    id: "ISU-064",
+    kode: "#ISU-064",
+    judul: "Kerusakan Atap Lab Kimia",
+    wargaTerverifikasi: 38,
+    keterangan: "4 Foto Bukti",
+    sekolah: "SMAN 1 Sukodadi",
+    kategori: "Laboratorium & Praktikum",
+    kategoriBadgeCls: "bg-blue-50 text-blue-800 border-blue-200/60",
+    tanggal: "23 Okt 2025",
+    urgensi: "Kritis / Mendesak",
+    urgensiBadgeCls: "bg-rose-50 text-rose-800 border-rose-200",
+    urgensiDotCls: "bg-rose-600",
+  },
+  {
+    id: "ISU-051",
+    kode: "#ISU-051",
+    judul: "Pompa Sanitasi Toilet Siswa Macet",
+    wargaTerverifikasi: 14,
+    keterangan: "2 Foto Bukti",
+    sekolah: "SMPN 2 Lamongan",
+    kategori: "Sanitasi & Air Bersih",
+    kategoriBadgeCls: "bg-slate-100 text-slate-700 border-slate-200/60",
+    tanggal: "21 Okt 2025",
+    urgensi: "Perhatian Sedang",
+    urgensiBadgeCls: "bg-amber-50 text-amber-800 border-amber-200",
+    urgensiDotCls: "bg-amber-600",
+  },
+  {
+    id: "ISU-039",
+    kode: "#ISU-039",
+    judul: "Kekurangan Meja Kursi Ruang Teori",
+    wargaTerverifikasi: 22,
+    keterangan: "Berita Acara Dinas",
+    sekolah: "SMKN 1 Lamongan",
+    kategori: "Mubeler & Kelas",
+    kategoriBadgeCls: "bg-blue-50 text-blue-800 border-blue-200/60",
+    tanggal: "18 Okt 2025",
+    urgensi: "Perhatian Sedang",
+    urgensiBadgeCls: "bg-amber-50 text-amber-800 border-amber-200",
+    urgensiDotCls: "bg-amber-600",
+  },
+  {
+    id: "ISU-019",
+    kode: "#ISU-019",
+    judul: "Verifikasi Peremajaan Rak Perpustakaan",
+    wargaTerverifikasi: 9,
+    keterangan: "Laporan Tuntas Realisasi",
+    sekolah: "SMPN 1 Lamongan",
+    kategori: "Fasilitas Literasi",
+    kategoriBadgeCls: "bg-emerald-50 text-emerald-800 border-emerald-200/60",
+    tanggal: "15 Okt 2025",
+    urgensi: "Selesai Fisik",
+    urgensiBadgeCls: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    urgensiDotCls: "bg-emerald-600",
+  },
+]
+
 export default function DashboardWilayah() {
   const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
   const [isAuthRequiredOpen, setIsAuthRequiredOpen] = useState(false)
   const [selectedSchoolForReport, setSelectedSchoolForReport] = useState<{ npsn: string; nama: string } | null>(null)
   const [filterJenjang, setFilterJenjang] = useState<string>("Semua")
+  const [votedIsu, setVotedIsu] = useState<Record<string, boolean>>({})
+  const [isuVoteCounts, setIsuVoteCounts] = useState<Record<string, number>>(() => ({
+    "ISU-064": 38,
+    "ISU-051": 14,
+    "ISU-039": 22,
+    "ISU-019": 9,
+  }))
+
+  const handleVoteIsu = (isuId: string) => {
+    if (!isAuthenticated) {
+      setSelectedSchoolForReport(null)
+      setIsAuthRequiredOpen(true)
+      return
+    }
+
+    setVotedIsu((prev) => {
+      const isCurrentlyVoted = !!prev[isuId]
+      const nextVoted = !isCurrentlyVoted
+      setIsuVoteCounts((counts) => ({
+        ...counts,
+        [isuId]: (counts[isuId] ?? 0) + (nextVoted ? 1 : -1),
+      }))
+      return { ...prev, [isuId]: nextVoted }
+    })
+  }
 
   const filteredRows =
     filterJenjang === "Semua"
@@ -543,9 +643,9 @@ export default function DashboardWilayah() {
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-between">
               <div className="flex items-center gap-2">
-                <span className="rounded-lg bg-[#0B3052] px-3 py-1.5 text-xs font-semibold text-white">Semua Klaster (4)</span>
-                <span className="rounded-lg bg-slate-100 hover:bg-slate-200/70 px-3 py-1.5 text-xs font-medium text-slate-600 cursor-pointer">Urgensi Tinggi</span>
-                <span className="rounded-lg bg-slate-100 hover:bg-slate-200/70 px-3 py-1.5 text-xs font-medium text-slate-600 cursor-pointer">Terverifikasi</span>
+                <span className="rounded-full bg-[#0B3052] px-3.5 py-1.5 text-xs font-semibold text-white">Semua Klaster (4)</span>
+                <span className="rounded-full bg-slate-100 hover:bg-slate-200/70 px-3.5 py-1.5 text-xs font-medium text-slate-600 cursor-pointer">Urgensi Tinggi</span>
+                <span className="rounded-full bg-slate-100 hover:bg-slate-200/70 px-3.5 py-1.5 text-xs font-medium text-slate-600 cursor-pointer">Terverifikasi</span>
               </div>
               <Button
                 onClick={() => handleReportClick()}
@@ -569,113 +669,58 @@ export default function DashboardWilayah() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {/* Row 1 */}
-                <tr className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4 px-3">
-                    <span className="font-bold text-slate-900 text-sm block">#ISU-064 Kerusakan Atap Lab Kimia</span>
-                    <span className="text-[11px] text-slate-400">38 Warga Terverifikasi · 4 Foto Bukti</span>
-                  </td>
-                  <td className="py-4 px-3 font-semibold text-slate-800">SMAN 1 Sukodadi</td>
-                  <td className="py-4 px-3">
-                    <span className="inline-block rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800 border border-blue-200/60">
-                      Laboratorium &amp; Praktikum
-                    </span>
-                  </td>
-                  <td className="py-4 px-3 text-slate-500 font-medium">23 Okt 2025</td>
-                  <td className="py-4 px-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-800 border border-rose-200">
-                      <span className="h-1.5 w-1.5 rounded-full bg-rose-600" /> Kritis / Mendesak
-                    </span>
-                  </td>
-                  <td className="py-4 px-3 text-right">
-                    <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer">
-                      <Link to="/laporan/riwayat">
-                        Tinjau Isu
-                      </Link>
-                    </Button>
-                  </td>
-                </tr>
+                {KLASTER_ISU_LIST.map((item) => {
+                  const isVoted = !!votedIsu[item.id]
+                  const voteCount = isuVoteCounts[item.id] ?? item.wargaTerverifikasi
 
-                {/* Row 2 */}
-                <tr className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4 px-3">
-                    <span className="font-bold text-slate-900 text-sm block">#ISU-051 Pompa Sanitasi Toilet Siswa Macet</span>
-                    <span className="text-[11px] text-slate-400">14 Warga Terverifikasi · 2 Foto Bukti</span>
-                  </td>
-                  <td className="py-4 px-3 font-semibold text-slate-800">SMPN 2 Lamongan</td>
-                  <td className="py-4 px-3">
-                    <span className="inline-block rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 border border-slate-200/60">
-                      Sanitasi &amp; Air Bersih
-                    </span>
-                  </td>
-                  <td className="py-4 px-3 text-slate-500 font-medium">21 Okt 2025</td>
-                  <td className="py-4 px-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 border border-amber-200">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> Perhatian Sedang
-                    </span>
-                  </td>
-                  <td className="py-4 px-3 text-right">
-                    <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer">
-                      <Link to="/laporan/riwayat">
-                        Tinjau Isu
-                      </Link>
-                    </Button>
-                  </td>
-                </tr>
-
-                {/* Row 3 */}
-                <tr className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4 px-3">
-                    <span className="font-bold text-slate-900 text-sm block">#ISU-039 Kekurangan Meja Kursi Ruang Teori</span>
-                    <span className="text-[11px] text-slate-400">22 Warga Terverifikasi · Berita Acara Dinas</span>
-                  </td>
-                  <td className="py-4 px-3 font-semibold text-slate-800">SMKN 1 Lamongan</td>
-                  <td className="py-4 px-3">
-                    <span className="inline-block rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800 border border-blue-200/60">
-                      Mubeler &amp; Kelas
-                    </span>
-                  </td>
-                  <td className="py-4 px-3 text-slate-500 font-medium">18 Okt 2025</td>
-                  <td className="py-4 px-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 border border-amber-200">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> Perhatian Sedang
-                    </span>
-                  </td>
-                  <td className="py-4 px-3 text-right">
-                    <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer">
-                      <Link to="/laporan/riwayat">
-                        Tinjau Isu
-                      </Link>
-                    </Button>
-                  </td>
-                </tr>
-
-                {/* Row 4 */}
-                <tr className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4 px-3">
-                    <span className="font-bold text-slate-900 text-sm block">#ISU-019 Verifikasi Peremajaan Rak Perpustakaan</span>
-                    <span className="text-[11px] text-slate-400">9 Warga · Laporan Tuntas Realisasi</span>
-                  </td>
-                  <td className="py-4 px-3 font-semibold text-slate-800">SMPN 1 Lamongan</td>
-                  <td className="py-4 px-3">
-                    <span className="inline-block rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200/60">
-                      Fasilitas Literasi
-                    </span>
-                  </td>
-                  <td className="py-4 px-3 text-slate-500 font-medium">15 Okt 2025</td>
-                  <td className="py-4 px-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Selesai Fisik
-                    </span>
-                  </td>
-                  <td className="py-4 px-3 text-right">
-                    <Button asChild variant="outline" size="sm" className="h-8 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer">
-                      <Link to="/laporan/riwayat">
-                        Tinjau Isu
-                      </Link>
-                    </Button>
-                  </td>
-                </tr>
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-4 px-3">
+                        <Link
+                          to="/laporan/riwayat"
+                          className="font-bold text-slate-900 text-sm block hover:text-[#0B3052] hover:underline transition-colors"
+                        >
+                          {item.kode} {item.judul}
+                        </Link>
+                        <span className="text-[11px] text-slate-400">
+                          {voteCount} Warga {item.id === "ISU-019" ? "" : "Terverifikasi"} · {item.keterangan}
+                        </span>
+                      </td>
+                      <td className="py-4 px-3 font-semibold text-slate-800">{item.sekolah}</td>
+                      <td className="py-4 px-3">
+                        <span className={`inline-block rounded-md px-2.5 py-1 text-xs font-semibold border ${item.kategoriBadgeCls}`}>
+                          {item.kategori}
+                        </span>
+                      </td>
+                      <td className="py-4 px-3 text-slate-500 font-medium">{item.tanggal}</td>
+                      <td className="py-4 px-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${item.urgensiBadgeCls}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${item.urgensiDotCls}`} /> {item.urgensi}
+                        </span>
+                      </td>
+                      <td className="py-4 px-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleVoteIsu(item.id)}
+                          title={isVoted ? "Klik untuk membatalkan vote" : "Beri vote dukungan untuk isu ini"}
+                          className={`rounded-full px-5 py-1.5 text-xs font-bold transition-all shadow-sm cursor-pointer inline-flex items-center justify-center ${
+                            isVoted
+                              ? "bg-emerald-700 hover:bg-emerald-800 text-white ring-2 ring-emerald-500/30"
+                              : "bg-[#0B3052] hover:bg-[#07213A] active:scale-95 text-white"
+                          }`}
+                        >
+                          {isVoted ? (
+                            <>
+                              <Check className="h-3 w-3 mr-1" /> Vote
+                            </>
+                          ) : (
+                            "Vote"
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
