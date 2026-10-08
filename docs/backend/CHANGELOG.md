@@ -935,6 +935,32 @@ ditambah 1 temuan audit kontrak (lihat #5).
 
 ---
 
+### 3.19 F4.4 (lanjutan) — Fix Bug Verifikasi Klaster: Enum & Kolom Status (2026-10-08) ✅ SELESAI
+
+**Gejala:** klik "Tandai Kejadian Baru" (dan aksi lain ke `perlu_info_tambahan`) gagal 500; daftar klaster tidak ter-refresh setelah aksi.
+
+**3 bug diperbaiki:**
+1. `models/klaster.py` — `STATUS_KLASTER_ENUM` (3 nilai) vs `klaster.status_verifikasi` live (4 nilai) → MySQL 1265 Data truncated saat insert `perlu_info_tambahan`. Ditambah nilai ke-4.
+2. **Migration baru** `alembic/versions/d4f8c2a91e05_tambah_perlu_info_tambahan_status_klaster.py` (down_rev `c01f4a7b2d09`, ALTER MySQL conditional) — sudah dijalankan di DB live; tutup drift enum.
+3. `routers/klaster.py` `update_status` — semua status ditulis ke `status_penanganan` → sekarang keluarga verifikasi (`terverifikasi`/`tidak_terverifikasi`/`perlu_info_tambahan`) ditulis ke `status_verifikasi`, sisanya `status_penanganan`.
+4. FE `AntrianValidasi.tsx` — `decisionFeedback` bertipe sukses/gagal (error merah tanpa auto-dismiss), `refetchList()` setelah sukses (klaster pindah tab tanpa reload).
+
+**Verifikasi:** pytest **88/88** lulus; smoke Chromium alur verifikasi penuh lulus (0 pageerror); DB prod tidak terganggu (klaster uji dikembalikan ke `terverifikasi`).
+
+---
+
+### 3.20 SQL Dump & Panduan Impor Database untuk Rekan Tim (2026-10-08) ✅ SELESAI
+
+**Deliverable:**
+- `database/simakis.sql` (254 KB) — dump `mysqldump --single-transaction` DB `simakis`: 13 tabel, 62 sekolah, 600 laporan, 100 klaster, 3 akun dev, alembic `d4f8c2a91e05`. Tidak berisi view/routine.
+- `docs/backend/SETUP.md` §5a — langkah impor (`mysql simakis < database/simakis.sql`), tabel isi dump, `.env` yang **wajib sama** antar mesin (`PDP_ENCRYPTION_KEY` — ganti = NIK di `pdp_vault` tidak terdekripsi; `DATABASE_URL` disesuaikan), troubleshooting 4 gejala umum.
+
+**Verifikasi:** dump diimpor ke DB sementara `simakis_import_check` → semua row count cocok (62/600/100/3, enum `status_verifikasi` 4 nilai, alembic version cocok), lalu DB sementara dihapus.
+
+**Catatan:** `PDP_ENCRYPTION_KEY` & `JWT_SECRET` di `backend/.env` dev = default `.env.example` (disengaja, agar enkripsi NIK bisa didekripsi lintas mesin). Untuk produksi keduanya wajib diganti (`DEPLOYMENT.md` §4).
+
+---
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.
