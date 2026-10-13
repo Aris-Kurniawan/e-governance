@@ -319,11 +319,48 @@ export interface DashboardPrioritasItem {
   badge: string | null;
 }
 
+export interface DashboardWilayahKlaster {
+  klaster_id: string;
+  sekolah_nama: string;
+  skor_prioritas: number;
+}
+
+export interface SekolahIsuTerbanyak {
+  npsn: string;
+  nama: string;
+  jumlah_isu: number;
+}
+
+/**
+ * `GET /dashboard/wilayah` — bentuk mengikuti INTERFACES.md §3 (sudah
+ * disinkronkan di F4.5) dan implementasi backend `routers/dashboard.py`.
+ * PERHATIAN: versi lama tipe ini memakai `klaster_aktif` +
+ * `sekolah_dengan_isu_terbanyak` + item `DashboardPrioritasItem[]` yang
+ * tidak pernah dikirim backend (lihat CHANGELOG F4.1 "Deviasi Kontrak").
+ */
 export interface DashboardWilayah {
   jumlah_sekolah: number;
-  klaster_aktif: number;
-  klaster_prioritas: DashboardPrioritasItem[];
-  sekolah_dengan_isu_terbanyak: unknown[];
+  jumlah_klaster_aktif: number;
+  klaster_prioritas: DashboardWilayahKlaster[];
+  sekolah_isu_terbanyak: SekolahIsuTerbanyak[];
+}
+
+/**
+ * `GET /audit/log` (INTERFACES.md §9).
+ *
+ * Deviasi kontrak: dokumen menetapkan `actor_role`, backend mengirim
+ * `actor_user_id` (ID, bukan nama peran). Keduanya opsional di sini supaya
+ * FE tetap bisa merender apa pun yang dikirim server; `target` menggantikan
+ * `objek_tipe`/`objek_id` dan `timestamp` menggantikan `created_at`.
+ */
+export interface AuditLogEntry {
+  audit_id: string;
+  aksi: string;
+  /** Deviasi: backend mengirim ID aktór, kontrak menyebut `actor_role`. */
+  actor_user_id?: string | null;
+  actor_role?: string | null;
+  target: string | null;
+  timestamp: string | null;
 }
 
 export interface AiStatus {

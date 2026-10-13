@@ -6,8 +6,9 @@
  * - `GET /dashboard/wilayah`  → `verifikator_dinas`, `kepala_dinas`
  */
 
-import { getData, getPage, postForm, unwrap, request } from "./client";
+import { getData, getPage, postForm, unwrap, request, type Page } from "./client";
 import type {
+  AuditLogEntry,
   DashboardPrioritasItem,
   DashboardWilayah,
 } from "./types";
@@ -28,22 +29,14 @@ export function dashboardWilayah(): Promise<DashboardWilayah> {
   return getData<DashboardWilayah>("/dashboard/wilayah");
 }
 
-/** `GET /audit/log` — `admin`, `kepala_dinas`. */
-export async function auditLog(
+/** `GET /audit/log` — `admin`, `kepala_dinas` (INTERFACES.md §9). */
+export function auditLog(
   params: { page?: number; page_size?: number } = {},
-): Promise<{
-  data: {
-    id: string;
-    actor_user_id: string | null;
-    aksi: string;
-    objek_tipe: string;
-    objek_id: string | null;
-    detail: Record<string, unknown> | null;
-    created_at: string;
-  }[];
-  meta: { page: number; page_size: number; total_items: number; total_pages: number };
-}> {
-  return getPage(`/audit/log`, { page: params.page ?? 1, page_size: params.page_size ?? 20 });
+): Promise<Page<AuditLogEntry>> {
+  return getPage<AuditLogEntry>("/audit/log", {
+    page: params.page ?? 1,
+    page_size: params.page_size ?? 20,
+  });
 }
 
 /** `POST /ingest/dapodik` — upload CSV, `admin`/`verifikator_dinas` (§8). */
