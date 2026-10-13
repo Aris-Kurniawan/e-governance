@@ -346,7 +346,14 @@ async def update_status(
     if not klaster:
         raise HTTPException(status_code=404, detail="Klaster tidak ditemukan")
 
-    klaster.status_penanganan = status
+    # Satu endpoint menerima dua keluarga status (INTERFACES.md §7), tapi
+    # tersimpan di dua kolom berbeda. Dulu semua nilai ditulis ke
+    # `status_penanganan` — status verifikasi membuat MySQL menolaknya
+    # (error 1265 Data truncated → 500) karena bukan bagian enum kolom itu.
+    if status in ("menunggu_verifikasi", "perlu_info_tambahan", "tidak_terverifikasi", "terverifikasi"):
+        klaster.status_verifikasi = status
+    else:
+        klaster.status_penanganan = status
     klaster.updated_at = datetime.now()
     db.add(klaster)
     log = StatusLog(
