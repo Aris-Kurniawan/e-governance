@@ -287,6 +287,8 @@ response `200`:
 | GET | `/laporan/riwayat` | `warga_terverifikasi`, `komite_sekolah` | Riwayat laporan milik sendiri |
 | GET | `/laporan/{id}` | Pemilik laporan, `verifikator_dinas`, `kepala_dinas` | Detail satu laporan |
 | POST | `/upload/laporan?laporan_id={id}` | Pemilik laporan | Upload foto bukti (`multipart/form-data`, field `file` — lihat §10) |
+| GET | `/laporan/perlu-review` | `admin`, `kepala_dinas` | Daftar laporan perlu verifikasi manual (F4.7/D-21): tanpa klaster **ATAU** klaster kategori `belum_terklasifikasi` — envelope `{data, meta}` §0.2 (`page`, `page_size` default 20 maks 100) |
+| PUT | `/laporan/{id}/status` | `admin`, `kepala_dinas` | Update `status_sanggahan` — verifikasi manual per laporan (F4.7/D-21) |
 
 **`POST /laporan`** — request:
 ```json
@@ -309,13 +311,51 @@ response `201`:
 }
 ```
 
+**`GET /laporan/perlu-review`** — response `200` (F4.7, D-21):
+```json
+{
+  "data": [
+    {
+      "id": "string",
+      "tracking_id": "string",
+      "sekolah_npsn": "string",
+      "sekolah_nama": "string | null",
+      "fasilitas_terkait": "string | null",
+      "kondisi_dilaporkan": "baik | rusak_ringan | rusak_sedang | rusak_berat | null",
+      "deskripsi": "string",
+      "status_sanggahan": "menunggu | divalidasi | ditolak",
+      "created_at": "ISO8601",
+      "klaster": { "id": "string", "label": "string | null", "kategori": "string" } | null
+    }
+  ],
+  "meta": { "page": 1, "page_size": 20, "total_items": 0, "total_pages": 0 }
+}
+```
+Seleksi: `laporan.klaster_id IS NULL` (laporan noise, 398) **ATAU**
+`klaster.kategori = 'belum_terklasifikasi'` (klaster label-fallback, 97) → **495 laporan**.
+`klaster: null` bila laporan tidak punya klaster (noise).
+
+**`PUT /laporan/{id}/status`** — request body (F4.7, D-21):
+```json
+{ "status": "menunggu | divalidasi | ditolak" }
+```
+- `status` di luar enum → `422 UNPROCESSABLE_ENTITY`
+- Laporan tidak ada → `404 NOT_FOUND`
+- Tanpa token → `401`; role selain `admin` / `kepala_dinas` → `403`
+
+response `200`:
+```json
+{ "data": { "id": "string", "tracking_id": "string", "status_sanggahan": "string" } }
+```
+Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster — butuh kolom baru, task terpisah).
+
 ---
 
 ## 5. Klasterisasi Isu — FEAT-004 (`/klaster`, `/ai`)
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
-| GET | `/klaster` | Publik | List klaster (filter `?sekolah_npsn=&kategori=&status_verifikasi=&page=&page_size=`) |
+| GET | `/klaster` | Publik | List klaster (filter `?sekolah_npsn=&kategori=&status_verifikasi=&page=&page_size=`) — default **tanpa** kategori `belum_terklasifikasi` (F4.7) |
 | GET | `/klaster/{id}` | Publik | Detail klaster + daftar laporan anggota |
 | PUT | `/klaster/{id}/verifikasi` | `verifikator_dinas` | Tetapkan hasil verifikasi (param **query**: `status`, `alasan`) |
 | GET | `/klaster/{id}/riwayat` | Publik | Riwayat status (append-only) — lihat §7 |
@@ -343,6 +383,13 @@ response `201`:
 }
 ```
 Urut `skor_prioritas` descending (null di akhir). `page_size` maks 100.
+
+F4.7 (D-21): default **menyembunyikan** klaster kategori `belum_terklasifikasi`
+(18 klaster label-fallback; total 43 klaster → 25 tampil). Parameter
+`?kategori=belum_terklasifikasi` **eksplisit tetap dilayani** (debug/admin), dan
+`GET /klaster/{id}` tidak berubah — akses by-ID tetap bisa. Klaster noise HDBSCAN
+tidak lagi dibuat sebagai record; 398 laporan noise (tanpa `klaster_id`) hanya
+dibaca lewat `GET /laporan/perlu-review` (§4).
 
 **`GET /klaster/{id}`** — response `200`:
 ```json

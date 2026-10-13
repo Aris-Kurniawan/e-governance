@@ -963,9 +963,9 @@ ditambah 1 temuan audit kontrak (lihat #5).
 
 ---
 
-### 3.21 F4.7 (RENCANA) — Klasterisasi Tanpa "Belum Terklasifikasi" + Fallback Laporan ke Admin/Kepala (2026-10-08) 📋 BELUM DIKERJAKAN
+### 3.21 F4.7 (RENCANA) — Klasterisasi Tanpa "Belum Terklasifikasi" + Fallback Laporan ke Admin/Kepala (2026-10-08) → diimplementasikan 13 Okt, lihat §3.22
 
-**Status:** rencana/specifikasi saja — **belum ada perubahan kode**. Spesifikasi lengkap di `docs/backend/TASK_GUIDE.md` **F4.7**; keputusan desain di `docs/universal/DECISIONS.md` **D-21** (menggantikan Keputusan #5 Opsi A di §3.3).
+**Status:** spesifikasi — **implementasi & hasil verifikasi di §3.22**. Spesifikasi lengkap di `docs/backend/TASK_GUIDE.md` **F4.7**; keputusan desain di `docs/universal/DECISIONS.md` **D-21** (menggantikan Keputusan #5 Opsi A di §3.3).
 
 **Temuan audit (DB `simakis`, 8 Okt 2026):**
 
@@ -993,6 +993,38 @@ ditambah 1 temuan audit kontrak (lihat #5).
 **Dampak ke FE (untuk briefing Dimas):** angka turunan `GET /klaster` berubah dari 100 → 25 klaster (DashboardWilayah, TabelVerifikasi, AntrianValidasi, peta sebaran).
 
 **Issue terpisah (di luar scope F4.7):** kualitas labeling D1 — label unigram tercemar stopword (mis. "dan tidak hancur sudah sejak") dan keyword mapping 5 kategori yang bolong; ini penyebab 18 klaster label-fallback.
+
+---
+
+### 3.22 F4.7 Implementasi — Klasterisasi Tanpa "Belum Terklasifikasi" + Fallback Laporan (2026-10-13) ✅ SELESAI
+
+**Deliverable (7 langkah §3.21, semua selesai):**
+
+1. Migrasi `a7f3c91e5b2d_add_hasil_klasterisasi.py` (`down_revision=d4f8c2a91e05`, head): kolom `laporan.hasil_klasterisasi` ENUM(`belum_diproses`,`terklaster`,`noise`) sebagai penanda anti-loop + backfill 3 langkah FK-safe (lepas laporan → hapus 57 klaster noise → tandai 202 sisa `terklaster`). Guard MySQL-only seperti migrasi sebelumnya.
+2. `app/models/laporan.py`: kolom baru (file CRLF dipertahankan; `git diff --numstat` 10/0).
+3. `scripts/run_clustering.py` + `app/routers/klaster.py` (`run_clustering_sync`, kode duplikat — keduanya diubah seragam): seleksi `WHERE hasil_klasterisasi='belum_diproses'`; `cluster_id == -1` → **skip** record Klaster, laporan ditandai `noise`; klaster valid → `terklaster`; fallback aman laporan tanpa teks → `noise`; `?force_reprocess=true` ikut mereset penanda.
+4. `GET /klaster` (list): default `kategori != 'belum_terklasifikasi'`; `?kategori=belum_terklasifikasi` eksplisit tetap dilayani; `GET /klaster/{id}` tidak diubah.
+5. `app/routers/laporan.py`: **`GET /laporan/perlu-review`** (RBAC `admin`+`kepala_dinas`, envelope `{data,meta}` §0.2, 495 laporan) + **`PUT /laporan/{id}/status`** (update `status_sanggahan`; enum divalidasi manual → 422). Keduanya dideklarasikan sebelum `GET /laporan/{id}`.
+6. Test `tests/test_blackbox.py` +7 → **pytest 95/95 lulus**.
+7. `INTERFACES.md` §4 (2 endpoint baru) + §5 (catatan filter default); dump `database/simakis.sql` diregenerate + `SETUP.md` §5a.
+
+**Verifikasi (DB `simakis`, 13 Okt 2026):**
+
+| Cek | Hasil |
+|---|---|
+| `alembic current` | `a7f3c91e5b2d` (head) |
+| `klaster` | 100 → **43** (18 label-fallback) |
+| `laporan` | 600 utuh — `noise` **398**, `terklaster` **202**, `klaster_id IS NULL` **398** |
+| `GET /klaster` default / `?kategori=belum_terklasifikasi` | **25** / **18** |
+| `GET /laporan/perlu-review` (admin) | **495** |
+| RBAC live | anon **401**, verifikator **403**, admin **200** |
+| `PUT .../status` | valid **200**, nilai di luar enum **422**, id tak dikenal **404** |
+| Anti-loop (cron `scripts/run_clustering.py`) | `No unclustered laporan. Exiting.` — 0 baris dipilih |
+| Dump impor ke `simakis_import_check` | 62 / 600 / 43, `noise`=398, alembic `a7f3c91e5b2d` |
+
+**Penyimpangan kecil yang disengaja:** respons PUT tanpa `updated_at` (kolom tidak ada di model `Laporan`); validasi enum manual 422 (handler global `RequestValidationError` → 400); `force_reprocess` ikut reset penanda; laporan tanpa teks ditandai `noise`. Detail di `TASK_GUIDE.md` F4.7 "Hasil implementasi".
+
+**Dampak FE (briefing Dimas):** angka `GET /klaster` turun 100 → 25; laporan noise tak punya `klaster_id` lagi; halaman fallback baru (`/laporan/perlu-review`, `PUT .../status`) menyusul di FE.
 
 ---
 

@@ -546,3 +546,193 @@ class TestAIUpload:
             files={"file": ("a.png", b"\x89PNG", "image/png")},
         )
         assert r.status_code == 403
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. F4.7 (D-21) — Klaster tanpa "Belum Terklasifikasi" + endpoint fallback
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestFallbackReviewF47:
+    def test_list_klaster_default_sembunyikan_belum_terklasifikasi(
+        self, test_client, db_session
+    ):
+        sekolah = make_sekolah(db_session)
+        valid = make_klaster(db_session, sekolah, kategori="ruang_belajar")
+        fallback = make_klaster(db_session, sekolah, kategori="belum_terklasifikasi")
+
+        # Default: klaster label-fallback tidak tampil
+        r = test_client.get(
+            "/klaster",
+            params={"sekolah_npsn": sekolah.npsn, "page_size": 100},
+        )
+        assert r.status_code == 200
+        ids = {k["klaster_id"] for k in r.json()["data"]}
+        assert valid.id in ids
+        assert fallback.id not in ids
+        assert "belum_terklasifikasi" not in {
+            k["kategori"] for k in r.json()["data"]
+        }
+
+        # Eksplisit ?kategori=belum_terklasifikasi tetap dilayani (debug/admin)
+        r2 = test_client.get(
+            "/klaster",
+            params={
+                "sekolah_npsn": sekolah.npsn,
+                "kategori": "belum_terklasifikasi",
+                "page_size": 100,
+            },
+        )
+        assert r2.status_code == 200
+        assert {k["klaster_id"] for k in r2.json()["data"]} == {fallback.id}
+
+    def test_detail_klaster_tetap_bisa_diakses(self, test_client, db_session):
+        sekolah = make_sekolah(db_session)
+        fallback = make_klaster(db_session, sekolah, kategori="belum_terklasifikasi")
+        r = test_client.get(f"/klaster/{fallback.id}")
+        assert r.status_code == 200
+        assert r.json()["data"]["kategori"] == "belum_terklasifikasi"
+
+    def test_perlu_review_rbac(self, test_client, db_session):
+        # Anonim → 401
+        assert test_client.get("/laporan/perlu-review").status_code == 401
+
+        warga = make_user(db_session, role="warga_terverifikasi")
+        token = login(test_client, warga.email)
+        assert (
+            test_client.get("/laporan/perlu-review", headers=auth(token)).status_code
+            == 403
+        )
+
+        veri = make_user(db_session, role="verifikator_dinas")
+        token = login(test_client, veri.email)
+        assert (
+            test_client.get("/laporan/perlu-review", headers=auth(token)).status_code
+            == 403
+        )
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.get("/laporan/perlu-review", headers=auth(token))
+        assert r.status_code == 200
+
+    def test_perlu_review_isi_dan_envelope(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+
+        # (1) laporan noise: tanpa klaster → ikut
+        lap_noise = make_laporan(db_session, user, sekolah)
+        # (2) laporan di klaster label-fallback → ikut
+        klaster_fb = make_klaster(db_session, sekolah, kategori="belum_terklasifikasi")
+        lap_fb = make_laporan(db_session, user, sekolah)
+        lap_fb.klaster_id = klaster_fb.id
+        db_session.commit()
+        # (3) laporan di klaster valid → TIDAK ikut
+        klaster_valid = make_klaster(db_session, sekolah, kategori="ruang_belajar")
+        lap_valid = make_laporan(db_session, user, sekolah)
+        lap_valid.klaster_id = klaster_valid.id
+        db_session.commit()
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.get(
+            "/laporan/perlu-review",
+            params={"page_size": 100},
+            headers=auth(token),
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert set(body.keys()) >= {"data", "meta"}
+        assert set(body["meta"]) >= {
+            "page",
+            "page_size",
+            "total_items",
+            "total_pages",
+        }
+
+        ids = {item["id"] for item in body["data"]}
+        assert lap_noise.id in ids
+        assert lap_fb.id in ids
+        assert lap_valid.id not in ids
+
+        item_fb = next(i for i in body["data"] if i["id"] == lap_fb.id)
+        assert item_fb["klaster"] == {
+            "id": klaster_fb.id,
+            "label": "Kerusakan Atap Kelas",
+            "kategori": "belum_terklasifikasi",
+        }
+        assert item_fb["sekolah_nama"] == sekolah.nama
+        assert item_fb["status_sanggahan"] == "menunggu"
+
+        item_noise = next(i for i in body["data"] if i["id"] == lap_noise.id)
+        assert item_noise["klaster"] is None
+        assert body["meta"]["total_items"] >= 2
+
+    def test_put_status_rbac_dan_update(self, test_client, db_session):
+        owner = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, owner, sekolah)
+
+        # Anonim → 401
+        r = test_client.put(
+            f"/laporan/{lap.id}/status", json={"status": "divalidasi"}
+        )
+        assert r.status_code == 401
+
+        # Warga (bukan admin/kepala) → 403
+        token = login(test_client, owner.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 403
+
+        # Admin → 200 & nilai berubah
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["data"]["id"] == lap.id
+        assert body["data"]["status_sanggahan"] == "divalidasi"
+        assert lap.status_sanggahan == "divalidasi"
+
+        # Kepala dinas juga berhak → 200
+        kepala = make_user(db_session, role="kepala_dinas")
+        token = login(test_client, kepala.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "ditolak"},
+            headers=auth(token),
+        )
+        assert r.status_code == 200
+        assert r.json()["data"]["status_sanggahan"] == "ditolak"
+
+    def test_put_status_invalid_422(self, test_client, db_session):
+        owner = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, owner, sekolah)
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "bukan_status_valid"},
+            headers=auth(token),
+        )
+        assert r.status_code == 422
+
+    def test_put_status_404(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.put(
+            f"/laporan/{uuid.uuid4()}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 404
+        assert r.json()["error"]["code"] == "NOT_FOUND"

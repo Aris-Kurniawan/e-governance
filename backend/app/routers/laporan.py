@@ -6,12 +6,14 @@ from math import ceil
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, RoleChecker
 from app.core.database import get_db
-from app.models.laporan import Laporan, LaporanFoto
+from app.models.klaster import Klaster
+from app.models.laporan import Laporan, LaporanFoto, STATUS_SANGGHAN_ENUM
 from app.models.sekolah import Sekolah
 from app.models.user import User
 from app.schemas.laporan import (
@@ -117,6 +119,131 @@ def riwayat_laporan(
             "total_pages": total_pages,
         },
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# F4.7 (D-21) — Fallback laporan tanpa klaster → verifikasi manual
+# admin/kepala_dinas (pengganti klaster "Belum Terklasifikasi")
+# ─────────────────────────────────────────────────────────────────────────────
+
+require_review = RoleChecker(["admin", "kepala_dinas"])
+
+
+class LaporanStatusUpdateRequest(BaseModel):
+    """Body PUT /laporan/{id}/status.
+
+    Keterbatasan v1: tanpa field alasan (status_log terikat FK klaster NOT
+    NULL — butuh kolom baru, task terpisah).
+    """
+
+    status: str
+
+
+@router.get("/perlu-review")
+def laporan_perlu_review(
+    page: int = Query(1, ge=1, description="Halaman"),
+    page_size: int = Query(20, ge=1, le=100, description="Jumlah per halaman"),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_review),
+):
+    """F4.7 (D-21) — Daftar laporan yang perlu verifikasi manual.
+
+    Seleksi: `laporan.klaster_id IS NULL` (laporan noise HDBSCAN yang tidak
+    punya record klaster) **ATAU** `klaster.kategori = 'belum_terklasifikasi'`
+    (klaster label-fallback yang disembunyikan dari `GET /klaster` default).
+    """
+    filter_clause = or_(
+        Laporan.klaster_id.is_(None),
+        Klaster.kategori == "belum_terklasifikasi",
+    )
+
+    total_items = (
+        db.scalar(
+            select(func.count())
+            .select_from(Laporan)
+            .outerjoin(Klaster, Laporan.klaster_id == Klaster.id)
+            .where(filter_clause)
+        )
+        or 0
+    )
+
+    rows = db.execute(
+        select(Laporan, Klaster, Sekolah)
+        .outerjoin(Klaster, Laporan.klaster_id == Klaster.id)
+        .outerjoin(Sekolah, Laporan.sekolah_npsn == Sekolah.npsn)
+        .where(filter_clause)
+        .order_by(Laporan.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+
+    return {
+        "data": [
+            {
+                "id": lap.id,
+                "tracking_id": lap.tracking_id,
+                "sekolah_npsn": lap.sekolah_npsn,
+                "sekolah_nama": sek.nama if sek else None,
+                "fasilitas_terkait": lap.fasilitas_terkait,
+                "kondisi_dilaporkan": lap.kondisi_dilaporkan,
+                "deskripsi": lap.deskripsi,
+                "status_sanggahan": lap.status_sanggahan,
+                "created_at": lap.created_at.isoformat() if lap.created_at else None,
+                "klaster": (
+                    {"id": kl.id, "label": kl.label, "kategori": kl.kategori}
+                    if kl
+                    else None
+                ),
+            }
+            for lap, kl, sek in rows
+        ],
+        "meta": {
+            "page": page,
+            "page_size": page_size,
+            "total_items": total_items,
+            "total_pages": (total_items + page_size - 1) // page_size,
+        },
+    }
+
+
+@router.put("/{laporan_id}/status")
+def update_laporan_status(
+    laporan_id: str,
+    payload: LaporanStatusUpdateRequest,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_review),
+):
+    """F4.7 (D-21) — Verifikasi manual per laporan oleh admin/kepala_dinas.
+
+    Update kolom `status_sanggahan` (menunggu | divalidasi | ditolak).
+    Nilai di luar enum ditolak 422 (divalidasi manual, bukan Pydantic —
+    handler global mengubah error validasi Pydantic menjadi 400).
+    """
+    if payload.status not in STATUS_SANGGHAN_ENUM:
+        raise HTTPException(
+            status_code=422,
+            detail=f"status harus salah satu dari {list(STATUS_SANGGHAN_ENUM)}",
+        )
+
+    laporan = db.scalar(select(Laporan).where(Laporan.id == laporan_id))
+    if not laporan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Laporan dengan ID {laporan_id} tidak ditemukan",
+        )
+
+    laporan.status_sanggahan = payload.status
+    db.add(laporan)
+    db.commit()
+    db.refresh(laporan)
+
+    return {
+        "data": {
+            "id": laporan.id,
+            "tracking_id": laporan.tracking_id,
+            "status_sanggahan": laporan.status_sanggahan,
+        }
+    }
 
 
 @router.get("/{laporan_id}")

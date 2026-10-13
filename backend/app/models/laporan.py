@@ -40,6 +40,16 @@ class Laporan(Base, TimestampMixin):
         Enum(*STATUS_SANGGHAN_ENUM, name="status_sanggahan"), default="menunggu"
     )
 
+    # F4.7 (D-21): penanda anti-loop — laporan noise HDBSCAN tidak lagi jadi
+    # record Klaster; cron 02:00 memilih laporan dari kolom ini, bukan
+    # klaster_id IS NULL (yang juga cocok dengan laporan noise).
+    hasil_klasterisasi: Mapped[str] = mapped_column(
+        Enum("belum_diproses", "terklaster", "noise", name="hasil_klasterisasi"),
+        nullable=False,
+        default="belum_diproses",
+        server_default="belum_diproses",
+    )
+
     foto: Mapped[list["LaporanFoto"]] = relationship(back_populates="laporan")
 
 

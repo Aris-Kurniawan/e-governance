@@ -1277,8 +1277,11 @@ services:
 
 ### F4.7 — Klasterisasi Tanpa "Belum Terklasifikasi" + Fallback Laporan ke Admin/Kepala
 
-> 📋 **STATUS: RENCANA (disetujui Aris, 8 Okt 2026) — BELUM DIIMPLEMENTASIKEN.**
->Bagian di bawah ini adalah spesifikasi kerja, bukan catatan hasil.
+> ✅ **STATUS: SELESAI (13 Okt 2026).**
+>Hasil verifikasi: pytest **95/95** · migrasi alembic `a7f3c91e5b2d` (head) ·
+>DB `simakis`: klaster **43**, noise **398**, terklaster **202**,
+>`GET /klaster` default **25**, `GET /laporan/perlu-review` **495**.
+>Penyimpangan kecil yang disengaja tercatat di "Hasil implementasi" di bawah.
 
 **Tujuan:** Buang klaster semu `belum_terklasifikasi` dari daftar klaster, dan
 tangani laporan yang tidak ter-cluster secara **manual oleh admin/kepala dinas**
@@ -1380,6 +1383,27 @@ endpoint fallback berisi **495 laporan**.
 - Cek DB `simakis`: `klaster` = 43, `GET /klaster` (tanpa filter) = 25, `GET /laporan/perlu-review` = 495, `laporan.hasil_klasterisasi` noise = 398.
 - Cron query tidak boleh menyentuh laporan `noise` (cek manual query/`EXPLAIN`).
 - `database/simakis.sql` + tabel count di `SETUP.md` §5a diregenerate (dump lama berisi 100 klaster).
+
+#### Hasil implementasi (13 Okt 2026)
+
+- File: migrasi `alembic/versions/a7f3c91e5b2d_add_hasil_klasterisasi.py`,
+  `app/models/laporan.py`, `scripts/run_clustering.py`,
+  `app/routers/klaster.py`, `app/routers/laporan.py`,
+  `tests/test_blackbox.py` (+7 test → 95 total).
+- Penyimpangan kecil yang disengaja:
+  1. `PUT /laporan/{id}/status` merespons `{id, tracking_id, status_sanggahan}`
+     — **tanpa `updated_at`** karena model `Laporan` tidak punya kolom itu
+     (menambah kolom di luar scope "tanpa kolom baru").
+  2. Validasi enum `status` dilakukan manual di endpoint (`HTTPException 422`),
+     bukan Pydantic `Literal` — handler global `RequestValidationError`
+     (`main.py`) mengubah error validasi Pydantic menjadi `400`.
+  3. `POST /ai/cluster?force_reprocess=true` ikut mereset
+     `hasil_klasterisasi` → `belum_diproses` (tanpa ini seleksi baru
+     menganggap semua laporan sudah diproses dan reprocess jadi no-op).
+  4. Laporan tanpa teks ikut ditandai `noise` (fallback aman) supaya tidak
+     dipilih cron berulang tiap hari.
+- Anti-loop terverifikasi atas DB live: `python scripts/run_clustering.py`
+  → `No unclustered laporan. Exiting.` (0 baris dipilih).
 
 #### Risiko & catatan untuk FE (briefing Dimas)
 

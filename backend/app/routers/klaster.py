@@ -32,14 +32,20 @@ require_verifikator = RoleChecker(["verifikator_dinas"])
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_clustering_sync(db: Session, force_reprocess: bool = False):
-    """Inline clustering logic (copied from scripts/run_clustering.py)."""
+    """Inline clustering logic (copied from scripts/run_clustering.py).
+
+    F4.7 (D-21): seleksi memakai `hasil_klasterisasi = 'belum_diproses'`
+    (bukan klaster_id IS NULL) dan noise HDBSCAN (-1) tidak lagi menjadi
+    record Klaster — hanya ditandai 'noise'.
+    """
     if force_reprocess:
         stmt = select(Laporan)
         for lap in db.execute(stmt).scalars():
             lap.klaster_id = None
+            lap.hasil_klasterisasi = "belum_diproses"
         db.commit()
     
-    stmt = select(Laporan).where(Laporan.klaster_id.is_(None))
+    stmt = select(Laporan).where(Laporan.hasil_klasterisasi == "belum_diproses")
     laporan_list = db.execute(stmt).scalars().all()
     
     grouped = {}
@@ -53,6 +59,9 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
     for sekolah_npsn, laps in grouped.items():
         texts = [lap.deskripsi for lap in laps if lap.deskripsi]
         if not texts:
+            # F4.7 fallback aman: tanpa teks tidak bisa pernah di-cluster.
+            for lap in laps:
+                lap.hasil_klasterisasi = "noise"
             continue
         
         result = default_pipeline.run(texts)
@@ -68,14 +77,16 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
                 klaster_map[cluster_id].append(lap)
         
         for cluster_id_int, laps_in_cluster in klaster_map.items():
+            # F4.7 (D-21): noise HDBSCAN (-1) TIDAK lagi jadi record Klaster.
+            if cluster_id_int == -1:
+                for lap in laps_in_cluster:
+                    lap.hasil_klasterisasi = "noise"
+                continue
+
             cluster_id_str = str(cluster_id_int)
             meta = cluster_meta.get(cluster_id_str, {})
             label_teks = meta.get("label_teks", "")
             kategori = meta.get("kategori", "belum_terklasifikasi")
-            
-            if cluster_id_int == -1:
-                label_teks = "Belum Terklasifikasi"
-                kategori = "belum_terklasifikasi"
             
             kondisi_laporan = [
                 {"kondisi_dilaporkan": lap.kondisi_dilaporkan or "baik"}
@@ -116,8 +127,15 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
             
             for lap in laps_in_cluster:
                 lap.klaster_id = klaster.id
+                lap.hasil_klasterisasi = "terklaster"
             
             total_created += 1
+        
+        # F4.7 fallback aman: laporan sekolah ini yang tidak masuk cluster
+        # mana pun (mis. deskripsi kosong) -> tandai noise.
+        for lap in laps:
+            if lap.hasil_klasterisasi == "belum_diproses":
+                lap.hasil_klasterisasi = "noise"
     
     db.commit()
     return total_created
@@ -208,6 +226,12 @@ async def list_klaster(
     if kategori:
         stmt = stmt.where(Klaster.kategori == kategori)
         count_stmt = count_stmt.where(Klaster.kategori == kategori)
+    else:
+        # F4.7 (D-21): default menyembunyikan klaster kategori
+        # 'belum_terklasifikasi' (label fallback). Eksplisit
+        # ?kategori=belum_terklasifikasi tetap dilayani (debug/admin).
+        stmt = stmt.where(Klaster.kategori != "belum_terklasifikasi")
+        count_stmt = count_stmt.where(Klaster.kategori != "belum_terklasifikasi")
     if status_verifikasi:
         stmt = stmt.where(Klaster.status_verifikasi == status_verifikasi)
         count_stmt = count_stmt.where(Klaster.status_verifikasi == status_verifikasi)
