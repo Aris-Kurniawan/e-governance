@@ -206,3 +206,71 @@ manual, bukan S3 API.
 - **Catatan kontrak**: Lihat `INTERFACES.md` §2 (Catatan penting untuk implementasi v1) untuk daftar field yang di‑hide serta keterangan unimplemented (`data_resmi`, `ada_sanggahan`).
 
 **Status:** Final (2026‑09‑28).
+
+
+---
+
+### D-21: Laporan tidak ter-cluster bukan klaster — ditangani manual oleh admin/kepala dinas
+
+**Keputusan:** Outlier HDBSCAN (`-1`) **tidak lagi** diubah menjadi record
+`Klaster` ber-label `"Belum Terklasifikasi"`. Laporan yang tidak masuk klaster
+manapun tetap disimpan apa adanya (tidak dihapus) dan ditangani lewat **endpoint
+fallback** yang hanya bisa diakses `admin` + `kepala_dinas`, lengkap dengan aksi
+verifikasi manual per laporan.
+
+> **Menggantikan:** Keputusan #5 "Outlier HDBSCAN (-1) → Opsi A: klaster
+> `belum_terklasifikasi` + review verifikator" (`docs/backend/CHANGELOG.md`
+> §3.3, 23 Sep 2026) dan `TASK_GUIDE.md` F3.3 "Outlier Handling".
+
+**Alasan:**
+
+1. **Data menyimpang dari metodologi ablation.** `experiments/evaluation.py`
+   sudah mengecualikan noise dari NMI/ARI/purity
+   (`valid_mask = y_pred != -1`) dan tidak menghitungnya sebagai klaster
+   (`n_clusters` mengurangi 1); noise hanya dilaporkan sebagai `noise_ratio`.
+   Pipeline produksi justru memaksanya menjadi klaster, sehingga praktik
+   produksi tidak lagi mencerminkan eksperimen yang jadi dasar pemilihan
+   konfigurasi.
+2. **Daftar klaster jadi tidak bermakna.** Audit 8 Okt 2026: **75 dari 100**
+   klaster ber-kategori `belum_terklasifikasi` (57 noise + 18 label-fallback),
+   mencakup **495 dari 600 laporan (82,5%)**. Hanya 25 klaster (105 laporan)
+   yang benar-benar punya kategori valid.
+3. **"Wadah buangan per sekolah" menyesatkan.** Karena pipeline berjalan
+   per sekolah dengan `min_cluster_size=3`, setiap sekolah yang punya laporan
+   yang tidak berdekatan menghasilkan satu klaster `"Belum Terklasifikasi"`.
+   Klaster seperti ini bukan temuan, hanya tempat sampah.
+4. **Verifikasi klaster tidak bisa dipakai untuknya.** Endpoint
+   `PUT /klaster/{id}/verifikasi` bekerja di atas klaster; untuk laporan yang
+   memang tidak berklaster, tindakan yang tepat adalah **penilaian manual atas
+   laporan itu sendiri**, bukan memaksa klaster palsu.
+5. **Labeling failure bukan noise.** 18 klaster sisanya adalah klaster
+   **nyata** (3–8 laporan, saling mirip, ber-label TF-IDF) yang hanya gagal
+   dipetakan ke 5 kategori oleh heuristic `labeling.py`. Menyembunyikan klaster
+   ini perlu tugas terpisah (perbaikan keyword mapping), bukan ikut dibongkar di
+   sini.
+
+**Keputusan rinci:**
+
+| Aspek | Ketentuan |
+|---|---|
+| Noise HDBSCAN (`-1`) | Tidak dibuatkan record `Klaster`; laporan ditandai `hasil_klasterisasi = 'noise'` dengan `klaster_id = NULL` |
+| Klaster ber-kategori `belum_terklasifikasi` (label fallback) | Record & laporan **dipertahankan**, tetapi **disembunyikan** dari default `GET /klaster`; tetap dapat diakses via `?kategori=belum_terklasifikasi` eksplisit atau `GET /klaster/{id}` |
+| Laporan yang perlu ditinjau | `GET /laporan/perlu-review` — `klaster_id IS NULL` **atau** `klaster.kategori = 'belum_terklasifikasi'` |
+| Aksi verifikasi manual | `PUT /laporan/{laporan_id}/status` → `status_sanggahan` (`menunggu` / `divalidasi` / `ditolak`) |
+| RBAC | `admin` + `kepala_dinas` saja |
+| Anti-loop | Kolom `laporan.hasil_klasterisasi` (`belum_diproses` / `terklaster` / `noise`) menjadi penanda "sudah diproses"; query cron memakai penanda ini, **bukan** `klaster_id IS NULL` |
+| Laporan | **Tidak pernah dihapus** oleh proses ini |
+
+**Konsekuensi:**
+
+- Ada endpoint baru di kontrak API (`INTERFACES.md` §2) → pembaruan ringan bagi
+  FE: semua angka turunan `GET /klaster` berubah (100 → 25 klaster pada data
+  dev).
+- Field `kategori = belum_terklasifikasi` **tetap ada** di enum DB (dibutuhkan
+  untuk klaster label-fallback yang masih tersimpan), tetapi tidak lagi
+  dihasilkan oleh noise HDBSCAN.
+- Setelah F4.7, cron harian 02:00 WIB hanya memproses laporan dengan
+  `hasil_klasterisasi = 'belum_diproses'`.
+
+**Status:** Disetujui (8 Okt 2026) — spesifikasi implementasi di
+`docs/backend/TASK_GUIDE.md` **F4.7**.

@@ -541,6 +541,8 @@ melalui clustering (IndoBERT + HDBSCAN). Kategori ground truth = **5 kategori hi
 3. **Waktu jalan AI** → **Scheduled cron harian**
 4. **Alur verifikasi** → **Review satu per satu** + badge status tampil di publik
 5. **Outlier HDBSCAN (-1)** → **Opsi A**: klaster `belum_terklasifikasi` + review verifikator
+   — **SUPERSEDED (8 Okt 2026)**, lihat `DECISIONS.md` **D-21**: noise tidak lagi menjadi
+   klaster; laporan tanpa klaster ditangani lewat `GET /laporan/perlu-review`.
 6. **Label klaster** → **Dua-duanya**: teks bebas (TF-IDF) + enum kategori
 7. **Formula skor keparahan** → **Gabungan** `kondisi_dilaporkan` + data Dapodik
 8. **Literatur** → **Selesai dicari** (lihat tabel di atas)
@@ -958,6 +960,39 @@ ditambah 1 temuan audit kontrak (lihat #5).
 **Verifikasi:** dump diimpor ke DB sementara `simakis_import_check` → semua row count cocok (62/600/100/3, enum `status_verifikasi` 4 nilai, alembic version cocok), lalu DB sementara dihapus.
 
 **Catatan:** `PDP_ENCRYPTION_KEY` & `JWT_SECRET` di `backend/.env` dev = default `.env.example` (disengaja, agar enkripsi NIK bisa didekripsi lintas mesin). Untuk produksi keduanya wajib diganti (`DEPLOYMENT.md` §4).
+
+---
+
+### 3.21 F4.7 (RENCANA) — Klasterisasi Tanpa "Belum Terklasifikasi" + Fallback Laporan ke Admin/Kepala (2026-10-08) 📋 BELUM DIKERJAKAN
+
+**Status:** rencana/specifikasi saja — **belum ada perubahan kode**. Spesifikasi lengkap di `docs/backend/TASK_GUIDE.md` **F4.7**; keputusan desain di `docs/universal/DECISIONS.md` **D-21** (menggantikan Keputusan #5 Opsi A di §3.3).
+
+**Temuan audit (DB `simakis`, 8 Okt 2026):**
+
+| Jenis | Klaster | Laporan |
+|---|---|---|
+| Noise HDBSCAN (`-1`) → record Klaster "Belum Terklasifikasi" | 57 | 398 |
+| Label-fallback (klaster nyata, kategori gagal dipetakan `labeling.py:98`) | 18 | 97 |
+| **Total kategori `belum_terklasifikasi`** | **75 dari 100** | **495 dari 600** |
+| Klaster valid (5 kategori) | 25 | 105 |
+
+**Akar masalah:** `scripts/run_clustering.py:109-112` dan trigger manual `POST /ai/cluster` (`routers/klaster.py`) sama-sama membuat record `Klaster` untuk label `-1`, hasil dari **Keputusan #5 Opsi A** (§3.3, 23 Sep 2026). Ini **bertentangan dengan metodologi ablation** — `experiments/evaluation.py` mengecualikan noise dari NMI/ARI/purity dan tidak menghitungnya sebagai klaster (hanya melaporkan `noise_ratio`).
+
+**Rencana perubahan (7 langkah, estimasi 1 hari):**
+
+1. Migrasi Alembic: kolom `laporan.hasil_klasterisasi` ENUM(`belum_diproses`, `terklaster`, `noise`) sebagai **penanda anti-loop** — tanpa ini cron 02:00 akan re-cluster 398 laporan noise setiap hari — plus backfill 3 langkah (noise → `klaster_id = NULL` + `'noise'`, hapus 57 klaster noise, sisa 202 → `'terklaster'`).
+2. `run_clustering.py` + `routers/klaster.py`: `cluster_id == -1` → skip pembuatan record Klaster, tandai laporan `'noise'`; query cron jadi `WHERE hasil_klasterisasi = 'belum_diproses'`.
+3. `GET /klaster`: default menyembunyikan `kategori = belum_terklasifikasi` (filter eksplisit tetap dilayani).
+4. `routers/laporan.py`: `GET /laporan/perlu-review` (495 laporan: `klaster_id IS NULL` atau klaster fallback) + `PUT /laporan/{id}/status` (update `status_sanggahan`) — RBAC `admin` + `kepala_dinas`.
+5. Kontrak: `INTERFACES.md` §2 + `DECISIONS.md` D-21.
+6. Test blackbox: filter `GET /klaster`, RBAC 403 kedua endpoint, `PUT status`.
+7. Regenerate `database/simakis.sql` + update count di `SETUP.md` §5a.
+
+**Keputusan yang dicatat:** (1) record klaster noise dihapus, laporan tidak dihapus; (2) 18 klaster label-fallback disembunyikan tapi recordnya dipertahankan dan laporannya masuk endpoint fallback; (3) scope v1 backend/endpoint saja, FE menyusul (Dimas); (4) sekalian aksi verifikasi manual; (5) RBAC `admin` + `kepala_dinas`.
+
+**Dampak ke FE (untuk briefing Dimas):** angka turunan `GET /klaster` berubah dari 100 → 25 klaster (DashboardWilayah, TabelVerifikasi, AntrianValidasi, peta sebaran).
+
+**Issue terpisah (di luar scope F4.7):** kualitas labeling D1 — label unigram tercemar stopword (mis. "dan tidak hancur sudah sejak") dan keyword mapping 5 kategori yang bolong; ini penyebab 18 klaster label-fallback.
 
 ---
 
