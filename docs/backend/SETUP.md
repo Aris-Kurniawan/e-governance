@@ -102,6 +102,9 @@ mysql -u root -p -e "CREATE DATABASE simakis CHARACTER SET utf8mb4;"
 
 # jalankan migrasi (lihat DATABASE_SCHEMA.md untuk skema lengkap)
 alembic upgrade head
+
+# verifikasi parity skema model vs DB (enum + kolom) — F4.9
+./venv/bin/python scripts/verify_schema_parity.py
 ```
 
 ---
@@ -121,7 +124,7 @@ menjalankan scraper/seed/clustering ulang: impor `database/simakis.sql`.
 | `users` | 3 (akun dev — lihat §7a) |
 | `kondisi_sarana` | 304 |
 | `pdp_vault` / `status_log` / `vote` | 3 / 6 / 0 |
-| Skema alembic | `a7f3c91e5b2d` (sudah termasuk, `alembic upgrade head` jadi no-op) |
+| Skema alembic | `d3cb7888ff94` (sudah termasuk, `alembic upgrade head` jadi no-op — F4.9 idempoten) |
 
 **Langkah:**
 
@@ -157,6 +160,8 @@ JWT_SECRET=rahasia-super-aman-simakis-lamongan-2026
 |---|---|---|
 | `Unknown column 'perlu_info_tambahan'` / enum truncation | DB dibuat dari migration lama, lalu di-`upgrade` tanpa migration `d4f8c2a91e05` | Pakai dump ini (sudah final), atau `alembic upgrade head` |
 | `Unknown column 'hasil_klasterisasi'` | DB belum kena migrasi `a7f3c91e5b2d` (F4.7) | Pakai dump ini, atau `alembic upgrade head` |
+| Insert `klaster.kategori='belum_terklasifikasi'` gagal (MySQL 1265/1366) | ENUM `klaster.kategori` cuma 5 nilai (fresh install sebelum F4.9) | `alembic upgrade head` — migrasi `d3cb7888ff94` menambah nilai ke-6, idempoten |
+| Ingin cek parity skema model vs DB (enum/kolom) | — | `./venv/bin/python scripts/verify_schema_parity.py` (F4.9; `--db <url>` untuk DB yang sudah ada) |
 | `Access denied` saat impor | user MySQL berbeda | sesuaikan `-u <user>` / `DATABASE_URL` |
 | Login 401 padahal password benar | `JWT_SECRET` berbeda dari yang dipakai saat dump (tidak berpengaruh ke password — hash argon2 independen) | cek `users` terisi 3 baris, lalu login ulang |
 | `pdp_vault` gagal didekripsi | `PDP_ENCRYPTION_KEY` diganti | kembalikan nilai default di atas |

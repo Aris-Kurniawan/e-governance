@@ -1453,6 +1453,37 @@ Level: `≥70 kritis` · `50–69 tinggi` · `40–49 sedang` · `<40 rendah`.
 
 ---
 
+### F4.9 — Fix Enum `klaster.kategori` Drift (belum_terklasifikasi)
+
+> ✅ **STATUS: SELESAI (14 Okt 2026).**
+> Hasil verifikasi: fresh-install `alembic upgrade head` dari nol → enum 6 nilai ✅ ·
+> DB live no-op idempoten, 18 klaster utuh · pytest **98/98** ·
+> `scripts/verify_schema_parity.py` (baru) → PARITY OK, uji negatif menangkap drift ✅ ·
+> dump diregen (alembic `d3cb7888ff94`, diff 2 baris) + impor-verified.
+
+**Masalah:** revisi `8cca6e1b2fa3` hanya membuat ENUM5 nilai (tanpa
+`belum_terklasifikasi`), padahal `KATEGORI_ENUM` (model) = 6 nilai dan pipeline
+menulis kategori itu. DB live sudah 6 nilai (diubah di luar alembic) sehingga
+selisih tak terlihat — sampai ada fresh install ikuti SETUP.md §5 → insert 18
+klaster label-fallback gagal (MySQL 1265/1366).
+
+**Fix:** migrasi baru `d3cb7888ff94` (turunan `a7f3c91e5b2d`) — guard non-MySQL
+(SQLite test), guard idempoten via `information_schema` (enum sudah 6 nilai →
+skip), hanya `ALTER ... MODIFY` menambah value di akhir daftar (aman untuk data
+existing). `downgrade()` mengembalikan 5 nilai + peringatan backfill dulu.
+Revisi lama sengaja TIDAK diedit (sudah tercatat applied di DB live — tak akan
+dieksekusi ulang).
+
+**Guard pencegahan:** `backend/scripts/verify_schema_parity.py` — membandingkan
+**94 kolom model** (termasuk 14 ENUM) vs `information_schema`; mode default
+menguji jalur produksi sungguhan (fresh DB → `alembic upgrade head`), `--db <url>`
+membandingkan DB yang sudah ada. Exit 1 bila drift. Terdaftar di SETUP.md §5.
+
+**Ketergantungan:** perbaikan independen; memperkuat jalur deploy F4.6 (Docker
+Compose) & SETUP.md §5.
+
+---
+
 ## Dependencies antar Task
 
 ```

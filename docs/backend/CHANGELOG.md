@@ -1053,6 +1053,28 @@ ditambah 1 temuan audit kontrak (lihat #5).
 
 **Catatan:** Tidak ada migrasi DB (perhitungan on-the-fly). Tidak perlu regen dump. RBAC ketiga-role adalah asumsi — Aris dapat membatalkan. Observasi terbuka: `GET /ai/status` masih menghitung `klaster_id IS NULL` sebagai unclustered (selalu 398) — di luar scope F4.7/F4.8.
 
+### 3.24 F4.9 — Fix Enum `klaster.kategori` Drift + Guard Parity Skema (2026-10-14) ✅ SELESAI
+
+**Masalah:** `8cca6e1b2fa3` membuat ENUM `klaster.kategori` 5 nilai; model & DB live = 6 (nilai `belum_terklasifikasi` ditambahkan di luar alembic). Fresh install via `alembic upgrade head` (jalur produksi SETUP.md §5) → insert 18 klaster label-fallback gagal. Tak tertangkap test karena `conftest.py` memakai `create_all` dari model, bukan alembic.
+
+**Deliverable:**
+
+1. Migrasi `d3cb7888ff94` (down: `a7f3c91e5b2d`): guard non-MySQL + idempoten `information_schema` (sudah 6 nilai → skip); `ALTER ... MODIFY` tambah value di akhir; `downgrade()` balik ke 5 nilai + peringatan backfill.
+2. **`backend/scripts/verify_schema_parity.py` (baru)**: bandingkan 94 kolom model vs `information_schema` (14 ENUM termasuk) — mode default fresh-install (bangun DB temp → `upgrade head` → bandingkan → drop), `--db <url>` untuk DB existing; exit 1 saat drift. Didokumentasikan di SETUP.md §5 + baris troubleshooting.
+3. `database/simakis.sql` diregen (`mysqldump --single-transaction`, alembic `d3cb7888ff94`).
+4. Docs: SETUP.md §5/§5a/troubleshooting, TASK_GUIDE §F4.9, CHANGELOG §3.24.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `alembic upgrade head` di DB live | no-op idempoten → `alembic_version=d3cb7888ff94`, enum tetap 6 nilai, 18 klaster utuh |
+| Fresh install dari nol (DB temp) | chain 6 revisi sukses; enum 6 nilai = model; INSERT `kategori='belum_terklasifikasi'` OK; `hasil_klasterisasi` ada; DB temp di-drop |
+| pytest | **98/98** (84 dtk) |
+| `verify_schema_parity.py` mode fresh & `--db` live | PARITY OK (94 kolom) |
+| Uji negatif (DB berhenti di `a7f3c91e5b2d`) | **menangkap** ENUM DRIFT `klaster.kategori`, exit 1 |
+| Dump | 236.747 B, diff **2 baris** (alembic_version saja); impor ke DB temp: 62/600/43, noise 398, enum 6 nilai |
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.
