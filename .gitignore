@@ -12,6 +12,8 @@ __pycache__/
 env/
 venv/
 .venv/
+/backend/venv
+/backend/venv/
 ENV/
 build/
 develop-eggs/
@@ -44,6 +46,7 @@ backend/app/ai_pipeline/experiments/cache/
 
 # Node & Frontend
 node_modules/
+.vite/
 dist/
 dist-ssr/
 *.local
