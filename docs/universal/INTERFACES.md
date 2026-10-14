@@ -69,6 +69,7 @@ mode cursor/infinite-scroll di API ini.
 | `NOT_FOUND` | 404 | Resource tidak ditemukan |
 | `ALREADY_VOTED` | 409 | Vote dobel pada klaster yang sama |
 | `REASON_REQUIRED` | 422 | Field alasan wajib tidak diisi (lihat `PAGE_STATES.md` §C1) |
+| `UNPROCESSABLE_ENTITY` | 422 | Body di luar enum validasi (mis. `PUT /laporan/{id}/status`, F4.11) |
 | `INTERNAL_ERROR` | 500 | Kegagalan tak terduga |
 
 ### 0.4 Role (dipakai di field `role` dan enforcement RBAC)
@@ -136,7 +137,9 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
       "nama": "string",
       "alamat": "string",
       "jenjang": "SD | SMP | SMA | SMK",
-      "jumlah_isu_aktif": 0,
+      "lintang": -7.1173967,
+      "bujur": 112.3937566,
+      "jumlah_isu_aktif": 12,
       "penanda_masalah": "aman | perlu_perhatian | kritis"
     }
   ],
@@ -153,9 +156,11 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
     "alamat": "string",
     "jenjang": "string",
     "status_sekolah": "Negeri | Swasta",
+    "lintang": -7.1173967,
+    "bujur": 112.3937566,
     "akreditasi": "string | null",
     "nama_kepsek": "string | null",
-    "jumlah_isu_aktif": 0,
+    "jumlah_isu_aktif": 12,
     "penanda_masalah": "aman | perlu_perhatian | kritis",
     "rasio_guru_siswa": "1:16",
     "rasio_spm_terpenuhi": true,
@@ -207,8 +212,9 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
 **Catatan penting untuk implementasi v1 (september 2026):**
 - `data_resmi` blok (sumber, tanggal_pembaruan, tanggal_verifikasi_baseline) **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di schema. Datanya tersedia di kolom `sekolah.sumber_data` dan `sekolah.tanggal_pembaruan_data` di DB.
 - `ada_sanggahan` pada setiap item `kondisi_sarana` **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di contoh response. Endpoint untuk menghitung ada sanggahan tersedia di `GET /sekolah/{npsn}/sanggahan`.
-- `penanda_masalah` di response saat ini mengembalikan `"normal"` (bukan `aman | perlu_perhatian | kritis` seperti di kontrak). Nilai threshold dan logika perhitungan belum diputuskan — lihat `INTERFACES.md` §11.
-- `jumlah_isu_aktif` saat ini selalu `0` — belum dihitung oleh backend.
+- `penanda_masalah` dihitung sejak **F4.11 (D-23)** dari level Skor KBM (D-22): ≥70 `kritis`, 40–69 `perlu_perhatian`, <40 `aman`. Nilai legacy `"normal"` tidak lagi dikirim (FE tetap menangani untuk kompatibilitas).
+- `jumlah_isu_aktif` dihitung sejak **F4.11 (D-23)**: jumlah laporan dengan `status_sanggahan != 'ditolak'` (menunggu + divalidasi).
+- `lintang`/`bujur` (koordinat Dapodik) diekspos sejak **F4.11 (DBG-009)** — terisi dari CSV sumber, `null` bila tidak ada.
 - **Field berikut dikirim dengan nilai default (null/0) dan tidak dirender di frontend v1** karena data Dapodik tidak di-ingest per scope infrastruktur-only:
   - `rasio_guru_siswa` → `null`
   - `rasio_spm_terpenuhi` → `false`
@@ -259,7 +265,7 @@ Dapodik).
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
 | GET | `/dashboard/prioritas` | Publik | List klaster urut skor prioritas (opsional `?status=&limit=`) |
-| GET | `/dashboard/wilayah` | `verifikator_dinas`, `kepala_dinas` | Ringkasan kondisi wilayah |
+| GET | `/dashboard/wilayah` | `admin`, `verifikator_dinas`, `kepala_dinas` | Ringkasan kondisi wilayah (F4.11: `admin` dulu 403) |
 
 response `200`:
 ```json
@@ -640,9 +646,6 @@ diimplementasikan sampai ada keputusan lanjutan.
 - **Masa tunda verifikasi vote** (`DECISIONS.md` D-08) — durasinya belum
   ditentukan (berapa hari/jam sebelum status berubah dari `pending` ke
   `terhitung`).
-- **Format `penanda_masalah`** di `GET /sekolah` (§2) — nilai
-  `aman/perlu_perhatian/kritis` masih tebakan, ambang batasnya belum
-  ditentukan dari data Dapodik.
 - **Rate limit spesifik** untuk anti-buzzer (`DECISIONS.md` D-08) — belum
   ada angka konkret (berapa vote/menit dianggap mencurigakan).
 - Endpoint ini belum dicoba terhadap `backend/app/dataset/scraping/` yang

@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.ai_pipeline.scoring import calculate_kbm_score, kbm_level
 from app.core.deps import get_current_user, RoleChecker
 from app.core.audit import log_audit
+from app.core.exceptions import ApiError
 from app.core.database import get_db
 from app.models.klaster import Klaster
 from app.models.laporan import Laporan, LaporanFoto, STATUS_SANGGHAN_ENUM
@@ -223,8 +224,11 @@ def update_laporan_status(
     handler global mengubah error validasi Pydantic menjadi 400).
     """
     if payload.status not in STATUS_SANGGHAN_ENUM:
-        raise HTTPException(
+        # F4.11 (DBG-011): code eksplisit — kontrak INTERFACES §4 mewajibkan
+        # `422 UNPROCESSABLE_ENTITY`, bukan `REASON_REQUIRED` (peta status 422).
+        raise ApiError(
             status_code=422,
+            code="UNPROCESSABLE_ENTITY",
             detail=f"status harus salah satu dari {list(STATUS_SANGGHAN_ENUM)}",
         )
 

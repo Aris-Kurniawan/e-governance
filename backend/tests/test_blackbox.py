@@ -476,6 +476,13 @@ class TestDashboardAudit:
         r = test_client.get("/dashboard/wilayah", headers=auth(token))
         assert r.status_code == 200
 
+    def test_dashboard_wilayah_admin_ok(self, test_client, db_session):
+        # F4.11 (DBG-008): admin dulu kena 403 — kini ikut diizinkan.
+        user = make_user(db_session, role="admin")
+        token = login(test_client, user.email)
+        r = test_client.get("/dashboard/wilayah", headers=auth(token))
+        assert r.status_code == 200
+
     def test_audit_warga_forbidden_403(self, test_client, db_session):
         user = make_user(db_session)
         token = login(test_client, user.email)
@@ -725,6 +732,9 @@ class TestFallbackReviewF47:
             headers=auth(token),
         )
         assert r.status_code == 422
+        # F4.11 (DBG-011): code eksplisit sesuai kontrak INTERFACES §4 —
+        # bukan REASON_REQUIRED (peta lama ERROR_CODES[422]).
+        assert r.json()["error"]["code"] == "UNPROCESSABLE_ENTITY"
 
     def test_put_status_404(self, test_client, db_session):
         admin = make_user(db_session, role="admin")
@@ -1024,3 +1034,96 @@ class TestStatusPipelineF410:
         data = r.json()["data"]
         assert data["last_run"] == read_pipeline_run()["last_run"]
         assert data["last_run_status"] == "ok"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. F4.11 — Penanda/isu nyata (DBG-007), koordinat (DBG-009), ingest (DBG-010)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestPenandaIsuKoordinatF411:
+    """DBG-007/009: penanda & isu dari Skor KBM + laporan; koordinat diekspos."""
+
+    def test_sekolah_tanpa_laporan_aman(self, test_client, db_session):
+        sek = make_sekolah(db_session)
+        data = test_client.get(f"/sekolah/{sek.npsn}").json()["data"]
+        assert data["penanda_masalah"] == "aman"
+        assert data["jumlah_isu_aktif"] == 0
+        assert data["lintang"] is None
+
+    def test_laporan_berat_menjadi_kritis_dan_isu(self, test_client, db_session):
+        user = make_user(db_session)
+        sek = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sek)
+        # severity 100 → skor_laporan 100, dapodik 0 → skor_kbm 70 → kritis
+        lap.kondisi_dilaporkan = "rusak_berat"
+        db_session.commit()
+
+        data = test_client.get(f"/sekolah/{sek.npsn}").json()["data"]
+        assert data["penanda_masalah"] == "kritis"
+        assert data["jumlah_isu_aktif"] == 1
+
+    def test_laporan_ditolak_bukan_isu_aktif(self, test_client, db_session):
+        user = make_user(db_session)
+        sek = make_sekolah(db_session)
+        make_laporan(db_session, user, sek)
+        tolak = make_laporan(db_session, user, sek)
+        tolak.status_sanggahan = "ditolak"
+        db_session.commit()
+
+        data = test_client.get(f"/sekolah/{sek.npsn}").json()["data"]
+        assert data["jumlah_isu_aktif"] == 1  # hanya yang non-ditolak
+
+    def test_list_sekolah_sertakan_penanda_dan_isu(self, test_client, db_session):
+        user = make_user(db_session)
+        sek = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sek)
+        lap.kondisi_dilaporkan = "rusak_berat"
+        db_session.commit()
+
+        r = test_client.get("/sekolah", params={"page_size": 100})
+        item = next(x for x in r.json()["data"] if x["npsn"] == sek.npsn)
+        assert item["penanda_masalah"] == "kritis"
+        assert item["jumlah_isu_aktif"] == 1
+
+    def test_koordinat_diekspos_list_dan_detail(self, test_client, db_session):
+        from decimal import Decimal
+
+        sek = make_sekolah(db_session)
+        sek.lintang = Decimal("-7.1173967")
+        sek.bujur = Decimal("112.3937566")
+        db_session.commit()
+
+        data = test_client.get(f"/sekolah/{sek.npsn}").json()["data"]
+        assert data["lintang"] == pytest.approx(-7.1173967)
+        assert data["bujur"] == pytest.approx(112.3937566)
+
+        r = test_client.get("/sekolah", params={"page_size": 100})
+        item = next(x for x in r.json()["data"] if x["npsn"] == sek.npsn)
+        assert item["lintang"] == pytest.approx(-7.1173967)
+        assert item["bujur"] == pytest.approx(112.3937566)
+
+
+class TestIngestDapodikF411:
+    """DBG-010/009: ingest memakai header `nama` (CSV resmi) + koordinat ikut."""
+
+    CSV_UJI = (
+        "npsn,nama,jenjang,status_sekolah,lintang,bujur,alamat_jalan\n"
+        "99111222,SD Ingest CSV Uji,SD,Negeri,-7.1234567,112.4567890,Jl. Uji No. 1\n"
+    )
+
+    def test_ingest_header_nama_resmi_dan_koordinat(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.post(
+            "/ingest/dapodik",
+            files={"file": ("uji.csv", self.CSV_UJI.encode("utf-8"), "text/csv")},
+            headers=auth(token),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["data"]["baris_diproses"] == 1
+        assert r.json()["data"]["baris_gagal"] == 0
+
+        data = test_client.get("/sekolah/99111222").json()["data"]
+        assert data["nama"] == "SD Ingest CSV Uji"  # bukan "Unknown"
+        assert data["lintang"] == pytest.approx(-7.1234567)
+        assert data["bujur"] == pytest.approx(112.4567890)

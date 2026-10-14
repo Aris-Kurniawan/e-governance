@@ -35,7 +35,10 @@ app = FastAPI(
 # ── Amplop respons gagal — INTERFACES.md §0.1 / §0.3 ────────────────────────
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    code = ERROR_CODES.get(exc.status_code, "INTERNAL_ERROR")
+    # F4.11 (DBG-011): code eksplisit dari ApiError mengalahkan peta status.
+    code = getattr(exc, "api_code", None) or ERROR_CODES.get(
+        exc.status_code, "INTERNAL_ERROR"
+    )
     message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
     return JSONResponse(
         status_code=exc.status_code,

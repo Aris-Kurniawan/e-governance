@@ -1,5 +1,6 @@
 """Router untuk endpoint Sekolah."""
 
+from collections import defaultdict
 from math import ceil
 from typing import Optional
 
@@ -7,7 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.ai_pipeline.scoring import calculate_kbm_score, kbm_level
 from app.core.database import get_db
+from app.models.laporan import Laporan
 from app.models.sekolah import KondisiSarana, Sekolah
 from app.schemas.sekolah import (
     KondisiSaranaResponse,
@@ -17,6 +20,71 @@ from app.schemas.sekolah import (
 )
 
 router = APIRouter(prefix="/sekolah", tags=["sekolah"])
+
+
+# F4.11 / D-23 (DBG-007): penanda_masalah diturunkan dari level Skor KBM
+# (F4.8/D-22) — ambang: <40 aman | 40–69 perlu_perhatian | ≥70 kritis.
+PENANDA_BY_LEVEL = {
+    "kritis": "kritis",
+    "tinggi": "perlu_perhatian",
+    "sedang": "perlu_perhatian",
+    "rendah": "aman",
+}
+_KOSONG = {"total": 0, "berat": 0, "sedang": 0, "ringan": 0}
+
+
+def _penanda_isu_per_sekolah(
+    db: Session, npsns: list[str]
+) -> dict[str, tuple[str, int]]:
+    """D-23: (penanda_masalah, jumlah_isu_aktif) untuk daftar NPSN.
+
+    - penanda: level Skor KBM — rumus & skala identik dengan
+      `GET /laporan/skor-kbm` (agregasi tanpa filter `sumber`, sama persis).
+    - jumlah_isu_aktif: laporan warga berstatus selain `ditolak`
+      (menunggu + divalidasi = isu yang masih berdiri).
+    """
+    if not npsns:
+        return {}
+
+    laps_per: dict[str, list] = defaultdict(list)
+    isu_per: dict[str, int] = defaultdict(int)
+    for npsn, kondisi, status_sanggahan in db.execute(
+        select(
+            Laporan.sekolah_npsn,
+            Laporan.kondisi_dilaporkan,
+            Laporan.status_sanggahan,
+        ).where(Laporan.sekolah_npsn.in_(npsns))
+    ).all():
+        laps_per[npsn].append(kondisi)
+        if status_sanggahan != "ditolak":
+            isu_per[npsn] += 1
+
+    dapodik_per: dict[str, dict] = defaultdict(lambda: dict(_KOSONG))
+    for npsn, jumlah, berat, sedang, ringan in db.execute(
+        select(
+            KondisiSarana.sekolah_npsn,
+            KondisiSarana.jumlah,
+            KondisiSarana.kondisi_rusak_berat,
+            KondisiSarana.kondisi_rusak_sedang,
+            KondisiSarana.kondisi_rusak_ringan,
+        ).where(KondisiSarana.sekolah_npsn.in_(npsns))
+    ).all():
+        d = dapodik_per[npsn]
+        d["total"] += jumlah or 0
+        d["berat"] += berat or 0
+        d["sedang"] += sedang or 0
+        d["ringan"] += ringan or 0
+
+    out: dict[str, tuple[str, int]] = {}
+    for npsn in npsns:
+        k = calculate_kbm_score(
+            laps_per.get(npsn, []), dapodik_per.get(npsn, dict(_KOSONG))
+        )
+        out[npsn] = (
+            PENANDA_BY_LEVEL[kbm_level(k["skor_kbm"])],
+            isu_per.get(npsn, 0),
+        )
+    return out
 
 
 @router.get("", response_model=SekolahListResponse)
@@ -48,6 +116,9 @@ def list_sekolah(
 
     schools = db.scalars(query).all()
 
+    # F4.11 (DBG-007/009): penanda & isu dihitung nyata; koordinat diekspos.
+    hitung = _penanda_isu_per_sekolah(db, [s.npsn for s in schools])
+
     return {
         "data": [
             SekolahResponse(
@@ -56,8 +127,10 @@ def list_sekolah(
                 alamat=s.alamat,
                 jenjang=s.jenjang,
                 status_sekolah=s.status_sekolah,
-                jumlah_isu_aktif=0,
-                penanda_masalah="normal",
+                lintang=float(s.lintang) if s.lintang is not None else None,
+                bujur=float(s.bujur) if s.bujur is not None else None,
+                jumlah_isu_aktif=hitung[s.npsn][1],
+                penanda_masalah=hitung[s.npsn][0],
             )
             for s in schools
         ],
@@ -93,12 +166,19 @@ def get_sekolah(npsn: str, db: Session = Depends(get_db)):
     total_rusak_sedang = sum(s.kondisi_rusak_sedang for s in sarana_list)
     total_rusak_berat = sum(s.kondisi_rusak_berat for s in sarana_list)
 
+    # F4.11 (DBG-007/009): penanda & isu dihitung nyata; koordinat diekspos.
+    penanda, isu_aktif = _penanda_isu_per_sekolah(db, [npsn])[npsn]
+
     return {"data": SekolahDetailResponse(
         npsn=sekolah.npsn,
         nama=sekolah.nama,
         alamat=sekolah.alamat,
         jenjang=sekolah.jenjang,
         status_sekolah=sekolah.status_sekolah,
+        lintang=float(sekolah.lintang) if sekolah.lintang is not None else None,
+        bujur=float(sekolah.bujur) if sekolah.bujur is not None else None,
+        jumlah_isu_aktif=isu_aktif,
+        penanda_masalah=penanda,
         akreditasi=sekolah.akreditasi,
         nama_kepsek=sekolah.nama_kepsek,
         rasio_guru_siswa=sekolah.data_resmi[0].rasio_guru_siswa

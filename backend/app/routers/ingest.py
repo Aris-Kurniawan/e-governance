@@ -18,6 +18,17 @@ from app.models.user import User
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
 
+from decimal import Decimal, InvalidOperation
+
+
+def _koord(val) -> Decimal | None:
+    """F4.11 (DBG-009): parse nilai lintang/bujur CSV → Decimal | None."""
+    try:
+        return Decimal((val or "").strip())
+    except (TypeError, ValueError, InvalidOperation):
+        return None
+
+
 @router.post("/dapodik", status_code=status.HTTP_201_CREATED)
 def ingest_dapodik_csv(
     file: UploadFile,
@@ -60,9 +71,11 @@ def ingest_dapodik_csv(
                 sekolah = db.scalar(select(Sekolah).where(Sekolah.npsn == npsn))
                 if not sekolah:
                     # Insert sekolah baru
+                    # F4.11 (DBG-010): header CSV resmi memakai kolom `nama`
+                    # (fallback `nama_sekolah` untuk kompatibilitas lama).
                     sekolah = Sekolah(
                         npsn=npsn,
-                        nama=row.get("nama_sekolah", "Unknown"),
+                        nama=(row.get("nama") or row.get("nama_sekolah") or "Unknown")[:255],
                         alamat=row.get("alamat", ""),
                         jenjang=row.get("jenjang", "SD").upper(),
                         status_sekolah=row.get("status_sekolah"),
@@ -70,11 +83,21 @@ def ingest_dapodik_csv(
                         desa_kelurahan=row.get("desa_kelurahan"),
                         akreditasi=row.get("akreditasi"),
                         nama_kepsek=row.get("nama_kepsek"),
+                        lintang=_koord(row.get("lintang")),
+                        bujur=_koord(row.get("bujur")),
                         sumber_data="Dapodik",
                         tanggal_pembaruan_data=datetime.now().date(),
                     )
                     db.add(sekolah)
                     db.flush()
+                else:
+                    # F4.11 (DBG-009): backfill koordinat saat re-ingest.
+                    lintang = _koord(row.get("lintang"))
+                    bujur = _koord(row.get("bujur"))
+                    if lintang is not None:
+                        sekolah.lintang = lintang
+                    if bujur is not None:
+                        sekolah.bujur = bujur
 
                 # Update/Insert kondisi sarana
                 jenis_sarana = [

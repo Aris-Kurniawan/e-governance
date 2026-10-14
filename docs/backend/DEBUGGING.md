@@ -28,11 +28,11 @@
 | DBG-004 | `GET /ai/status`: `unclustered_laporan` selalu 398; `last_run` hardcoded `"N/A"` | `routers/klaster.py` | ✅ SELESAI | F4.10 — seleksi `belum_diproses` + state file; live: 0, `last_run` nyata |
 | DBG-005 | `log_audit()` 0 call site — tabel `audit_log` 0 baris; halaman FE Log Audit PDP selalu kosong | `core/audit.py` | ✅ SELESAI | F4.10 — 5 call site + 5 test; audit_log live terisi |
 | DBG-006 | Jadwal cron 02:00 WIB tidak pernah dipasang (`crontab -l` kosong) | crontab (mesin dev) | ✅ SELESAI | F4.10 — crontab `0 2 * * *` terpasang, cron active, simulasi sukses |
-| DBG-007 | `penanda_masalah` selalu `"normal"`, `jumlah_isu_aktif` selalu 0 (deviasi kontrak #1) | `routers/sekolah.py:60-61` | ⚪ TERBLOKIR | Butuh formula ambang `aman/perlu_perhatian/kritis` (keputusan Aris) |
-| DBG-008 | `GET /dashboard/wilayah` menolak role `admin` (403) (deviasi kontrak #3) | `routers/dashboard.py:17` | 🔴 TERBUKA | Tambah `admin` ke `require_dinas` + test |
-| DBG-009 | `lintang`/`bujur` NULL 62/62 padahal CSV sumber lengkap (deviasi kontrak #4) | `setup_f300.py:180`, `routers/ingest.py:63` | 🔴 TERBUKA | Petakan 2 kolom di 2 lokasi + reseed |
-| DBG-010 | `ingest.py` baca `row.get("nama_sekolah")` padahal header CSV = `nama` → nama bisa "Unknown" | `routers/ingest.py:65` | 🔴 TERBUKA | Ubah key ke `nama` (kompatibel CSV resmi) + test |
-| DBG-011 | Global handler `RequestValidationError` mengembalikan **400**, bukan 422 (deviasi INTERFACES) | `main.py` (handler global) | ⚪ TERBLOKIR | Ubah ke 422 = ubah kontrak global; perlu keputusan (F4.7 menyiasati dengan `HTTPException(422)` manual) |
+| DBG-007 | `penanda_masalah` selalu `"normal"`, `jumlah_isu_aktif` selalu 0 (deviasi kontrak #1) | `routers/sekolah.py` | ✅ SELESAI | F4.11 (D-23): penanda = level Skor KBM, isu = laporan non-ditolak; live 39/22/1 |
+| DBG-008 | `GET /dashboard/wilayah` menolak role `admin` (403) (deviasi kontrak #3) | `routers/dashboard.py` | ✅ SELESAI | F4.11 — `require_dinas` += `admin`; live 200 + test |
+| DBG-009 | `lintang`/`bujur` NULL 62/62 padahal CSV sumber lengkap (deviasi kontrak #4) | `setup_f300.py`, `routers/ingest.py` | ✅ SELESAI | F4.11 — mapping + backfill idempoten + expose; live 62/62 |
+| DBG-010 | `ingest.py` baca `row.get("nama_sekolah")` padahal header CSV = `nama` → nama bisa "Unknown" | `routers/ingest.py` | ✅ SELESAI | F4.11 — key `nama` + fallback; test ingest CSV resmi |
+| DBG-011 | Semua `422` dipetakan jadi `REASON_REQUIRED`; `PUT /laporan/{id}/status` wajib `UNPROCESSABLE_ENTITY` (§4). *400 generik = sesuai §0.3 (diagnosis awal salah)* | `main.py` handler | ✅ SELESAI | F4.11 — `ApiError(api_code)` + baris §0.3 + tipe FE; live 422 code benar |
 
 ---
 
@@ -85,37 +85,43 @@
 - **Verifikasi:** `crontab -l` menampilkan 1 entri; simulasi persis baris crontab sukses (log + state file terisi); run script manual → state `status: ok`.
 - **Sisa:** pasang crontab yang sama saat deploy ke server produksi (berlaku selama mesin menyala pukul 02:00 WIB); checklist `DEPLOYMENT.md` belum disentuh.
 
-### DBG-007 ⚪ — `penanda_masalah` selalu `"normal"` (butuh keputusan)
+### DBG-007 ✅ — `penanda_masalah` selalu `"normal"` (2026-10-14, D-23)
 
 - **Gejala:** `GET /sekolah` selalu `penanda_masalah="normal"`, `jumlah_isu_aktif=0`; semua 62 sekolah tampil aman; `totalKritis` di FE = 0 selamanya; filter Status Integritas tak menyaring apa-apa.
 - **Akar:** placeholder awal tanpa formula keputusan (ambang kritis dari apa? jumlah isu? skor KBM?).
 - **Dampak produksi:** *false sense of security* — papan dashboard hijau padahal ada 129 ruang rusak berat (terungkap baru oleh Skor KBM F4.8).
-- **Blokir:** butuh keputusan formula dari Aris. Kandidat alami setelah F4.8: turunkan dari `level` Skor KBM (`kritis`/`tinggi` → `penanda_masalah`).
+- **Penyelesaian (F4.11, D-23):** arah kandidat direalisasikan penuh — `_penanda_isu_per_sekolah()` di `routers/sekolah.py` menghitung per halaman list & detail: `penanda_masalah` = level Skor KBM (≥70 `kritis`, 40–69 `perlu_perhatian`, <40 `aman`), `jumlah_isu_aktif` = laporan `status_sanggahan != 'ditolak'`; agregasi dibuat identik dengan `GET /laporan/skor-kbm`.
+- **Verifikasi:** live `GET /sekolah?page_size=100` → `perlu_perhatian 39 · aman 22 · kritis 1`, total isu 600; 4 test baru (tanpa laporan→aman, laporan berat→kritis, ditolak→bukan isu, list menyertai keduanya).
 
-### DBG-008 🔴 — `/dashboard/wilayah` menolak `admin` (403)
+### DBG-008 ✅ — `/dashboard/wilayah` menolak `admin` (403) (2026-10-14)
 
 - **Gejala:** login `admin@simakis.id` → buka ringkasan wilayah → 403 (deviasi kontrak #3).
 - **Akar:** `require_dinas = ["verifikator_dinas","kepala_dinas"]` dibuat sebelum role `admin` dipakai luas; tak ada audit silang role↔endpoint.
-- **Rencana:** tambahkan `admin` ke `require_dinas` + 1 test black-box (admin → 200). Kecil; pastikan juga tak ada endpoint lain dengan gap serupa (audit `RoleChecker` sekali jalan).
+- **Penyelesaian (F4.11):** `require_dinas = ["admin", "verifikator_dinas", "kepala_dinas"]` + test `test_dashboard_wilayah_admin_ok`; audit `RoleChecker` vs INTERFACES tidak menemukan gap lain (verifikasi klaster verifikator-only = per kontrak).
+- **Verifikasi:** live admin → `GET /dashboard/wilayah` **200**; pytest 112/112. Kontrak INTERFACES baris wilayah diperbarui (+`admin`).
 
-### DBG-009 🔴 — `lintang`/`bujur` NULL 62/62 padahal CSV lengkap
+### DBG-009 ✅ — `lintang`/`bujur` NULL 62/62 padahal CSV lengkap (2026-10-14)
 
 - **Gejala:** Peta Sebaran tanpa pin; DB `non-null lintang = 0`. Sumber `backend/app/dataset/raw/sekolah_lamongan_semua.csv`: kolom `lintang`/`bujur` **terisi 62/62** (contoh `-7.1173967`, `112.3937566`).
 - **Akar:** pemetaan CSV→model ditulis manual per kolom yang "dipakai saat itu"; 2 kolom ini terlewat di `setup_f300.py` (seed) **dan** `routers/ingest.py` — data hilang di jembatan, bukan di sumber.
-- **Rencana:** tambah `lintang=row.get("lintang")`, `bujur=row.get("bujur")` di `setup_f300.py` + `ingest.py`; reseed; expose di `GET /sekolah` bila FE butuh; assert kelengkapan di test seed.
+- **Penyelesaian (F4.11):** helper `_koord()` (parse → `Decimal`, aman terhadap nilai kosong/jelek) di `setup_f300.py` **dan** `ingest.py` — diisi saat insert **plus backfill idempoten** saat sekolah sudah ada (jalur `existing`); `lintang`/`bujur` ditambahkan ke `SekolahResponse` (list + detail); reseed `setup_f300.py` dijalankan ulang (idempoten).
+- **Verifikasi:** `COUNT(lintang)=62, COUNT(bujur)=62` (dulu 0/0); live list menampilkan koordinat tiap baris; test `test_koordinat_diekspos_list_dan_detail` + ingest fixture CSV ber-koordinat → 112/112.
 
-### DBG-010 🔴 — `ingest.py` salah key kolom nama
+### DBG-010 ✅ — `ingest.py` salah key kolom nama (2026-10-14)
 
 - **Gejala:** upload CSV via `POST /ingest/dapodik` menghasilkan `nama="Unknown"` — endpoint memakai `row.get("nama_sekolah")`, header CSV resmi = `nama`.
 - **Akar:** endpoint ditulis terhadap versi CSV hipotetis; tidak diuji dengan CSV asli (`sekolah_lamongan_semua.csv`).
-- **Rencana:** `row.get("nama")` (dengan fallback `nama_sekolah` bila mau kompatibel); tambah test ingest 1 baris dari CSV fixture.
+- **Penyelesaian (F4.11):** `nama=(row.get("nama") or row.get("nama_sekolah") or "Unknown")[:255]` — header resmi dilayani, CSV lama tetap kompatibel.
+- **Verifikasi:** test `TestIngestDapodikF411` — upload CSV fixture header `nama` → `baris_diproses: 1`, `GET /sekolah/99111222` mengembalikan `nama == "SD Ingest CSV Uji"` (bukan "Unknown") + koordinat ikut terbaca; 112/112.
 
-### DBG-011 ⚪ — Handler validasi global mengembalikan 400, bukan 422 (butuh keputusan)
+### DBG-011 ✅ — Code 422 tercampur `REASON_REQUIRED` (2026-10-14, diagnosis ulang)
 
 - **Gejala:** body request invalid di endpoint mana pun → **400**, sedangkan kontrak INTERFACES menyebut 422 (mis. `PUT /laporan/{id}/status` enum salah).
 - **Akar:** global handler `RequestValidationError` di `main.py` meng-`wrap` jadi 400; menimpa perilaku bawaan FastAPI (422).
 - **Dampak:** klien/FE yang mengandalkan 422 (documented) tak akan melihatnya; F4.7 menyiasati dengan validasi manual `HTTPException(422)`.
-- **Blokir:** mengubah global handler = mengubah kontrak semua endpoint sekaligus + test yang menAssert 400 → butuh keputusan arah (ubah handler ke 422 + perbarui test/kontrak, ATAU tetap 400 + perbarui INTERFACES).
+- **Diagnosis ulang (F4.11):** hipotesis awal **salah** — `400 VALIDATION_ERROR` untuk Pydantic/query validation **sesuai** kontrak INTERFACES §0.3 (FE & test juga mengandalkan 400). Deviasi sebenarnya: `ERROR_CODES[422] = "REASON_REQUIRED"` berlaku untuk **semua** 422, sedangkan kontrak §4 mewajibkan `422 UNPROCESSABLE_ENTITY` untuk body enum invalid (`PUT /laporan/{id}/status`) — kode keliru `REASON_REQUIRED` selama ini lolos karena test hanya menAssert status.
+- **Penyelesaian (F4.11):** `app/core/exceptions.py::ApiError(status_code, code, detail)` membawa `api_code`; `http_exception_handler` memprioritaskan `getattr(exc, "api_code", None)` di atas peta status; `laporan.py` memakai `ApiError(422, "UNPROCESSABLE_ENTITY", …)`; baris kode baru di INTERFACES §0.3; union `ApiErrorCode` di `frontend/src/lib/api/errors.ts` += `UNPROCESSABLE_ENTITY`. Handler generik tetap 400 (tanpa perubahan kontrak massal).
+- **Verifikasi:** live `PUT /laporan/{id}/status` invalid → `422 {"code": "UNPROCESSABLE_ENTITY"}` (bukan `REASON_REQUIRED`); test `test_put_status_invalid_422` diperkuat assert code; generic validation tetap `400 VALIDATION_ERROR` (test lama lolos); 112/112.
 
 ---
 

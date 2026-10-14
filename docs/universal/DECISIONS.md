@@ -321,3 +321,21 @@ sehingga angka "siswa terdampak" mustahil dihitung.
   kelak ada data temporal yang valid.
 
 **Status:** Disetujui (13 Okt 2026) — implementasi F4.8.
+
+
+### D-23: penanda_masalah & jumlah_isu_aktif — turunan Skor KBM dan laporan aktif
+
+**Status:** Disetujui implisit (Aris, 14 Okt 2026 — instruksi menyelesaikan DBG-007); formula dapat ditinjau ulang.
+
+**Masalah:** `GET /sekolah` selalu mengirim `penanda_masalah="normal"` (di luar kontrak §2) dan `jumlah_isu_aktif=0` — filter Direktori, KPI "Sekolah kritis", dan badge status FE mati; papan hijau padahal ada 129 ruang rusak berat (DBG-007).
+
+**Keputusan:**
+
+| Aspek | Nilai |
+|---|---|
+| `penanda_masalah` | diturunkan dari level Skor KBM (D-22): `kritis` (≥70) → `kritis`; `tinggi`/`sedang` (40–69) → `perlu_perhatian`; `rendah` (<40) → `aman` |
+| `jumlah_isu_aktif` | jumlah laporan warga sekolah dengan `status_sanggahan != 'ditolak'` (menunggu + divalidasi = isu masih berdiri) |
+| Sumber perhitungan | identik dengan `GET /laporan/skor-kbm` — on-the-fly, tanpa kolom/migrasi baru |
+| Cakupan | `GET /sekolah` (list, per halaman) dan `GET /sekolah/{npsn}` (detail) |
+
+**Konsekuensi:** nilai `"normal"` tidak lagi dikirim; distribusi live (62 sekolah): `perlu_perhatian` 39 · `aman` 22 · `kritis` 1. Update baris Scope FINAL di `AGENTS.md` memerlukan persetujuan terpisah.

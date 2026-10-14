@@ -1103,6 +1103,33 @@ ditambah 1 temuan audit kontrak (lihat #5).
 - Saat deploy ke server produksi: pasang crontab yang sama (mesin harus menyala 02:00 WIB) — checklist `DEPLOYMENT.md` belum disentuh.
 - Docs terkait: `DEBUGGING.md` (DBG-004/005/006 → ✅ + bukti), INTERFACES baris `/ai/status`.
 
+### 3.26 F4.11 — Fix bug backend DBG-007…011 (2026-10-14) ✅ SELESAI
+
+**Deliverable:**
+
+1. **DBG-007 (D-23) — penanda/isu nyata.** Helper `_penanda_isu_per_sekolah()` di `routers/sekolah.py`: `penanda_masalah` = level Skor KBM (D-22) — ≥70 `kritis`, 40–69 `perlu_perhatian`, <40 `aman`; `jumlah_isu_aktif` = laporan dengan `status_sanggahan != 'ditolak'`. Berlaku untuk **list & detail**; agregasi identik dengan `GET /laporan/skor-kbm` (tanpa kolom baru).
+2. **DBG-008 — RBAC wilayah.** `require_dinas` di `routers/dashboard.py` += `admin` (dulu 403).
+3. **DBG-009 — koordinat.** Helper `_koord()` (→ `Decimal`) di `scripts/setup_f300.py` + `routers/ingest.py`: isi saat insert **dan** backfill idempoten saat re-ingest; `lintang`/`bujur` diekspos di `SekolahResponse` (list + detail); reseed live dijalankan.
+4. **DBG-010 — nama ingest.** Key `nama` (header CSV resmi) dengan fallback `nama_sekolah` + slice `[:255]` → tak lagi "Unknown".
+5. **DBG-011 (diagnosis ulang) — code 422.** Generic `400 VALIDATION_ERROR` ternyata **sesuai** INTERFACES §0.3 — bukan deviasi. Deviasi nyata: semua 422 dipetakan `ERROR_CODES` jadi `REASON_REQUIRED`, padahal kontrak §4 mewajibkan `422 UNPROCESSABLE_ENTITY` untuk body enum invalid. Solusi: `app/core/exceptions.py::ApiError(status, code, detail)` — handler kini memprioritaskan `exc.api_code`; `PUT /laporan/{id}/status` memakai `ApiError(422, "UNPROCESSABLE_ENTITY", …)`; baris `UNPROCESSABLE_ENTITY` ditambah ke §0.3; union `ApiErrorCode` FE (`errors.ts`) += `UNPROCESSABLE_ENTITY`.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| pytest | **112/112** (106 dtk; +7 test: wilayah admin, penanda×4, koordinat, ingest) |
+| `GET /sekolah` live | penanda `perlu_perhatian 39 / aman 22 / kritis 1` · total isu 600 · koordinat 62/62 |
+| `setup_f300.py` rerun | idempoten — [SKIP] admin & 600 laporan, 0 sekolah/sarana baru, koordinat ter-backfill |
+| Koordinat DB | `COUNT(lintang)=62`, `COUNT(bujur)=62` (dulu 0/0) |
+| `GET /dashboard/wilayah` (admin live) | 200 (dulu 403) |
+| `PUT /laporan/{id}/status` invalid live | `422 {"error": {"code": "UNPROCESSABLE_ENTITY", …}}` |
+
+**Catatan:**
+
+- Tanpa migrasi DB. AGENTS.md §Scope FINAL (baris `penanda_masalah`/`jumlah_isu_aktif` placeholder) kini usang — **perlu update eksplisit dari pemilik proyek**.
+- Komentar FE (`Direktori.tsx`, `Dashboard.tsx`, `PetaSebaranDinas.tsx`, `DashboardKadis.tsx`, `types.ts`) masih menyebut backend placeholder — sebagian sudah disesuaikan (`types.ts`); sisa cleanup + wiring peta koordinat = lane FE terbuka.
+- Audit `RoleChecker` vs INTERFACES: tak ada gap lain (verifikasi klaster verifikator-only = per kontrak).
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

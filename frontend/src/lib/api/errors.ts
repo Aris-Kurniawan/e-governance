@@ -18,6 +18,7 @@ export type ApiErrorCode =
   | "NOT_FOUND"
   | "ALREADY_VOTED"
   | "REASON_REQUIRED"
+  | "UNPROCESSABLE_ENTITY"
   | "INTERNAL_ERROR"
   | "NETWORK_ERROR";
 

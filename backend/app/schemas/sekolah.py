@@ -29,6 +29,8 @@ class SekolahResponse(BaseModel):
     alamat: Optional[str] = None
     jenjang: str
     status_sekolah: Optional[str] = None
+    lintang: Optional[float] = None  # F4.11 (DBG-009) — koordinat Dapodik
+    bujur: Optional[float] = None
     jumlah_isu_aktif: int = 0
     penanda_masalah: str = "normal"
 

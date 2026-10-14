@@ -86,10 +86,10 @@ export interface UserMe {
 export type Jenjang = "SD" | "SMP" | "SMA" | "SMK";
 
 /**
- * `penanda_masalah`: backend v1 selalu mengirim `"normal"`
- * (lihat AGENTS.md "Scope FINAL"). Nilai `aman`/`perlu_perhatian`/`kritis`
- * ada di kontrak §2 tetapi belum dihitung backend — FE harus tetap
- * menangani keduanya.
+ * `penanda_masalah` — INTERFACES §2: `aman | perlu_perhatian | kritis`.
+ * Sejak F4.11 (D-23) backend menghitungnya dari level Skor KBM
+ * (≥70 `kritis`, 40–69 `perlu_perhatian`, <40 `aman`); `"normal"` adalah
+ * nilai legacy backend v1 yang tetap ditangani untuk kompatibilitas.
  */
 export type PenandaMasalah = "normal" | "aman" | "perlu_perhatian" | "kritis";
 
