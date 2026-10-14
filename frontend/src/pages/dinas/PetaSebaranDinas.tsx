@@ -17,36 +17,76 @@ import {
 } from "lucide-react"
 import { useMemo } from "react"
 import { useFetch } from "@/hooks/useFetch"
-import { listKlaster } from "@/lib/api/klaster"
+import { listKlaster, detailKlaster } from "@/lib/api/klaster"
+import { listSekolah, detailSekolah } from "@/lib/api/sekolah"
+import type { KondisiSarana } from "@/lib/api/types"
 import { MapContainer, SeverityMarker, MapLegend } from "@/components/map"
 import { AreaTrendChart, HorizontalBarChart } from "@/components/charts"
+
+interface KlasterRingkas {
+  klasterId: string
+  skor: number
+  kategori: string
+  label: string | null
+  votes: number
+}
 
 interface PointItem {
   id: string
   sekolah: string
   npsn: string
-  kecamatan: string
+  alamat: string
+  jenjang: string
   skor: number
-  status: string
+  status: "kritis" | "sedang" | "rendah"
   lat: number
   lng: number
-  posX?: number
-  posY?: number
-  fasilitas: string
-  deskripsi: string
-  dapodikKondisi: string
-  laporanWarga: number
+  topKlasterId: string | null
+  klasterIds: string[]
   dukunganWarga: number
-  radius: string
 }
 
-/**
- * F4.1 — backend v1 belum menyimpan koordinat lintang/bujur sekolah
- * (kolom `sekolah.lintang`/`bujur` kosong di basis data) dan belum punya
- * endpoint riwayat isu per bulan. Keduanya ditampilkan sebagai empty state,
- * bukan titik/angka rekaan.
- */
+interface PopupDetail {
+  status: "loading" | "ready" | "error"
+  message?: string
+  fasilitas?: string
+  dapodikKondisi?: string | null
+  deskripsi?: string
+  laporanWarga?: number
+}
+
 const TIDAK_ADA = "—"
+
+const JENJANG_FILTER: Record<string, string[]> = {
+  "Semua Jenjang": [],
+  "SD/MI": ["SD"],
+  "SMP/MTs": ["SMP"],
+  "SMA/SMK": ["SMA", "SMK"],
+}
+
+const STATUS_FILTER: Record<string, "kritis" | "sedang" | "rendah"> = {
+  "Mismatch Kritis (>70)": "kritis",
+  "Selisih Sedang (40-70)": "sedang",
+  "Rendah (<40)": "rendah",
+}
+
+function statusDariSkor(skor: number): "kritis" | "sedang" | "rendah" {
+  if (skor > 70) return "kritis"
+  if (skor >= 40) return "sedang"
+  return "rendah"
+}
+
+function kondisiDominanDapodik(s: KondisiSarana): string | null {
+  const ops: Array<[string, number]> = [
+    ["Baik", s.kondisi_baik],
+    ["Rusak ringan", s.kondisi_rusak_ringan],
+    ["Rusak sedang", s.kondisi_rusak_sedang],
+    ["Rusak berat", s.kondisi_rusak_berat],
+  ]
+  const maks = Math.max(...ops.map(([, n]) => n))
+  if (maks <= 0) return null
+  return ops.find(([, n]) => n === maks)?.[0] ?? null
+}
 
 export default function PetaSebaranDinas() {
   const navigate = useNavigate()
@@ -56,6 +96,8 @@ export default function PetaSebaranDinas() {
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null)
   const [popupPos, setPopupPos] = useState<{ x: number; y: number } | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [popupDetail, setPopupDetail] = useState<PopupDetail | null>(null)
+  const [popupRetryKey, setPopupRetryKey] = useState(0)
   const dragStartRef = useRef<{
     startX: number
     startY: number
@@ -67,13 +109,127 @@ export default function PetaSebaranDinas() {
   const [status, setStatus] = useState<string>("Semua Status (Mismatch & Baru)")
   const [onlyMismatch, setOnlyMismatch] = useState<boolean>(true)
 
-  const { state: klasterState, refetch: refetchKlaster } = useFetch(() => listKlaster({ page_size: 100 }))
+  const { state: sekolahState, refetch: refetchSekolah } = useFetch(() =>
+    listSekolah({ page_size: 100 }),
+  )
+  const { state: klasterState, refetch: refetchKlaster } = useFetch(() =>
+    listKlaster({ page_size: 100 }),
+  )
+  const daftarSekolah = sekolahState.status === "success" ? sekolahState.data.data : []
   const daftarKlaster = klasterState.status === "success" ? klasterState.data.data : []
 
-  // Titik peta membutuhkan koordinat; backend belum mengirimnya → kosong.
-  const petaMismatchTitik: PointItem[] = []
+  const klasterPerSekolah = useMemo(() => {
+    const peta = new Map<string, KlasterRingkas[]>()
+    for (const k of daftarKlaster) {
+      const arr = peta.get(k.sekolah_npsn) ?? []
+      arr.push({
+        klasterId: k.klaster_id,
+        skor: k.skor_prioritas,
+        kategori: k.kategori,
+        label: k.label,
+        votes: k.jumlah_vote_terhitung,
+      })
+      peta.set(k.sekolah_npsn, arr)
+    }
+    for (const arr of peta.values()) arr.sort((a, b) => b.skor - a.skor)
+    return peta
+  }, [daftarKlaster])
 
-  const selectedPoint = petaMismatchTitik.find((p) => p.id === selectedPointId) as PointItem | undefined
+  // Titik peta = sekolah dengan koordinat Dapodik nyata (lintang/bujur);
+  // sekolah tanpa koordinat tidak dipetakan (bukan titik rekaan).
+  const titikSekolah = useMemo<PointItem[]>(() => {
+    return daftarSekolah
+      .filter((s) => typeof s.lintang === "number" && typeof s.bujur === "number")
+      .map((s) => {
+        const klasters = klasterPerSekolah.get(s.npsn) ?? []
+        const top = klasters[0]
+        const skor = top?.skor ?? 0
+        return {
+          id: s.npsn,
+          sekolah: s.nama,
+          npsn: s.npsn,
+          alamat: s.alamat,
+          jenjang: s.jenjang,
+          skor,
+          status: statusDariSkor(skor),
+          lat: s.lintang as number,
+          lng: s.bujur as number,
+          topKlasterId: top?.klasterId ?? null,
+          klasterIds: klasters.map((k) => k.klasterId),
+          dukunganWarga: klasters.reduce((a, k) => a + k.votes, 0),
+        }
+      })
+  }, [daftarSekolah, klasterPerSekolah])
+
+  const titikTerfilter = useMemo(() => {
+    const jenjangValid = JENJANG_FILTER[jenjang] ?? []
+    const statusValid = STATUS_FILTER[status]
+    return titikSekolah.filter((p) => {
+      if (jenjangValid.length > 0 && !jenjangValid.includes(p.jenjang)) return false
+      if (statusValid && p.status !== statusValid) return false
+      if (onlyMismatch && (klasterPerSekolah.get(p.npsn)?.length ?? 0) === 0) return false
+      return true
+    })
+  }, [titikSekolah, jenjang, status, onlyMismatch, klasterPerSekolah])
+
+  const jumlahTanpaKoordinat = daftarSekolah.length - titikSekolah.length
+
+  const selectedPoint = selectedPointId
+    ? titikSekolah.find((p) => p.id === selectedPointId)
+    : undefined
+
+  // Tutup popup saat filter berubah agar titik terpilih tidak nyasar.
+  useEffect(() => {
+    setSelectedPointId(null)
+  }, [jenjang, status, onlyMismatch])
+
+  // Muat detail sekolah + detail klaster miliknya saat popup dibuka.
+  useEffect(() => {
+    if (!selectedPointId) {
+      setPopupDetail(null)
+      return
+    }
+    let dibatalkan = false
+    const point = titikSekolah.find((p) => p.id === selectedPointId)
+    setPopupDetail({ status: "loading" })
+    ;(async () => {
+      try {
+        const [detail, ...klasterDetails] = await Promise.all([
+          detailSekolah(selectedPointId),
+          ...(point?.klasterIds ?? []).map((id) => detailKlaster(id)),
+        ])
+        if (dibatalkan) return
+        const totalLaporan = klasterDetails.reduce((a, k) => a + k.laporan.length, 0)
+        const top = klasterDetails[0]
+        const laporanTerbaru = top?.laporan.reduce<typeof top.laporan[number] | undefined>(
+          (best, l) => (!best || l.created_at > best.created_at ? l : best),
+          undefined,
+        )
+        const fasilitas = laporanTerbaru?.fasilitas_terkait ?? top?.label ?? null
+        const sarana = detail.kondisi_sarana.find(
+          (s) =>
+            fasilitas != null &&
+            s.nama_ruang.trim().toLowerCase() === fasilitas.trim().toLowerCase(),
+        )
+        setPopupDetail({
+          status: "ready",
+          fasilitas: fasilitas ?? undefined,
+          dapodikKondisi: sarana ? kondisiDominanDapodik(sarana) : null,
+          deskripsi: laporanTerbaru?.deskripsi,
+          laporanWarga: totalLaporan,
+        })
+      } catch (e) {
+        if (dibatalkan) return
+        setPopupDetail({
+          status: "error",
+          message: e instanceof Error ? e.message : "Detail gagal dimuat",
+        })
+      }
+    })()
+    return () => {
+      dibatalkan = true
+    }
+  }, [selectedPointId, popupRetryKey, titikSekolah])
 
   const handlePinClick = useCallback((id: string) => {
     setSelectedPointId((prev) => (prev === id ? null : id))
@@ -208,18 +364,27 @@ export default function PetaSebaranDinas() {
    * Guard berikut mencegah kegagalan API tampil sebagai "nol data" — backend
    * mati atau CORS gagal harus terlihat jelas, bukan disamarkan angka 0.
    */
-  if (klasterState.status === "error") {
+  if (klasterState.status === "error" || sekolahState.status === "error") {
+    const pesan =
+      klasterState.status === "error"
+        ? klasterState.message
+        : sekolahState.status === "error"
+          ? sekolahState.message
+          : ""
     return (
       <div className="flex items-center justify-center px-6 py-24 text-center">
         <div className="max-w-md space-y-3">
           <p className="text-lg font-extrabold text-slate-900">Peta tidak dapat dimuat</p>
-          <p className="text-sm text-slate-600">{klasterState.message}</p>
+          <p className="text-sm text-slate-600">{pesan}</p>
           <p className="text-xs text-slate-500">
             Pastikan backend berjalan di <span className="font-mono">http://localhost:8000</span>.
           </p>
           <button
             type="button"
-            onClick={refetchKlaster}
+            onClick={() => {
+              refetchKlaster()
+              refetchSekolah()
+            }}
             className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#0B3052] px-5 text-xs font-bold text-white hover:bg-[#07213A] cursor-pointer"
           >
             <RotateCw className="h-4 w-4" /> Coba Lagi
@@ -229,7 +394,7 @@ export default function PetaSebaranDinas() {
     )
   }
 
-  if (klasterState.status === "loading") {
+  if (klasterState.status === "loading" || sekolahState.status === "loading") {
     return (
       <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
         <span className="inline-flex items-center gap-2">
@@ -376,7 +541,7 @@ export default function PetaSebaranDinas() {
           scrollWheelZoom={false}
           onMapClick={closePopup}
         >
-          {petaMismatchTitik.map((point) => (
+          {titikTerfilter.map((point) => (
             <SeverityMarker
               key={point.id}
               id={point.id}
@@ -392,7 +557,7 @@ export default function PetaSebaranDinas() {
           {/* Legend Card */}
           <MapLegend
             position="bottomright"
-            totalPins={petaMismatchTitik.length}
+            totalPins={titikTerfilter.length}
             clusterCount={daftarKlaster.length}
           />
         </MapContainer>
@@ -469,7 +634,7 @@ export default function PetaSebaranDinas() {
               <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
                 <span className="font-mono text-slate-600">NPSN: {selectedPoint.npsn}</span>
                 <span>•</span>
-                <span>{selectedPoint.kecamatan}</span>
+                <span className="truncate" title={selectedPoint.alamat}>{selectedPoint.alamat}</span>
               </div>
             </div>
 
@@ -495,17 +660,45 @@ export default function PetaSebaranDinas() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                   FASILITAS BERMASALAH:
                 </span>
-                <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-extrabold text-slate-900">{selectedPoint.fasilitas}</span>
-                    <span className="rounded bg-blue-50 text-blue-800 font-semibold text-[10px] px-2 py-0.5 border border-blue-200 shrink-0">
-                      Dapodik: {selectedPoint.dapodikKondisi}
-                    </span>
+                {popupDetail?.status === "loading" && (
+                  <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-[11px] text-slate-500 animate-pulse">
+                    Memuat detail sekolah &amp; klaster...
                   </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    &quot;{selectedPoint.deskripsi}&quot;
-                  </p>
-                </div>
+                )}
+                {popupDetail?.status === "error" && (
+                  <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 space-y-2 text-[11px] text-rose-800">
+                    <p>Detail gagal dimuat: {popupDetail.message}</p>
+                    <button
+                      type="button"
+                      onClick={() => setPopupRetryKey((k) => k + 1)}
+                      className="font-bold underline cursor-pointer"
+                    >
+                      Coba Lagi
+                    </button>
+                  </div>
+                )}
+                {popupDetail?.status === "ready" &&
+                  (popupDetail.fasilitas ? (
+                    <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-extrabold text-slate-900">{popupDetail.fasilitas}</span>
+                        {popupDetail.dapodikKondisi && (
+                          <span className="rounded bg-blue-50 text-blue-800 font-semibold text-[10px] px-2 py-0.5 border border-blue-200 shrink-0">
+                            Dapodik: {popupDetail.dapodikKondisi}
+                          </span>
+                        )}
+                      </div>
+                      {popupDetail.deskripsi && (
+                        <p className="text-slate-600 text-[11px] leading-relaxed">
+                          &quot;{popupDetail.deskripsi}&quot;
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-[11px] text-slate-500">
+                      Belum ada laporan warga terklaster untuk sekolah ini.
+                    </div>
+                  ))}
               </div>
 
               {/* Metrik */}
@@ -515,7 +708,9 @@ export default function PetaSebaranDinas() {
                     Laporan Warga
                   </span>
                   <span className="text-sm font-extrabold text-slate-900 mt-0.5 block">
-                    {selectedPoint.laporanWarga} Laporan
+                    {popupDetail?.status === "ready"
+                      ? `${popupDetail.laporanWarga ?? 0} Laporan`
+                      : "…"}
                   </span>
                 </div>
                 <div className="rounded-xl bg-slate-50 border border-slate-200/70 p-2.5">
@@ -531,15 +726,24 @@ export default function PetaSebaranDinas() {
               {/* Footer Aksi */}
               <div className="pt-2 border-t border-slate-100 space-y-2">
                 <Button
-                  onClick={() => navigate(`/dinas/antrian?id=${selectedPoint.id.replace("pin", "kls")}`)}
-                  className="w-full h-9 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  disabled={!selectedPoint.topKlasterId}
+                  onClick={() =>
+                    selectedPoint.topKlasterId &&
+                    navigate(`/dinas/antrian?id=${selectedPoint.topKlasterId}`)
+                  }
+                  className="w-full h-9 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>Buka di Antrian Validasi</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full h-8 text-[11px] font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+                  disabled={!selectedPoint.topKlasterId}
+                  onClick={() =>
+                    selectedPoint.topKlasterId &&
+                    navigate(`/klaster/${selectedPoint.topKlasterId}`)
+                  }
+                  className="w-full h-8 text-[11px] font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FileText className="h-3.5 w-3.5 text-slate-500" />
                   <span>Tinjau Berkas Berita Acara</span>
@@ -578,7 +782,9 @@ export default function PetaSebaranDinas() {
               Kenaikan fluktuatif pasca verifikasi lapangan semester genap.
             </span>
             <span className="font-bold text-slate-800">
-              Rata-rata: {Math.round(trenData.reduce((a, b) => a + b.nilai, 0) / trenData.length)} isu / bln
+              {trenData.length > 0
+                ? `Rata-rata: ${Math.round(trenData.reduce((a, b) => a + b.nilai, 0) / trenData.length)} isu / bln`
+                : `Rata-rata: ${TIDAK_ADA}`}
             </span>
           </div>
         </div>
@@ -628,7 +834,12 @@ export default function PetaSebaranDinas() {
             GIS Service: {daftarKlaster.length > 0 ? "aktif" : "menunggu data"}
           </span>
           <span>â€¢</span>
-          <span className="font-mono text-[11px]">Layer: {petaMismatchTitik.length} Titik / {daftarKlaster.length} Klaster terdata</span>
+          <span className="font-mono text-[11px]">
+            Layer: {titikTerfilter.length} Titik / {daftarKlaster.length} Klaster terdata
+            {jumlahTanpaKoordinat > 0
+              ? ` · ${jumlahTanpaKoordinat} sekolah tanpa koordinat tidak dipetakan`
+              : ""}
+          </span>
         </div>
       </div>
     </div>

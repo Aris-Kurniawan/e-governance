@@ -101,6 +101,9 @@ export interface SekolahList {
   status_sekolah?: string;
   jumlah_isu_aktif: number;
   penanda_masalah: PenandaMasalah | string;
+  /** Koordinat Dapodik (WGS84). `null` = tidak tersedia — jangan buat titik rekaan. */
+  lintang: number | null;
+  bujur: number | null;
 }
 
 export interface KondisiSarana {

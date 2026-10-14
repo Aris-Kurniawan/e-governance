@@ -31,6 +31,8 @@ class SekolahResponse(BaseModel):
     status_sekolah: Optional[str] = None
     jumlah_isu_aktif: int = 0
     penanda_masalah: str = "normal"
+    lintang: Optional[float] = None
+    bujur: Optional[float] = None
 
     model_config = {"from_attributes": True}
 

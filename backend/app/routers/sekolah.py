@@ -58,6 +58,8 @@ def list_sekolah(
                 status_sekolah=s.status_sekolah,
                 jumlah_isu_aktif=0,
                 penanda_masalah="normal",
+                lintang=float(s.lintang) if s.lintang is not None else None,
+                bujur=float(s.bujur) if s.bujur is not None else None,
             )
             for s in schools
         ],
@@ -101,6 +103,8 @@ def get_sekolah(npsn: str, db: Session = Depends(get_db)):
         status_sekolah=sekolah.status_sekolah,
         akreditasi=sekolah.akreditasi,
         nama_kepsek=sekolah.nama_kepsek,
+        lintang=float(sekolah.lintang) if sekolah.lintang is not None else None,
+        bujur=float(sekolah.bujur) if sekolah.bujur is not None else None,
         rasio_guru_siswa=sekolah.data_resmi[0].rasio_guru_siswa
         if sekolah.data_resmi
         else None,

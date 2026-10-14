@@ -961,6 +961,20 @@ ditambah 1 temuan audit kontrak (lihat #5).
 
 ---
 
+### 3.21 Koordinat Sekolah (`lintang`/`bujur`) — Isian Dapodik & Ekspos API (2026-10-13) → SELESAI
+
+**Latar:** halaman Peta Sebaran (`/dinas/peta`) butuh titik sekolah, tetapi kolom `sekolah.lintang`/`bujur` kosong semua (62 NULL di dump) dan tidak dikirim API §2.
+
+**Deliverable:**
+- **Data:** 59 dari 62 sekolah Kec. Lamongan diisi koordinat nyata dari API Dapodik (`/api/detail-sekolah?npsn=` via token publik `VITE_API_TOKEN` di `/env.js` portal Dapodik; 0 mismatch nama↔NPSN). 3 sekolah (`70040020`, `70062428`, `70063774`) tidak punya koordinat di Dapodik → tetap `NULL` (**tidak dibuat titik rekaan**, konsisten AGENTS.md §Scope). Isian via script one-off (tidak di-commit).
+- **`app/schemas/sekolah.py`:** `SekolahResponse` + field `lintang: Optional[float]`, `bujur: Optional[float]` (di-inherit `SekolahDetailResponse`).
+- **`app/routers/sekolah.py`:** `GET /sekolah` (list) & `GET /sekolah/{npsn}` (detail) mengisi kedua field (`float(...)` dari `Decimal`, `None` bila kosong).
+- **`docs/universal/INTERFACES.md` §2:** contoh response list & detail ditambah `lintang`/`bujur` + aturan render: `null` = tanpa koordinat, FE dilarang membuat pseudo-koordinat.
+
+**Verifikasi:** pytest **88/88** lulus (DB test `simakis_test` dibuat sekali di mesin dev); smoke `GET /sekolah?page_size=2` & `/sekolah/{npsn}` membalas koordinat; FE build hijau.
+
+---
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

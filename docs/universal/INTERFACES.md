@@ -137,7 +137,9 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
       "alamat": "string",
       "jenjang": "SD | SMP | SMA | SMK",
       "jumlah_isu_aktif": 0,
-      "penanda_masalah": "aman | perlu_perhatian | kritis"
+      "penanda_masalah": "aman | perlu_perhatian | kritis",
+      "lintang": -7.1192083,
+      "bujur": 112.4181
     }
   ],
   "meta": { "page": 1, "page_size": 20, "total_items": 0, "total_pages": 0 }
@@ -157,6 +159,8 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
     "nama_kepsek": "string | null",
     "jumlah_isu_aktif": 0,
     "penanda_masalah": "aman | perlu_perhatian | kritis",
+    "lintang": -7.1192083,
+    "bujur": 112.4181,
     "rasio_guru_siswa": "1:16",
     "rasio_spm_terpenuhi": true,
     "jumlah_pd": 642,
@@ -209,6 +213,11 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
 - `ada_sanggahan` pada setiap item `kondisi_sarana` **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di contoh response. Endpoint untuk menghitung ada sanggahan tersedia di `GET /sekolah/{npsn}/sanggahan`.
 - `penanda_masalah` di response saat ini mengembalikan `"normal"` (bukan `aman | perlu_perhatian | kritis` seperti di kontrak). Nilai threshold dan logika perhitungan belum diputuskan — lihat `INTERFACES.md` §11.
 - `jumlah_isu_aktif` saat ini selalu `0` — belum dihitung oleh backend.
+- `lintang`/`bujur` (koordinat sekolah, WGS84) **dikirim pada list & detail** —
+  sumbernya data Dapodik (diisi Oktober 2026 untuk 59 dari 62 sekolah Kec.
+  Lamongan). `null` = sekolah tidak punya koordinat di Dapodik — **FE tidak
+  boleh membuat titik/pseudo-koordinat rekaan** untuk nilai null (lihat
+  AGENTS.md §Scope: angka placeholder bukan data valid).
 - **Field berikut dikirim dengan nilai default (null/0) dan tidak dirender di frontend v1** karena data Dapodik tidak di-ingest per scope infrastruktur-only:
   - `rasio_guru_siswa` → `null`
   - `rasio_spm_terpenuhi` → `false`
