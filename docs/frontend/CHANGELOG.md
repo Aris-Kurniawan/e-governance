@@ -87,6 +87,17 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
   - State `404` "Klaster tidak ditemukan" untuk ID tak dikenal.
 
 ### Diubah
+- **F4.1 (finalisasi) — `src/pages/dinas/LaporanSkorKbm.tsx` di-wire ke API live (13 Okt 2026)**:
+  - Halaman terakhir yang masih pakai data demo inline kini memanggil
+    `GET /laporan/skor-kbm` (F4.8/D-22) lewat `getSkorKbm()` di
+    `src/lib/api/laporan.ts` + tipe baru di `src/lib/api/types.ts`
+    (`SkorKbmData`, `SkorKbmRingkasan`, `SkorKbmSekolah`, `LevelKbm`).
+  - 11 penggantian widget (data palsu → live, lihat `docs/backend/TASK_GUIDE.md`
+    §F4.8): KPI siswa→ruang rusak berat (129), KPI jam hilang→total laporan (600),
+    tren bulanan→distribusi kondisi, tabel 62 baris (kolom LAPORAN + RUSAK BERAT),
+    chart kanan→rusak berat per jenis fasilitas, chip statis "Data per Oktober 2026",
+    footer formula jujur 70/30, hapus badge palsu "NAIK 12%" & "+29 poin".
+  - Status F4.1 di TASK_GUIDE flip 95% → **100%**.
 - **Status Pengerjaan Task Frontend di TASK_GUIDE (`docs/frontend/TASK_GUIDE.md`)**:
   - Menambahkan seksi **Status Pengerjaan**: tabel status seluruh task F1.1–F4.4 hasil audit terhadap kode (1 Oktober 2026) plus daftar **Detail Task Tertunda (belum selesai / terlewat)** berformat checklist dengan target file/rute dan pendukung yang sudah tersedia.
   - Task tertunda tercatat: F3.1 sisa (`InstitutionalStepper` + list klaster), **F3.2 Voting** (target `DetailKlaster.tsx` §A3 — pendukung `voteKlaster`/`VoteResponse`/mock sudah ada), F3.3 Status Tindak Lanjut (halaman status + `useStatusPolling` belum terpasang), F3.4 sisa (override prioritas §B2, update status penanganan §B3), dan seluruh Fase 4 (F4.1–F4.4); deviasi minor F1.1 (routing di `App.tsx`) & F1.5 (folder institusional kosong) ikut dicatat.
@@ -230,7 +241,7 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
 
 ---
 
-### Catatan: Halaman yang Masih Pakai Data Demo (F4.1 belum 100%)
+### Catatan: Halaman yang Masih Pakai Data Demo (F4.1 kini 100% — semua sudah di-wire)
 
 Menghapus `src/mocks/` tidak menutup semua sumber data demo. Sapuan seluruh
 18 route (Chromium) tidak menemukan crash, tetapi **5 halaman** masih
@@ -242,12 +253,12 @@ merender data contoh yang tertanam langsung di JSX — bukan lewat `@/mocks/`:
 | `src/pages/warga/RiwayatLaporan.tsx` | kartu laporan contoh tertanam di markup | `GET /laporan/riwayat` | ✅ sudah di-wire |
 | `src/pages/dinas/TabelVerifikasi.tsx` | baris verifikasi (SMAN 1 Sukodadi, dll.) | `GET /klaster` | ✅ sudah di-wire |
 | `src/pages/dinas/LogAuditPdp.tsx` | `logEntries` | `GET /audit/log` | ✅ sudah di-wire |
-| `src/pages/dinas/LaporanSkorKbm.tsx` | baris skor KBM & efisiensi | belum ada endpoint (butuh kontrak) | ⏳ **sisa 1 halaman** |
+| `src/pages/dinas/LaporanSkorKbm.tsx` | baris skor KBM & efisiensi | `GET /laporan/skor-kbm` (F4.8/D-22) | ✅ sudah di-wire (13 Okt 2026) |
 
 Catatan: 4 halaman yang tadinya tersisa sudah selesai di-wire pada
 8 Oktober 2026 (lihat entri "F4.1 (lanjutan)" di atas). `LaporanSkorKbm`
-tetap terblokir karena backend belum punya endpoint skor KBM — butuh
-keputusan kontrak lebih dulu. Halaman yang sudah bersih sejak awal:
+— satunya yang terblokir kontrak — selesai di-wire 13 Oktober 2026 ke
+`GET /laporan/skor-kbm` (F4.8/D-22). Halaman yang sudah bersih sejak awal:
 `Landing.tsx`, `Login.tsx`, `Registrasi.tsx`, `TentangData.tsx`.
 
 **Sisa data demo di luar daftar halaman** (ditemukan saat wiring 8 Okt 2026):

@@ -1416,6 +1416,43 @@ endpoint fallback berisi **495 laporan**.
 **Ketergantungan:** F4.7 → FE (tab/halaman fallback menyusul, Dimas)
 
 ---
+### F4.8 — Skor Dampak KBM per Sekolah (D-22)
+
+> ✅ **STATUS: SELESAI (13 Okt 2026).**
+> Hasil verifikasi: pytest **98/98** · `GET /laporan/skor-kbm` live 200 (62 sekolah,
+> rata-rata **44.4**, kritis **1**) · `npx tsc --noEmit` bersih · `npm run build` sukses ·
+> Playwright smoke `/dinas/skor-kbm` — 62 baris tabel, 0 console error.
+
+**Formula (D-22):**
+`skor_kbm = 0.7 × AVG(severity laporan warga) + 0.3 × Σ(weight × kondisi_rusak Dapodik) / Σ(jumlah Dapodik)`, skala 0–100 (1 desimal).
+Weight: `baik=0`, `rusak_ringan=33`, `rusak_sedang=66`, `rusak_berat=100`.
+Level: `≥70 kritis` · `50–69 tinggi` · `40–49 sedang` · `<40 rendah`.
+
+**Implementasi backend:**
+- `app/ai_pipeline/scoring.py`: `SEVERITY_MAP`, `calculate_kbm_score(kondisi_laporan, kondisi_dapodik)`, `kbm_level(skor)`.
+- `app/routers/laporan.py`: `GET /laporan/skor-kbm` (dideklarasi **sebelum** `/{laporan_id}`), RBAC
+  `admin | verifikator_dinas | kepala_dinas` (asumsi — dapat dibatalkan pemilik proyek).
+- Tidak ada migrasi DB — semua dihitung on-the-fly dari `laporan` + `kondisi_sarana`.
+- `total_laporan` menghitung **semua** baris termasuk `kondisi IS NULL` (dihitung in-memory).
+
+**Implementasi FE (ganti widget palsu di `LaporanSkorKbm.tsx`):**
+
+| Widget lama (palsu) | Widget baru (live) |
+|---|---|
+| KPI "Siswa terdampak" | "Ruang rusak berat (Dapodik)" = 129 |
+| KPI "Jam hilang" | "Total laporan warga" = 600 |
+| Tren bulanan (AreaTrendChart) | Distribusi Kondisi Laporan (HorizontalBarChart: 154/147/145/154) |
+| Badge "NAIK 12%" | dihapus |
+| Badge "+29 poin" | dihapus |
+| `<select>` semester | chip statis "Data per Oktober 2026" |
+| Tabel 4 kolom palsu | 62 baris: SEKOLAH/NPSN · LEVEL · SKOR KBM · LAPORAN · RUSAK BERAT · RINCIAN |
+| Chart kanan kategori palsu | "Rusak Berat per Jenis Fasilitas" (7 nama_ruang, total 129) |
+| Footer "SIMAKIS-AI v2 … jadwal aktif" | jujur: "70% severity laporan warga + 30% kondisi sarpras Dapodik" |
+
+**Ketergantungan:** F4.1 (halaman) + F4.7 (data laporan bersih) → selesai.
+
+---
+
 ## Dependencies antar Task
 
 ```

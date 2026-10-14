@@ -369,3 +369,44 @@ export interface AiStatus {
   last_run: string;
   message: string;
 }
+// ── F4.8 (D-22) — Skor dampak KBM per sekolah ───────────────────────────────
+
+export type LevelKbm = "kritis" | "tinggi" | "sedang" | "rendah";
+
+export interface DistribusiKondisi {
+  baik: number;
+  rusak_ringan: number;
+  rusak_sedang: number;
+  rusak_berat: number;
+}
+
+export interface JenisRuangRusak {
+  nama_ruang: string;
+  rusak_berat: number;
+  jumlah: number;
+}
+
+export interface SkorKbmRingkasan {
+  rata_rata_skor: number;
+  sekolah_kritis: number;
+  total_laporan: number;
+  ruang_rusak_berat: number;
+  distribusi_kondisi: DistribusiKondisi;
+  dampak_per_jenis_ruang: JenisRuangRusak[];
+}
+
+export interface SkorKbmSekolah {
+  npsn: string;
+  nama: string;
+  skor_kbm: number;
+  level: LevelKbm;
+  skor_laporan: number;
+  skor_dapodik: number;
+  jumlah_laporan: number;
+  laporan_rusak_berat: number;
+}
+
+export interface SkorKbmData {
+  ringkasan: SkorKbmRingkasan;
+  sekolah: SkorKbmSekolah[];
+}

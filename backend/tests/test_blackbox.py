@@ -12,7 +12,7 @@ import pytest
 
 from app.core.deps import hash_password
 from app.models.user import User
-from app.models.sekolah import Sekolah
+from app.models.sekolah import Sekolah, KondisiSarana
 from app.models.laporan import Laporan
 from app.models.klaster import Klaster
 
@@ -736,3 +736,124 @@ class TestFallbackReviewF47:
         )
         assert r.status_code == 404
         assert r.json()["error"]["code"] == "NOT_FOUND"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 12. F4.8 (D-22) — GET /laporan/skor-kbm
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestSkorKbmF48:
+    def test_skor_kbm_rbac(self, test_client, db_session):
+        # Anonim → 401
+        assert test_client.get("/laporan/skor-kbm").status_code == 401
+
+        warga = make_user(db_session, role="warga_terverifikasi")
+        token = login(test_client, warga.email)
+        assert test_client.get("/laporan/skor-kbm", headers=auth(token)).status_code == 403
+
+        # verifikator_dinas & admin berhak (asumsi RBAC F4.8)
+        veri = make_user(db_session, role="verifikator_dinas")
+        token = login(test_client, veri.email)
+        assert test_client.get("/laporan/skor-kbm", headers=auth(token)).status_code == 200
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        assert test_client.get("/laporan/skor-kbm", headers=auth(token)).status_code == 200
+
+    def test_skor_kbm_shape_dan_bound(self, test_client, db_session):
+        make_sekolah(db_session)  # jamin minimal 1 sekolah (test ini harus mandiri)
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.get("/laporan/skor-kbm", headers=auth(token))
+        assert r.status_code == 200
+
+        body = r.json()["data"]
+        ringkasan = body["ringkasan"]
+        assert set(ringkasan) == {
+            "rata_rata_skor",
+            "sekolah_kritis",
+            "total_laporan",
+            "ruang_rusak_berat",
+            "distribusi_kondisi",
+            "dampak_per_jenis_ruang",
+        }
+        assert set(ringkasan["distribusi_kondisi"]) == {
+            "baik",
+            "rusak_ringan",
+            "rusak_sedang",
+            "rusak_berat",
+        }
+        # total_laporan = semua baris; distribusi hanya 4 nilai enum
+        # (kondisi NULL tidak dihitung di mana pun)
+        assert sum(ringkasan["distribusi_kondisi"].values()) <= ringkasan[
+            "total_laporan"
+        ]
+        # tiap jenis ruang punya angka, urut rusak_berat descending
+        berat_list = [j["rusak_berat"] for j in ringkasan["dampak_per_jenis_ruang"]]
+        assert berat_list == sorted(berat_list, reverse=True)
+        for jenis in ringkasan["dampak_per_jenis_ruang"]:
+            assert set(jenis) == {"nama_ruang", "rusak_berat", "jumlah"}
+
+        sekolah_rows = body["sekolah"]
+        assert len(sekolah_rows) > 0
+        skor_list = [s["skor_kbm"] for s in sekolah_rows]
+        assert skor_list == sorted(skor_list, reverse=True)
+        for s in sekolah_rows:
+            assert 0 <= s["skor_kbm"] <= 100
+            assert s["level"] in ("kritis", "tinggi", "sedang", "rendah")
+            assert set(s) == {
+                "npsn",
+                "nama",
+                "skor_kbm",
+                "level",
+                "skor_laporan",
+                "skor_dapodik",
+                "jumlah_laporan",
+                "laporan_rusak_berat",
+            }
+
+    def test_skor_kbm_formula_deterministik(self, test_client, db_session):
+        """0.7×AVG(severity) + 0.3×dapodik, skala 0–100, level per D-22."""
+        user = make_user(db_session)
+
+        # Sekolah A: 1 laporan rusak_berat (100), tanpa data Dapodik
+        # → 0.7×100 + 0.3×0 = 70.0 → kritis (batas bawah)
+        sek_a = make_sekolah(db_session)
+        lap_a = make_laporan(db_session, user, sek_a)
+        lap_a.kondisi_dilaporkan = "rusak_berat"
+
+        # Sekolah B: 1 laporan rusak_sedang (66), Dapodik 10/10 rusak berat (100)
+        # → 0.7×66 + 0.3×100 = 46.2 + 30 = 76.2
+        sek_b = make_sekolah(db_session)
+        lap_b = make_laporan(db_session, user, sek_b)
+        lap_b.kondisi_dilaporkan = "rusak_sedang"
+        db_session.add(
+            KondisiSarana(
+                sekolah_npsn=sek_b.npsn,
+                nama_ruang="ruang_kelas",
+                jumlah=10,
+                kondisi_baik=0,
+                kondisi_rusak_ringan=0,
+                kondisi_rusak_sedang=0,
+                kondisi_rusak_berat=10,
+            )
+        )
+        db_session.commit()
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.get("/laporan/skor-kbm", headers=auth(token))
+        assert r.status_code == 200
+        rows = {s["npsn"]: s for s in r.json()["data"]["sekolah"]}
+
+        a = rows[sek_a.npsn]
+        assert a["skor_kbm"] == 70.0
+        assert a["level"] == "kritis"
+        assert a["jumlah_laporan"] == 1
+        assert a["laporan_rusak_berat"] == 1
+
+        b = rows[sek_b.npsn]
+        assert b["skor_kbm"] == 76.2
+        assert b["skor_laporan"] == 66.0
+        assert b["skor_dapodik"] == 100.0
+        assert b["level"] == "kritis"

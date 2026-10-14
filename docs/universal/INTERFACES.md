@@ -289,6 +289,7 @@ response `200`:
 | POST | `/upload/laporan?laporan_id={id}` | Pemilik laporan | Upload foto bukti (`multipart/form-data`, field `file` — lihat §10) |
 | GET | `/laporan/perlu-review` | `admin`, `kepala_dinas` | Daftar laporan perlu verifikasi manual (F4.7/D-21): tanpa klaster **ATAU** klaster kategori `belum_terklasifikasi` — envelope `{data, meta}` §0.2 (`page`, `page_size` default 20 maks 100) |
 | PUT | `/laporan/{id}/status` | `admin`, `kepala_dinas` | Update `status_sanggahan` — verifikasi manual per laporan (F4.7/D-21) |
+| GET | `/laporan/skor-kbm` | `admin`, `verifikator_dinas`, `kepala_dinas` | Skor dampak KBM per sekolah (F4.8/D-22) — seluruh 62 sekolah, diurutkan skor DESC |
 
 **`POST /laporan`** — request:
 ```json
@@ -348,6 +349,43 @@ response `200`:
 { "data": { "id": "string", "tracking_id": "string", "status_sanggahan": "string" } }
 ```
 Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster — butuh kolom baru, task terpisah).
+
+
+**`GET /laporan/skor-kbm`** — response `200` (F4.8, D-22):
+```json
+{
+  "data": {
+    "ringkasan": {
+      "rata_rata_skor": 44.4,
+      "sekolah_kritis": 1,
+      "total_laporan": 600,
+      "ruang_rusak_berat": 129,
+      "distribusi_kondisi": { "baik": 154, "rusak_ringan": 147, "rusak_sedang": 145, "rusak_berat": 154 },
+      "dampak_per_jenis_ruang": [
+        { "nama_ruang": "ruang_kelas", "rusak_berat": 77, "jumlah": 769 }
+      ]
+    },
+    "sekolah": [
+      {
+        "npsn": "20506507",
+        "nama": "SD NEGERI 2 SENDANGREJO",
+        "skor_kbm": 76.4,
+        "level": "kritis",
+        "skor_laporan": 66.3,
+        "skor_dapodik": 100.0,
+        "jumlah_laporan": 3,
+        "laporan_rusak_berat": 1
+      }
+    ]
+  }
+}
+```
+- `skor_kbm` = `0.7×AVG(severity laporan)` + `0.3×Σ(weight×kondisi_rusak)/Σ(jumlah Dapodik)`, skala 0–100, 1 desimal.
+  Weight kondisi: `baik=0`, `rusak_ringan=33`, `rusak_sedang=66`, `rusak_berat=100`.
+- `level`: `≥70 kritis` · `50–69 tinggi` · `40–49 sedang` · `<40 rendah`.
+- `total_laporan` menghitung **semua** baris laporan termasuk `kondisi_dilaporkan IS NULL`.
+- `dampak_per_jenis_ruang` diurutkan `rusak_berat` DESC; `nama_ruang` nilai mentah Dapodik (bukan label tampilan).
+- `sekolah` seluruh 62 sekolah, diurutkan `skor_kbm` DESC. Tanpa token → `401`; role selain `admin` / `verifikator_dinas` / `kepala_dinas` → `403`.
 
 ---
 

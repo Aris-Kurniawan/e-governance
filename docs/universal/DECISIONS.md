@@ -274,3 +274,50 @@ verifikasi manual per laporan.
 
 **Status:** Disetujui (8 Okt 2026) — spesifikasi implementasi di
 `docs/backend/TASK_GUIDE.md` **F4.7**.
+
+---
+
+### D-22: Skor dampak KBM per sekolah — formula, level, dan widget pengganti data fiktif
+
+**Status:** Disetujui (Aris, 13 Okt 2026) — implementasi F4.8.
+
+**Masalah:** Halaman `LaporanSkorKbm.tsx` (FE) berisi 3 array hardcoded —
+skor per sekolah, "dampak per kategori fasilitas" dengan jumlah siswa fiktif,
+dan tren bulanan — yang tidak punya padanan backend. Field `jumlah_pd`/
+`jum_ptk` sengaja tidak di-ingest (scope infrastruktur-only, AGENTS.md),
+sehingga angka "siswa terdampak" mustahil dihitung.
+
+**Keputusan:**
+
+| Aspek | Ketentuan |
+|---|---|
+| Formula | `skor_kbm = 0.7 × AVG(severity laporan warga) + 0.3 × Σ(weight × kondisi_rusak) / Σ(jumlah Dapodik)`, skala 0–100 |
+| Bobot severity | Sama dengan `scoring.py` (D-07): baik=0, ringan=33, sedang=66, berat=100 |
+| Level | ≥70 `kritis`, 50–69 `tinggi`, 40–49 `sedang`, <40 `rendah` |
+| Endpoint | `GET /laporan/skor-kbm` (dideklarasikan **sebelum** `GET /laporan/{id}`), respons `{data: {ringkasan, sekolah}}`, `sekolah` urut `skor_kbm` DESC |
+| RBAC | `admin`, `verifikator_dinas`, `kepala_dinas` (asumsi awal; Aris dapat memveto) |
+| Cakupan | Semua sekolah (62), bukan hanya yang punya laporan; sekolah tanpa laporan → skor 0 |
+| Kolom baru DB | **Tidak ada** — dihitung on-the-fly (600 laporan + 304 baris `kondisi_sarana`) |
+
+**Widget FE diganti (data fiktif → data nyata):**
+
+| Widget lama (fiktif) | Pengganti |
+|---|---|
+| "Siswa terdampak" (KPI) | "Ruang rusak berat (Dapodik)" = 129 |
+| "Jam KBM hilang / minggu" (KPI) | "Total laporan warga" = 600 |
+| Tren bulanan (AreaTrendChart + badge "+29 poin") | **Distribusi kondisi laporan**: baik 154 / ringan 147 / sedang 145 / berat 154 |
+| Badge "NAIK 12%" | **Dihapus** — tidak ada data deret waktu (semua 600 laporan dev dibuat 5 Okt 2026) |
+| Pilih semester (3 opsi) | Teks statis "Data per Oktober 2026" |
+| Chart "Dampak per Kategori Fasilitas" (jumlah siswa fiktif) | **"Rusak Berat per Jenis Fasilitas"** — 7 nilai `nama_ruang` dari `kondisi_sarana` (ruang_kelas 77, wc_siswa 31, wc_guru 14, uks 2, perpustakaan 2, lab_ipa 2, lab_komputer 1; total 129) |
+| Kolom tabel "Jam KBM Hilang" & "Siswa Terdampak" | **"LAPORAN"** (`jumlah_laporan`) & **"RUSAK BERAT"** (`laporan_rusak_berat`) |
+| Klaim footer "SIMAKIS-AI v2 … jadwal aktif KBM semester" | Copy jujur: 70% severity laporan warga + 30% kondisi sarpras Dapodik |
+
+**Konsekuensi:**
+
+- `GET /laporan/skor-kbm` masuk kontrak `INTERFACES.md` §4.
+- Skor murni on-the-fly — tanpa tabel materialisasi; perubahan laporan/Dapodik
+  langsung tercerminkan tanpa migrasi.
+- Tren deret waktu sengaja tidak dijanjikan; butuh keputusan terpisah bila
+  kelak ada data temporal yang valid.
+
+**Status:** Disetujui (13 Okt 2026) — implementasi F4.8.

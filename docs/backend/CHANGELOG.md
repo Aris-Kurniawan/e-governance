@@ -1028,6 +1028,31 @@ ditambah 1 temuan audit kontrak (lihat #5).
 
 ---
 
+### 3.23 F4.8 — Skor Dampak KBM per Sekolah (2026-10-13) ✅ SELESAI
+
+**Deliverable:**
+
+1. `app/ai_pipeline/scoring.py`: `SEVERITY_MAP` + `calculate_kbm_score()` + `kbm_level()`; `calculate_priority_score` direfaktor pakai `SEVERITY_MAP`.
+2. `app/routers/laporan.py`: `GET /laporan/skor-kbm` (dideklarasi sebelum `/{laporan_id}`), envelope `{data: {ringkasan, sekolah}}`, RBAC `admin|verifikator_dinas|kepala_dinas`.
+3. `tests/test_blackbox.py`: `TestSkorKbmF48` (RBAC 401/403/200×2, shape+bounds, formula deterministik 70.0 & 76.2) → **pytest 98/98**.
+4. FE: `types.ts` (+`SkorKbmData` dll), `laporan.ts` (+`getSkorKbm()`), `LaporanSkorKbm.tsx` di-rewrite penuh wiring live + 11 penggantian widget (lihat TASK_GUIDE §F4.8).
+5. Docs: INTERFACES §4 (+baris tabel +response example), TASK_GUIDE F4.8, D-22 di DECISIONS.md.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `GET /laporan/skor-kbm` live | 200 — 62 sekolah, rata-rata 44.4, kritis 1, top: SDN 2 SENDANGREJO 76.4 |
+| Level distribution | rendah 22 · sedang 21 · tinggi 18 · kritis 1 |
+| Dampak per jenis (top) | ruang_kelas 77/769 · wc_siswa 31/176 · wc_guru 14/98 |
+| Anon | 401 |
+| pytest | **98/98** |
+| `npx tsc --noEmit` | bersih |
+| `npm run build` | sukses (29 dtk) |
+| Playwright smoke `/dinas/skor-kbm` | 62 baris tabel · semua 11 check OK · 0 console error |
+
+**Catatan:** Tidak ada migrasi DB (perhitungan on-the-fly). Tidak perlu regen dump. RBAC ketiga-role adalah asumsi — Aris dapat membatalkan. Observasi terbuka: `GET /ai/status` masih menghitung `klaster_id IS NULL` sebagai unclustered (selalu 398) — di luar scope F4.7/F4.8.
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

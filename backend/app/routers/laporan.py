@@ -1,6 +1,7 @@
 """Router untuk endpoint Laporan."""
 
 import secrets
+from collections import defaultdict
 from datetime import datetime
 from math import ceil
 from typing import Optional
@@ -10,11 +11,12 @@ from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.ai_pipeline.scoring import calculate_kbm_score, kbm_level
 from app.core.deps import get_current_user, RoleChecker
 from app.core.database import get_db
 from app.models.klaster import Klaster
 from app.models.laporan import Laporan, LaporanFoto, STATUS_SANGGHAN_ENUM
-from app.models.sekolah import Sekolah
+from app.models.sekolah import Sekolah, KondisiSarana
 from app.models.user import User
 from app.schemas.laporan import (
     LaporanCreateRequest,
@@ -242,6 +244,115 @@ def update_laporan_status(
             "id": laporan.id,
             "tracking_id": laporan.tracking_id,
             "status_sanggahan": laporan.status_sanggahan,
+        }
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# F4.8 (D-22) — Skor dampak KBM per sekolah + ringkasan
+# ─────────────────────────────────────────────────────────────────────────────
+
+require_skor_kbm = RoleChecker(["admin", "verifikator_dinas", "kepala_dinas"])
+
+
+@router.get("/skor-kbm")
+def laporan_skor_kbm(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_skor_kbm),
+):
+    """F4.8 (D-22) — Skor dampak KBM per sekolah (skala 0–100) + ringkasan.
+
+    skor_kbm = 0.7 × AVG(severity laporan warga)
+             + 0.3 × Σ(weight × kondisi_rusak) / Σ(jumlah Dapodik)
+    (lihat `calculate_kbm_score` di ai_pipeline/scoring.py).
+    """
+    # Laporan per sekolah — 600 baris, dikelompokkan di memori.
+    laporan_rows = db.execute(
+        select(Laporan.sekolah_npsn, Laporan.kondisi_dilaporkan)
+    ).all()
+    laporan_per_sekolah: dict[str, list[str | None]] = defaultdict(list)
+    for npsn, kondisi in laporan_rows:
+        laporan_per_sekolah[npsn].append(kondisi)
+
+    # Kondisi sarpras Dapodik per sekolah + agregat global per jenis ruang.
+    sarana_rows = db.execute(
+        select(
+            KondisiSarana.sekolah_npsn,
+            KondisiSarana.nama_ruang,
+            KondisiSarana.jumlah,
+            KondisiSarana.kondisi_rusak_berat,
+            KondisiSarana.kondisi_rusak_sedang,
+            KondisiSarana.kondisi_rusak_ringan,
+        )
+    ).all()
+    kosong = {"total": 0, "berat": 0, "sedang": 0, "ringan": 0}
+    dapodik_per_sekolah: dict[str, dict[str, int]] = defaultdict(lambda: dict(kosong))
+    per_jenis: dict[str, dict[str, int]] = defaultdict(
+        lambda: {"rusak_berat": 0, "jumlah": 0}
+    )
+    for npsn, nama_ruang, jumlah, berat, sedang, ringan in sarana_rows:
+        d = dapodik_per_sekolah[npsn]
+        d["total"] += jumlah or 0
+        d["berat"] += berat or 0
+        d["sedang"] += sedang or 0
+        d["ringan"] += ringan or 0
+        j = per_jenis[nama_ruang]
+        j["rusak_berat"] += berat or 0
+        j["jumlah"] += jumlah or 0
+
+    # Skor tiap sekolah (semua sekolah, bukan hanya yang punya laporan).
+    sekolah_data = []
+    for sek in db.scalars(select(Sekolah)).all():
+        laps = laporan_per_sekolah.get(sek.npsn, [])
+        k = calculate_kbm_score(
+            laps, dapodik_per_sekolah.get(sek.npsn, dict(kosong))
+        )
+        sekolah_data.append(
+            {
+                "npsn": sek.npsn,
+                "nama": sek.nama,
+                "skor_kbm": k["skor_kbm"],
+                "level": kbm_level(k["skor_kbm"]),
+                "skor_laporan": k["skor_laporan"],
+                "skor_dapodik": k["skor_dapodik"],
+                "jumlah_laporan": len(laps),
+                "laporan_rusak_berat": sum(1 for s in laps if s == "rusak_berat"),
+            }
+        )
+    sekolah_data.sort(key=lambda row: row["skor_kbm"], reverse=True)
+
+    # Ringkasan global.
+    distribusi = {"baik": 0, "rusak_ringan": 0, "rusak_sedang": 0, "rusak_berat": 0}
+    for laps in laporan_per_sekolah.values():
+        for kondisi in laps:
+            if kondisi in distribusi:
+                distribusi[kondisi] += 1
+
+    dampak_per_jenis = [
+        {"nama_ruang": nama, **jumlah}
+        for nama, jumlah in sorted(
+            per_jenis.items(), key=lambda kv: kv[1]["rusak_berat"], reverse=True
+        )
+    ]
+
+    return {
+        "data": {
+            "ringkasan": {
+                "rata_rata_skor": round(
+                    sum(row["skor_kbm"] for row in sekolah_data) / len(sekolah_data),
+                    1,
+                )
+                if sekolah_data
+                else 0.0,
+                "sekolah_kritis": sum(
+                    1 for row in sekolah_data if row["level"] == "kritis"
+                ),
+                "total_laporan": len(laporan_rows),
+                "ruang_rusak_berat": sum(v["rusak_berat"] for v in per_jenis.values()),
+                "distribusi_kondisi": distribusi,
+                "dampak_per_jenis_ruang": dampak_per_jenis,
+            },
+            "sekolah": sekolah_data,
         }
     }
 

@@ -12,6 +12,7 @@ import type {
   LaporanRequest,
   LaporanResponse,
   RiwayatLaporanItem,
+  SkorKbmData,
 } from "./types";
 
 /** `POST /laporan` — kirim laporan/sanggahan baru. */
@@ -49,4 +50,8 @@ export async function uploadFotoBukti(
     form,
     { laporan_id: laporanId },
   );
+}
+/** `GET /laporan/skor-kbm` — F4.8 (D-22); RBAC: admin | verifikator_dinas | kepala_dinas. */
+export function getSkorKbm(): Promise<SkorKbmData> {
+  return getData<SkorKbmData>("/laporan/skor-kbm");
 }
