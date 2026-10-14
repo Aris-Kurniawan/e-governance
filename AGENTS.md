@@ -12,6 +12,8 @@
 - **MySQL 8.4:** `root:dev123`, DB `simakis` (native/WSL, **bukan Docker**)
 - **Docker Compose:** hanya untuk produksi (Fase 4), bukan untuk development
 - **Model HF:** sudah terunduh di `~/.cache/huggingface/hub/` (paraphrase-multilingual-MiniLM-L12-v2, all-MiniLM-L6-v2)
+- **Node.js / npm (PowerShell):** ExecutionPolicy per-user = `RemoteSigned` (di-set 7 Okt 2026) sehingga `npm` polos (→ `npm.ps1`) jalan normal; `npm.cmd` tetap kompatibel. Error lama `npm.ps1 … running scripts is disabled` sudah tidak berlaku.
+- **Menjalankan frontend:** `cd frontend && npm run dev` (Vite :5173) — root `npm run dev` (backend+frontend) **hanya WSL**, karena script backend memakai path POSIX `./venv/bin/python` (lihat `docs/frontend/SETUP.md` §7.1–§7.4).
 
 ## Git
 

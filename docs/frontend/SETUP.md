@@ -196,6 +196,22 @@ Script lain yang perlu ada di `package.json`:
 }
 ```
 
+### 7.4 Troubleshooting PowerShell (Windows)
+
+Jika perintah `npm …` error `npm.ps1 … cannot be loaded because running
+scripts is disabled on this system`, jalankan sekali di PowerShell:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Ini per-user dan tanpa admin: shim `npm.ps1` buatan Node.js boleh dieksekusi,
+sedangkan skrip yang diunduh dari internet tetap butuh tanda tangan. Tanpa
+perintah tersebut, gunakan `npm.cmd` sebagai ganti (mis. `npm.cmd run dev`).
+Setelah policy di-set, perintah `npm …` pada §7.2 berjalan normal di
+PowerShell — kecuali mode §7.1 (backend + frontend) yang tetap dijalankan
+dari WSL karena script backend memakai path POSIX `./venv/bin/python`.
+
 ---
 
 ## 8. Checklist sebelum mulai coding komponen
