@@ -1,81 +1,117 @@
-import { Link, Outlet } from "react-router-dom"
-import { ArrowLeft, ShieldCheck, GraduationCap, Contact2 } from "lucide-react"
+import { useEffect } from "react"
+import { Link, Outlet, useLocation } from "react-router-dom"
 
+/**
+ * Shell autentikasi warga (/login & /registrasi) — gaya mockup split-dark:
+ * kiri panel gelap berisi navigasi mini + form (Outlet), kanan foto
+ * sekolah dengan garis pemisah SVG putus-putus dan watermark logo.
+ */
 export default function AuthLayout() {
+  const location = useLocation()
+
+  // Reset scroll antar-halaman auth: halaman registrasi yang panjang sering
+  // meninggalkan offset scroll, sehingga saat pindah ke /login yang pendek
+  // pengguna langsung "mendarat" di footer.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* ── Kiri: Branding ── */}
-      <aside className="relative hidden w-[400px] xl:w-[440px] flex-col justify-between overflow-hidden bg-[#0B2F52] p-8 lg:p-10 text-white lg:flex shrink-0">
-        {/* Dekorasi lingkaran watermark lembut sesuai desain */}
-        <div className="absolute -right-20 bottom-24 h-80 w-80 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none" />
-        <div className="absolute right-0 bottom-48 h-64 w-64 rounded-full bg-teal-400/10 blur-xl pointer-events-none" />
-
-        <div className="relative z-10">
-          <Link to="/" className="inline-flex items-center gap-2 text-xs font-medium text-white/80 hover:text-white transition-colors mb-8">
-            <ArrowLeft className="h-3.5 w-3.5" /> Kembali ke Beranda SIMAKIS
+    <div className="min-h-screen bg-[#0B1726] text-white lg:grid lg:grid-cols-[1.05fr_0.95fr]">
+      {/* ── Kiri: Navigasi + Form ── */}
+      <div className="relative flex min-h-screen flex-col px-6 py-6 sm:px-10 lg:px-14 xl:px-20">
+        {/* Topbar ala mockup: titik brand + nav Beranda / Masuk / Daftar */}
+        <div className="sticky top-0 z-20 -mx-6 mb-2 bg-[#0B1726]/95 backdrop-blur px-6 py-3 sm:-mx-10 sm:px-10 lg:-mx-14 lg:px-14 xl:-mx-20 xl:px-20 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <span className="h-3.5 w-3.5 rounded-full bg-blue-500 shadow-[0_0_16px_rgba(59,130,246,0.85)] transition-transform group-hover:scale-110" />
+            <span className="text-sm font-extrabold tracking-tight text-white">
+              SIMAKIS<span className="text-blue-400">.</span>
+            </span>
           </Link>
+          <nav className="flex items-center gap-4 sm:gap-6 text-xs font-semibold text-white/55">
+            <Link to="/" className="hover:text-white transition-colors">
+              Beranda
+            </Link>
+            <Link
+              to="/login"
+              className={`transition-colors ${
+                location.pathname === "/login"
+                  ? "text-white"
+                  : "text-white/55 hover:text-white"
+              }`}
+            >
+              Masuk
+            </Link>
+            <Link
+              to="/registrasi"
+              className={`rounded-full px-3.5 py-1.5 transition-colors ${
+                location.pathname === "/registrasi"
+                  ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
+                  : "bg-white/10 text-white/85 hover:bg-white/15 hover:text-white"
+              }`}
+            >
+              Daftar
+            </Link>
+          </nav>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 border border-white/20 shadow-sm overflow-hidden">
-              <img src="/logo-simakis-icon.png" alt="S" className="h-10 w-10 object-contain" />
-            </div>
-            <div className="leading-tight">
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-base">SIMAKIS</span>
-                <span className="rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-bold text-white border border-white/20 uppercase tracking-wide">
-                  V2 RESMI
-                </span>
-              </div>
-              <span className="block text-xs text-white/70 font-medium">Disdik Lamongan</span>
-            </div>
-          </div>
-
-          <h1 className="mt-8 text-2xl lg:text-[32px] font-extrabold leading-[1.22] tracking-tight text-white">
-            Satu Suara Nyata untuk Sekolah yang Layak.
-          </h1>
-          <p className="mt-4 text-xs lg:text-sm leading-relaxed text-white/80">
-            Bergabunglah bersama ribuan pelajar, orang tua, dan warga Kecamatan Lamongan untuk
-            mengaudit sarana sekolah secara partisipatif, aman, dan berbasis fakta resmi.
-          </p>
-
-          <div className="mt-8 space-y-3.5">
-            <div className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-xs lg:text-sm font-semibold text-white shadow-sm backdrop-blur-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <span>Identitas Asli Disamarkan</span>
-            </div>
-
-            <div className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-xs lg:text-sm font-semibold text-white shadow-sm backdrop-blur-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">
-                <GraduationCap className="h-5 w-5" />
-              </div>
-              <span>Siswa adalah Saksi Kunci Utama</span>
-            </div>
-
-            <div className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-xs lg:text-sm font-semibold text-white shadow-sm backdrop-blur-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
-                <Contact2 className="h-5 w-5" />
-              </div>
-              <span>1 NIK / NISN = 1 Hak Suara Akuntabel</span>
-            </div>
+        {/* Konten form */}
+        <div className="flex flex-1 items-center justify-center lg:justify-start">
+          <div className="w-full max-w-[430px] py-10">
+            <Outlet />
           </div>
         </div>
 
-        <div className="relative z-10 pt-8 text-[11px] text-white/60 flex items-center justify-between border-t border-white/10 flex-wrap gap-2">
-          <span>&copy; 2026 SIMAKIS &middot; PSDKU Lamongan PENS</span>
-          <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Integrasi Dapodik Kemendikdasmen
-          </span>
+        <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/30">
+          <span>&copy; 2026 SIMAKIS &middot; Disdik Kab. Lamongan</span>
+          <span className="hidden sm:inline">&middot;</span>
+          <span>Kepatuhan UU PDP No. 27/2022 &middot; Enkripsi AES-256</span>
+        </footer>
+      </div>
+
+      {/* ── Kanan: Foto + garis putus-putus + watermark ── */}
+      <aside className="relative hidden lg:block overflow-hidden bg-[#0E1F33]">
+        <img
+          src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1400&q=70"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.style.display = "none"
+          }}
+        />
+        {/* Overlay gelap agar menyatu dengan panel kiri */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B1726] via-[#0B1726]/35 to-[#0B1726]/55" />
+        <div className="absolute inset-0 bg-[#0B1726]/25" />
+
+        {/* Garis kurva putus-putus pemisah (sesuai mockup) */}
+        <svg
+          viewBox="0 0 100 800"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 h-full w-24 xl:w-28"
+        >
+          <path
+            d="M72 0 C 18 130, 92 270, 42 410 C 2 520, 84 650, 52 800"
+            fill="none"
+            stroke="rgba(255,255,255,0.35)"
+            strokeWidth="1.2"
+            strokeDasharray="7 9"
+            strokeLinecap="round"
+          />
+        </svg>
+
+        {/* Watermark logo kanan bawah */}
+        <div className="absolute bottom-7 right-8">
+          <img
+            src="/logo-simakis-icon.png"
+            alt="SIMAKIS"
+            className="h-14 w-14 object-contain opacity-90 drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)]"
+            onError={(e) => {
+              e.currentTarget.style.display = "none"
+            }}
+          />
         </div>
       </aside>
-
-      {/* ── Kanan: Form Content ── */}
-      <main className="flex flex-1 items-start justify-center px-6 py-8 sm:px-12 sm:py-10 overflow-y-auto">
-        <div className="w-full max-w-[620px]">
-          <Outlet />
-        </div>
-      </main>
     </div>
   )
 }

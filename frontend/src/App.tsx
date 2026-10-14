@@ -54,7 +54,7 @@ export default function App() {
               <Route path="/laporan/riwayat" element={<RiwayatLaporan />} />
             </Route>
 
-            {/* Auth Warga (Login / Registrasi) */}
+            {/* Auth Warga (Login / Registrasi) — shell split-dark */}
             <Route element={<AuthLayout />}>
               <Route path="/login" element={<Login />} />
               <Route path="/registrasi" element={<Registrasi />} />
