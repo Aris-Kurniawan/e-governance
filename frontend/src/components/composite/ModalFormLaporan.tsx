@@ -21,6 +21,7 @@ interface ModalFormLaporanProps {
   onOpenChange: (open: boolean) => void
   initialNpsn?: string
   namaSekolah?: string
+  baselineText?: string
 }
 
 type TipeTemuan = "mismatch" | "kerusakan_baru"
@@ -28,8 +29,9 @@ type TipeTemuan = "mismatch" | "kerusakan_baru"
 export default function ModalFormLaporan({
   open,
   onOpenChange,
-  initialNpsn = "20506281",
+  initialNpsn = "70002205",
   namaSekolah = "SMAN 1 Sukodadi",
+  baselineText = "24 ruang kelas: 18 baik dan 6 rusak berat.",
 }: ModalFormLaporanProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -44,7 +46,7 @@ export default function ModalFormLaporan({
   const [dragOver, setDragOver] = useState(false)
 
   const displayName = namaSekolah || "SMAN 1 Sukodadi"
-  const displayNpsn = initialNpsn || "20506281"
+  const displayNpsn = initialNpsn || "70002205"
 
   const handleReset = () => {
     setTipeTemuan("mismatch")
@@ -83,7 +85,7 @@ export default function ModalFormLaporan({
 
     setLoading(true)
     try {
-const res = await kirimLaporan({
+      const res = await kirimLaporan({
         sekolah_npsn: displayNpsn,
         fasilitas_terkait: lokasiSpesifik || null,
         deskripsi,
@@ -91,7 +93,6 @@ const res = await kirimLaporan({
       setTrackingId(res.tracking_id)
       setErrorGagal(null)
     } catch (err) {
-      // Fail keras: jangan fabricate tracking_id — user harus tahu gagal.
       setErrorGagal(err instanceof Error ? err.message : "Gagal mengirim laporan.")
     } finally {
       setLoading(false)
@@ -100,7 +101,7 @@ const res = await kirimLaporan({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto p-0 sm:rounded-2xl border-slate-200 shadow-2xl [&>button]:hidden">
+      <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto p-0 rounded-2xl border-slate-200/90 shadow-2xl [&>button]:hidden bg-white">
         {trackingId ? (
           /* ── Tampilan Sukses ── */
           <div className="p-8 text-center space-y-6">
@@ -118,80 +119,82 @@ const res = await kirimLaporan({
             </div>
 
             <div className="flex flex-wrap justify-center gap-3 pt-2">
-              <Button asChild className="bg-[#0B3052] hover:bg-[#07213A] text-white font-medium">
+              <Button asChild className="bg-[#64748b] hover:bg-[#475569] text-white font-medium rounded-xl">
                 <Link to="/laporan/riwayat" onClick={() => onOpenChange(false)}>
                   Lihat Riwayat Laporan
                 </Link>
               </Button>
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="outline" onClick={handleClose} className="rounded-xl border-slate-200">
                 Tutup Form
               </Button>
             </div>
           </div>
         ) : (
-          /* ── Tampilan Form Laporan ── */
-          <div>
+          /* ── Tampilan Form Laporan Sesuai Desain ── */
+          <div className="p-6 space-y-5">
             {errorGagal && (
               <div
                 role="alert"
-                className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800"
               >
                 {errorGagal}
               </div>
             )}
+
             {/* ── Header ── */}
-            <div className="px-6 pt-5 pb-4 relative">
+            <div className="relative">
               {/* Badge tahap */}
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold px-3 py-1 mb-3">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                Tahap 2 · Sanggahan Fakta Lapangan
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/60 text-xs font-semibold px-3 py-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                  Tahap 2 · Sanggahan Fakta Lapangan
+                </span>
 
-              {/* Tombol tutup */}
-              <button
-                onClick={handleClose}
-                className="absolute top-4 right-4 h-7 w-7 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-                aria-label="Tutup"
-              >
-                <X className="h-4 w-4 text-slate-600" />
-              </button>
+                {/* Tombol tutup bulat */}
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+                  aria-label="Tutup"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
-              <h2 className="text-lg font-extrabold text-slate-900 tracking-tight leading-snug">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug mt-3">
                 Audit Ketidaksesuaian Data Sekolah
               </h2>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Bandingkan catatan Dapodik dengan kondisi riil di {displayName}.{" "}
-                Formulir ini hanya untuk demonstrasi.
+              <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                Bandingkan catatan Dapodik dengan kondisi riil di {displayName}. Formulir ini hanya untuk demonstrasi.
               </p>
             </div>
 
             {/* ── Body Form ── */}
-            <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5">
-
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Sekolah yang Diperiksa */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Sekolah yang Diperiksa
                 </label>
-                <div className="h-10 flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 font-medium">
+                <div className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm text-slate-800 font-medium">
                   {displayName} (NPSN: {displayNpsn})
                 </div>
               </div>
 
               {/* Catatan Baseline Dapodik */}
-              <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2.5">
-                <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+              <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 flex items-start gap-2.5">
+                <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[11px] font-bold text-blue-700">Catatan Baseline Dapodik</p>
-                  <p className="text-[11px] text-blue-600 mt-0.5">
-                    24 ruang kelas: 18 baik dan 6 rusak berat.
+                  <p className="text-xs font-bold text-blue-700">Catatan Baseline Dapodik</p>
+                  <p className="text-xs text-blue-600 mt-0.5">
+                    {baselineText}
                   </p>
                 </div>
               </div>
 
               {/* Tipe Temuan Lapangan */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-2">
+                <label className="block text-xs font-semibold text-slate-800 mb-2">
                   Tipe Temuan Lapangan <span className="text-rose-500">*</span>
                 </label>
                 <div className="space-y-2">
@@ -209,27 +212,32 @@ const res = await kirimLaporan({
                   ].map((opt) => {
                     const isChecked = tipeTemuan === opt.value
                     return (
-                      <label
+                      <div
                         key={opt.value}
-                        className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-all ${
+                        onClick={() => setTipeTemuan(opt.value)}
+                        className={`rounded-xl p-3.5 flex items-start gap-3.5 cursor-pointer transition-all ${
                           isChecked
-                            ? "border-[#0B3052] bg-blue-50/50"
-                            : "border-slate-200 hover:border-slate-300 bg-white"
+                            ? "border-2 border-slate-800 bg-white"
+                            : "border border-slate-200 hover:border-slate-300 bg-white"
                         }`}
                       >
-                        <input
-                          type="radio"
-                          name="tipe_temuan"
-                          value={opt.value}
-                          checked={isChecked}
-                          onChange={() => setTipeTemuan(opt.value)}
-                          className="h-4 w-4 accent-[#0B3052] cursor-pointer mt-0.5 shrink-0"
-                        />
+                        {/* Custom Radio Button */}
+                        {isChecked ? (
+                          <div className="h-4 w-4 rounded-full border-2 border-slate-800 flex items-center justify-center shrink-0 mt-0.5">
+                            <div className="h-2 w-2 rounded-full bg-slate-800" />
+                          </div>
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border border-slate-300 shrink-0 mt-0.5" />
+                        )}
                         <div>
-                          <span className="text-sm font-semibold text-slate-800 block">{opt.label}</span>
-                          <span className="text-xs text-slate-500 leading-relaxed">{opt.desc}</span>
+                          <span className="text-sm font-semibold text-slate-900 block leading-tight">
+                            {opt.label}
+                          </span>
+                          <span className="text-xs text-slate-500 block mt-1 leading-normal">
+                            {opt.desc}
+                          </span>
                         </div>
-                      </label>
+                      </div>
                     )
                   })}
                 </div>
@@ -237,7 +245,7 @@ const res = await kirimLaporan({
 
               {/* Lokasi Ruang Spesifik */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Lokasi Ruang Spesifik{" "}
                   <span className="text-slate-400 font-normal">(opsional)</span>
                 </label>
@@ -246,31 +254,31 @@ const res = await kirimLaporan({
                   value={lokasiSpesifik}
                   onChange={(e) => setLokasiSpesifik(e.target.value)}
                   placeholder="Contoh: Gedung Barat, lantai 1 sisi utara"
-                  className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm placeholder:text-slate-400 focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] transition-colors"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 transition-colors"
                 />
               </div>
 
               {/* Deskripsi Fakta Lapangan */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Deskripsi Fakta Lapangan <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   value={deskripsi}
                   onChange={(e) => setDeskripsi(e.target.value)}
                   rows={3}
-                  placeholder="Jelaskan kondisi riil secara objektif. Contoh: Genteng pecah sehingga air menetes ke meja praktikum…"
-                  className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm placeholder:text-slate-400 focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] transition-colors resize-none"
+                  placeholder="Jelaskan kondisi riil secara objektif. Contoh: Genteng pecah sehingga air menetes ke meja praktikum..."
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 transition-colors resize-none min-h-[96px]"
                   required
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-400 mt-1">
                   Minimal 20 karakter. Jangan mencantumkan NIK atau data pribadi.
                 </p>
               </div>
 
               {/* Lampiran Bukti Foto */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Lampiran Bukti Foto{" "}
                   <span className="text-slate-400 font-normal">(opsional)</span>
                 </label>
@@ -279,12 +287,12 @@ const res = await kirimLaporan({
                   onDragLeave={() => setDragOver(false)}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 cursor-pointer transition-all ${
+                  className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed p-6 cursor-pointer transition-all ${
                     dragOver
-                      ? "border-[#0B3052] bg-blue-50/60"
+                      ? "border-slate-400 bg-slate-50"
                       : fotoFile
-                      ? "border-emerald-300 bg-emerald-50/40"
-                      : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
+                      ? "border-emerald-300 bg-emerald-50/30"
+                      : "border-slate-200 hover:border-slate-300 bg-slate-50/20"
                   }`}
                 >
                   <input
@@ -296,7 +304,7 @@ const res = await kirimLaporan({
                   />
                   {fotoFile ? (
                     <>
-                      <ImageIcon className="h-7 w-7 text-emerald-500" />
+                      <ImageIcon className="h-6 w-6 text-emerald-500" />
                       <p className="text-xs font-semibold text-emerald-700">{fotoFile.name}</p>
                       <button
                         type="button"
@@ -308,38 +316,40 @@ const res = await kirimLaporan({
                     </>
                   ) : (
                     <>
-                      <Upload className="h-7 w-7 text-slate-400" />
-                      <p className="text-xs font-semibold text-slate-600">
+                      <Upload className="h-6 w-6 text-slate-400" />
+                      <p className="text-xs font-semibold text-slate-700">
                         Pilih atau seret foto bukti fisik
                       </p>
-                      <p className="text-[10px] text-slate-400">PNG, JPG · maksimal 5 MB</p>
+                      <p className="text-[11px] text-slate-400">PNG, JPG · maksimal 5 MB</p>
                     </>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+                <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
                   Foto diproses ulang tanpa metadata EXIF di browser. Foto tidak diunggah dalam mode demonstrasi.
                 </p>
               </div>
 
               {/* Toggle Anonim */}
-              <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 cursor-pointer hover:border-slate-300 transition-colors">
-                <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="h-5 w-5 text-[#0B3052] shrink-0" />
+              <div
+                onClick={() => setIsAnonim((v) => !v)}
+                className="rounded-xl border border-slate-200 bg-white p-4 flex items-center justify-between cursor-pointer hover:border-slate-300 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="h-5 w-5 text-slate-800 shrink-0" />
                   <div>
                     <span className="text-sm font-semibold text-slate-800 block">
                       Kirim Sebagai Laporan Anonim
                     </span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-xs text-slate-500 block mt-0.5">
                       Identitas profil contoh disamarkan dalam pratinjau.
                     </span>
                   </div>
                 </div>
-                {/* Toggle switch */}
+                {/* Switch Button */}
                 <button
                   type="button"
                   role="switch"
                   aria-checked={isAnonim}
-                  onClick={() => setIsAnonim((v) => !v)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0 ${
                     isAnonim ? "bg-[#0B3052]" : "bg-slate-300"
                   }`}
@@ -350,36 +360,36 @@ const res = await kirimLaporan({
                     }`}
                   />
                 </button>
-              </label>
+              </div>
 
-              {/* Footer note */}
-              <div className="flex items-start gap-2 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-                <Info className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
-                <p className="text-[11px] text-slate-500 leading-relaxed">
+              {/* Disclaimer */}
+              <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 flex items-start gap-2.5">
+                <Info className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-slate-500 leading-relaxed">
                   Laporan hanya ditambahkan ke sesi pratinjau dan tidak dikirim ke dinas. Jangan gunakan informasi sensitif.
                 </p>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-1">
+              <div className="flex items-center justify-end gap-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleClose}
-                  className="border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer text-sm"
+                  className="rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer text-sm px-5 py-2.5 h-auto shadow-sm"
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
                   disabled={loading || !deskripsi || deskripsi.length < 20}
-                  className="bg-[#0B3052] hover:bg-[#07213A] text-white px-5 cursor-pointer text-sm"
+                  className="rounded-xl bg-[#64748b] hover:bg-[#475569] text-white px-5 py-2.5 text-sm font-medium shadow flex items-center gap-2 cursor-pointer h-auto transition-colors disabled:opacity-50"
                 >
                   {loading ? (
                     "Mengirim…"
                   ) : (
                     <>
-                      <Send className="h-4 w-4 mr-1.5" /> Kirim Audit (Simulasi)
+                      <Send className="h-4 w-4" /> Kirim Audit (Simulasi)
                     </>
                   )}
                 </Button>
@@ -391,3 +401,4 @@ const res = await kirimLaporan({
     </Dialog>
   )
 }
+

@@ -666,6 +666,7 @@ export default function DetailSekolah() {
         open={isModalLaporanOpen}
         onOpenChange={setIsModalLaporanOpen}
         initialNpsn={baseline.npsn}
+        namaSekolah={baseline.nama}
       />
     </div>
   )
