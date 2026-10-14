@@ -398,7 +398,7 @@ Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster —
 | PUT | `/klaster/{id}/verifikasi` | `verifikator_dinas` | Tetapkan hasil verifikasi (param **query**: `status`, `alasan`) |
 | GET | `/klaster/{id}/riwayat` | Publik | Riwayat status (append-only) — lihat §7 |
 | POST | `/ai/cluster` | `admin`, `verifikator_dinas` | Trigger clustering manual (`?force_reprocess=true` opsional) |
-| GET | `/ai/status` | `admin`, `verifikator_dinas` | Status pipeline (jumlah laporan belum terklaster, total klaster) |
+| GET | `/ai/status` | `admin`, `verifikator_dinas` | Status pipeline — `unclustered_laporan` = jumlah `hasil_klasterisasi='belum_diproses'`, `total_klaster`, `last_run` + `last_run_status` dari run terakhir (F4.10) |
 
 **`GET /klaster`** — response `200`:
 ```json

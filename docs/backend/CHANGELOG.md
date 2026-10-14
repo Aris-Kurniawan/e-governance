@@ -1075,6 +1075,34 @@ ditambah 1 temuan audit kontrak (lihat #5).
 | Uji negatif (DB berhenti di `a7f3c91e5b2d`) | **menangkap** ENUM DRIFT `klaster.kategori`, exit 1 |
 | Dump | 236.747 B, diff **2 baris** (alembic_version saja); impor ke DB temp: 62/600/43, noise 398, enum 6 nilai |
 
+### 3.25 F4.10 — Fix bug backend DBG-004/005/006 (2026-10-14) ✅ SELESAI
+
+**Deliverable:**
+
+1. **DBG-004 — `GET /ai/status` salah hitung.** Seleksi `Laporan.hasil_klasterisasi == 'belum_diproses'` menggantikan `klaster_id IS NULL` (yang ikut menangkap 398 laporan noise). `last_run` tidak lagi hardcoded: dibaca dari state file baru `app/core/pipeline_state.py` (`backend/pipeline_state.json`, di-gitignore) yang ditulis cron script (sukses/kosong/error) dan `POST /ai/cluster`; fallback string bila belum pernah jalan; key baru `last_run_status` (`ok`/`error`).
+2. **DBG-005 — audit tak pernah terisi.** `log_audit()` dipanggil di 5 aksi sensitif: `POST /auth/login` → `login`, `POST /auth/register` → `akses_pdp_vault` (`encrypt_nik`), `PUT /klaster/{id}/verifikasi` → `verifikasi_klaster`, `PUT /vote/klaster/{id}/override` → `override_prioritas`, `PUT /laporan/{id}/status` → `verifikasi_status_sanggahan`.
+3. **DBG-006 — cron tak terpasang.** Crontab user dev: `0 2 * * * … scripts/run_clustering.py >> logs/clustering.log 2>&1` (+ komentar); service `cron` active; `backend/logs/` dibuat; `.gitignore` += `pipeline_state.json`, `backend/logs/`.
+4. **Test baru:** `TestAuditAktifF410` (5) + `TestStatusPipelineF410` (2, termasuk regresi noise-klaster_id-NULL) → **pytest 105/105**.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `pytest tests/` | **105/105** (101 dtk) |
+| `GET /ai/status` live | 200 — `unclustered_laporan: 0` (bukan 398), `total_klaster: 43`, `last_run: 2026-10-14T20:02:58`, `last_run_status: ok` |
+| `GET /audit/log` live | baris `login` `admin@simakis.id` tercatat (`total_items: 1`, sebelumnya selalu 0) |
+| Anon `GET /ai/status` | 401 |
+| Simulasi baris crontab | sukses → `logs/clustering.log` + state file terisi |
+| `crontab -l` | 1 entri `0 2 * * *` |
+| Git ignore | `pipeline_state.json`, `backend/logs/` ter-capture `.gitignore` |
+
+**Catatan:**
+
+- Tidak ada endpoint `logout` (refresh-token flow) → tidak ada aksi logout untuk di-log.
+- `last_run` = timestamp lokal (WIB), `audit.timestamp` = UTC — perbedaan zona, jangan dibaca berdampingan secara harfiah.
+- Saat deploy ke server produksi: pasang crontab yang sama (mesin harus menyala 02:00 WIB) — checklist `DEPLOYMENT.md` belum disentuh.
+- Docs terkait: `DEBUGGING.md` (DBG-004/005/006 → ✅ + bukti), INTERFACES baris `/ai/status`.
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

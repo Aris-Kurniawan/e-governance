@@ -25,9 +25,9 @@
 | DBG-001 | ENUM `klaster.kategori` drift: migrasi = 5 nilai, model & DB live = 6 | `alembic/versions/8cca6e1b2fa3`, `models/laporan.py:10` | ✅ SELESAI | `d3cb7888ff94` (commit `744fc4ca`) + guard `verify_schema_parity.py` |
 | DBG-002 | Cron 02:00 me-recluster laporan noise tiap hari (loop harian) | `scripts/run_clustering.py` | ✅ SELESAI | F4.7 `ae07c8de` — kolom `hasil_klasterisasi`, seleksi `'belum_diproses'` |
 | DBG-003 | `Unknown column 'perlu_info_tambahan'` / enum truncation saat upgrade | `klaster.status_verifikasi` | ✅ SELESAI | migrasi `d4f8c2a91e05` (commit `5a00bd3d`) |
-| DBG-004 | `GET /ai/status`: `unclustered_laporan` selalu 398; `last_run` hardcoded `"N/A"` | `routers/klaster.py:164-185` | 🔴 TERBUKA | Ubah seleksi ke `hasil_klasterisasi='belum_diproses'` + catat run terakhir |
-| DBG-005 | `log_audit()` 0 call site — tabel `audit_log` 0 baris; halaman FE Log Audit PDP selalu kosong | `core/audit.py:8` | 🔴 TERBUKA | Tanam `log_audit()` di endpoint aksi sensitif + test assert |
-| DBG-006 | Jadwal cron 02:00 WIB tidak pernah dipasang (`crontab -l` kosong) | mesin target / deploy | 🔴 TERBUKA | Pasang crontab/systemd timer di server produksi + checklist deploy |
+| DBG-004 | `GET /ai/status`: `unclustered_laporan` selalu 398; `last_run` hardcoded `"N/A"` | `routers/klaster.py` | ✅ SELESAI | F4.10 — seleksi `belum_diproses` + state file; live: 0, `last_run` nyata |
+| DBG-005 | `log_audit()` 0 call site — tabel `audit_log` 0 baris; halaman FE Log Audit PDP selalu kosong | `core/audit.py` | ✅ SELESAI | F4.10 — 5 call site + 5 test; audit_log live terisi |
+| DBG-006 | Jadwal cron 02:00 WIB tidak pernah dipasang (`crontab -l` kosong) | crontab (mesin dev) | ✅ SELESAI | F4.10 — crontab `0 2 * * *` terpasang, cron active, simulasi sukses |
 | DBG-007 | `penanda_masalah` selalu `"normal"`, `jumlah_isu_aktif` selalu 0 (deviasi kontrak #1) | `routers/sekolah.py:60-61` | ⚪ TERBLOKIR | Butuh formula ambang `aman/perlu_perhatian/kritis` (keputusan Aris) |
 | DBG-008 | `GET /dashboard/wilayah` menolak role `admin` (403) (deviasi kontrak #3) | `routers/dashboard.py:17` | 🔴 TERBUKA | Tambah `admin` ke `require_dinas` + test |
 | DBG-009 | `lintang`/`bujur` NULL 62/62 padahal CSV sumber lengkap (deviasi kontrak #4) | `setup_f300.py:180`, `routers/ingest.py:63` | 🔴 TERBUKA | Petakan 2 kolom di 2 lokasi + reseed |
@@ -59,26 +59,31 @@
 - **Penyelesaian:** migrasi `d4f8c2a91e05` (commit `5a00bd3d`, F4.4 lanjutan) — `ALTER TABLE klaster MODIFY status_verifikasi ENUM(…perlu_info_tambahan…)` via SQL mentah.
 - **Catatan:** tercatat di SETUP.md §5a tabel troubleshooting; guard DBG-001 kini memverifikasi kolom ini otomatis (parity check).
 
-### DBG-004 🔴 — `GET /ai/status` salah hitung unclustered + `last_run` hardcoded
+### DBG-004 ✅ — `GET /ai/status` salah hitung unclustered + `last_run` hardcoded (2026-10-14)
 
 - **Gejala:** `unclustered_laporan` **selalu 398** (angka noise yang sudah selesai), bukan backlog `belum_diproses` (0). `last_run` selalu `"N/A (no cron log yet)"` meski cron/script sudah pernah jalan.
 - **Akar:** query masih `WHERE klaster_id IS NULL` (definisi pra-F4.7) — tidak disapu saat semantik berubah (lihat DBG-002). `last_run` tidak pernah diisi karena tidak ada penyimpanan waktu run.
 - **Dampak:** dashboard pipeline/Kadis salah baca status; alarm/SLA berbasis endpoint ini akan false dari hari pertama.
-- **Rencana:** seleksi → `hasil_klasterisasi == 'belum_diproses'`; `last_run` diisi dari kolom `updated_at` laporan terakhir terproses (atau file log run) — putuskan yang paling murah.
+- **Penyelesaian (F4.10):** seleksi → `Laporan.hasil_klasterisasi == 'belum_diproses'`; `last_run` dibaca dari state file baru `app/core/pipeline_state.py` (`backend/pipeline_state.json`, di-gitignore) yang ditulis oleh cron script dan `POST /ai/cluster`; fallback string `"N/A (belum pernah tercatat)"` bila state belum ada; key baru `last_run_status` (`ok`/`error`).
+- **Verifikasi:** live `GET /ai/status` → `unclustered_laporan: 0` (bukan 398), `last_run: 2026-10-14T20:02:58` sesuai run script, `last_run_status: ok`, `total_klaster: 43`; anon 401; 2 test regresi (`TestStatusPipelineF410`) termasuk noise-klaster_id-NULL tak lagi terhitung.
 
-### DBG-005 🔴 — `log_audit()` tak pernah dipanggil; `audit_log` 0 baris
+### DBG-005 ✅ — `log_audit()` tak pernah dipanggil; `audit_log` 0 baris (2026-10-14)
 
 - **Gejala:** `GET /audit/log` (dan halaman FE Log Audit PDP) selalu kosong; 0 baris di tabel `audit_log`.
 - **Akar:** helper F3.21 (`core/audit.py`) ditulis bersama endpoint & FE, tetapi "penyambung" (pemanggilan di endpoint aksi sensitif) tak pernah dikerjakan; task ditandai selesai berdasarkan keberadaan fungsi, bukan terjadinya pencatatan.
 - **Dampak produksi:** tak ada jejak siapa verifikasi klaster/override prioritas/akses PDP — peluang kepatuhan PDP & forensik insiden hilang.
-- **Rencana:** tanam `log_audit()` minimal di: `POST/PUT /auth/login`, `PUT /klaster/{id}/verifikasi`, `PUT /laporan/{id}/status`, akses PDP vault; tambah test black-box assert baris `audit_log` bertambah.
+- **Penyelesaian (F4.10):** `log_audit()` dipanggil di 5 titik — `POST /auth/login` (`login`), `POST /auth/register` (`akses_pdp_vault` target `encrypt_nik`), `PUT /klaster/{id}/verifikasi` (`verifikasi_klaster`), `PUT /vote/klaster/{id}/override` (`override_prioritas`), `PUT /laporan/{id}/status` (`verifikasi_status_sanggahan`); commit di endpoint masing-masing; 5 test black-box `TestAuditAktifF410` assert baris masuk.
+- **Verifikasi:** pytest **105/105**; live `GET /audit/log` → baris `login` `admin@simakis.id` tercatat (`total_items: 1`, sebelumnya 0).
+- **Sisa kecil:** endpoint `logout` tidak ada (refresh-token flow) → memang tak ada yang bisa di-log; `GET /audit/log` tak menyertakan nama actor (hanya `actor_user_id`) — kandidat penyempurnaan lanjutan.
 
-### DBG-006 🔴 — Cron 02:00 WIB tidak pernah terpasang
+### DBG-006 ✅ — Cron 02:00 WIB tidak pernah terpasang (2026-10-14)
 
 - **Gejala:** `crontab -l` kosong; `run_clustering.py` hanya jalan manual.
 - **Akar:** pemasangan crontab = tindakan operasional di mesin target; tercatat di dokumentasi seolah sudah dilakukan (documentation-as-reality gap).
 - **Dampak produksi:** laporan warga baru tidak pernah ter-otomatis terklasterisasi — fitur "AI pipeline harian" jadi fitur mati; backlog `belum_diproses` menumpuk tanpa batas.
-- **Rencana:** pasang `0 2 * * *` (lihat komentar kepala `run_clustering.py`) atau systemd timer; masukkan ke checklist deploy (`DEPLOYMENT.md`) — jangan hanya dokumentasi.
+- **Penyelesaian (F4.10):** crontab user dev terpasang — `0 2 * * * cd …/backend && ./venv/bin/python scripts/run_clustering.py >> logs/clustering.log 2>&1` + komentar; service `cron` **active**; `backend/logs/` dibuat; `.gitignore` += `pipeline_state.json`, `backend/logs/`.
+- **Verifikasi:** `crontab -l` menampilkan 1 entri; simulasi persis baris crontab sukses (log + state file terisi); run script manual → state `status: ok`.
+- **Sisa:** pasang crontab yang sama saat deploy ke server produksi (berlaku selama mesin menyala pukul 02:00 WIB); checklist `DEPLOYMENT.md` belum disentuh.
 
 ### DBG-007 ⚪ — `penanda_masalah` selalu `"normal"` (butuh keputusan)
 

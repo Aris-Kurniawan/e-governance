@@ -857,3 +857,170 @@ class TestSkorKbmF48:
         assert b["skor_laporan"] == 66.0
         assert b["skor_dapodik"] == 100.0
         assert b["level"] == "kritis"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 10. F4.10 — Audit aktif (DBG-005) & status pipeline (DBG-004)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _audit_rows(client, token) -> list[dict]:
+    """Ambil baris audit (admin/kepala_dinas) — helper asersi F4.10."""
+    r = client.get("/audit/log", params={"page_size": 100}, headers=auth(token))
+    assert r.status_code == 200, r.text
+    return r.json()["data"]
+
+
+class TestAuditAktifF410:
+    """DBG-005: log_audit() harus benar-benar terpanggil di aksi sensitif."""
+
+    def test_login_meninggalkan_audit(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        rows = _audit_rows(test_client, token)
+        assert any(
+            r["aksi"] == "login"
+            and r["actor_user_id"] == admin.id
+            and r["target"] == admin.email
+            for r in rows
+        )
+
+    def test_register_vault_meninggalkan_audit(self, test_client, db_session):
+        email = f"bb_reg_{uuid.uuid4().hex[:8]}@example.com"
+        r = test_client.post(
+            "/auth/register",
+            json={
+                "nama": "Blackbox Register",
+                "nik": "3524010101990001",
+                "email": email,
+                "password": "password123",
+            },
+        )
+        assert r.status_code == 201, r.text
+        user_id = r.json()["data"]["user_id"]
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        rows = _audit_rows(test_client, token)
+        assert any(
+            x["aksi"] == "akses_pdp_vault"
+            and x["actor_user_id"] == user_id
+            and x["target"] == "encrypt_nik"
+            for x in rows
+        )
+
+    def test_verifikasi_status_sanggahan_teraudit(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        warga = make_user(db_session)
+        sek = make_sekolah(db_session)
+        lap = make_laporan(db_session, warga, sek)
+
+        token = login(test_client, admin.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 200, r.text
+        rows = _audit_rows(test_client, token)
+        assert any(
+            x["aksi"] == "verifikasi_status_sanggahan" and x["target"] == lap.id
+            for x in rows
+        )
+
+    def test_verifikasi_klaster_teraudit(self, test_client, db_session):
+        veri = make_user(db_session, role="verifikator_dinas")
+        admin = make_user(db_session, role="admin")
+        sek = make_sekolah(db_session)
+        kl = make_klaster(db_session, sek)
+
+        token_v = login(test_client, veri.email)
+        r = test_client.put(
+            f"/klaster/{kl.id}/verifikasi",
+            params={"status": "terverifikasi"},
+            headers=auth(token_v),
+        )
+        assert r.status_code == 200, r.text
+
+        token_a = login(test_client, admin.email)
+        rows = _audit_rows(test_client, token_a)
+        assert any(
+            x["aksi"] == "verifikasi_klaster" and x["target"] == kl.id
+            for x in rows
+        )
+
+    def test_override_prioritas_teraudit(self, test_client, db_session):
+        kepala = make_user(db_session, role="kepala_dinas")
+        sek = make_sekolah(db_session)
+        kl = make_klaster(db_session, sek)
+
+        token = login(test_client, kepala.email)
+        r = test_client.put(
+            f"/vote/klaster/{kl.id}/override",
+            params={"urutan_prioritas": 5, "alasan": "darurat banjir"},
+            headers=auth(token),
+        )
+        assert r.status_code == 200, r.text
+        rows = _audit_rows(test_client, token)
+        assert any(
+            x["aksi"] == "override_prioritas" and x["target"] == kl.id
+            for x in rows
+        )
+
+
+class TestStatusPipelineF410:
+    """DBG-004: /ai/status hitung belum_diproses + last_run dari state file."""
+
+    def test_unclustered_hitung_belum_diproses_bukan_null(
+        self, test_client, db_session
+    ):
+        from sqlalchemy import func, select
+
+        from app.models.laporan import Laporan as Lap
+
+        admin = make_user(db_session, role="admin")
+        warga = make_user(db_session)
+        sek = make_sekolah(db_session)
+
+        # Regresi bug lama: noise dengan klaster_id NULL ikut terhitung.
+        lap_noise = make_laporan(db_session, warga, sek)
+        lap_noise.hasil_klasterisasi = "noise"
+        db_session.commit()
+        make_laporan(db_session, warga, sek)  # belum_diproses
+
+        expected = db_session.scalar(
+            select(func.count())
+            .select_from(Lap)
+            .where(Lap.hasil_klasterisasi == "belum_diproses")
+        )
+        total_lap = db_session.scalar(select(func.count()).select_from(Lap))
+
+        token = login(test_client, admin.email)
+        r = test_client.get("/ai/status", headers=auth(token))
+        assert r.status_code == 200
+        data = r.json()["data"]
+        assert data["unclustered_laporan"] == expected
+        # Bukti noise (klaster_id NULL) tidak lagi dihitung:
+        assert data["unclustered_laporan"] <= total_lap - 1
+
+    def test_last_run_dari_state_file(self, test_client, db_session):
+        from app.core.pipeline_state import (
+            STATE_FILE,
+            read_pipeline_run,
+            record_pipeline_run,
+        )
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+
+        # State hilang → fallback string (kontrak FE: last_run selalu string).
+        if STATE_FILE.exists():
+            STATE_FILE.unlink()
+        r = test_client.get("/ai/status", headers=auth(token))
+        assert r.json()["data"]["last_run"] == "N/A (belum pernah tercatat)"
+
+        # State ada → last_run = timestamp nyata + status run.
+        record_pipeline_run("test", "ok", 3, "fixture run")
+        r = test_client.get("/ai/status", headers=auth(token))
+        data = r.json()["data"]
+        assert data["last_run"] == read_pipeline_run()["last_run"]
+        assert data["last_run_status"] == "ok"

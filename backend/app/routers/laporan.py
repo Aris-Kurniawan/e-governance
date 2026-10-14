@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.ai_pipeline.scoring import calculate_kbm_score, kbm_level
 from app.core.deps import get_current_user, RoleChecker
+from app.core.audit import log_audit
 from app.core.database import get_db
 from app.models.klaster import Klaster
 from app.models.laporan import Laporan, LaporanFoto, STATUS_SANGGHAN_ENUM
@@ -213,7 +214,7 @@ def update_laporan_status(
     laporan_id: str,
     payload: LaporanStatusUpdateRequest,
     db: Session = Depends(get_db),
-    _: User = Depends(require_review),
+    current_user: User = Depends(require_review),
 ):
     """F4.7 (D-21) — Verifikasi manual per laporan oleh admin/kepala_dinas.
 
@@ -236,6 +237,8 @@ def update_laporan_status(
 
     laporan.status_sanggahan = payload.status
     db.add(laporan)
+    # F4.10 (DBG-005): jejak audit verifikasi status sanggahan.
+    log_audit(db, current_user.id, "verifikasi_status_sanggahan", target=laporan_id)
     db.commit()
     db.refresh(laporan)
 

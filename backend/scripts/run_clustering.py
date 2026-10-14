@@ -24,6 +24,7 @@ from app.models.klaster import Klaster
 from app.models.sekolah import Sekolah
 from app.ai_pipeline.pipeline import default_pipeline
 from app.ai_pipeline.scoring import calculate_priority_score
+from app.core.pipeline_state import record_pipeline_run
 
 
 def get_unclustered_laporan_by_school(db: Session) -> dict[str, list[Laporan]]:
@@ -68,6 +69,7 @@ def run_clustering_job():
         
         if not grouped:
             print(f"[{datetime.now()}] No unclustered laporan. Exiting.")
+            record_pipeline_run("script", "ok", 0, "Tidak ada laporan belum_diproses")
             return
         
         total_laporan = sum(len(laps) for laps in grouped.values())
@@ -197,9 +199,14 @@ def run_clustering_job():
         elapsed = (datetime.now() - start_time).total_seconds()
         print(f"\n[{datetime.now()}] ✓ Clustering job complete!")
         print(f"  Created {total_klaster_created} klaster, {total_noise} laporan noise in {elapsed:.1f}s")
+        record_pipeline_run(
+            "script", "ok", total_klaster_created,
+            f"Created {total_klaster_created} klaster, {total_noise} noise",
+        )
         
     except Exception as e:
         print(f"[{datetime.now()}] ✗ Job failed: {e}")
+        record_pipeline_run("script", "error", 0, str(e))
         db.rollback()
         raise
     finally:
