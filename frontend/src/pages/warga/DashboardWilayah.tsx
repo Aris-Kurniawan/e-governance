@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import AuthRequiredModal from "@/components/composite/AuthRequiredModal"
 import { useAuth } from "@/context/AuthContext"
+import { useFetch } from "@/hooks/useFetch"
+import { detailSekolah, listSekolah } from "@/lib/api/sekolah"
+import { detailKlaster, listKlaster } from "@/lib/api/klaster"
+import type { KondisiSarana, SekolahDetail, SekolahList } from "@/lib/api/types"
 import { 
   Building2, 
   AlertTriangle, 
@@ -24,66 +28,66 @@ interface BarisMatriks {
   npsn: string
   nama: string
   jenjang: "SD" | "SMP" | "SMA" | "SMK"
+  status_sekolah: string
+  alamat: string
   ruangKelas: { label: string; tone: ToneMatriks }
   labIpa: { label: string; tone: ToneMatriks }
   perpus: { label: string; tone: ToneMatriks }
   sanitasi: { label: string; tone: ToneMatriks }
-  status: "Sesuai" | "Selisih Minor" | "Mismatch Kritis"
+  status: "Sesuai" | "Selisih Minor" | "Mismatch Kritis" | "Tidak Tersedia"
 }
 
-// Data matriks integritas (mock UI-only) — 5 entitas percontohan dari 24 terdaftar
-const matriksSekolah: BarisMatriks[] = [
-  {
-    npsn: "20506281",
-    nama: "SMAN 1 Sukodadi",
-    jenjang: "SMA",
-    ruangKelas: { label: "18", tone: "baik" },
-    labIpa: { label: "1", tone: "kritis" },
-    perpus: { label: "1", tone: "baik" },
-    sanitasi: { label: "8", tone: "baik" },
-    status: "Mismatch Kritis",
-  },
-  {
-    npsn: "20506304",
-    nama: "SMPN 2 Lamongan",
-    jenjang: "SMP",
-    ruangKelas: { label: "24", tone: "baik" },
-    labIpa: { label: "2", tone: "baik" },
-    perpus: { label: "1", tone: "baik" },
-    sanitasi: { label: "2", tone: "minor" },
-    status: "Selisih Minor",
-  },
-  {
-    npsn: "20506112",
-    nama: "SDN 5 Turi",
-    jenjang: "SD",
-    ruangKelas: { label: "6", tone: "baik" },
-    labIpa: { label: "—", tone: "netral" },
-    perpus: { label: "1", tone: "baik" },
-    sanitasi: { label: "3", tone: "baik" },
-    status: "Sesuai",
-  },
-  {
-    npsn: "20506450",
-    nama: "SMKN 1 Lamongan",
-    jenjang: "SMK",
-    ruangKelas: { label: "1", tone: "minor" },
-    labIpa: { label: "5", tone: "baik" },
-    perpus: { label: "1", tone: "baik" },
-    sanitasi: { label: "12", tone: "baik" },
-    status: "Selisih Minor",
-  },
-  {
-    npsn: "20506303",
-    nama: "SMPN 1 Lamongan",
-    jenjang: "SMP",
-    ruangKelas: { label: "27", tone: "baik" },
-    labIpa: { label: "3", tone: "baik" },
-    perpus: { label: "1", tone: "baik" },
-    sanitasi: { label: "10", tone: "baik" },
-    status: "Sesuai",
-  },
-]
+interface DataSarpras {
+  rows: BarisMatriks[]
+  total: number
+  detail: Record<string, SekolahDetail>
+}
+
+const TIER: Record<ToneMatriks, number> = { netral: 0, baik: 1, minor: 2, kritis: 3 }
+
+const hitungSel = (
+  sarana: KondisiSarana[] | null | undefined,
+  namaRuang: string[],
+): { label: string; tone: ToneMatriks } => {
+  const cocok = (sarana ?? []).filter((s) => namaRuang.includes(s.nama_ruang))
+  if (cocok.length === 0) return { label: "—", tone: "netral" }
+  const jumlah = cocok.reduce((a, s) => a + s.jumlah, 0)
+  const berat = cocok.reduce((a, s) => a + s.kondisi_rusak_berat, 0)
+  const sedang = cocok.reduce((a, s) => a + s.kondisi_rusak_sedang, 0)
+  const ringan = cocok.reduce((a, s) => a + s.kondisi_rusak_ringan, 0)
+  const tone: ToneMatriks =
+    berat > 0 ? "kritis" : sedang > 0 || ringan > 0 ? "minor" : "baik"
+  return { label: String(jumlah), tone }
+}
+
+const bangunBaris = (s: SekolahList, detail: SekolahDetail | null): BarisMatriks => {
+  const sarana = detail?.kondisi_sarana ?? null
+  const ruangKelas = hitungSel(sarana, ["ruang_kelas"])
+  const labIpa = hitungSel(sarana, ["lab_ipa"])
+  const perpus = hitungSel(sarana, ["perpustakaan"])
+  const sanitasi = hitungSel(sarana, ["wc_siswa", "wc_guru"])
+  const sel = [ruangKelas, labIpa, perpus, sanitasi]
+  const status: BarisMatriks["status"] =
+    sarana === null && !detail
+      ? "Tidak Tersedia"
+      : sel.reduce((worst, c) => Math.max(worst, TIER[c.tone]), 0) >= TIER.kritis
+        ? "Mismatch Kritis"
+        : sel.some((c) => c.tone === "minor")
+          ? "Selisih Minor"
+          : "Sesuai"
+  return {
+    npsn: s.npsn,
+    nama: s.nama,
+    jenjang: s.jenjang as BarisMatriks["jenjang"],
+    status_sekolah: s.status_sekolah ?? "—",
+    alamat: s.alamat,
+    ruangKelas,
+    labIpa,
+    perpus,
+    sanitasi,
+    status,
+  }
+}
 
 const TONE_SEL: Record<Exclude<ToneMatriks, "netral">, string> = {
   baik: "bg-emerald-50 font-bold text-emerald-700 border border-emerald-200/60",
@@ -95,9 +99,33 @@ const STATUS_SEL: Record<BarisMatriks["status"], string> = {
   Sesuai: "bg-emerald-50 text-emerald-800 border-emerald-200",
   "Selisih Minor": "bg-amber-50 text-amber-800 border-amber-200",
   "Mismatch Kritis": "bg-rose-50 text-rose-800 border-rose-200",
+  "Tidak Tersedia": "bg-slate-100 text-slate-500 border-slate-200",
 }
 
 const OPSI_JENJANG = ["Semua", "SD", "SMP", "SMA", "SMK"] as const
+const BARIS_PER_HALAMAN = 10
+
+const LABEL_STATUS_VERIFIKASI: Record<string, string> = {
+  menunggu_verifikasi: "Menunggu Verifikasi",
+  terverifikasi: "Terverifikasi Dinas",
+  perlu_info_tambahan: "Perlu Info Tambahan",
+  tidak_terverifikasi: "Tidak Terverifikasi",
+}
+
+const LABEL_KONDISI_DILAPORKAN: Record<string, string> = {
+  baik: "Kondisi Baik",
+  rusak_ringan: "Rusak Ringan",
+  rusak_sedang: "Rusak Sedang",
+  rusak_berat: "Rusak Berat",
+  rusak_total: "Rusak Total",
+}
+
+const PIN_JENJANG: Record<string, string> = {
+  SD: "bg-rose-600",
+  SMP: "bg-blue-600",
+  SMA: "bg-amber-600",
+  SMK: "bg-emerald-600",
+}
 
 interface KlasterIsuRow {
   id: string
@@ -179,6 +207,7 @@ export default function DashboardWilayah() {
   const [isAuthRequiredOpen, setIsAuthRequiredOpen] = useState(false)
   const [selectedSchoolForReport, setSelectedSchoolForReport] = useState<{ npsn: string; nama: string } | null>(null)
   const [filterJenjang, setFilterJenjang] = useState<string>("Semua")
+  const [halaman, setHalaman] = useState(1)
   const [votedIsu, setVotedIsu] = useState<Record<string, boolean>>({})
   const [isuVoteCounts, setIsuVoteCounts] = useState<Record<string, number>>(() => ({
     "ISU-064": 38,
@@ -186,6 +215,61 @@ export default function DashboardWilayah() {
     "ISU-039": 22,
     "ISU-019": 9,
   }))
+
+  const { state: sarprasState, refetch: refetchSarpras } = useFetch<DataSarpras>(async () => {
+    const page = await listSekolah({ page: 1, page_size: 100 })
+    const detailList = await Promise.all(
+      page.data.map((s) => detailSekolah(s.npsn).catch(() => null)),
+    )
+    const detail: Record<string, SekolahDetail> = {}
+    const rows = page.data.map((s, i) => {
+      const d = detailList[i]
+      if (d) detail[s.npsn] = d
+      return bangunBaris(s, d)
+    })
+    return { rows, total: page.meta.total_items, detail }
+  }, [])
+
+  const { state: klasterState, refetch: refetchKlaster } = useFetch(
+    () => listKlaster({ page: 1, page_size: 100 }),
+    [],
+  )
+
+  const klasterList =
+    klasterState.status === "success" ? klasterState.data.data : []
+  const klasterMeta =
+    klasterState.status === "success" ? klasterState.data.meta : null
+  const top = klasterList[0]
+
+  const { state: topDetailState } = useFetch(
+    () => (top ? detailKlaster(top.klaster_id) : Promise.resolve(null)),
+    [top?.klaster_id],
+  )
+
+  const sarpras = sarprasState.status === "success" ? sarprasState.data : null
+  const rows = sarpras?.rows ?? []
+  const detailMap = sarpras?.detail ?? {}
+  const totalSekolah = sarpras?.total ?? 0
+
+  const jumlahKritis = rows.filter((r) => r.status === "Mismatch Kritis").length
+  const jumlahMinor = rows.filter((r) => r.status === "Selisih Minor").length
+  const jumlahPerhatian = jumlahKritis + jumlahMinor
+  const totalKlaster = klasterMeta?.total_items ?? 0
+  const klasterSelesai = klasterList.filter(
+    (k) => k.status_penanganan === "selesai",
+  ).length
+  const persenSelesai =
+    totalKlaster > 0 ? Math.round((klasterSelesai / totalKlaster) * 100) : 0
+
+  const sebaranJenjang = ["SD", "SMP", "SMA", "SMK"].map((j) => ({
+    jenjang: j,
+    jumlah: rows.filter((r) => r.jenjang === j).length,
+  }))
+
+  const sekolahTop = top ? rows.find((r) => r.npsn === top.sekolah_npsn) : undefined
+  const ringkasanTop = top ? detailMap[top.sekolah_npsn]?.ringkasan_sarpras : undefined
+  const topDetail = topDetailState.status === "success" ? topDetailState.data : null
+  const fakta = topDetail?.laporan?.[0]
 
   const handleVoteIsu = (isuId: string) => {
     if (!isAuthenticated) {
@@ -207,8 +291,17 @@ export default function DashboardWilayah() {
 
   const filteredRows =
     filterJenjang === "Semua"
-      ? matriksSekolah
-      : matriksSekolah.filter((r) => r.jenjang === filterJenjang)
+      ? rows
+      : rows.filter((r) => r.jenjang === filterJenjang)
+
+  const totalHalaman = Math.max(1, Math.ceil(filteredRows.length / BARIS_PER_HALAMAN))
+  const halamanAktif = Math.min(halaman, totalHalaman)
+  const barisTampil = filteredRows.slice(
+    (halamanAktif - 1) * BARIS_PER_HALAMAN,
+    halamanAktif * BARIS_PER_HALAMAN,
+  )
+  const nomorAwal = filteredRows.length === 0 ? 0 : (halamanAktif - 1) * BARIS_PER_HALAMAN + 1
+  const nomorAkhir = Math.min(halamanAktif * BARIS_PER_HALAMAN, filteredRows.length)
 
   const renderSel = (cell: { label: string; tone: ToneMatriks }) =>
     cell.tone === "netral" ? (
@@ -350,7 +443,9 @@ export default function DashboardWilayah() {
                   <Building2 className="h-5 w-5" />
                 </div>
               </div>
-              <div className="text-4xl font-extrabold text-slate-900 tracking-tight mt-1">24</div>
+              <div className="text-4xl font-extrabold text-slate-900 tracking-tight mt-1">
+                {sarpras ? totalSekolah : "—"}
+              </div>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100 space-y-1">
               <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
@@ -373,17 +468,25 @@ export default function DashboardWilayah() {
                 </div>
               </div>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-4xl font-extrabold text-slate-900 tracking-tight">6</span>
+                <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                  {sarpras ? jumlahPerhatian : "—"}
+                </span>
                 <span className="text-lg font-bold text-slate-700">Sekolah</span>
               </div>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 border border-amber-200">
-                4 Selisih Minor
-              </span>
-              <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-800 border border-rose-200">
-                2 Mismatch Kritis
-              </span>
+              {sarpras ? (
+                <>
+                  <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 border border-amber-200">
+                    {jumlahMinor} Selisih Minor
+                  </span>
+                  <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-800 border border-rose-200">
+                    {jumlahKritis} Mismatch Kritis
+                  </span>
+                </>
+              ) : (
+                <span className="text-xs text-slate-400">Memuat data audit…</span>
+              )}
             </div>
           </div>
 
@@ -397,17 +500,19 @@ export default function DashboardWilayah() {
                 </div>
               </div>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-4xl font-extrabold text-slate-900 tracking-tight">42</span>
+                <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                  {klasterMeta ? totalKlaster : "—"}
+                </span>
                 <span className="text-lg font-bold text-slate-700">Isu</span>
               </div>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100">
               <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
-                <span>Tindak Lanjut Fisik</span>
-                <span>87.5%</span>
+                <span>Tindak Lanjut Selesai</span>
+                <span>{klasterMeta ? `${persenSelesai}%` : "—"}</span>
               </div>
               <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-emerald-500" style={{ width: "87.5%" }} />
+                <div className="h-full rounded-full bg-emerald-500" style={{ width: `${persenSelesai}%` }} />
               </div>
             </div>
           </div>
@@ -430,7 +535,13 @@ export default function DashboardWilayah() {
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> Laporkan Temuan
                   </Button>
-                  <Select value={filterJenjang} onValueChange={setFilterJenjang}>
+                  <Select
+                    value={filterJenjang}
+                    onValueChange={(value) => {
+                      setFilterJenjang(value)
+                      setHalaman(1)
+                    }}
+                  >
                     <SelectTrigger
                       aria-label="Filter jenjang sekolah"
                       className={`h-8 w-auto gap-2 rounded-lg border-slate-200 bg-white px-3 text-xs font-medium shadow-sm whitespace-nowrap inline-flex items-center ${
@@ -480,14 +591,8 @@ export default function DashboardWilayah() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {filteredRows.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-xs text-slate-400">
-                          Tidak ada sekolah dengan jenjang {filterJenjang}.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredRows.map((row) => (
+                    {sarprasState.status === "success" && filteredRows.length > 0 ? (
+                      barisTampil.map((row) => (
                         <tr key={row.npsn} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-3.5 px-3">
                             <Link
@@ -496,7 +601,9 @@ export default function DashboardWilayah() {
                             >
                               {row.nama}
                             </Link>
-                            <span className="text-[11px] text-slate-400">NPSN: {row.npsn} · Negeri</span>
+                            <span className="text-[11px] text-slate-400">
+                              NPSN: {row.npsn} · {row.status_sekolah}
+                            </span>
                           </td>
                           <td className="py-3.5 px-3 text-center">{renderSel(row.ruangKelas)}</td>
                           <td className="py-3.5 px-3 text-center">{renderSel(row.labIpa)}</td>
@@ -521,10 +628,65 @@ export default function DashboardWilayah() {
                           </td>
                         </tr>
                       ))
+                    ) : sarprasState.status === "error" ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center space-y-2">
+                          <p className="text-xs text-rose-600 font-semibold">{sarprasState.message}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refetchSarpras}
+                            className="text-xs text-slate-700 border-slate-200 cursor-pointer"
+                          >
+                            Coba Lagi
+                          </Button>
+                        </td>
+                      </tr>
+                    ) : sarprasState.status === "loading" ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-xs text-slate-400">
+                          Memuat data sarpras dari backend…
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-xs text-slate-400">
+                          Tidak ada sekolah dengan jenjang {filterJenjang}.
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalHalaman > 1 && (
+                <div className="flex items-center justify-between pt-4 text-xs text-slate-500">
+                  <span>
+                    Halaman {halamanAktif} dari {totalHalaman}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={halamanAktif <= 1}
+                      onClick={() => setHalaman(halamanAktif - 1)}
+                      className="h-8 text-xs text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      Sebelumnya
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={halamanAktif >= totalHalaman}
+                      onClick={() => setHalaman(halamanAktif + 1)}
+                      className="h-8 text-xs text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      Berikutnya
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Table Footer */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-100 text-[11px] text-slate-500">
@@ -535,7 +697,7 @@ export default function DashboardWilayah() {
                   <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Mismatch Kritis</span>
                 </div>
                 <span>
-                  Menampilkan {filteredRows.length} dari 24 entitas terdaftar
+                  Menampilkan {nomorAwal}–{nomorAkhir} dari {filteredRows.length} entitas terdaftar
                   {filterJenjang !== "Semua" ? ` · difilter jenjang ${filterJenjang}` : ""}
                 </span>
               </div>
@@ -550,48 +712,108 @@ export default function DashboardWilayah() {
                 <span className="text-xs font-extrabold tracking-wider text-rose-700 uppercase flex items-center gap-1.5">
                   <AlertTriangle className="h-4 w-4" /> TEMUAN KRITIS TERATAS
                 </span>
-                <span className="text-[11px] font-mono font-medium text-rose-500">ID: #ISU-064</span>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-slate-900 text-base">Lab Kimia SMAN 1 Sukodadi</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Jl. Raya Sukodadi No. 42, Sukodadi, Lamongan</p>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="rounded-lg bg-white p-2.5 border border-slate-200/60 flex items-center justify-between">
-                  <span className="text-slate-500">DATA DAPODIK</span>
-                  <span className="font-semibold text-emerald-700">1 Unit · Kondisi Baik</span>
-                </div>
-                <div className="rounded-lg bg-rose-100/70 p-2.5 border border-rose-200/80">
-                  <span className="font-bold text-rose-900 block mb-0.5">FAKTA LAPANGAN: Plafon Runtuh (Bocor)</span>
-                  <p className="text-[#641E1E] leading-relaxed text-[11px]">
-                    Atap ruang praktikum bocor parah menyebabkan 6 meja praktikum rusak &amp; bau zat menyengat saat hujan.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
-                <span className="font-semibold flex items-center gap-1 text-slate-700">
-                  <ThumbsUp className="h-3.5 w-3.5 text-blue-600" /> 38 Warga Memvalidasi
+                <span className="text-[11px] font-mono font-medium text-rose-500">
+                  {top
+                    ? `ID: #${top.klaster_id.replace(/-/g, "").slice(0, 8).toUpperCase()}`
+                    : "ID: —"}
                 </span>
-                <span className="text-slate-400">Verifikasi: Tim Komite</span>
               </div>
 
-              <div className="space-y-2 pt-1">
-                <Button asChild className="w-full bg-[#0B3052] hover:bg-[#07213A] text-white font-medium text-xs h-9 rounded-lg cursor-pointer">
-                  <Link to="/laporan/riwayat" className="block text-center">
-                    Periksa Berkas Temuan
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleReportClick({ npsn: "20506281", nama: "SMAN 1 Sukodadi" })}
-                  className="w-full text-xs h-8 text-[#0B3052] border-blue-200 hover:bg-white font-semibold cursor-pointer"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Laporkan Temuan di Sekolah Ini
-                </Button>
-              </div>
+              {klasterState.status === "error" ? (
+                <div className="text-xs space-y-2">
+                  <p className="text-rose-700 font-semibold">{klasterState.message}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refetchKlaster}
+                    className="text-xs text-slate-700 border-slate-200 bg-white cursor-pointer"
+                  >
+                    Coba Lagi
+                  </Button>
+                </div>
+              ) : !top ? (
+                <p className="text-xs text-slate-500">
+                  {klasterState.status === "loading"
+                    ? "Memuat klaster prioritas…"
+                    : "Belum ada klaster isu terprioritas saat ini."}
+                </p>
+              ) : (
+                <>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">
+                      {top.label?.trim() || "Isu Fasilitas Sekolah"}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {sekolahTop?.nama ?? top.sekolah_npsn}
+                      {sekolahTop ? ` · ${sekolahTop.alamat}` : ""}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="rounded-lg bg-white p-2.5 border border-slate-200/60 flex items-center justify-between">
+                      <span className="text-slate-500">DATA DAPODIK</span>
+                      <span className="font-semibold text-emerald-700">
+                        {ringkasanTop
+                          ? `${ringkasanTop.total_unit} Unit · ${ringkasanTop.total_baik} Kondisi Baik`
+                          : "Belum tersedia"}
+                      </span>
+                    </div>
+                    {fakta ? (
+                      <div className="rounded-lg bg-rose-100/70 p-2.5 border border-rose-200/80">
+                        <span className="font-bold text-rose-900 block mb-0.5">
+                          FAKTA LAPANGAN:{" "}
+                          {(fakta.kondisi_dilaporkan &&
+                            LABEL_KONDISI_DILAPORKAN[fakta.kondisi_dilaporkan]) ||
+                            fakta.kondisi_dilaporkan ||
+                            "Laporan Warga"}
+                        </span>
+                        <p className="text-[#641E1E] leading-relaxed text-[11px]">{fakta.deskripsi}</p>
+                      </div>
+                    ) : topDetailState.status === "loading" ? (
+                      <div className="rounded-lg bg-white p-2.5 border border-slate-200/60">
+                        <p className="text-slate-500 text-[11px]">Memuat rincian laporan…</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg bg-white p-2.5 border border-slate-200/60">
+                        <p className="text-slate-500 text-[11px]">
+                          Belum ada laporan warga terkait isu ini.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
+                    <span className="font-semibold flex items-center gap-1 text-slate-700">
+                      <ThumbsUp className="h-3.5 w-3.5 text-blue-600" />{" "}
+                      {top.jumlah_vote_terhitung} Warga Memvalidasi
+                    </span>
+                    <span className="text-slate-400">
+                      Verifikasi:{" "}
+                      {LABEL_STATUS_VERIFIKASI[top.status_verifikasi] ?? top.status_verifikasi}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <Button asChild className="w-full bg-[#0B3052] hover:bg-[#07213A] text-white font-medium text-xs h-9 rounded-lg cursor-pointer">
+                      <Link to={`/klaster/${top.klaster_id}`} className="block text-center">
+                        Periksa Berkas Temuan
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        handleReportClick({
+                          npsn: top.sekolah_npsn,
+                          nama: sekolahTop?.nama ?? top.sekolah_npsn,
+                        })
+                      }
+                      className="w-full text-xs h-8 text-[#0B3052] border-blue-200 hover:bg-white font-semibold cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Laporkan Temuan di Sekolah Ini
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Widget 2: Sebaran Wilayah Audit */}
@@ -611,23 +833,33 @@ export default function DashboardWilayah() {
                 
                 {/* Pins */}
                 <div className="relative z-10 flex items-center justify-around w-full px-4 text-center">
-                  <div className="flex flex-col items-center">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-white font-bold text-[10px] shadow-md">1</span>
-                    <span className="text-[10px] font-bold text-white bg-slate-900/80 px-1.5 py-0.5 rounded mt-1">Sukodadi</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-[10px] shadow-md">12</span>
-                    <span className="text-[10px] font-bold text-white bg-slate-900/80 px-1.5 py-0.5 rounded mt-1">Kota</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-600 text-white font-bold text-[10px] shadow-md">3</span>
-                    <span className="text-[10px] font-bold text-white bg-slate-900/80 px-1.5 py-0.5 rounded mt-1">Turi</span>
-                  </div>
+                  {sarpras ? (
+                    sebaranJenjang
+                      .filter((b) => b.jumlah > 0)
+                      .map((b) => (
+                        <div key={b.jenjang} className="flex flex-col items-center">
+                          <span
+                            className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                              PIN_JENJANG[b.jenjang] ?? "bg-slate-600"
+                            } text-white font-bold text-[10px] shadow-md`}
+                          >
+                            {b.jumlah}
+                          </span>
+                          <span className="text-[10px] font-bold text-white bg-slate-900/80 px-1.5 py-0.5 rounded mt-1">
+                            {b.jenjang}
+                          </span>
+                        </div>
+                      ))
+                  ) : (
+                    <span className="text-[11px] font-semibold text-white bg-slate-900/70 px-2 py-1 rounded">
+                      {sarprasState.status === "error" ? "Data tidak tersedia" : "Memuat…"}
+                    </span>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                <span>Zona Pengawasan: <strong>3 Sub-wilayah</strong></span>
+                <span>Total Terpantau: <strong>{sarpras ? `${totalSekolah} Sekolah` : "—"}</strong></span>
                 <span className="font-mono">Koordinat: 7.1206° S, 112.4158° E</span>
               </div>
             </div>
