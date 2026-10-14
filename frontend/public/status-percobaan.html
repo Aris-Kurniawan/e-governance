@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Percobaan — Status Tindak Lanjut Klaster (SIMAKIS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --primary: #123a63;
+    --primary-deep: #0b3052;
+    --primary-light: #e8f0fb;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --warning: #d97706;
+    --warning-bg: #fffbeb;
+    --success: #059669;
+    --success-bg: #ecfdf5;
+    --neutral-bg: #f1f5f9;
+    --neutral-fg: #475569;
+    --ink: #0f172a;
+    --ink-2: #475569;
+    --line: #e2e8f0;
+    --card: #ffffff;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #fdf2f4 0%, #f4f7fc 45%, #eef6fb 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  /* ── Banner percobaan ─────────────────────────────── */
+  .trial-banner {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #fff7ed; border: 1px dashed #f59e0b;
+    color: #92400e; border-radius: 12px;
+    padding: 12px 16px; font-size: 13px; line-height: 1.55;
+    margin-bottom: 20px;
+  }
+  .trial-banner strong { display: block; font-size: 13px; margin-bottom: 2px; }
+
+  /* ── Kop ──────────────────────────────────────────── */
+  .kop { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .kop .brand { display: flex; align-items: center; gap: 12px; }
+  .kop .logo {
+    width: 44px; height: 44px; border-radius: 12px; background: var(--card);
+    display: grid; place-items: center; box-shadow: 0 1px 3px rgba(15, 23, 42, .12);
+    overflow: hidden;
+  }
+  .kop .logo img { width: 30px; height: 30px; }
+  .kop h1 { font-size: 20px; font-weight: 800; color: var(--primary-deep); letter-spacing: -.02em; }
+  .kop .sub { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+  .pill-publik {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--success-bg); color: var(--success); border: 1px solid #a7f3d0;
+    font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px;
+  }
+  .pill-publik::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: 0 8px 24px -16px rgba(15, 23, 42, .25);
+    padding: 22px 24px; margin-bottom: 18px;
+  }
+  .card h2 { font-size: 15px; font-weight: 800; color: var(--primary-deep); margin-bottom: 4px; }
+  .card .desc { font-size: 12.5px; color: var(--ink-2); margin-bottom: 16px; line-height: 1.6; }
+
+  /* ── Identitas klaster ────────────────────────────── */
+  .klaster-head { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+  .klaster-head .kode { font-size: 12px; font-weight: 800; color: var(--primary); letter-spacing: .06em; }
+  .klaster-head .judul { font-size: 18px; font-weight: 800; color: var(--ink); margin-top: 2px; }
+  .klaster-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .meta-chip {
+    font-size: 11.5px; font-weight: 600; color: var(--ink-2);
+    background: var(--neutral-bg); border-radius: 999px; padding: 5px 11px;
+  }
+  .skor {
+    text-align: center; background: var(--primary-light); border: 1px solid #cfe0f5;
+    border-radius: 12px; padding: 10px 18px; min-width: 110px;
+  }
+  .skor .n { font-size: 26px; font-weight: 800; color: var(--primary); line-height: 1; }
+  .skor .l { font-size: 10.5px; font-weight: 700; color: var(--primary); opacity: .75; text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+
+  /* ── Badge status (§A5) ───────────────────────────── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 700; border-radius: 999px;
+    padding: 8px 16px; border: 1px solid transparent;
+  }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .badge.neutral { background: var(--neutral-bg); color: var(--neutral-fg); border-color: #e2e8f0; }
+  .badge.danger  { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
+  .badge.warning { background: var(--warning-bg); color: var(--warning); border-color: #fde68a; }
+  .badge.info    { background: var(--primary-light); color: var(--primary); border-color: #cfe0f5; }
+  .badge.success { background: var(--success-bg); color: var(--success); border-color: #a7f3d0; }
+
+  .status-kini { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .status-kini .label { font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ── Picker 6 status ──────────────────────────────── */
+  .picker { display: flex; flex-wrap: wrap; gap: 8px; }
+  .picker button {
+    font-family: inherit; font-size: 12px; font-weight: 700;
+    border: 1px solid var(--line); background: #fff; color: var(--ink-2);
+    border-radius: 999px; padding: 7px 13px; cursor: pointer;
+    transition: all .15s ease;
+  }
+  .picker button:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+  .picker button.on { background: var(--primary-deep); border-color: var(--primary-deep); color: #fff; }
+  .picker-note { font-size: 11.5px; color: var(--ink-2); margin-top: 10px; line-height: 1.6; }
+
+  /* ── Alasan wajib ─────────────────────────────────── */
+  .alasan-box {
+    background: var(--danger-bg); border: 1px solid #fecaca;
+    border-left: 4px solid var(--danger); border-radius: 10px;
+    padding: 14px 16px; margin-top: 14px;
+  }
+  .alasan-box .t { font-size: 12px; font-weight: 800; color: var(--danger); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
+  .alasan-box p { font-size: 13.5px; color: #7f1d1d; line-height: 1.65; }
+  .alasan-box.hidden { display: none; }
+
+  /* ── Stepper 4 tahap ──────────────────────────────── */
+  .stepper { display: flex; gap: 0; margin-top: 6px; }
+  .step { flex: 1; text-align: center; position: relative; padding-top: 34px; }
+  .step::before {
+    content: ""; position: absolute; top: 13px; left: -50%; width: 100%; height: 3px;
+    background: var(--line);
+  }
+  .step:first-child::before { display: none; }
+  .step .dot {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 28px; height: 28px; border-radius: 50%; z-index: 1;
+    background: #fff; border: 3px solid var(--line); color: var(--ink-2);
+    font-size: 12px; font-weight: 800; display: grid; place-items: center;
+  }
+  .step .t { font-size: 11.5px; font-weight: 700; color: var(--ink-2); line-height: 1.4; }
+  .step.done .dot, .step.done::before { background: var(--success); border-color: var(--success); color: #fff; }
+  .step.done .t { color: var(--success); }
+  .step.active .dot { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 0 0 5px var(--primary-light); }
+  .step.active .t { color: var(--primary); }
+  .step.gagal .dot { background: var(--danger); border-color: var(--danger); color: #fff; box-shadow: 0 0 0 5px var(--danger-bg); }
+  .step.gagal .t { color: var(--danger); }
+
+  /* ── Riwayat append-only ──────────────────────────── */
+  .riwayat-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .riwayat-count { font-size: 11.5px; font-weight: 700; color: var(--primary); background: var(--primary-light); border-radius: 999px; padding: 4px 11px; }
+  .timeline { list-style: none; margin-top: 14px; }
+  .timeline li { position: relative; padding: 0 0 20px 30px; }
+  .timeline li:last-child { padding-bottom: 4px; }
+  .timeline li::before {
+    content: ""; position: absolute; left: 8px; top: 18px; bottom: -2px; width: 2px; background: var(--line);
+  }
+  .timeline li:last-child::before { display: none; }
+  .timeline .tdot {
+    position: absolute; left: 0; top: 3px; width: 18px; height: 18px; border-radius: 50%;
+    border: 3px solid #fff; box-shadow: 0 0 0 2px var(--line); background: var(--neutral-fg);
+  }
+  .timeline li.neutral .tdot { background: var(--neutral-fg); box-shadow: 0 0 0 2px #cbd5e1; }
+  .timeline li.danger  .tdot { background: var(--danger); box-shadow: 0 0 0 2px #fecaca; }
+  .timeline li.warning .tdot { background: var(--warning); box-shadow: 0 0 0 2px #fde68a; }
+  .timeline li.info    .tdot { background: var(--primary); box-shadow: 0 0 0 2px #cfe0f5; }
+  .timeline li.success .tdot { background: var(--success); box-shadow: 0 0 0 2px #a7f3d0; }
+  .timeline .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .timeline .st { font-size: 13.5px; font-weight: 800; color: var(--ink); }
+  .timeline .ts { font-size: 11.5px; color: var(--ink-2); font-weight: 600; }
+  .timeline .alasan-inline {
+    margin-top: 7px; font-size: 12.5px; line-height: 1.6; color: #7f1d1d;
+    background: var(--danger-bg); border: 1px solid #fecaca; border-radius: 8px; padding: 8px 11px;
+  }
+  .timeline .alasan-inline b { color: var(--danger); }
+  .timeline li.enter { animation: pop .35s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+  .foot { font-size: 11.5px; color: var(--ink-2); line-height: 1.7; text-align: center; margin-top: 26px; }
+  .foot code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 11px; }
+
+  @media (max-width: 640px) {
+    .step .t { font-size: 10px; }
+    .klaster-head { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Banner: file sementara -->
+  <div class="trial-banner">
+    <span aria-hidden="true">⚠️</span>
+    <div>
+      <strong>HALAMAN PERCOBAAN — bukan bagian dari build produksi</strong>
+      Prototipe <code>PAGE_STATES.md §A5</code> (Status Tindak Lanjut, F3.3): badge 6 status, riwayat append-only,
+      dan alasan wajib tampil — semuanya terbuka untuk <b>publik / tanpa login</b>.
+      File ini (<code>frontend/public/status-percobaan.html</code>) akan <b>dihapus</b> saat pengembangan F3.3 dimulai.
+    </div>
+  </div>
+
+  <!-- Kop -->
+  <div class="kop">
+    <div class="brand">
+      <div class="logo"><img src="/logo-simakis-icon.png" alt="SIMAKIS" onerror="this.src='/logo-simakis.png'" /></div>
+      <div>
+        <h1>SimKIS — Status Tindak Lanjut</h1>
+        <div class="sub">Sistem Monitoring Infrastruktur &amp; Kesejahteraan Sekolah · Kec. Lamongan</div>
+      </div>
+    </div>
+    <span class="pill-publik">Akses Publik · Tanpa Login</span>
+  </div>
+
+  <!-- Identitas klaster -->
+  <section class="card">
+    <div class="klaster-head">
+      <div>
+        <div class="kode">KLASTER #ISU-064</div>
+        <div class="judul">Kerusakan Atap Lab Kimia</div>
+        <div class="klaster-meta">
+          <span class="meta-chip">🏫 SMAN 1 Sukodadi</span>
+          <span class="meta-chip">🧪 Laboratorium &amp; Praktikum</span>
+          <span class="meta-chip">🗳 38 dukungan warga</span>
+          <span class="meta-chip">🕓 Dilaporkan 23 Okt 2025</span>
+        </div>
+      </div>
+      <div class="skor"><div class="n">78</div><div class="l">Skor Prioritas</div></div>
+    </div>
+  </section>
+
+  <!-- Badge 6 status + alasan -->
+  <section class="card">
+    <h2>Status Tindak Lanjut Terkini</h2>
+    <p class="desc">Enam status §A5. Pilih status di bawah untuk mensimulasikan keputusan dinas — badge, stepper, alasan, dan riwayat ikut berubah. Status gagal <b>wajib menampilkan alasan</b> (PAGE_STATES §C.1).</p>
+
+    <div class="status-kini">
+      <span class="label">Status:</span>
+      <span id="badge-kini" class="badge info">Dalam Proses</span>
+    </div>
+
+    <div class="picker" id="picker"></div>
+    <p class="picker-note">Simulasi pemanggilan <code>POST /klaster/{id}/status?status=…&amp;alasan=…</code> — di sistem nyata endpoint ini dipanggil verifikator/kepala dinas; halaman publik hanya membaca <code>GET /klaster/{id}/riwayat</code>.</p>
+
+    <div class="alasan-box hidden" id="alasan-box">
+      <div class="t">⚠ Alasan Verifikasi — wajib tampil ke publik</div>
+      <p id="alasan-teks"></p>
+    </div>
+  </section>
+
+  <!-- Stepper -->
+  <section class="card">
+    <h2>Progres Penanganan</h2>
+    <p class="desc">Stepper 4 tahap (<code>InstitutionalStepper</code>, <code>UI_COMPONENTS.md</code>) — posisi mengikuti status terkini; status gagal menghentikan alur di tahap verifikasi.</p>
+    <div class="stepper" id="stepper">
+      <div class="step"><span class="dot">1</span><span class="t">Sanggahan<br/>Diterima</span></div>
+      <div class="step"><span class="dot">2</span><span class="t">Verifikasi<br/>Dinas</span></div>
+      <div class="step"><span class="dot">3</span><span class="t">Audit Fisik<br/>Lapangan</span></div>
+      <div class="step"><span class="dot">4</span><span class="t">Pembaruan<br/>Dapodik</span></div>
+    </div>
+  </section>
+
+  <!-- Riwayat append-only -->
+  <section class="card">
+    <div class="riwayat-head">
+      <div>
+        <h2>Riwayat Status (Append-Only)</h2>
+        <p class="desc" style="margin-bottom:0">Sumber: <code>GET /klaster/{id}/riwayat</code> — akses <b>Publik</b> (INTERFACES §7). Enri lama tidak pernah dihapus (D-09); entri baru selalu ditambahkan di bawah.</p>
+      </div>
+      <span class="riwayat-count" id="riwayat-count"></span>
+    </div>
+    <ul class="timeline" id="timeline"></ul>
+  </section>
+
+  <p class="foot">
+    Spesifikasi: <code>PAGE_STATES.md §A5</code> · <code>FLOWS.md</code> node Q (konvergensi vote / lapor / lihat isu) · <code>INTERFACES.md §7</code> · <code>DECISIONS.md D-09</code><br/>
+    Data contoh (klaster #ISU-064) — bukan data backend. <b>File percobaan ini akan dihapus</b> saat halaman F3.3 resmi dikerjakan.
+  </p>
+
+</div>
+
+<script>
+  // ── 6 status §A5 + preset alasan untuk status gagal ──────────────
+  var STATUS = {
+    menunggu_verifikasi:        { label: "Menunggu Verifikasi",        cls: "neutral", alasan: null },
+    tidak_terverifikasi:        { label: "Tidak Terverifikasi",        cls: "danger",  alasan: "Foto bukti tidak menunjukkan kondisi kerusakan atap yang dilaporkan — dokumentasi diminta ulang kepada pelapor untuk verifikasi lapangan berikutnya." },
+    dalam_antrian_prioritas:    { label: "Antrian Prioritas",          cls: "warning", alasan: null },
+    dalam_proses:               { label: "Dalam Proses",               cls: "info",    alasan: null },
+    selesai:                    { label: "Selesai",                    cls: "success", alasan: null },
+    tidak_dapat_ditindaklanjuti:{ label: "Tidak Dapat Ditindaklanjuti", cls: "danger",  alasan: "Kerusakan berada di luar kewenangan Disdik (aset desa) — berdasarkan berita acara bersama, kasus dialihkan ke Pemerintah Desa untuk penanganan." }
+  };
+  var URUTAN = ["menunggu_verifikasi","tidak_terverifikasi","dalam_antrian_prioritas","dalam_proses","selesai","tidak_dapat_ditindaklanjuti"];
+
+  // ── Riwayat awal (sudah "terjadi", tidak bisa dihapus) ───────────
+  var riwayat = [
+    { status: "menunggu_verifikasi",     alasan: null, ts: "23 Okt 2025 · 09:12" },
+    { status: "terverifikasi",           alasan: null, ts: "23 Okt 2025 · 14:30" },
+    { status: "dalam_antrian_prioritas", alasan: null, ts: "24 Okt 2025 · 08:05" },
+    { status: "dalam_proses",            alasan: null, ts: "24 Okt 2025 · 10:40" }
+  ];
+  var STATUS_EXTRA = {
+    terverifikasi: { label: "Terverifikasi", cls: "info" },
+    perlu_info_tambahan: { label: "Perlu Info Tambahan", cls: "warning" },
+    menunggu_verifikasi: STATUS.menunggu_verifikasi
+  };
+  var kini = "dalam_proses";
+
+  function meta(s) {
+    return STATUS[s] || STATUS_EXTRA[s] || { label: s, cls: "neutral", alasan: null };
+  }
+
+  function renderBadge() {
+    var m = meta(kini);
+    var el = document.getElementById("badge-kini");
+    el.className = "badge " + m.cls;
+    el.textContent = m.label;
+
+    var box = document.getElementById("alasan-box");
+    var teks = document.getElementById("alasan-teks");
+    if (m.alasan) { teks.textContent = m.alasan; box.classList.remove("hidden"); }
+    else { box.classList.add("hidden"); }
+
+    Array.prototype.forEach.call(document.querySelectorAll("#picker button"), function (b) {
+      b.classList.toggle("on", b.dataset.status === kini);
+    });
+    renderStepper();
+  }
+
+  function renderStepper() {
+    var steps = document.querySelectorAll("#stepper .step");
+    var gagal = (kini === "tidak_terverifikasi" || kini === "tidak_dapat_ditindaklanjuti");
+    var idx = 1; // tahap aktif default
+    if (kini === "menunggu_verifikasi") idx = 1;
+    else if (kini === "dalam_antrian_prioritas") idx = 2;
+    else if (kini === "dalam_proses") idx = 3;
+    else if (kini === "selesai") idx = 4;
+
+    steps.forEach(function (s, i) {
+      s.className = "step";
+      if (gagal) {
+        if (i < 1) s.classList.add("done");
+        else if (i === 1) s.classList.add("gagal");
+      } else if (i < idx - 1) s.classList.add("done");
+      else if (i === idx - 1) s.classList.add(kini === "selesai" ? "done" : "active");
+    });
+  }
+
+  function renderTimeline() {
+    var ul = document.getElementById("timeline");
+    ul.innerHTML = "";
+    riwayat.forEach(function (r, i) {
+      var m = meta(r.status);
+      var li = document.createElement("li");
+      li.className = m.cls + (i === riwayat.length - 1 && r.baru ? " enter" : "");
+      li.innerHTML =
+        '<span class="tdot"></span>' +
+        '<div class="row"><span class="st">' + m.label + '</span><span class="ts">' + r.ts + '</span></div>' +
+        (r.alasan ? '<div class="alasan-inline"><b>Alasan:</b> ' + r.alasan + '</div>' : "");
+      ul.appendChild(li);
+      r.baru = false;
+    });
+    document.getElementById("riwayat-count").textContent = riwayat.length + " entri";
+  }
+
+  function nowStamp() {
+    var d = new Date();
+    var bulan = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+    function p(n){ return n < 10 ? "0" + n : "" + n; }
+    return p(d.getDate()) + " " + bulan[d.getMonth()] + " " + d.getFullYear() +
+           " · " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  function pilihStatus(s) {
+    kini = s;
+    var m = meta(s);
+    riwayat.push({ status: s, alasan: m.alasan, ts: nowStamp(), baru: true }); // append-only: entri lama tetap
+    renderBadge();
+    renderTimeline();
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  var picker = document.getElementById("picker");
+  URUTAN.forEach(function (s) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.dataset.status = s;
+    b.textContent = meta(s).label;
+    b.addEventListener("click", function () { pilihStatus(s); });
+    picker.appendChild(b);
+  });
+  renderBadge();
+  renderTimeline();
+</script>
+</body>
+</html>
