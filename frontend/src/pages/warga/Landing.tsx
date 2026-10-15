@@ -292,7 +292,7 @@ export default function Landing() {
                   >
                     <Plus className="h-4 w-4 mr-1.5" /> Buat Laporan Baru
                   </Button>
-                  <Button asChild variant="outline" className="border-white/30 text-white hover:bg-white/10 font-medium px-5 py-3.5 h-auto rounded-lg text-sm cursor-pointer">
+                  <Button asChild className="bg-[#0B3052] hover:bg-[#07213A] text-white border border-white/30 font-semibold px-6 py-3.5 h-auto rounded-lg text-sm shadow-sm transition-all cursor-pointer">
                     <Link to="/laporan/riwayat">
                       Riwayat Laporan Saya
                     </Link>
@@ -306,7 +306,7 @@ export default function Landing() {
                     </Button>
                   </Link>
                   <Link to="/login?redirect=%2Flaporan%2Fbaru&action=report">
-                    <Button className="bg-white hover:bg-slate-100 text-[#0B3052] font-semibold px-6 py-3.5 h-auto rounded-lg text-sm shadow-sm transition-all cursor-pointer">
+                    <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white border border-white/30 font-semibold px-6 py-3.5 h-auto rounded-lg text-sm shadow-sm transition-all cursor-pointer">
                       Masuk Akun
                     </Button>
                   </Link>

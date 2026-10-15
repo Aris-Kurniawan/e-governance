@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
@@ -8,6 +8,7 @@ import { useFetch } from "@/hooks/useFetch"
 import { detailSekolah, listSekolah } from "@/lib/api/sekolah"
 import { detailKlaster, listKlaster } from "@/lib/api/klaster"
 import type { KondisiSarana, SekolahDetail, SekolahList } from "@/lib/api/types"
+import { MapContainer, SeverityMarker } from "@/components/map"
 import { 
   Building2, 
   AlertTriangle, 
@@ -41,6 +42,7 @@ interface DataSarpras {
   rows: BarisMatriks[]
   total: number
   detail: Record<string, SekolahDetail>
+  sekolahList?: SekolahList[]
 }
 
 const TIER: Record<ToneMatriks, number> = { netral: 0, baik: 1, minor: 2, kritis: 3 }
@@ -118,13 +120,6 @@ const LABEL_KONDISI_DILAPORKAN: Record<string, string> = {
   rusak_sedang: "Rusak Sedang",
   rusak_berat: "Rusak Berat",
   rusak_total: "Rusak Total",
-}
-
-const PIN_JENJANG: Record<string, string> = {
-  SD: "bg-rose-600",
-  SMP: "bg-blue-600",
-  SMA: "bg-amber-600",
-  SMK: "bg-emerald-600",
 }
 
 interface KlasterIsuRow {
@@ -227,7 +222,7 @@ export default function DashboardWilayah() {
       if (d) detail[s.npsn] = d
       return bangunBaris(s, d)
     })
-    return { rows, total: page.meta.total_items, detail }
+    return { rows, total: page.meta.total_items, detail, sekolahList: page.data }
   }, [])
 
   const { state: klasterState, refetch: refetchKlaster } = useFetch(
@@ -251,6 +246,47 @@ export default function DashboardWilayah() {
   const detailMap = sarpras?.detail ?? {}
   const totalSekolah = sarpras?.total ?? 0
 
+  // ── Peta Sebaran Sekolah (seperti di PetaSebaranDinas) ──
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
+
+  const klasterPerSekolah = useMemo(() => {
+    const peta = new Map<string, number>()
+    for (const k of klasterList) {
+      const skorSaatIni = peta.get(k.sekolah_npsn) ?? 0
+      if (k.skor_prioritas > skorSaatIni) {
+        peta.set(k.sekolah_npsn, k.skor_prioritas)
+      }
+    }
+    return peta
+  }, [klasterList])
+
+  const titikSekolah = useMemo(() => {
+    const list = sarpras?.sekolahList ?? []
+    return list
+      .filter((s) => typeof s.lintang === "number" && typeof s.bujur === "number")
+      .map((s) => {
+        const skor = klasterPerSekolah.get(s.npsn) ?? 0
+        const status: "kritis" | "sedang" | "rendah" =
+          skor > 70 ? "kritis" : skor >= 40 ? "sedang" : "rendah"
+        return {
+          id: s.npsn,
+          sekolah: s.nama,
+          npsn: s.npsn,
+          alamat: s.alamat,
+          jenjang: s.jenjang,
+          skor,
+          status,
+          lat: s.lintang as number,
+          lng: s.bujur as number,
+        }
+      })
+  }, [sarpras?.sekolahList, klasterPerSekolah])
+
+  const selectedPoint = useMemo(
+    () => titikSekolah.find((p) => p.id === selectedPinId),
+    [titikSekolah, selectedPinId]
+  )
+
   const jumlahKritis = rows.filter((r) => r.status === "Mismatch Kritis").length
   const jumlahMinor = rows.filter((r) => r.status === "Selisih Minor").length
   const jumlahPerhatian = jumlahKritis + jumlahMinor
@@ -260,11 +296,6 @@ export default function DashboardWilayah() {
   ).length
   const persenSelesai =
     totalKlaster > 0 ? Math.round((klasterSelesai / totalKlaster) * 100) : 0
-
-  const sebaranJenjang = ["SD", "SMP", "SMA", "SMK"].map((j) => ({
-    jenjang: j,
-    jumlah: rows.filter((r) => r.jenjang === j).length,
-  }))
 
   const sekolahTop = top ? rows.find((r) => r.npsn === top.sekolah_npsn) : undefined
   const ringkasanTop = top ? detailMap[top.sekolah_npsn]?.ringkasan_sarpras : undefined
@@ -816,52 +847,153 @@ export default function DashboardWilayah() {
               )}
             </div>
 
-            {/* Widget 2: Sebaran Wilayah Audit */}
+            {/* Widget 2: Sebaran Wilayah Audit (Peta Interaktif seperti di Web Pemerintah) */}
             <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-xs font-bold tracking-wider text-slate-700 uppercase">SEBARAN WILAYAH AUDIT</span>
-                <span className="text-xs text-slate-400">Kec. Lamongan</span>
+                <div>
+                  <span className="text-xs font-bold tracking-wider text-slate-800 uppercase block">
+                    SEBARAN WILAYAH AUDIT
+                  </span>
+                  <span className="text-[11px] text-slate-400">Peta Sebaran Faktual Sekolah</span>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-[#0B3052] border border-blue-200/60">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+                  Kec. Lamongan
+                </span>
               </div>
 
-              {/* Map Graphic Mock */}
-              <div className="relative h-36 rounded-xl bg-slate-100 border border-slate-200/70 overflow-hidden flex items-center justify-center">
-                <div 
-                  className="absolute inset-0 opacity-40 bg-cover bg-center" 
-                  style={{ backgroundImage: `url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80')` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
-                
-                {/* Pins */}
-                <div className="relative z-10 flex items-center justify-around w-full px-4 text-center">
-                  {sarpras ? (
-                    sebaranJenjang
-                      .filter((b) => b.jumlah > 0)
-                      .map((b) => (
-                        <div key={b.jenjang} className="flex flex-col items-center">
-                          <span
-                            className={`flex h-6 w-6 items-center justify-center rounded-full ${
-                              PIN_JENJANG[b.jenjang] ?? "bg-slate-600"
-                            } text-white font-bold text-[10px] shadow-md`}
-                          >
-                            {b.jumlah}
-                          </span>
-                          <span className="text-[10px] font-bold text-white bg-slate-900/80 px-1.5 py-0.5 rounded mt-1">
-                            {b.jenjang}
-                          </span>
-                        </div>
-                      ))
-                  ) : (
-                    <span className="text-[11px] font-semibold text-white bg-slate-900/70 px-2 py-1 rounded">
-                      {sarprasState.status === "error" ? "Data tidak tersedia" : "Memuat…"}
-                    </span>
-                  )}
+              {/* Map Canvas — Real Leaflet map seperti di PetaSebaranDinas */}
+              <div className="relative h-[340px] rounded-xl overflow-hidden border border-slate-200/90 shadow-inner">
+                {/* Indikator Koordinat Pojok Peta (digeser ke samping agar tidak menghalangi tombol zoom +/-) */}
+                <div className="absolute top-2.5 left-14 sm:left-16 z-[500] pointer-events-none">
+                  <div className="bg-white/95 backdrop-blur-sm rounded-md border border-slate-200/80 px-2.5 py-1 text-[10px] font-mono font-medium text-slate-600 shadow-sm flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    EPSG:4326 &middot; -7.1197&deg;, 112.4145&deg;
+                  </div>
+                </div>
+
+                <MapContainer
+                  center={[-7.1197, 112.4145]}
+                  zoom={13}
+                  className="w-full h-full min-h-0"
+                  style={{ height: "100%", width: "100%" }}
+                  scrollWheelZoom={false}
+                  onMapClick={() => setSelectedPinId(null)}
+                >
+                  {titikSekolah.map((point) => (
+                    <SeverityMarker
+                      key={point.id}
+                      id={point.id}
+                      position={[point.lat, point.lng]}
+                      sekolah={point.sekolah}
+                      skor={point.skor}
+                      status={point.status}
+                      isSelected={point.id === selectedPinId}
+                      onClick={() => setSelectedPinId((prev) => (prev === point.id ? null : point.id))}
+                    />
+                  ))}
+                </MapContainer>
+
+                {/* Floating Popup Card saat pin dipilih */}
+                {selectedPoint && (
+                  <div className="absolute bottom-2.5 left-2.5 right-2.5 z-[1000] rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 p-3 shadow-lg transition-all">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          {selectedPoint.jenjang} &middot; NPSN: {selectedPoint.npsn}
+                        </span>
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                          {selectedPoint.sekolah}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                          {selectedPoint.alamat}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPinId(null)}
+                        className="h-5 w-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center shrink-0 cursor-pointer"
+                        aria-label="Tutup info"
+                      >
+                        &times;
+                      </button>
+                    </div>
+
+                    <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        selectedPoint.status === "kritis"
+                          ? "bg-rose-50 text-rose-700 border border-rose-200"
+                          : selectedPoint.status === "sedang"
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      }`}>
+                        Skor: {selectedPoint.skor} ({selectedPoint.status === "kritis" ? "Kritis" : selectedPoint.status === "sedang" ? "Sedang" : "Rendah"})
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          asChild
+                          size="sm"
+                          className="h-7 text-[11px] px-2.5 bg-[#0B3052] hover:bg-[#07213A] text-white font-medium rounded-lg cursor-pointer"
+                        >
+                          <Link to={`/sekolah/${selectedPoint.npsn}`}>
+                            Detail Sekolah
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            handleReportClick({
+                              npsn: selectedPoint.npsn,
+                              nama: selectedPoint.sekolah,
+                            })
+                          }
+                          className="h-7 text-[11px] px-2 text-[#0B3052] border-blue-200 hover:bg-blue-50 font-medium rounded-lg cursor-pointer"
+                        >
+                          Laporkan
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Legend Ambang Prioritas */}
+              <div className="flex items-center justify-between text-[11px] pt-1 text-slate-500 border-t border-slate-100">
+                <span className="font-semibold text-slate-600">Ambang Prioritas:</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" /> &lt;40
+                  </span>
+                  <span className="flex items-center gap-1 text-amber-700 font-medium">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" /> 40&ndash;70
+                  </span>
+                  <span className="flex items-center gap-1 text-rose-700 font-medium">
+                    <span className="h-2 w-2 rounded-full bg-rose-600" /> &gt;70
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                <span>Total Terpantau: <strong>{sarpras ? `${totalSekolah} Sekolah` : "—"}</strong></span>
-                <span className="font-mono">Koordinat: 7.1206° S, 112.4158° E</span>
+              {/* Info Statistik Bawah */}
+              <div className="grid grid-cols-2 gap-4 text-xs pt-1 border-t border-slate-100">
+                <div>
+                  <span className="text-slate-400 block text-[11px]">Sekolah Terpetakan:</span>
+                  <strong className="text-slate-800 font-bold">
+                    {titikSekolah.length} Sekolah
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[11px]">Koordinat Wilayah:</span>
+                  <strong className="text-slate-800 font-bold">7.1197&deg; S, 112.4145&deg; E</strong>
+                </div>
               </div>
+
+              <Button asChild variant="outline" className="w-full text-xs h-9 text-slate-700 border-slate-200 hover:bg-slate-50 font-semibold cursor-pointer">
+                <Link to="/sekolah">
+                  Buka Direktori &amp; Peta Lengkap
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

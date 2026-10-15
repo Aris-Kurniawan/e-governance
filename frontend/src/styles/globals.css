@@ -98,3 +98,30 @@
     background: #ffffff !important;
   }
 }
+
+/* ── Leaflet Severity Marker: Dynamic Hover Tooltip & Elevate ── */
+.custom-severity-marker {
+  overflow: visible !important;
+}
+
+.custom-severity-marker:hover {
+  z-index: 10000 !important;
+}
+
+.custom-severity-marker .marker-label-tag {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.custom-severity-marker:hover .marker-label-tag,
+.custom-severity-marker.is-selected .marker-label-tag {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.custom-severity-marker:hover .marker-circle-pin {
+  transform: scale(1.14);
+}
