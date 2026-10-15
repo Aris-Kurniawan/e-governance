@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, RoleChecker
+from app.core.audit import log_audit
 from app.core.database import get_db
 from app.models.user import User
 from app.models.klaster import Klaster, Vote
@@ -122,7 +123,7 @@ async def override_prioritas(
     klaster_id: str,
     urutan_prioritas: int,
     alasan: str,
-    _: User = Depends(require_kepala_dinas),
+    current_user: User = Depends(require_kepala_dinas),
     db: Session = Depends(get_db),
 ):
     """F3.15 — Override Prioritas oleh Kepala Dinas."""
@@ -135,6 +136,8 @@ async def override_prioritas(
 
     klaster.urutan_prioritas_override = urutan_prioritas
     klaster.alasan_override = alasan
+    # F4.10 (DBG-005): jejak audit override prioritas.
+    log_audit(db, current_user.id, "override_prioritas", target=klaster_id)
     db.commit()
 
     return {

@@ -106,7 +106,9 @@ export default function AntrianValidasi() {
   const [prioritySlider, setPrioritySlider] = useState<number>(0)
 
   // Masking state for PDP Vault
-  const [decisionFeedback, setDecisionFeedback] = useState<string | null>(null)
+  const [decisionFeedback, setDecisionFeedback] = useState<
+    { pesan: string; tipe: "sukses" | "gagal" } | null
+  >(null)
   /** Aksi yang sedang menunggu alasan dari petugas (null = tidak ada). */
   const [aksiMenungguAlasan, setAksiMenungguAlasan] = useState<"baru" | "tolak" | null>(null)
   const [alasanPreset, setAlasanPreset] = useState<string>("")
@@ -301,16 +303,27 @@ export default function AntrianValidasi() {
     const { status } = peta[type]
     try {
       const res = await verifikasiKlaster(selectedKlasterId, status, alasan)
-      setDecisionFeedback(`Klaster ${res.klaster_id}: ${res.message}`)
+      setDecisionFeedback({
+        pesan: `Klaster ${res.klaster_id}: ${res.message}`,
+        tipe: "sukses",
+      })
       setAksiMenungguAlasan(null)
       setAlasanPreset("")
       setAlasanCatatan("")
+      // Muat ulang daftar klaster supaya status baru (badge, tab, panel
+      // detail) langsung terlihat — tanpa ini UI tetap menampilkan status
+      // lama sampai halaman di-reload dan petugas mengira verifikasi gagal.
+      void refetchList()
+      setTimeout(() => setDecisionFeedback(null), 6000)
     } catch (err) {
-      setDecisionFeedback(
-        err instanceof ApiError ? `Gagal menyimpan: ${err.message}` : "Gagal menyimpan verifikasi.",
-      )
+      // Pesan error TIDAK di-auto-dismiss: pesan server (400/403/500) sering
+      // muncul hanya sekilas dan petugas mengira aksinya berhasil.
+      setDecisionFeedback({
+        pesan:
+          err instanceof ApiError ? `Gagal menyimpan: ${err.message}` : "Gagal menyimpan verifikasi.",
+        tipe: "gagal",
+      })
     }
-    setTimeout(() => setDecisionFeedback(null), 6000)
   }
 
   /** Kirim aksi yang butuh alasan setelah petugas mengisi panel alasan. */
@@ -460,16 +473,27 @@ export default function AntrianValidasi() {
         </div>
       </div>
 
-      {/* Decision feedback alert */}
+      {/* Decision feedback alert — sukses (hijau, auto-dismiss) vs gagal
+          (merah, bertahan sampai ditutup supaya pesan server terbaca) */}
       {decisionFeedback && (
-        <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-xs font-semibold text-emerald-900 shadow-sm flex items-center justify-between animate-fadeIn">
+        <div
+          className={`rounded-xl border p-4 text-xs font-semibold shadow-sm flex items-center justify-between animate-fadeIn ${
+            decisionFeedback.tipe === "gagal"
+              ? "border-rose-300 bg-rose-50 text-rose-900"
+              : "border-emerald-300 bg-emerald-50 text-emerald-900"
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-            <span>{decisionFeedback}</span>
+            {decisionFeedback.tipe === "gagal" ? (
+              <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            )}
+            <span>{decisionFeedback.pesan}</span>
           </div>
           <button
             onClick={() => setDecisionFeedback(null)}
-            className="text-emerald-700 hover:text-emerald-900 text-xs font-bold underline cursor-pointer"
+            className="text-current hover:opacity-70 text-xs font-bold underline cursor-pointer"
           >
             Tutup
           </button>

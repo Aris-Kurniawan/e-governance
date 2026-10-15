@@ -67,3 +67,7 @@ pnpm-debug.log*
 .vscode/
 *.swp
 *.swo
+
+# Runtime state & log pipeline (F4.10)
+pipeline_state.json
+backend/logs/

@@ -1,0 +1,139 @@
+# DEBUGGING.md — Log Permasalahan Backend SIMAKIS
+
+**Tujuan:** pelacakan masalah backend (bug, drift, gap integrasi) beserta **status penyelesaiannya** — dokumen hidup, diperbarui tiap kali ada debugging baru atau sebuah masalah dinyatakan selesai.
+
+**Aturan pemakaian:**
+- ID entri `DBG-xxx` **permanen** — jangan dihapus, cukup ubah status + isi blok "Penyelesaian".
+- Status hanya boleh dinaikkan ke ✅ jika ada **bukti**: commit hash, angka verifikasi, atau uji negatif.
+- Masalah yang butuh keputusan pemilik proyek ditandai ⚪ (butuh keputusan) di kolom status — tetap dicatat, jangan dihapus.
+- Referensi kontrak: `docs/universal/INTERFACES.md` (deviasi kontrak FE↔BE = daftar di `docs/frontend/CHANGELOG.md` §"Catatan Deviasi Kontrak").
+
+**Legenda status:**
+
+| Simbol | Arti |
+|---|---|
+| ✅ SELESAI | Diperbaiki + terverifikasi (ada commit/bukti) |
+| 🔴 TERBUKA | Terkonfirmasi rusak, belum diperbaiki |
+| ⚪ TERBLOKIR | Butuh keputusan desain/produk sebelum diperbaiki |
+
+---
+
+## Ringkasan
+
+| ID | Masalah | Lokasi | Status | Bukti / Rencana |
+|---|---|---|---|---|
+| DBG-001 | ENUM `klaster.kategori` drift: migrasi = 5 nilai, model & DB live = 6 | `alembic/versions/8cca6e1b2fa3`, `models/laporan.py:10` | ✅ SELESAI | `d3cb7888ff94` (commit `744fc4ca`) + guard `verify_schema_parity.py` |
+| DBG-002 | Cron 02:00 me-recluster laporan noise tiap hari (loop harian) | `scripts/run_clustering.py` | ✅ SELESAI | F4.7 `ae07c8de` — kolom `hasil_klasterisasi`, seleksi `'belum_diproses'` |
+| DBG-003 | `Unknown column 'perlu_info_tambahan'` / enum truncation saat upgrade | `klaster.status_verifikasi` | ✅ SELESAI | migrasi `d4f8c2a91e05` (commit `5a00bd3d`) |
+| DBG-004 | `GET /ai/status`: `unclustered_laporan` selalu 398; `last_run` hardcoded `"N/A"` | `routers/klaster.py` | ✅ SELESAI | F4.10 — seleksi `belum_diproses` + state file; live: 0, `last_run` nyata |
+| DBG-005 | `log_audit()` 0 call site — tabel `audit_log` 0 baris; halaman FE Log Audit PDP selalu kosong | `core/audit.py` | ✅ SELESAI | F4.10 — 5 call site + 5 test; audit_log live terisi |
+| DBG-006 | Jadwal cron 02:00 WIB tidak pernah dipasang (`crontab -l` kosong) | crontab (mesin dev) | ✅ SELESAI | F4.10 — crontab `0 2 * * *` terpasang, cron active, simulasi sukses |
+| DBG-007 | `penanda_masalah` selalu `"normal"`, `jumlah_isu_aktif` selalu 0 (deviasi kontrak #1) | `routers/sekolah.py` | ✅ SELESAI | F4.11 (D-23): penanda = level Skor KBM, isu = laporan non-ditolak; live 39/22/1 |
+| DBG-008 | `GET /dashboard/wilayah` menolak role `admin` (403) (deviasi kontrak #3) | `routers/dashboard.py` | ✅ SELESAI | F4.11 — `require_dinas` += `admin`; live 200 + test |
+| DBG-009 | `lintang`/`bujur` NULL 62/62 padahal CSV sumber lengkap (deviasi kontrak #4) | `setup_f300.py`, `routers/ingest.py` | ✅ SELESAI | F4.11 — mapping + backfill idempoten + expose; live 62/62 |
+| DBG-010 | `ingest.py` baca `row.get("nama_sekolah")` padahal header CSV = `nama` → nama bisa "Unknown" | `routers/ingest.py` | ✅ SELESAI | F4.11 — key `nama` + fallback; test ingest CSV resmi |
+| DBG-011 | Semua `422` dipetakan jadi `REASON_REQUIRED`; `PUT /laporan/{id}/status` wajib `UNPROCESSABLE_ENTITY` (§4). *400 generik = sesuai §0.3 (diagnosis awal salah)* | `main.py` handler | ✅ SELESAI | F4.11 — `ApiError(api_code)` + baris §0.3 + tipe FE; live 422 code benar |
+
+---
+
+## Detail
+
+### DBG-001 ✅ — ENUM `klaster.kategori` drift (2026-10-14)
+
+- **Gejala:** fresh install `alembic upgrade head` dari nol menghasilkan ENUM **5 nilai**; pipeline insert `kategori='belum_terklasifikasi'` gagal (MySQL 1265/1366). DB live selamat karena enum-nya diubah di luar alembic → selisih tak pernah terlihat.
+- **Akar:** `8cca6e1b2fa3` membuat ENUM tanpa `belum_terklasifikasi`; penambahan nilai ke-6 terjadi di model Python tanpa migrasi pendamping. Test tak menangkap karena `conftest.py` memakai `Base.metadata.create_all` (model), bukan alembic.
+- **Penyelesaian:** migrasi **`d3cb7888ff94`** (commit `744fc4ca`) — guard non-MySQL + guard idempoten `information_schema` (enum sudah 6 nilai → skip/no-op), `ALTER … MODIFY` hanya menambah value di akhir. Revisi lama tidak diedit (sudah tercatat applied).
+- **Verifikasi:** upgrade live no-op (18 klaster utuh) · fresh-install chain 6 revisi sukses, enum 6 nilai, INSERT `belum_terklasifikasi` OK · pytest 98/98 · dump diregen + impor-verified.
+- **Guard pencegahan:** `backend/scripts/verify_schema_parity.py` — 94 kolom model vs `information_schema` (14 ENUM); mode default = fresh-install check; `--db <url>` = DB existing; exit 1 saat drift. Uji negatif terbukti menangkap bug ini. Terdaftar di SETUP.md §5.
+
+### DBG-002 ✅ — Loop re-clustering noise oleh cron (2026-10-13)
+
+- **Gejala:** seleksi cron `WHERE klaster_id IS NULL` ikut menangkap laporan **noise** (sengaja di-commit tanpa klaster) → tiap 02:00 semua noise di-recluster, hasil noise lagi, loop harian tak berujung.
+- **Akar:** `klaster_id IS NULL` punya dua makna baru setelah F4.7 (noise = sudah diproses, ATAU `belum_diproses`) — detail di `CLUSTERING_BUG_ANALYSIS.md` + docstring migrasi `a7f3c91e5b2d`.
+- **Penyelesaian:** kolom `laporan.hasil_klasterisasi` (`belum_diproses|terklaster|noise`) + seleksi cron `hasil_klasterisasi == 'belum_diproses'` (commit `ae07c8de`, F4.7).
+- **Verifikasi:** cron dijalankan manual → `No unclustered laporan. Exiting.` (anti-loop terbukti); 398 noise stabil.
+
+### DBG-003 ✅ — `Unknown column 'perlu_info_tambahan'` (enum truncation)
+
+- **Gejala:** DB yang dibuat dari migrasi lama lalu di-upgrade bisa gagal/keliru pada `klaster.status_verifikasi` (nilai enum baru tak dikenal).
+- **Penyelesaian:** migrasi `d4f8c2a91e05` (commit `5a00bd3d`, F4.4 lanjutan) — `ALTER TABLE klaster MODIFY status_verifikasi ENUM(…perlu_info_tambahan…)` via SQL mentah.
+- **Catatan:** tercatat di SETUP.md §5a tabel troubleshooting; guard DBG-001 kini memverifikasi kolom ini otomatis (parity check).
+
+### DBG-004 ✅ — `GET /ai/status` salah hitung unclustered + `last_run` hardcoded (2026-10-14)
+
+- **Gejala:** `unclustered_laporan` **selalu 398** (angka noise yang sudah selesai), bukan backlog `belum_diproses` (0). `last_run` selalu `"N/A (no cron log yet)"` meski cron/script sudah pernah jalan.
+- **Akar:** query masih `WHERE klaster_id IS NULL` (definisi pra-F4.7) — tidak disapu saat semantik berubah (lihat DBG-002). `last_run` tidak pernah diisi karena tidak ada penyimpanan waktu run.
+- **Dampak:** dashboard pipeline/Kadis salah baca status; alarm/SLA berbasis endpoint ini akan false dari hari pertama.
+- **Penyelesaian (F4.10):** seleksi → `Laporan.hasil_klasterisasi == 'belum_diproses'`; `last_run` dibaca dari state file baru `app/core/pipeline_state.py` (`backend/pipeline_state.json`, di-gitignore) yang ditulis oleh cron script dan `POST /ai/cluster`; fallback string `"N/A (belum pernah tercatat)"` bila state belum ada; key baru `last_run_status` (`ok`/`error`).
+- **Verifikasi:** live `GET /ai/status` → `unclustered_laporan: 0` (bukan 398), `last_run: 2026-10-14T20:02:58` sesuai run script, `last_run_status: ok`, `total_klaster: 43`; anon 401; 2 test regresi (`TestStatusPipelineF410`) termasuk noise-klaster_id-NULL tak lagi terhitung.
+
+### DBG-005 ✅ — `log_audit()` tak pernah dipanggil; `audit_log` 0 baris (2026-10-14)
+
+- **Gejala:** `GET /audit/log` (dan halaman FE Log Audit PDP) selalu kosong; 0 baris di tabel `audit_log`.
+- **Akar:** helper F3.21 (`core/audit.py`) ditulis bersama endpoint & FE, tetapi "penyambung" (pemanggilan di endpoint aksi sensitif) tak pernah dikerjakan; task ditandai selesai berdasarkan keberadaan fungsi, bukan terjadinya pencatatan.
+- **Dampak produksi:** tak ada jejak siapa verifikasi klaster/override prioritas/akses PDP — peluang kepatuhan PDP & forensik insiden hilang.
+- **Penyelesaian (F4.10):** `log_audit()` dipanggil di 5 titik — `POST /auth/login` (`login`), `POST /auth/register` (`akses_pdp_vault` target `encrypt_nik`), `PUT /klaster/{id}/verifikasi` (`verifikasi_klaster`), `PUT /vote/klaster/{id}/override` (`override_prioritas`), `PUT /laporan/{id}/status` (`verifikasi_status_sanggahan`); commit di endpoint masing-masing; 5 test black-box `TestAuditAktifF410` assert baris masuk.
+- **Verifikasi:** pytest **105/105**; live `GET /audit/log` → baris `login` `admin@simakis.id` tercatat (`total_items: 1`, sebelumnya 0).
+- **Sisa kecil:** endpoint `logout` tidak ada (refresh-token flow) → memang tak ada yang bisa di-log; `GET /audit/log` tak menyertakan nama actor (hanya `actor_user_id`) — kandidat penyempurnaan lanjutan.
+
+### DBG-006 ✅ — Cron 02:00 WIB tidak pernah terpasang (2026-10-14)
+
+- **Gejala:** `crontab -l` kosong; `run_clustering.py` hanya jalan manual.
+- **Akar:** pemasangan crontab = tindakan operasional di mesin target; tercatat di dokumentasi seolah sudah dilakukan (documentation-as-reality gap).
+- **Dampak produksi:** laporan warga baru tidak pernah ter-otomatis terklasterisasi — fitur "AI pipeline harian" jadi fitur mati; backlog `belum_diproses` menumpuk tanpa batas.
+- **Penyelesaian (F4.10):** crontab user dev terpasang — `0 2 * * * cd …/backend && ./venv/bin/python scripts/run_clustering.py >> logs/clustering.log 2>&1` + komentar; service `cron` **active**; `backend/logs/` dibuat; `.gitignore` += `pipeline_state.json`, `backend/logs/`.
+- **Verifikasi:** `crontab -l` menampilkan 1 entri; simulasi persis baris crontab sukses (log + state file terisi); run script manual → state `status: ok`.
+- **Sisa:** pasang crontab yang sama saat deploy ke server produksi (berlaku selama mesin menyala pukul 02:00 WIB); checklist `DEPLOYMENT.md` belum disentuh.
+
+### DBG-007 ✅ — `penanda_masalah` selalu `"normal"` (2026-10-14, D-23)
+
+- **Gejala:** `GET /sekolah` selalu `penanda_masalah="normal"`, `jumlah_isu_aktif=0`; semua 62 sekolah tampil aman; `totalKritis` di FE = 0 selamanya; filter Status Integritas tak menyaring apa-apa.
+- **Akar:** placeholder awal tanpa formula keputusan (ambang kritis dari apa? jumlah isu? skor KBM?).
+- **Dampak produksi:** *false sense of security* — papan dashboard hijau padahal ada 129 ruang rusak berat (terungkap baru oleh Skor KBM F4.8).
+- **Penyelesaian (F4.11, D-23):** arah kandidat direalisasikan penuh — `_penanda_isu_per_sekolah()` di `routers/sekolah.py` menghitung per halaman list & detail: `penanda_masalah` = level Skor KBM (≥70 `kritis`, 40–69 `perlu_perhatian`, <40 `aman`), `jumlah_isu_aktif` = laporan `status_sanggahan != 'ditolak'`; agregasi dibuat identik dengan `GET /laporan/skor-kbm`.
+- **Verifikasi:** live `GET /sekolah?page_size=100` → `perlu_perhatian 39 · aman 22 · kritis 1`, total isu 600; 4 test baru (tanpa laporan→aman, laporan berat→kritis, ditolak→bukan isu, list menyertai keduanya).
+
+### DBG-008 ✅ — `/dashboard/wilayah` menolak `admin` (403) (2026-10-14)
+
+- **Gejala:** login `admin@simakis.id` → buka ringkasan wilayah → 403 (deviasi kontrak #3).
+- **Akar:** `require_dinas = ["verifikator_dinas","kepala_dinas"]` dibuat sebelum role `admin` dipakai luas; tak ada audit silang role↔endpoint.
+- **Penyelesaian (F4.11):** `require_dinas = ["admin", "verifikator_dinas", "kepala_dinas"]` + test `test_dashboard_wilayah_admin_ok`; audit `RoleChecker` vs INTERFACES tidak menemukan gap lain (verifikasi klaster verifikator-only = per kontrak).
+- **Verifikasi:** live admin → `GET /dashboard/wilayah` **200**; pytest 112/112. Kontrak INTERFACES baris wilayah diperbarui (+`admin`).
+
+### DBG-009 ✅ — `lintang`/`bujur` NULL 62/62 padahal CSV lengkap (2026-10-14)
+
+- **Gejala:** Peta Sebaran tanpa pin; DB `non-null lintang = 0`. Sumber `backend/app/dataset/raw/sekolah_lamongan_semua.csv`: kolom `lintang`/`bujur` **terisi 62/62** (contoh `-7.1173967`, `112.3937566`).
+- **Akar:** pemetaan CSV→model ditulis manual per kolom yang "dipakai saat itu"; 2 kolom ini terlewat di `setup_f300.py` (seed) **dan** `routers/ingest.py` — data hilang di jembatan, bukan di sumber.
+- **Penyelesaian (F4.11):** helper `_koord()` (parse → `Decimal`, aman terhadap nilai kosong/jelek) di `setup_f300.py` **dan** `ingest.py` — diisi saat insert **plus backfill idempoten** saat sekolah sudah ada (jalur `existing`); `lintang`/`bujur` ditambahkan ke `SekolahResponse` (list + detail); reseed `setup_f300.py` dijalankan ulang (idempoten).
+- **Verifikasi:** `COUNT(lintang)=62, COUNT(bujur)=62` (dulu 0/0); live list menampilkan koordinat tiap baris; test `test_koordinat_diekspos_list_dan_detail` + ingest fixture CSV ber-koordinat → 112/112.
+
+### DBG-010 ✅ — `ingest.py` salah key kolom nama (2026-10-14)
+
+- **Gejala:** upload CSV via `POST /ingest/dapodik` menghasilkan `nama="Unknown"` — endpoint memakai `row.get("nama_sekolah")`, header CSV resmi = `nama`.
+- **Akar:** endpoint ditulis terhadap versi CSV hipotetis; tidak diuji dengan CSV asli (`sekolah_lamongan_semua.csv`).
+- **Penyelesaian (F4.11):** `nama=(row.get("nama") or row.get("nama_sekolah") or "Unknown")[:255]` — header resmi dilayani, CSV lama tetap kompatibel.
+- **Verifikasi:** test `TestIngestDapodikF411` — upload CSV fixture header `nama` → `baris_diproses: 1`, `GET /sekolah/99111222` mengembalikan `nama == "SD Ingest CSV Uji"` (bukan "Unknown") + koordinat ikut terbaca; 112/112.
+
+### DBG-011 ✅ — Code 422 tercampur `REASON_REQUIRED` (2026-10-14, diagnosis ulang)
+
+- **Gejala:** body request invalid di endpoint mana pun → **400**, sedangkan kontrak INTERFACES menyebut 422 (mis. `PUT /laporan/{id}/status` enum salah).
+- **Akar:** global handler `RequestValidationError` di `main.py` meng-`wrap` jadi 400; menimpa perilaku bawaan FastAPI (422).
+- **Dampak:** klien/FE yang mengandalkan 422 (documented) tak akan melihatnya; F4.7 menyiasati dengan validasi manual `HTTPException(422)`.
+- **Diagnosis ulang (F4.11):** hipotesis awal **salah** — `400 VALIDATION_ERROR` untuk Pydantic/query validation **sesuai** kontrak INTERFACES §0.3 (FE & test juga mengandalkan 400). Deviasi sebenarnya: `ERROR_CODES[422] = "REASON_REQUIRED"` berlaku untuk **semua** 422, sedangkan kontrak §4 mewajibkan `422 UNPROCESSABLE_ENTITY` untuk body enum invalid (`PUT /laporan/{id}/status`) — kode keliru `REASON_REQUIRED` selama ini lolos karena test hanya menAssert status.
+- **Penyelesaian (F4.11):** `app/core/exceptions.py::ApiError(status_code, code, detail)` membawa `api_code`; `http_exception_handler` memprioritaskan `getattr(exc, "api_code", None)` di atas peta status; `laporan.py` memakai `ApiError(422, "UNPROCESSABLE_ENTITY", …)`; baris kode baru di INTERFACES §0.3; union `ApiErrorCode` di `frontend/src/lib/api/errors.ts` += `UNPROCESSABLE_ENTITY`. Handler generik tetap 400 (tanpa perubahan kontrak massal).
+- **Verifikasi:** live `PUT /laporan/{id}/status` invalid → `422 {"code": "UNPROCESSABLE_ENTITY"}` (bukan `REASON_REQUIRED`); test `test_put_status_invalid_422` diperkuat assert code; generic validation tetap `400 VALIDATION_ERROR` (test lama lolos); 112/112.
+
+---
+
+## Catatan Proses (bukan bug produksi)
+
+- **Test DB `simakis_test` harus di-recreate sebelum pytest penuh** (`DROP DATABASE IF EXISTS simakis_test; CREATE DATABASE simakis_test;`). `conftest.py` memakai `create_all(checkfirst=True)` — tabel sisa dari run yang di-kill di tengah bisa punya kolom/enum versi lama → error misterius. Sudah dua kali terbukti (Okt 2026). Ide guard: versi ringan dari `verify_schema_parity.py` untuk `simakis_test`.
+- **Delegasi sub-agent sempat rusak** (lifecycle error "cannot be resumed safely" + "Cannot connect to API", Okt 2026) — semua lane F4.7–F4.9 dikerjakan langsung oleh orkestrator.
+
+---
+
+## Cara memperbarui
+
+1. **Masalah baru:** tambahkan baris `DBG-xxx` (ID lanjutan) di tabel Ringkasan + blok Detail (Gejala/Akar/Dampak/Rencana) — status 🔴 atau ⚪.
+2. **Selesai:** ubah status → ✅, isi blok **Penyelesaian** (commit hash + angka verifikasi) dan **Verifikasi**, tandai pula di Ringkasan. Jangan hapus entri.
+3. Update bersamaan: `docs/backend/CHANGELOG.md` §3.x (ringkas) — DEBUGGING.md = catatan teknis lengkap.

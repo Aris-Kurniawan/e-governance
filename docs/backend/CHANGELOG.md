@@ -541,6 +541,8 @@ melalui clustering (IndoBERT + HDBSCAN). Kategori ground truth = **5 kategori hi
 3. **Waktu jalan AI** → **Scheduled cron harian**
 4. **Alur verifikasi** → **Review satu per satu** + badge status tampil di publik
 5. **Outlier HDBSCAN (-1)** → **Opsi A**: klaster `belum_terklasifikasi` + review verifikator
+   — **SUPERSEDED (8 Okt 2026)**, lihat `DECISIONS.md` **D-21**: noise tidak lagi menjadi
+   klaster; laporan tanpa klaster ditangani lewat `GET /laporan/perlu-review`.
 6. **Label klaster** → **Dua-duanya**: teks bebas (TF-IDF) + enum kategori
 7. **Formula skor keparahan** → **Gabungan** `kondisi_dilaporkan` + data Dapodik
 8. **Literatur** → **Selesai dicari** (lihat tabel di atas)
@@ -961,7 +963,72 @@ ditambah 1 temuan audit kontrak (lihat #5).
 
 ---
 
-### 3.21 Koordinat Sekolah (`lintang`/`bujur`) — Isian Dapodik & Ekspos API (2026-10-13) → SELESAI
+### 3.21 F4.7 (RENCANA) — Klasterisasi Tanpa "Belum Terklasifikasi" + Fallback Laporan ke Admin/Kepala (2026-10-08) → diimplementasikan 13 Okt, lihat §3.22
+
+**Status:** spesifikasi — **implementasi & hasil verifikasi di §3.22**. Spesifikasi lengkap di `docs/backend/TASK_GUIDE.md` **F4.7**; keputusan desain di `docs/universal/DECISIONS.md` **D-21** (menggantikan Keputusan #5 Opsi A di §3.3).
+
+**Temuan audit (DB `simakis`, 8 Okt 2026):**
+
+| Jenis | Klaster | Laporan |
+|---|---|---|
+| Noise HDBSCAN (`-1`) → record Klaster "Belum Terklasifikasi" | 57 | 398 |
+| Label-fallback (klaster nyata, kategori gagal dipetakan `labeling.py:98`) | 18 | 97 |
+| **Total kategori `belum_terklasifikasi`** | **75 dari 100** | **495 dari 600** |
+| Klaster valid (5 kategori) | 25 | 105 |
+
+**Akar masalah:** `scripts/run_clustering.py:109-112` dan trigger manual `POST /ai/cluster` (`routers/klaster.py`) sama-sama membuat record `Klaster` untuk label `-1`, hasil dari **Keputusan #5 Opsi A** (§3.3, 23 Sep 2026). Ini **bertentangan dengan metodologi ablation** — `experiments/evaluation.py` mengecualikan noise dari NMI/ARI/purity dan tidak menghitungnya sebagai klaster (hanya melaporkan `noise_ratio`).
+
+**Rencana perubahan (7 langkah, estimasi 1 hari):**
+
+1. Migrasi Alembic: kolom `laporan.hasil_klasterisasi` ENUM(`belum_diproses`, `terklaster`, `noise`) sebagai **penanda anti-loop** — tanpa ini cron 02:00 akan re-cluster 398 laporan noise setiap hari — plus backfill 3 langkah (noise → `klaster_id = NULL` + `'noise'`, hapus 57 klaster noise, sisa 202 → `'terklaster'`).
+2. `run_clustering.py` + `routers/klaster.py`: `cluster_id == -1` → skip pembuatan record Klaster, tandai laporan `'noise'`; query cron jadi `WHERE hasil_klasterisasi = 'belum_diproses'`.
+3. `GET /klaster`: default menyembunyikan `kategori = belum_terklasifikasi` (filter eksplisit tetap dilayani).
+4. `routers/laporan.py`: `GET /laporan/perlu-review` (495 laporan: `klaster_id IS NULL` atau klaster fallback) + `PUT /laporan/{id}/status` (update `status_sanggahan`) — RBAC `admin` + `kepala_dinas`.
+5. Kontrak: `INTERFACES.md` §2 + `DECISIONS.md` D-21.
+6. Test blackbox: filter `GET /klaster`, RBAC 403 kedua endpoint, `PUT status`.
+7. Regenerate `database/simakis.sql` + update count di `SETUP.md` §5a.
+
+**Keputusan yang dicatat:** (1) record klaster noise dihapus, laporan tidak dihapus; (2) 18 klaster label-fallback disembunyikan tapi recordnya dipertahankan dan laporannya masuk endpoint fallback; (3) scope v1 backend/endpoint saja, FE menyusul (Dimas); (4) sekalian aksi verifikasi manual; (5) RBAC `admin` + `kepala_dinas`.
+
+**Dampak ke FE (untuk briefing Dimas):** angka turunan `GET /klaster` berubah dari 100 → 25 klaster (DashboardWilayah, TabelVerifikasi, AntrianValidasi, peta sebaran).
+
+**Issue terpisah (di luar scope F4.7):** kualitas labeling D1 — label unigram tercemar stopword (mis. "dan tidak hancur sudah sejak") dan keyword mapping 5 kategori yang bolong; ini penyebab 18 klaster label-fallback.
+
+---
+
+### 3.22 F4.7 Implementasi — Klasterisasi Tanpa "Belum Terklasifikasi" + Fallback Laporan (2026-10-13) ✅ SELESAI
+
+**Deliverable (7 langkah §3.21, semua selesai):**
+
+1. Migrasi `a7f3c91e5b2d_add_hasil_klasterisasi.py` (`down_revision=d4f8c2a91e05`, head): kolom `laporan.hasil_klasterisasi` ENUM(`belum_diproses`,`terklaster`,`noise`) sebagai penanda anti-loop + backfill 3 langkah FK-safe (lepas laporan → hapus 57 klaster noise → tandai 202 sisa `terklaster`). Guard MySQL-only seperti migrasi sebelumnya.
+2. `app/models/laporan.py`: kolom baru (file CRLF dipertahankan; `git diff --numstat` 10/0).
+3. `scripts/run_clustering.py` + `app/routers/klaster.py` (`run_clustering_sync`, kode duplikat — keduanya diubah seragam): seleksi `WHERE hasil_klasterisasi='belum_diproses'`; `cluster_id == -1` → **skip** record Klaster, laporan ditandai `noise`; klaster valid → `terklaster`; fallback aman laporan tanpa teks → `noise`; `?force_reprocess=true` ikut mereset penanda.
+4. `GET /klaster` (list): default `kategori != 'belum_terklasifikasi'`; `?kategori=belum_terklasifikasi` eksplisit tetap dilayani; `GET /klaster/{id}` tidak diubah.
+5. `app/routers/laporan.py`: **`GET /laporan/perlu-review`** (RBAC `admin`+`kepala_dinas`, envelope `{data,meta}` §0.2, 495 laporan) + **`PUT /laporan/{id}/status`** (update `status_sanggahan`; enum divalidasi manual → 422). Keduanya dideklarasikan sebelum `GET /laporan/{id}`.
+6. Test `tests/test_blackbox.py` +7 → **pytest 95/95 lulus**.
+7. `INTERFACES.md` §4 (2 endpoint baru) + §5 (catatan filter default); dump `database/simakis.sql` diregenerate + `SETUP.md` §5a.
+
+**Verifikasi (DB `simakis`, 13 Okt 2026):**
+
+| Cek | Hasil |
+|---|---|
+| `alembic current` | `a7f3c91e5b2d` (head) |
+| `klaster` | 100 → **43** (18 label-fallback) |
+| `laporan` | 600 utuh — `noise` **398**, `terklaster` **202**, `klaster_id IS NULL` **398** |
+| `GET /klaster` default / `?kategori=belum_terklasifikasi` | **25** / **18** |
+| `GET /laporan/perlu-review` (admin) | **495** |
+| RBAC live | anon **401**, verifikator **403**, admin **200** |
+| `PUT .../status` | valid **200**, nilai di luar enum **422**, id tak dikenal **404** |
+| Anti-loop (cron `scripts/run_clustering.py`) | `No unclustered laporan. Exiting.` — 0 baris dipilih |
+| Dump impor ke `simakis_import_check` | 62 / 600 / 43, `noise`=398, alembic `a7f3c91e5b2d` |
+
+**Penyimpangan kecil yang disengaja:** respons PUT tanpa `updated_at` (kolom tidak ada di model `Laporan`); validasi enum manual 422 (handler global `RequestValidationError` → 400); `force_reprocess` ikut reset penanda; laporan tanpa teks ditandai `noise`. Detail di `TASK_GUIDE.md` F4.7 "Hasil implementasi".
+
+**Dampak FE (briefing Dimas):** angka `GET /klaster` turun 100 → 25; laporan noise tak punya `klaster_id` lagi; halaman fallback baru (`/laporan/perlu-review`, `PUT .../status`) menyusul di FE.
+
+---
+
+### 3.23 Koordinat Sekolah (`lintang`/`bujur`) — Isian Dapodik & Ekspos API (2026-10-13) → SELESAI
 
 **Latar:** halaman Peta Sebaran (`/dinas/peta`) butuh titik sekolah, tetapi kolom `sekolah.lintang`/`bujur` kosong semua (62 NULL di dump) dan tidak dikirim API §2.
 
@@ -973,6 +1040,109 @@ ditambah 1 temuan audit kontrak (lihat #5).
 
 **Verifikasi:** pytest **88/88** lulus (DB test `simakis_test` dibuat sekali di mesin dev); smoke `GET /sekolah?page_size=2` & `/sekolah/{npsn}` membalas koordinat; FE build hijau.
 
+---
+
+### 3.24 F4.8 — Skor Dampak KBM per Sekolah (2026-10-13) ✅ SELESAI
+
+**Deliverable:**
+
+1. `app/ai_pipeline/scoring.py`: `SEVERITY_MAP` + `calculate_kbm_score()` + `kbm_level()`; `calculate_priority_score` direfaktor pakai `SEVERITY_MAP`.
+2. `app/routers/laporan.py`: `GET /laporan/skor-kbm` (dideklarasi sebelum `/{laporan_id}`), envelope `{data: {ringkasan, sekolah}}`, RBAC `admin|verifikator_dinas|kepala_dinas`.
+3. `tests/test_blackbox.py`: `TestSkorKbmF48` (RBAC 401/403/200×2, shape+bounds, formula deterministik 70.0 & 76.2) → **pytest 98/98**.
+4. FE: `types.ts` (+`SkorKbmData` dll), `laporan.ts` (+`getSkorKbm()`), `LaporanSkorKbm.tsx` di-rewrite penuh wiring live + 11 penggantian widget (lihat TASK_GUIDE §F4.8).
+5. Docs: INTERFACES §4 (+baris tabel +response example), TASK_GUIDE F4.8, D-22 di DECISIONS.md.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `GET /laporan/skor-kbm` live | 200 — 62 sekolah, rata-rata 44.4, kritis 1, top: SDN 2 SENDANGREJO 76.4 |
+| Level distribution | rendah 22 · sedang 21 · tinggi 18 · kritis 1 |
+| Dampak per jenis (top) | ruang_kelas 77/769 · wc_siswa 31/176 · wc_guru 14/98 |
+| Anon | 401 |
+| pytest | **98/98** |
+| `npx tsc --noEmit` | bersih |
+| `npm run build` | sukses (29 dtk) |
+| Playwright smoke `/dinas/skor-kbm` | 62 baris tabel · semua 11 check OK · 0 console error |
+
+**Catatan:** Tidak ada migrasi DB (perhitungan on-the-fly). Tidak perlu regen dump. RBAC ketiga-role adalah asumsi — Aris dapat membatalkan. Observasi terbuka: `GET /ai/status` masih menghitung `klaster_id IS NULL` sebagai unclustered (selalu 398) — di luar scope F4.7/F4.8.
+
+### 3.25 F4.9 — Fix Enum `klaster.kategori` Drift + Guard Parity Skema (2026-10-14) ✅ SELESAI
+
+**Masalah:** `8cca6e1b2fa3` membuat ENUM `klaster.kategori` 5 nilai; model & DB live = 6 (nilai `belum_terklasifikasi` ditambahkan di luar alembic). Fresh install via `alembic upgrade head` (jalur produksi SETUP.md §5) → insert 18 klaster label-fallback gagal. Tak tertangkap test karena `conftest.py` memakai `create_all` dari model, bukan alembic.
+
+**Deliverable:**
+
+1. Migrasi `d3cb7888ff94` (down: `a7f3c91e5b2d`): guard non-MySQL + idempoten `information_schema` (sudah 6 nilai → skip); `ALTER ... MODIFY` tambah value di akhir; `downgrade()` balik ke 5 nilai + peringatan backfill.
+2. **`backend/scripts/verify_schema_parity.py` (baru)**: bandingkan 94 kolom model vs `information_schema` (14 ENUM termasuk) — mode default fresh-install (bangun DB temp → `upgrade head` → bandingkan → drop), `--db <url>` untuk DB existing; exit 1 saat drift. Didokumentasikan di SETUP.md §5 + baris troubleshooting.
+3. `database/simakis.sql` diregen (`mysqldump --single-transaction`, alembic `d3cb7888ff94`).
+4. Docs: SETUP.md §5/§5a/troubleshooting, TASK_GUIDE §F4.9, CHANGELOG §3.25.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `alembic upgrade head` di DB live | no-op idempoten → `alembic_version=d3cb7888ff94`, enum tetap 6 nilai, 18 klaster utuh |
+| Fresh install dari nol (DB temp) | chain 6 revisi sukses; enum 6 nilai = model; INSERT `kategori='belum_terklasifikasi'` OK; `hasil_klasterisasi` ada; DB temp di-drop |
+| pytest | **98/98** (84 dtk) |
+| `verify_schema_parity.py` mode fresh & `--db` live | PARITY OK (94 kolom) |
+| Uji negatif (DB berhenti di `a7f3c91e5b2d`) | **menangkap** ENUM DRIFT `klaster.kategori`, exit 1 |
+| Dump | 236.747 B, diff **2 baris** (alembic_version saja); impor ke DB temp: 62/600/43, noise 398, enum 6 nilai |
+
+### 3.26 F4.10 — Fix bug backend DBG-004/005/006 (2026-10-14) ✅ SELESAI
+
+**Deliverable:**
+
+1. **DBG-004 — `GET /ai/status` salah hitung.** Seleksi `Laporan.hasil_klasterisasi == 'belum_diproses'` menggantikan `klaster_id IS NULL` (yang ikut menangkap 398 laporan noise). `last_run` tidak lagi hardcoded: dibaca dari state file baru `app/core/pipeline_state.py` (`backend/pipeline_state.json`, di-gitignore) yang ditulis cron script (sukses/kosong/error) dan `POST /ai/cluster`; fallback string bila belum pernah jalan; key baru `last_run_status` (`ok`/`error`).
+2. **DBG-005 — audit tak pernah terisi.** `log_audit()` dipanggil di 5 aksi sensitif: `POST /auth/login` → `login`, `POST /auth/register` → `akses_pdp_vault` (`encrypt_nik`), `PUT /klaster/{id}/verifikasi` → `verifikasi_klaster`, `PUT /vote/klaster/{id}/override` → `override_prioritas`, `PUT /laporan/{id}/status` → `verifikasi_status_sanggahan`.
+3. **DBG-006 — cron tak terpasang.** Crontab user dev: `0 2 * * * … scripts/run_clustering.py >> logs/clustering.log 2>&1` (+ komentar); service `cron` active; `backend/logs/` dibuat; `.gitignore` += `pipeline_state.json`, `backend/logs/`.
+4. **Test baru:** `TestAuditAktifF410` (5) + `TestStatusPipelineF410` (2, termasuk regresi noise-klaster_id-NULL) → **pytest 105/105**.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `pytest tests/` | **105/105** (101 dtk) |
+| `GET /ai/status` live | 200 — `unclustered_laporan: 0` (bukan 398), `total_klaster: 43`, `last_run: 2026-10-14T20:02:58`, `last_run_status: ok` |
+| `GET /audit/log` live | baris `login` `admin@simakis.id` tercatat (`total_items: 1`, sebelumnya selalu 0) |
+| Anon `GET /ai/status` | 401 |
+| Simulasi baris crontab | sukses → `logs/clustering.log` + state file terisi |
+| `crontab -l` | 1 entri `0 2 * * *` |
+| Git ignore | `pipeline_state.json`, `backend/logs/` ter-capture `.gitignore` |
+
+**Catatan:**
+
+- Tidak ada endpoint `logout` (refresh-token flow) → tidak ada aksi logout untuk di-log.
+- `last_run` = timestamp lokal (WIB), `audit.timestamp` = UTC — perbedaan zona, jangan dibaca berdampingan secara harfiah.
+- Saat deploy ke server produksi: pasang crontab yang sama (mesin harus menyala 02:00 WIB) — checklist `DEPLOYMENT.md` belum disentuh.
+- Docs terkait: `DEBUGGING.md` (DBG-004/005/006 → ✅ + bukti), INTERFACES baris `/ai/status`.
+
+### 3.27 F4.11 — Fix bug backend DBG-007…011 (2026-10-14) ✅ SELESAI
+
+**Deliverable:**
+
+1. **DBG-007 (D-23) — penanda/isu nyata.** Helper `_penanda_isu_per_sekolah()` di `routers/sekolah.py`: `penanda_masalah` = level Skor KBM (D-22) — ≥70 `kritis`, 40–69 `perlu_perhatian`, <40 `aman`; `jumlah_isu_aktif` = laporan dengan `status_sanggahan != 'ditolak'`. Berlaku untuk **list & detail**; agregasi identik dengan `GET /laporan/skor-kbm` (tanpa kolom baru).
+2. **DBG-008 — RBAC wilayah.** `require_dinas` di `routers/dashboard.py` += `admin` (dulu 403).
+3. **DBG-009 — koordinat.** Helper `_koord()` (→ `Decimal`) di `scripts/setup_f300.py` + `routers/ingest.py`: isi saat insert **dan** backfill idempoten saat re-ingest; `lintang`/`bujur` diekspos di `SekolahResponse` (list + detail); reseed live dijalankan.
+4. **DBG-010 — nama ingest.** Key `nama` (header CSV resmi) dengan fallback `nama_sekolah` + slice `[:255]` → tak lagi "Unknown".
+5. **DBG-011 (diagnosis ulang) — code 422.** Generic `400 VALIDATION_ERROR` ternyata **sesuai** INTERFACES §0.3 — bukan deviasi. Deviasi nyata: semua 422 dipetakan `ERROR_CODES` jadi `REASON_REQUIRED`, padahal kontrak §4 mewajibkan `422 UNPROCESSABLE_ENTITY` untuk body enum invalid. Solusi: `app/core/exceptions.py::ApiError(status, code, detail)` — handler kini memprioritaskan `exc.api_code`; `PUT /laporan/{id}/status` memakai `ApiError(422, "UNPROCESSABLE_ENTITY", …)`; baris `UNPROCESSABLE_ENTITY` ditambah ke §0.3; union `ApiErrorCode` FE (`errors.ts`) += `UNPROCESSABLE_ENTITY`.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| pytest | **112/112** (106 dtk; +7 test: wilayah admin, penanda×4, koordinat, ingest) |
+| `GET /sekolah` live | penanda `perlu_perhatian 39 / aman 22 / kritis 1` · total isu 600 · koordinat 62/62 |
+| `setup_f300.py` rerun | idempoten — [SKIP] admin & 600 laporan, 0 sekolah/sarana baru, koordinat ter-backfill |
+| Koordinat DB | `COUNT(lintang)=62`, `COUNT(bujur)=62` (dulu 0/0) |
+| `GET /dashboard/wilayah` (admin live) | 200 (dulu 403) |
+| `PUT /laporan/{id}/status` invalid live | `422 {"error": {"code": "UNPROCESSABLE_ENTITY", …}}` |
+
+**Catatan:**
+
+- Tanpa migrasi DB. AGENTS.md §Scope FINAL (baris `penanda_masalah`/`jumlah_isu_aktif` placeholder) kini usang — **perlu update eksplisit dari pemilik proyek**.
+- Komentar FE (`Direktori.tsx`, `Dashboard.tsx`, `PetaSebaranDinas.tsx`, `DashboardKadis.tsx`, `types.ts`) masih menyebut backend placeholder — sebagian sudah disesuaikan (`types.ts`); sisa cleanup + wiring peta koordinat = lane FE terbuka.
+- Audit `RoleChecker` vs INTERFACES: tak ada gap lain (verifikasi klaster verifikator-only = per kontrak).
 ---
 
 ## Catatan Terbuka

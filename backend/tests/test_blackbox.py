@@ -12,7 +12,7 @@ import pytest
 
 from app.core.deps import hash_password
 from app.models.user import User
-from app.models.sekolah import Sekolah
+from app.models.sekolah import Sekolah, KondisiSarana
 from app.models.laporan import Laporan
 from app.models.klaster import Klaster
 
@@ -476,6 +476,13 @@ class TestDashboardAudit:
         r = test_client.get("/dashboard/wilayah", headers=auth(token))
         assert r.status_code == 200
 
+    def test_dashboard_wilayah_admin_ok(self, test_client, db_session):
+        # F4.11 (DBG-008): admin dulu kena 403 — kini ikut diizinkan.
+        user = make_user(db_session, role="admin")
+        token = login(test_client, user.email)
+        r = test_client.get("/dashboard/wilayah", headers=auth(token))
+        assert r.status_code == 200
+
     def test_audit_warga_forbidden_403(self, test_client, db_session):
         user = make_user(db_session)
         token = login(test_client, user.email)
@@ -546,3 +553,577 @@ class TestAIUpload:
             files={"file": ("a.png", b"\x89PNG", "image/png")},
         )
         assert r.status_code == 403
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. F4.7 (D-21) — Klaster tanpa "Belum Terklasifikasi" + endpoint fallback
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestFallbackReviewF47:
+    def test_list_klaster_default_sembunyikan_belum_terklasifikasi(
+        self, test_client, db_session
+    ):
+        sekolah = make_sekolah(db_session)
+        valid = make_klaster(db_session, sekolah, kategori="ruang_belajar")
+        fallback = make_klaster(db_session, sekolah, kategori="belum_terklasifikasi")
+
+        # Default: klaster label-fallback tidak tampil
+        r = test_client.get(
+            "/klaster",
+            params={"sekolah_npsn": sekolah.npsn, "page_size": 100},
+        )
+        assert r.status_code == 200
+        ids = {k["klaster_id"] for k in r.json()["data"]}
+        assert valid.id in ids
+        assert fallback.id not in ids
+        assert "belum_terklasifikasi" not in {
+            k["kategori"] for k in r.json()["data"]
+        }
+
+        # Eksplisit ?kategori=belum_terklasifikasi tetap dilayani (debug/admin)
+        r2 = test_client.get(
+            "/klaster",
+            params={
+                "sekolah_npsn": sekolah.npsn,
+                "kategori": "belum_terklasifikasi",
+                "page_size": 100,
+            },
+        )
+        assert r2.status_code == 200
+        assert {k["klaster_id"] for k in r2.json()["data"]} == {fallback.id}
+
+    def test_detail_klaster_tetap_bisa_diakses(self, test_client, db_session):
+        sekolah = make_sekolah(db_session)
+        fallback = make_klaster(db_session, sekolah, kategori="belum_terklasifikasi")
+        r = test_client.get(f"/klaster/{fallback.id}")
+        assert r.status_code == 200
+        assert r.json()["data"]["kategori"] == "belum_terklasifikasi"
+
+    def test_perlu_review_rbac(self, test_client, db_session):
+        # Anonim → 401
+        assert test_client.get("/laporan/perlu-review").status_code == 401
+
+        warga = make_user(db_session, role="warga_terverifikasi")
+        token = login(test_client, warga.email)
+        assert (
+            test_client.get("/laporan/perlu-review", headers=auth(token)).status_code
+            == 403
+        )
+
+        veri = make_user(db_session, role="verifikator_dinas")
+        token = login(test_client, veri.email)
+        assert (
+            test_client.get("/laporan/perlu-review", headers=auth(token)).status_code
+            == 403
+        )
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.get("/laporan/perlu-review", headers=auth(token))
+        assert r.status_code == 200
+
+    def test_perlu_review_isi_dan_envelope(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+
+        # (1) laporan noise: tanpa klaster → ikut
+        lap_noise = make_laporan(db_session, user, sekolah)
+        # (2) laporan di klaster label-fallback → ikut
+        klaster_fb = make_klaster(db_session, sekolah, kategori="belum_terklasifikasi")
+        lap_fb = make_laporan(db_session, user, sekolah)
+        lap_fb.klaster_id = klaster_fb.id
+        db_session.commit()
+        # (3) laporan di klaster valid → TIDAK ikut
+        klaster_valid = make_klaster(db_session, sekolah, kategori="ruang_belajar")
+        lap_valid = make_laporan(db_session, user, sekolah)
+        lap_valid.klaster_id = klaster_valid.id
+        db_session.commit()
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.get(
+            "/laporan/perlu-review",
+            params={"page_size": 100},
+            headers=auth(token),
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert set(body.keys()) >= {"data", "meta"}
+        assert set(body["meta"]) >= {
+            "page",
+            "page_size",
+            "total_items",
+            "total_pages",
+        }
+
+        ids = {item["id"] for item in body["data"]}
+        assert lap_noise.id in ids
+        assert lap_fb.id in ids
+        assert lap_valid.id not in ids
+
+        item_fb = next(i for i in body["data"] if i["id"] == lap_fb.id)
+        assert item_fb["klaster"] == {
+            "id": klaster_fb.id,
+            "label": "Kerusakan Atap Kelas",
+            "kategori": "belum_terklasifikasi",
+        }
+        assert item_fb["sekolah_nama"] == sekolah.nama
+        assert item_fb["status_sanggahan"] == "menunggu"
+
+        item_noise = next(i for i in body["data"] if i["id"] == lap_noise.id)
+        assert item_noise["klaster"] is None
+        assert body["meta"]["total_items"] >= 2
+
+    def test_put_status_rbac_dan_update(self, test_client, db_session):
+        owner = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, owner, sekolah)
+
+        # Anonim → 401
+        r = test_client.put(
+            f"/laporan/{lap.id}/status", json={"status": "divalidasi"}
+        )
+        assert r.status_code == 401
+
+        # Warga (bukan admin/kepala) → 403
+        token = login(test_client, owner.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 403
+
+        # Admin → 200 & nilai berubah
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["data"]["id"] == lap.id
+        assert body["data"]["status_sanggahan"] == "divalidasi"
+        assert lap.status_sanggahan == "divalidasi"
+
+        # Kepala dinas juga berhak → 200
+        kepala = make_user(db_session, role="kepala_dinas")
+        token = login(test_client, kepala.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "ditolak"},
+            headers=auth(token),
+        )
+        assert r.status_code == 200
+        assert r.json()["data"]["status_sanggahan"] == "ditolak"
+
+    def test_put_status_invalid_422(self, test_client, db_session):
+        owner = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, owner, sekolah)
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "bukan_status_valid"},
+            headers=auth(token),
+        )
+        assert r.status_code == 422
+        # F4.11 (DBG-011): code eksplisit sesuai kontrak INTERFACES §4 —
+        # bukan REASON_REQUIRED (peta lama ERROR_CODES[422]).
+        assert r.json()["error"]["code"] == "UNPROCESSABLE_ENTITY"
+
+    def test_put_status_404(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.put(
+            f"/laporan/{uuid.uuid4()}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 404
+        assert r.json()["error"]["code"] == "NOT_FOUND"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 12. F4.8 (D-22) — GET /laporan/skor-kbm
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestSkorKbmF48:
+    def test_skor_kbm_rbac(self, test_client, db_session):
+        # Anonim → 401
+        assert test_client.get("/laporan/skor-kbm").status_code == 401
+
+        warga = make_user(db_session, role="warga_terverifikasi")
+        token = login(test_client, warga.email)
+        assert test_client.get("/laporan/skor-kbm", headers=auth(token)).status_code == 403
+
+        # verifikator_dinas & admin berhak (asumsi RBAC F4.8)
+        veri = make_user(db_session, role="verifikator_dinas")
+        token = login(test_client, veri.email)
+        assert test_client.get("/laporan/skor-kbm", headers=auth(token)).status_code == 200
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        assert test_client.get("/laporan/skor-kbm", headers=auth(token)).status_code == 200
+
+    def test_skor_kbm_shape_dan_bound(self, test_client, db_session):
+        make_sekolah(db_session)  # jamin minimal 1 sekolah (test ini harus mandiri)
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.get("/laporan/skor-kbm", headers=auth(token))
+        assert r.status_code == 200
+
+        body = r.json()["data"]
+        ringkasan = body["ringkasan"]
+        assert set(ringkasan) == {
+            "rata_rata_skor",
+            "sekolah_kritis",
+            "total_laporan",
+            "ruang_rusak_berat",
+            "distribusi_kondisi",
+            "dampak_per_jenis_ruang",
+        }
+        assert set(ringkasan["distribusi_kondisi"]) == {
+            "baik",
+            "rusak_ringan",
+            "rusak_sedang",
+            "rusak_berat",
+        }
+        # total_laporan = semua baris; distribusi hanya 4 nilai enum
+        # (kondisi NULL tidak dihitung di mana pun)
+        assert sum(ringkasan["distribusi_kondisi"].values()) <= ringkasan[
+            "total_laporan"
+        ]
+        # tiap jenis ruang punya angka, urut rusak_berat descending
+        berat_list = [j["rusak_berat"] for j in ringkasan["dampak_per_jenis_ruang"]]
+        assert berat_list == sorted(berat_list, reverse=True)
+        for jenis in ringkasan["dampak_per_jenis_ruang"]:
+            assert set(jenis) == {"nama_ruang", "rusak_berat", "jumlah"}
+
+        sekolah_rows = body["sekolah"]
+        assert len(sekolah_rows) > 0
+        skor_list = [s["skor_kbm"] for s in sekolah_rows]
+        assert skor_list == sorted(skor_list, reverse=True)
+        for s in sekolah_rows:
+            assert 0 <= s["skor_kbm"] <= 100
+            assert s["level"] in ("kritis", "tinggi", "sedang", "rendah")
+            assert set(s) == {
+                "npsn",
+                "nama",
+                "skor_kbm",
+                "level",
+                "skor_laporan",
+                "skor_dapodik",
+                "jumlah_laporan",
+                "laporan_rusak_berat",
+            }
+
+    def test_skor_kbm_formula_deterministik(self, test_client, db_session):
+        """0.7×AVG(severity) + 0.3×dapodik, skala 0–100, level per D-22."""
+        user = make_user(db_session)
+
+        # Sekolah A: 1 laporan rusak_berat (100), tanpa data Dapodik
+        # → 0.7×100 + 0.3×0 = 70.0 → kritis (batas bawah)
+        sek_a = make_sekolah(db_session)
+        lap_a = make_laporan(db_session, user, sek_a)
+        lap_a.kondisi_dilaporkan = "rusak_berat"
+
+        # Sekolah B: 1 laporan rusak_sedang (66), Dapodik 10/10 rusak berat (100)
+        # → 0.7×66 + 0.3×100 = 46.2 + 30 = 76.2
+        sek_b = make_sekolah(db_session)
+        lap_b = make_laporan(db_session, user, sek_b)
+        lap_b.kondisi_dilaporkan = "rusak_sedang"
+        db_session.add(
+            KondisiSarana(
+                sekolah_npsn=sek_b.npsn,
+                nama_ruang="ruang_kelas",
+                jumlah=10,
+                kondisi_baik=0,
+                kondisi_rusak_ringan=0,
+                kondisi_rusak_sedang=0,
+                kondisi_rusak_berat=10,
+            )
+        )
+        db_session.commit()
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.get("/laporan/skor-kbm", headers=auth(token))
+        assert r.status_code == 200
+        rows = {s["npsn"]: s for s in r.json()["data"]["sekolah"]}
+
+        a = rows[sek_a.npsn]
+        assert a["skor_kbm"] == 70.0
+        assert a["level"] == "kritis"
+        assert a["jumlah_laporan"] == 1
+        assert a["laporan_rusak_berat"] == 1
+
+        b = rows[sek_b.npsn]
+        assert b["skor_kbm"] == 76.2
+        assert b["skor_laporan"] == 66.0
+        assert b["skor_dapodik"] == 100.0
+        assert b["level"] == "kritis"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 10. F4.10 — Audit aktif (DBG-005) & status pipeline (DBG-004)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _audit_rows(client, token) -> list[dict]:
+    """Ambil baris audit (admin/kepala_dinas) — helper asersi F4.10."""
+    r = client.get("/audit/log", params={"page_size": 100}, headers=auth(token))
+    assert r.status_code == 200, r.text
+    return r.json()["data"]
+
+
+class TestAuditAktifF410:
+    """DBG-005: log_audit() harus benar-benar terpanggil di aksi sensitif."""
+
+    def test_login_meninggalkan_audit(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        rows = _audit_rows(test_client, token)
+        assert any(
+            r["aksi"] == "login"
+            and r["actor_user_id"] == admin.id
+            and r["target"] == admin.email
+            for r in rows
+        )
+
+    def test_register_vault_meninggalkan_audit(self, test_client, db_session):
+        email = f"bb_reg_{uuid.uuid4().hex[:8]}@example.com"
+        r = test_client.post(
+            "/auth/register",
+            json={
+                "nama": "Blackbox Register",
+                "nik": "3524010101990001",
+                "email": email,
+                "password": "password123",
+            },
+        )
+        assert r.status_code == 201, r.text
+        user_id = r.json()["data"]["user_id"]
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        rows = _audit_rows(test_client, token)
+        assert any(
+            x["aksi"] == "akses_pdp_vault"
+            and x["actor_user_id"] == user_id
+            and x["target"] == "encrypt_nik"
+            for x in rows
+        )
+
+    def test_verifikasi_status_sanggahan_teraudit(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        warga = make_user(db_session)
+        sek = make_sekolah(db_session)
+        lap = make_laporan(db_session, warga, sek)
+
+        token = login(test_client, admin.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 200, r.text
+        rows = _audit_rows(test_client, token)
+        assert any(
+            x["aksi"] == "verifikasi_status_sanggahan" and x["target"] == lap.id
+            for x in rows
+        )
+
+    def test_verifikasi_klaster_teraudit(self, test_client, db_session):
+        veri = make_user(db_session, role="verifikator_dinas")
+        admin = make_user(db_session, role="admin")
+        sek = make_sekolah(db_session)
+        kl = make_klaster(db_session, sek)
+
+        token_v = login(test_client, veri.email)
+        r = test_client.put(
+            f"/klaster/{kl.id}/verifikasi",
+            params={"status": "terverifikasi"},
+            headers=auth(token_v),
+        )
+        assert r.status_code == 200, r.text
+
+        token_a = login(test_client, admin.email)
+        rows = _audit_rows(test_client, token_a)
+        assert any(
+            x["aksi"] == "verifikasi_klaster" and x["target"] == kl.id
+            for x in rows
+        )
+
+    def test_override_prioritas_teraudit(self, test_client, db_session):
+        kepala = make_user(db_session, role="kepala_dinas")
+        sek = make_sekolah(db_session)
+        kl = make_klaster(db_session, sek)
+
+        token = login(test_client, kepala.email)
+        r = test_client.put(
+            f"/vote/klaster/{kl.id}/override",
+            params={"urutan_prioritas": 5, "alasan": "darurat banjir"},
+            headers=auth(token),
+        )
+        assert r.status_code == 200, r.text
+        rows = _audit_rows(test_client, token)
+        assert any(
+            x["aksi"] == "override_prioritas" and x["target"] == kl.id
+            for x in rows
+        )
+
+
+class TestStatusPipelineF410:
+    """DBG-004: /ai/status hitung belum_diproses + last_run dari state file."""
+
+    def test_unclustered_hitung_belum_diproses_bukan_null(
+        self, test_client, db_session
+    ):
+        from sqlalchemy import func, select
+
+        from app.models.laporan import Laporan as Lap
+
+        admin = make_user(db_session, role="admin")
+        warga = make_user(db_session)
+        sek = make_sekolah(db_session)
+
+        # Regresi bug lama: noise dengan klaster_id NULL ikut terhitung.
+        lap_noise = make_laporan(db_session, warga, sek)
+        lap_noise.hasil_klasterisasi = "noise"
+        db_session.commit()
+        make_laporan(db_session, warga, sek)  # belum_diproses
+
+        expected = db_session.scalar(
+            select(func.count())
+            .select_from(Lap)
+            .where(Lap.hasil_klasterisasi == "belum_diproses")
+        )
+        total_lap = db_session.scalar(select(func.count()).select_from(Lap))
+
+        token = login(test_client, admin.email)
+        r = test_client.get("/ai/status", headers=auth(token))
+        assert r.status_code == 200
+        data = r.json()["data"]
+        assert data["unclustered_laporan"] == expected
+        # Bukti noise (klaster_id NULL) tidak lagi dihitung:
+        assert data["unclustered_laporan"] <= total_lap - 1
+
+    def test_last_run_dari_state_file(self, test_client, db_session):
+        from app.core.pipeline_state import (
+            STATE_FILE,
+            read_pipeline_run,
+            record_pipeline_run,
+        )
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+
+        # State hilang → fallback string (kontrak FE: last_run selalu string).
+        if STATE_FILE.exists():
+            STATE_FILE.unlink()
+        r = test_client.get("/ai/status", headers=auth(token))
+        assert r.json()["data"]["last_run"] == "N/A (belum pernah tercatat)"
+
+        # State ada → last_run = timestamp nyata + status run.
+        record_pipeline_run("test", "ok", 3, "fixture run")
+        r = test_client.get("/ai/status", headers=auth(token))
+        data = r.json()["data"]
+        assert data["last_run"] == read_pipeline_run()["last_run"]
+        assert data["last_run_status"] == "ok"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. F4.11 — Penanda/isu nyata (DBG-007), koordinat (DBG-009), ingest (DBG-010)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestPenandaIsuKoordinatF411:
+    """DBG-007/009: penanda & isu dari Skor KBM + laporan; koordinat diekspos."""
+
+    def test_sekolah_tanpa_laporan_aman(self, test_client, db_session):
+        sek = make_sekolah(db_session)
+        data = test_client.get(f"/sekolah/{sek.npsn}").json()["data"]
+        assert data["penanda_masalah"] == "aman"
+        assert data["jumlah_isu_aktif"] == 0
+        assert data["lintang"] is None
+
+    def test_laporan_berat_menjadi_kritis_dan_isu(self, test_client, db_session):
+        user = make_user(db_session)
+        sek = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sek)
+        # severity 100 → skor_laporan 100, dapodik 0 → skor_kbm 70 → kritis
+        lap.kondisi_dilaporkan = "rusak_berat"
+        db_session.commit()
+
+        data = test_client.get(f"/sekolah/{sek.npsn}").json()["data"]
+        assert data["penanda_masalah"] == "kritis"
+        assert data["jumlah_isu_aktif"] == 1
+
+    def test_laporan_ditolak_bukan_isu_aktif(self, test_client, db_session):
+        user = make_user(db_session)
+        sek = make_sekolah(db_session)
+        make_laporan(db_session, user, sek)
+        tolak = make_laporan(db_session, user, sek)
+        tolak.status_sanggahan = "ditolak"
+        db_session.commit()
+
+        data = test_client.get(f"/sekolah/{sek.npsn}").json()["data"]
+        assert data["jumlah_isu_aktif"] == 1  # hanya yang non-ditolak
+
+    def test_list_sekolah_sertakan_penanda_dan_isu(self, test_client, db_session):
+        user = make_user(db_session)
+        sek = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sek)
+        lap.kondisi_dilaporkan = "rusak_berat"
+        db_session.commit()
+
+        r = test_client.get("/sekolah", params={"page_size": 100})
+        item = next(x for x in r.json()["data"] if x["npsn"] == sek.npsn)
+        assert item["penanda_masalah"] == "kritis"
+        assert item["jumlah_isu_aktif"] == 1
+
+    def test_koordinat_diekspos_list_dan_detail(self, test_client, db_session):
+        from decimal import Decimal
+
+        sek = make_sekolah(db_session)
+        sek.lintang = Decimal("-7.1173967")
+        sek.bujur = Decimal("112.3937566")
+        db_session.commit()
+
+        data = test_client.get(f"/sekolah/{sek.npsn}").json()["data"]
+        assert data["lintang"] == pytest.approx(-7.1173967)
+        assert data["bujur"] == pytest.approx(112.3937566)
+
+        r = test_client.get("/sekolah", params={"page_size": 100})
+        item = next(x for x in r.json()["data"] if x["npsn"] == sek.npsn)
+        assert item["lintang"] == pytest.approx(-7.1173967)
+        assert item["bujur"] == pytest.approx(112.3937566)
+
+
+class TestIngestDapodikF411:
+    """DBG-010/009: ingest memakai header `nama` (CSV resmi) + koordinat ikut."""
+
+    CSV_UJI = (
+        "npsn,nama,jenjang,status_sekolah,lintang,bujur,alamat_jalan\n"
+        "99111222,SD Ingest CSV Uji,SD,Negeri,-7.1234567,112.4567890,Jl. Uji No. 1\n"
+    )
+
+    def test_ingest_header_nama_resmi_dan_koordinat(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        r = test_client.post(
+            "/ingest/dapodik",
+            files={"file": ("uji.csv", self.CSV_UJI.encode("utf-8"), "text/csv")},
+            headers=auth(token),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["data"]["baris_diproses"] == 1
+        assert r.json()["data"]["baris_gagal"] == 0
+
+        data = test_client.get("/sekolah/99111222").json()["data"]
+        assert data["nama"] == "SD Ingest CSV Uji"  # bukan "Unknown"
+        assert data["lintang"] == pytest.approx(-7.1234567)
+        assert data["bujur"] == pytest.approx(112.4567890)

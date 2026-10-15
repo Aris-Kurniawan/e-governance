@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import deps, pdp
+from app.core.audit import log_audit
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
@@ -37,6 +38,10 @@ def register(
     # Simpan NIK terenkripsi
     pdp.simpan_nik(db, user.id, payload.nik)
 
+    # F4.10 (DBG-005): jejak audit akses PDP Vault (encrypt NIK).
+    log_audit(db, user.id, "akses_pdp_vault", target="encrypt_nik")
+    db.commit()
+
     return {"data": {"user_id": user.id, "status_verifikasi": user.status_verifikasi}}
 
 
@@ -51,7 +56,11 @@ def login(payload: auth_schema.LoginRequest, db: Session = Depends(get_db)):
         {"sub": user.id, "type": "refresh"}, 
         expires_delta=timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS)
     )
-    
+
+    # F4.10 (DBG-005): jejak audit login.
+    log_audit(db, user.id, "login", target=payload.email)
+    db.commit()
+
     return {
         "data": {
             "access_token": access,

@@ -8,6 +8,8 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, RoleChecker
+from app.core.audit import log_audit
+from app.core.pipeline_state import read_pipeline_run, record_pipeline_run
 from app.core.database import get_db
 from app.models.user import User
 from app.models.klaster import Klaster, StatusLog
@@ -32,14 +34,20 @@ require_verifikator = RoleChecker(["verifikator_dinas"])
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_clustering_sync(db: Session, force_reprocess: bool = False):
-    """Inline clustering logic (copied from scripts/run_clustering.py)."""
+    """Inline clustering logic (copied from scripts/run_clustering.py).
+
+    F4.7 (D-21): seleksi memakai `hasil_klasterisasi = 'belum_diproses'`
+    (bukan klaster_id IS NULL) dan noise HDBSCAN (-1) tidak lagi menjadi
+    record Klaster — hanya ditandai 'noise'.
+    """
     if force_reprocess:
         stmt = select(Laporan)
         for lap in db.execute(stmt).scalars():
             lap.klaster_id = None
+            lap.hasil_klasterisasi = "belum_diproses"
         db.commit()
     
-    stmt = select(Laporan).where(Laporan.klaster_id.is_(None))
+    stmt = select(Laporan).where(Laporan.hasil_klasterisasi == "belum_diproses")
     laporan_list = db.execute(stmt).scalars().all()
     
     grouped = {}
@@ -53,6 +61,9 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
     for sekolah_npsn, laps in grouped.items():
         texts = [lap.deskripsi for lap in laps if lap.deskripsi]
         if not texts:
+            # F4.7 fallback aman: tanpa teks tidak bisa pernah di-cluster.
+            for lap in laps:
+                lap.hasil_klasterisasi = "noise"
             continue
         
         result = default_pipeline.run(texts)
@@ -68,14 +79,16 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
                 klaster_map[cluster_id].append(lap)
         
         for cluster_id_int, laps_in_cluster in klaster_map.items():
+            # F4.7 (D-21): noise HDBSCAN (-1) TIDAK lagi jadi record Klaster.
+            if cluster_id_int == -1:
+                for lap in laps_in_cluster:
+                    lap.hasil_klasterisasi = "noise"
+                continue
+
             cluster_id_str = str(cluster_id_int)
             meta = cluster_meta.get(cluster_id_str, {})
             label_teks = meta.get("label_teks", "")
             kategori = meta.get("kategori", "belum_terklasifikasi")
-            
-            if cluster_id_int == -1:
-                label_teks = "Belum Terklasifikasi"
-                kategori = "belum_terklasifikasi"
             
             kondisi_laporan = [
                 {"kondisi_dilaporkan": lap.kondisi_dilaporkan or "baik"}
@@ -116,8 +129,15 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
             
             for lap in laps_in_cluster:
                 lap.klaster_id = klaster.id
+                lap.hasil_klasterisasi = "terklaster"
             
             total_created += 1
+        
+        # F4.7 fallback aman: laporan sekolah ini yang tidak masuk cluster
+        # mana pun (mis. deskripsi kosong) -> tandai noise.
+        for lap in laps:
+            if lap.hasil_klasterisasi == "belum_diproses":
+                lap.hasil_klasterisasi = "noise"
     
     db.commit()
     return total_created
@@ -132,6 +152,7 @@ async def trigger_clustering(
     """F3.8 — Trigger clustering job (manual/fallback)."""
     try:
         total = run_clustering_sync(db, force_reprocess=force_reprocess)
+        record_pipeline_run("api", "ok", total, f"Created {total} klaster")
         return {
             "data": {
                 "klaster_created": total,
@@ -139,6 +160,7 @@ async def trigger_clustering(
             }
         }
     except Exception as e:
+        record_pipeline_run("api", "error", 0, str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -151,18 +173,30 @@ async def get_clustering_status(
     _: User = Depends(require_admin_verifikator),
     db: Session = Depends(get_db),
 ):
-    """F3.9 — Get pipeline status (last run, unclustered count)."""
-    stmt = select(func.count()).select_from(select(Laporan).where(Laporan.klaster_id.is_(None)).subquery())
+    """F3.9 — Get pipeline status (last run, unclustered count).
+
+    F4.10 (DBG-004): `unclustered_laporan` menghitung
+    `hasil_klasterisasi == 'belum_diproses'` (bukan klaster_id IS NULL —
+    itu juga cocok dengan laporan noise sehingga angkanya selalu 398).
+    `last_run` dibaca dari state file (diisi cron script / trigger API).
+    """
+    stmt = select(func.count()).select_from(
+        select(Laporan)
+        .where(Laporan.hasil_klasterisasi == "belum_diproses")
+        .subquery()
+    )
     unclustered = db.scalar(stmt) or 0
-    
+
     stmt_klaster = select(func.count()).select_from(Klaster)
     total_klaster = db.scalar(stmt_klaster) or 0
-    
+
+    state = read_pipeline_run()
     return {
         "data": {
             "unclustered_laporan": unclustered,
             "total_klaster": total_klaster,
-            "last_run": "N/A (no cron log yet)",
+            "last_run": state["last_run"] or "N/A (belum pernah tercatat)",
+            "last_run_status": state["status"],
             "message": "Pipeline status",
         }
     }
@@ -208,6 +242,12 @@ async def list_klaster(
     if kategori:
         stmt = stmt.where(Klaster.kategori == kategori)
         count_stmt = count_stmt.where(Klaster.kategori == kategori)
+    else:
+        # F4.7 (D-21): default menyembunyikan klaster kategori
+        # 'belum_terklasifikasi' (label fallback). Eksplisit
+        # ?kategori=belum_terklasifikasi tetap dilayani (debug/admin).
+        stmt = stmt.where(Klaster.kategori != "belum_terklasifikasi")
+        count_stmt = count_stmt.where(Klaster.kategori != "belum_terklasifikasi")
     if status_verifikasi:
         stmt = stmt.where(Klaster.status_verifikasi == status_verifikasi)
         count_stmt = count_stmt.where(Klaster.status_verifikasi == status_verifikasi)
@@ -307,6 +347,8 @@ async def verify_klaster(
         actor_user_id=current_user.id,
     )
     db.add(status_log)
+    # F4.10 (DBG-005): jejak audit aksi sensitif.
+    log_audit(db, current_user.id, "verifikasi_klaster", target=klaster_id)
     db.commit()
     
     return {
@@ -346,7 +388,14 @@ async def update_status(
     if not klaster:
         raise HTTPException(status_code=404, detail="Klaster tidak ditemukan")
 
-    klaster.status_penanganan = status
+    # Satu endpoint menerima dua keluarga status (INTERFACES.md §7), tapi
+    # tersimpan di dua kolom berbeda. Dulu semua nilai ditulis ke
+    # `status_penanganan` — status verifikasi membuat MySQL menolaknya
+    # (error 1265 Data truncated → 500) karena bukan bagian enum kolom itu.
+    if status in ("menunggu_verifikasi", "perlu_info_tambahan", "tidak_terverifikasi", "terverifikasi"):
+        klaster.status_verifikasi = status
+    else:
+        klaster.status_penanganan = status
     klaster.updated_at = datetime.now()
     db.add(klaster)
     log = StatusLog(

@@ -1275,6 +1275,215 @@ services:
 
 ---
 
+### F4.7 — Klasterisasi Tanpa "Belum Terklasifikasi" + Fallback Laporan ke Admin/Kepala
+
+> ✅ **STATUS: SELESAI (13 Okt 2026).**
+>Hasil verifikasi: pytest **95/95** · migrasi alembic `a7f3c91e5b2d` (head) ·
+>DB `simakis`: klaster **43**, noise **398**, terklaster **202**,
+>`GET /klaster` default **25**, `GET /laporan/perlu-review` **495**.
+>Penyimpangan kecil yang disengaja tercatat di "Hasil implementasi" di bawah.
+
+**Tujuan:** Buang klaster semu `belum_terklasifikasi` dari daftar klaster, dan
+tangani laporan yang tidak ter-cluster secara **manual oleh admin/kepala dinas**
+lewat endpoint fallback (bukan lewat klaster).
+
+**Latar belakang (audit 8 Okt 2026 atas DB `simakis`):**
+
+Pipeline saat ini mengubah label noise HDBSCAN (`-1`) menjadi record `Klaster`
+sungguhan — `scripts/run_clustering.py:109-112` dan trigger manual
+`POST /ai/cluster` (`routers/klaster.py`) sama-sama memakai blok
+`if cluster_id_int == -1:` → `label="Belum Terklasifikasi"`. Ini berasal dari
+**Keputusan #5 Opsi A** (`CHANGELOG.md` §3.3, 23 Sep 2026), yang sekarang
+**digantikan** oleh `DECISIONS.md` D-21.
+
+Kondisi DB saat audit (62 sekolah / 600 laporan / 100 klaster):
+
+| Jenis "belum terklasifikasi" | Klaster | Laporan | Penjelasan |
+|---|---|---|---|
+| (1) Noise HDBSCAN (`-1`) | **57** | **398** | Wadah buangan **per sekolah** (pipeline jalan per sekolah, `min_cluster_size=3`), label persis `"Belum Terklasifikasi"` |
+| (2) Label fallback | **18** | **97** | Klaster **nyata** (anggota 3–8 laporan saling mirip, ada label TF-IDF) tetapi heuristic `labeling.py:98` gagal memetakan keyword ke 5 kategori |
+| **Total kategori `belum_terklasifikasi`** | **75 dari 100** | **495 dari 600 (82,5%)** | |
+| Klaster valid (5 kategori) | 25 | 105 | satu-satunya yang layak ditampilkan |
+
+**Contoh isi laporan tiap jenis:**
+
+| Jenis | Contoh deskripsi |
+|---|---|
+| (1) Noise | "Area parkir kurang cukup dan tidak aman", "Tidak ada jalur khusus untuk siswa disabilitas" — laporan valid, tapi di ruang vektor sekolahnya berdiri sendiri |
+| (2) Label fallback | "patah persen dari 50 komputer" (seharusnya `utilitas`), "area berbahaya di layak bermain" (seharusnya `penunjang`) — clustering-nya **berhasil**, hanya penerjemahan kategorinya bolong |
+
+**Mengapa konsisten dengan ablation study:** di `experiments/evaluation.py`,
+noise (`-1`) **dikecualikan** dari NMI/ARI/purity (`valid_mask = y_pred != -1`)
+dan **tidak dihitung sebagai klaster** (`n_clusters = len(set(labels)) - (1 if -1 in labels else 0)`); hanya dilaporkan sebagai `noise_ratio` terpisah (mis. 35,6% di run terbaik putaran 1). Jadi **pipeline produksi menyimpang dari metodologi ablation** — langkah ini menyelaraskannya.
+
+**Keputusan (Aris, 8 Okt 2026):**
+
+| # | Keputusan |
+|---|---|
+| 1 | 57 klaster noise → **record klaster dihapus**, 398 laporan **tidak dihapus** (ditandai tidak-ter-cluster) |
+| 2 | 18 klaster label-fallback → **disembunyikan dari daftar klaster**, record & 97 laporan **dipertahankan**; laporannya ikut tampil di endpoint fallback untuk verifikasi manual |
+| 3 | Scope v1 = **backend/endpoint saja**; penempatan UI dibahas dengan Dimas setelah kontrak stabil |
+| 4 | Sekalian menyediakan **aksi verifikasi manual per laporan** |
+| 5 | RBAC endpoint fallback: **`admin` + `kepala_dinas`** saja (verifikator & warga tidak) |
+
+**Hasil akhir yang diharapkan:** 43 klaster (25 tampil + 18 tersembunyi), 600
+laporan utuh (398 `noise` + 97 di klaster tersembunyi + 105 di klaster valid),
+endpoint fallback berisi **495 laporan**.
+
+---
+
+#### Langkah Implementasi
+
+| # | Langkah | File |
+|---|---|---|
+| 1 | **Migrasi data + kolom anti-loop** | `alembic/versions/<rev>_add_hasil_klasterisasi.py`, `app/models/laporan.py` |
+| 2 | **Noise tidak lagi jadi Klaster** (2 lokasi, kode duplikat) | `scripts/run_clustering.py`, `app/routers/klaster.py` (trigger `POST /ai/cluster`) |
+| 3 | **Daftar klaster bersih** (filter default) | `app/routers/klaster.py` (`GET /klaster`) |
+| 4 | **2 endpoint fallback + verifikasi manual** | `app/routers/laporan.py` |
+| 5 | **Dokumentasi kontrak & keputusan** | `docs/universal/INTERFACES.md` §2, `docs/universal/DECISIONS.md` D-21 |
+| 6 | **Test** | `backend/tests/test_blackbox.py` (+ pytest existing) |
+| 7 | **Regenerate dump DB untuk rekan** | `database/simakis.sql`, `docs/backend/SETUP.md` §5a |
+
+**1. Migrasi (satu file, MySQL-only untuk bagian DML):**
+
+- Kolom baru `laporan.hasil_klasterisasi` ENUM(`belum_diproses`, `terklaster`, `noise`) DEFAULT `belum_diproses`.
+  **Wajib**, bukan opsional: tanpa penanda ini, laporan noise (`klaster_id = NULL`) akan diambil lagi oleh cron 02:00 besok → re-clustering → noise lagi → loop.
+- Backfill berurutan (penting karena FK `laporan.klaster_id → klaster.id` default `RESTRICT`):
+  1. `UPDATE laporan SET hasil_klasterisasi='noise', klaster_id=NULL WHERE klaster_id IN (SELECT id FROM klaster WHERE label='Belum Terklasifikasi')`
+  2. `DELETE FROM klaster WHERE label='Belum Terklasifikasi'` (aman — sudah dicek: `status_log` & `vote` 0 referensi ke klaster noise)
+  3. `UPDATE laporan SET hasil_klasterisasi='terklaster' WHERE klaster_id IS NOT NULL` (sisa 202 laporan)
+
+**2. Pipeline (`run_clustering.py` + trigger manual — kodenya duplikat):**
+
+- Query selection cron berubah dari `klaster_id IS NULL` → `hasil_klasterisasi = 'belum_diproses'`.
+- `cluster_id == -1` → **lewati pembuatan record Klaster**, tandai laporan `hasil_klasterisasi='noise'` (`klaster_id` tetap `NULL`).
+- Klaster valid → buat record Klaster seperti sekarang, tandai `'terklaster'`.
+- **Edge case 1 teks** (`app/ai_pipeline/pipeline.py:64-73`, sekolah hanya punya 1 laporan → dipaksa `cluster 0` kategori `belum_terklasifikasi`) **sengaja tidak diubah**: klasternya otomatis tersembunyi oleh filter langkah 3, dan laporannya tetap muncul di endpoint fallback lewat join `klaster.kategori`. Konsisten tanpa menyentuh `test_ai_pipeline.py`.
+
+**3. `GET /klaster` (daftar):**
+
+- Default: `WHERE kategori <> 'belum_terklasifikasi'` → 18 klaster tersebut disembunyikan.
+- `?kategori=belum_terklasifikasi` **eksplisit tetap dilayani** (alat debug/admin).
+- `GET /klaster/{id}` detail **tidak diubah** — akses langsung by-ID tetap bisa (fallback view mungkin perlu menautkan ke sana).
+
+**4. Dua endpoint baru (`app/routers/laporan.py`, RBAC `admin` + `kepala_dinas`):**
+
+| Endpoint | Fungsi |
+|---|---|
+| `GET /laporan/perlu-review` | Daftar laporan yang perlu verifikasi manual: `laporan.klaster_id IS NULL` (398 noise) **ATAU** `klaster.kategori = 'belum_terklasifikasi'` (97) → **495 laporan**. Response amplop `{data, meta}` (§0.2) + info klaster (id/label) bila ada, pagination |
+| `PUT /laporan/{laporan_id}/status` | Body `{status: menunggu \| divalidasi \| ditolak}` → update `status_sanggahan` (**kolom existing, tanpa kolom baru** — field ini sudah diperlakukan sebagai "status review laporan" di `RiwayatLaporan.tsx`; "Tervalidasi" yang dilihat warga = hasil review admin) |
+
+**Keterbatasan v1:** `PUT /laporan/{id}/status` **belum punya field alasan** — `status_log` terikat klaster (FK `NOT NULL`), tidak ada tempat menyimpan alasan tanpa kolom baru. Kalau alasan dibutuhkan, itu task terpisah (butuh kolom `catatan_verifikasi` + kontrak).
+
+---
+
+#### Verifikasi (wajib sebelum menyatakan selesai)
+
+- `pytest` — existing 88/88 + test baru: filter `GET /klaster` (tidak ada kategori `belum_terklasifikasi` di default list), RBAC 403 untuk anon/warga/verifikator di kedua endpoint baru, `PUT status` valid & invalid.
+- Cek DB `simakis`: `klaster` = 43, `GET /klaster` (tanpa filter) = 25, `GET /laporan/perlu-review` = 495, `laporan.hasil_klasterisasi` noise = 398.
+- Cron query tidak boleh menyentuh laporan `noise` (cek manual query/`EXPLAIN`).
+- `database/simakis.sql` + tabel count di `SETUP.md` §5a diregenerate (dump lama berisi 100 klaster).
+
+#### Hasil implementasi (13 Okt 2026)
+
+- File: migrasi `alembic/versions/a7f3c91e5b2d_add_hasil_klasterisasi.py`,
+  `app/models/laporan.py`, `scripts/run_clustering.py`,
+  `app/routers/klaster.py`, `app/routers/laporan.py`,
+  `tests/test_blackbox.py` (+7 test → 95 total).
+- Penyimpangan kecil yang disengaja:
+  1. `PUT /laporan/{id}/status` merespons `{id, tracking_id, status_sanggahan}`
+     — **tanpa `updated_at`** karena model `Laporan` tidak punya kolom itu
+     (menambah kolom di luar scope "tanpa kolom baru").
+  2. Validasi enum `status` dilakukan manual di endpoint (`HTTPException 422`),
+     bukan Pydantic `Literal` — handler global `RequestValidationError`
+     (`main.py`) mengubah error validasi Pydantic menjadi `400`.
+  3. `POST /ai/cluster?force_reprocess=true` ikut mereset
+     `hasil_klasterisasi` → `belum_diproses` (tanpa ini seleksi baru
+     menganggap semua laporan sudah diproses dan reprocess jadi no-op).
+  4. Laporan tanpa teks ikut ditandai `noise` (fallback aman) supaya tidak
+     dipilih cron berulang tiap hari.
+- Anti-loop terverifikasi atas DB live: `python scripts/run_clustering.py`
+  → `No unclustered laporan. Exiting.` (0 baris dipilih).
+
+#### Risiko & catatan untuk FE (briefing Dimas)
+
+1. **Angka FE berubah otomatis** karena memakai `GET /klaster`: "100 klaster" → **25** (DashboardWilayah, TabelVerifikasi, AntrianValidasi, peta sebaran). Ini memang tujuan perubahan, tapi perlu dibriefing.
+2. Klaster noise hilang permanen dari DB — 398 laporan hanya bisa dibaca lewat endpoint fallback, tidak lagi punya `klaster_id`.
+3. Issue **terpisah** (bukan scope F4.7): kualitas labeling D1 — label unigram tercemar stopword ("dan tidak hancur sudah sejak") dan keyword mapping yang bolong (penyebab 18 klaster jenis 2). Perbaikan keyword mapping akan mengubah kategori 18 klaster itu — putuskan setelah F4.7 selesai.
+
+**Estimasi Waktu:** 1 hari (backend + test + docs + regenerate dump)
+
+**Ketergantungan:** F4.7 → FE (tab/halaman fallback menyusul, Dimas)
+
+---
+### F4.8 — Skor Dampak KBM per Sekolah (D-22)
+
+> ✅ **STATUS: SELESAI (13 Okt 2026).**
+> Hasil verifikasi: pytest **98/98** · `GET /laporan/skor-kbm` live 200 (62 sekolah,
+> rata-rata **44.4**, kritis **1**) · `npx tsc --noEmit` bersih · `npm run build` sukses ·
+> Playwright smoke `/dinas/skor-kbm` — 62 baris tabel, 0 console error.
+
+**Formula (D-22):**
+`skor_kbm = 0.7 × AVG(severity laporan warga) + 0.3 × Σ(weight × kondisi_rusak Dapodik) / Σ(jumlah Dapodik)`, skala 0–100 (1 desimal).
+Weight: `baik=0`, `rusak_ringan=33`, `rusak_sedang=66`, `rusak_berat=100`.
+Level: `≥70 kritis` · `50–69 tinggi` · `40–49 sedang` · `<40 rendah`.
+
+**Implementasi backend:**
+- `app/ai_pipeline/scoring.py`: `SEVERITY_MAP`, `calculate_kbm_score(kondisi_laporan, kondisi_dapodik)`, `kbm_level(skor)`.
+- `app/routers/laporan.py`: `GET /laporan/skor-kbm` (dideklarasi **sebelum** `/{laporan_id}`), RBAC
+  `admin | verifikator_dinas | kepala_dinas` (asumsi — dapat dibatalkan pemilik proyek).
+- Tidak ada migrasi DB — semua dihitung on-the-fly dari `laporan` + `kondisi_sarana`.
+- `total_laporan` menghitung **semua** baris termasuk `kondisi IS NULL` (dihitung in-memory).
+
+**Implementasi FE (ganti widget palsu di `LaporanSkorKbm.tsx`):**
+
+| Widget lama (palsu) | Widget baru (live) |
+|---|---|
+| KPI "Siswa terdampak" | "Ruang rusak berat (Dapodik)" = 129 |
+| KPI "Jam hilang" | "Total laporan warga" = 600 |
+| Tren bulanan (AreaTrendChart) | Distribusi Kondisi Laporan (HorizontalBarChart: 154/147/145/154) |
+| Badge "NAIK 12%" | dihapus |
+| Badge "+29 poin" | dihapus |
+| `<select>` semester | chip statis "Data per Oktober 2026" |
+| Tabel 4 kolom palsu | 62 baris: SEKOLAH/NPSN · LEVEL · SKOR KBM · LAPORAN · RUSAK BERAT · RINCIAN |
+| Chart kanan kategori palsu | "Rusak Berat per Jenis Fasilitas" (7 nama_ruang, total 129) |
+| Footer "SIMAKIS-AI v2 … jadwal aktif" | jujur: "70% severity laporan warga + 30% kondisi sarpras Dapodik" |
+
+**Ketergantungan:** F4.1 (halaman) + F4.7 (data laporan bersih) → selesai.
+
+---
+
+### F4.9 — Fix Enum `klaster.kategori` Drift (belum_terklasifikasi)
+
+> ✅ **STATUS: SELESAI (14 Okt 2026).**
+> Hasil verifikasi: fresh-install `alembic upgrade head` dari nol → enum 6 nilai ✅ ·
+> DB live no-op idempoten, 18 klaster utuh · pytest **98/98** ·
+> `scripts/verify_schema_parity.py` (baru) → PARITY OK, uji negatif menangkap drift ✅ ·
+> dump diregen (alembic `d3cb7888ff94`, diff 2 baris) + impor-verified.
+
+**Masalah:** revisi `8cca6e1b2fa3` hanya membuat ENUM5 nilai (tanpa
+`belum_terklasifikasi`), padahal `KATEGORI_ENUM` (model) = 6 nilai dan pipeline
+menulis kategori itu. DB live sudah 6 nilai (diubah di luar alembic) sehingga
+selisih tak terlihat — sampai ada fresh install ikuti SETUP.md §5 → insert 18
+klaster label-fallback gagal (MySQL 1265/1366).
+
+**Fix:** migrasi baru `d3cb7888ff94` (turunan `a7f3c91e5b2d`) — guard non-MySQL
+(SQLite test), guard idempoten via `information_schema` (enum sudah 6 nilai →
+skip), hanya `ALTER ... MODIFY` menambah value di akhir daftar (aman untuk data
+existing). `downgrade()` mengembalikan 5 nilai + peringatan backfill dulu.
+Revisi lama sengaja TIDAK diedit (sudah tercatat applied di DB live — tak akan
+dieksekusi ulang).
+
+**Guard pencegahan:** `backend/scripts/verify_schema_parity.py` — membandingkan
+**94 kolom model** (termasuk 14 ENUM) vs `information_schema`; mode default
+menguji jalur produksi sungguhan (fresh DB → `alembic upgrade head`), `--db <url>`
+membandingkan DB yang sudah ada. Exit 1 bila drift. Terdaftar di SETUP.md §5.
+
+**Ketergantungan:** perbaikan independen; memperkuat jalur deploy F4.6 (Docker
+Compose) & SETUP.md §5.
+
+---
+
 ## Dependencies antar Task
 
 ```
@@ -1287,6 +1496,7 @@ F2.9 → F2.11-2.14 (model laporan)
 F3.1-3.5 → F3.8-3.10 (AI pipeline harus jalan dulu)
 F3.11 → F3.12-3.14 (model vote)
 F3.16 → F3.17-3.18 (model status_log)
+F4.7 → FE (halaman fallback laporan perlu-review, Dimas)
 ```
 
 ---

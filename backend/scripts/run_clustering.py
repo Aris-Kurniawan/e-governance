@@ -24,15 +24,21 @@ from app.models.klaster import Klaster
 from app.models.sekolah import Sekolah
 from app.ai_pipeline.pipeline import default_pipeline
 from app.ai_pipeline.scoring import calculate_priority_score
+from app.core.pipeline_state import record_pipeline_run
 
 
 def get_unclustered_laporan_by_school(db: Session) -> dict[str, list[Laporan]]:
     """
-    Group unclustered laporan (klaster_id IS NULL) by sekolah_npsn.
-    
+    Group laporan yang BELUM diproses (hasil_klasterisasi = 'belum_diproses')
+    by sekolah_npsn.
+
+    F4.7 (D-21): kolom hasil_klasterisasi menggantikan klaster_id IS NULL
+    sebagai penanda seleksi — klaster_id IS NULL juga cocok dengan laporan
+    noise yang sudah diproses, sehingga cron akan me-recluster noise tiap hari.
+
     Returns: { sekolah_npsn: [Laporan, ...], ... }
     """
-    stmt = select(Laporan).where(Laporan.klaster_id.is_(None))
+    stmt = select(Laporan).where(Laporan.hasil_klasterisasi == "belum_diproses")
     laporan_list = db.execute(stmt).scalars().all()
     
     grouped = {}
@@ -54,6 +60,7 @@ def run_clustering_job():
     db = SessionLocal()
     start_time = datetime.now()
     total_klaster_created = 0
+    total_noise = 0
     
     try:
         print(f"[{start_time}] Starting clustering job...")
@@ -62,6 +69,7 @@ def run_clustering_job():
         
         if not grouped:
             print(f"[{datetime.now()}] No unclustered laporan. Exiting.")
+            record_pipeline_run("script", "ok", 0, "Tidak ada laporan belum_diproses")
             return
         
         total_laporan = sum(len(laps) for laps in grouped.values())
@@ -77,7 +85,13 @@ def run_clustering_job():
             texts = [t for _, t in texts_with_idx]
             
             if not texts:
-                print(f"  ⚠️  No valid text to cluster for {sekolah_npsn}. Skipping.")
+                # Fallback aman (F4.7): tanpa teks tidak bisa pernah
+                # di-cluster — tandai noise supaya tidak dipilih lagi cron.
+                print(f"  ⚠️  No valid text to cluster for {sekolah_npsn}. Marking as noise.")
+                for lap in laporan_list:
+                    lap.hasil_klasterisasi = "noise"
+                    total_noise += 1
+                db.commit()
                 continue
             
             # Run pipeline
@@ -101,15 +115,20 @@ def run_clustering_job():
                 
                 # Create Klaster records
                 for cluster_id_int, laps_in_cluster in klaster_map.items():
+                    # F4.7 (D-21): noise HDBSCAN (-1) TIDAK lagi jadi record
+                    # Klaster. Laporannya ditandai 'noise' (klaster_id tetap
+                    # NULL) supaya cron berikutnya tidak memilihnya lagi.
+                    if cluster_id_int == -1:
+                        for lap in laps_in_cluster:
+                            lap.hasil_klasterisasi = "noise"
+                        total_noise += len(laps_in_cluster)
+                        print(f"  · {len(laps_in_cluster)} laporan noise (tanpa record klaster)")
+                        continue
+
                     cluster_id_str = str(cluster_id_int)
                     meta = cluster_meta.get(cluster_id_str, {})
                     label_teks = meta.get("label_teks", "")
                     kategori = meta.get("kategori", "belum_terklasifikasi")
-                    
-                    # Handle noise cluster (-1)
-                    if cluster_id_int == -1:
-                        label_teks = "Belum Terklasifikasi"
-                        kategori = "belum_terklasifikasi"
                     
                     # Calculate scores
                     kondisi_laporan = [
@@ -157,9 +176,17 @@ def run_clustering_job():
                     # Update laporan.klaster_id
                     for lap in laps_in_cluster:
                         lap.klaster_id = klaster.id
+                        lap.hasil_klasterisasi = "terklaster"
                     
                     total_klaster_created += 1
                     print(f"  ✓ Created klaster {klaster.id}: {kategori} ({len(laps_in_cluster)} laporan)")
+                
+                # F4.7 fallback aman: laporan sekolah ini yang tidak masuk
+                # cluster mana pun (mis. deskripsi kosong) -> tandai noise.
+                for lap in laporan_list:
+                    if lap.hasil_klasterisasi == "belum_diproses":
+                        lap.hasil_klasterisasi = "noise"
+                        total_noise += 1
                 
                 # FIX (Factor 1): Commit per sekolah — rollback only affects this school
                 db.commit()
@@ -171,10 +198,15 @@ def run_clustering_job():
         
         elapsed = (datetime.now() - start_time).total_seconds()
         print(f"\n[{datetime.now()}] ✓ Clustering job complete!")
-        print(f"  Created {total_klaster_created} klaster in {elapsed:.1f}s")
+        print(f"  Created {total_klaster_created} klaster, {total_noise} laporan noise in {elapsed:.1f}s")
+        record_pipeline_run(
+            "script", "ok", total_klaster_created,
+            f"Created {total_klaster_created} klaster, {total_noise} noise",
+        )
         
     except Exception as e:
         print(f"[{datetime.now()}] ✗ Job failed: {e}")
+        record_pipeline_run("script", "error", 0, str(e))
         db.rollback()
         raise
     finally:

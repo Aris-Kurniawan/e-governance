@@ -69,6 +69,7 @@ mode cursor/infinite-scroll di API ini.
 | `NOT_FOUND` | 404 | Resource tidak ditemukan |
 | `ALREADY_VOTED` | 409 | Vote dobel pada klaster yang sama |
 | `REASON_REQUIRED` | 422 | Field alasan wajib tidak diisi (lihat `PAGE_STATES.md` §C1) |
+| `UNPROCESSABLE_ENTITY` | 422 | Body di luar enum validasi (mis. `PUT /laporan/{id}/status`, F4.11) |
 | `INTERNAL_ERROR` | 500 | Kegagalan tak terduga |
 
 ### 0.4 Role (dipakai di field `role` dan enforcement RBAC)
@@ -137,9 +138,7 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
       "alamat": "string",
       "jenjang": "SD | SMP | SMA | SMK",
       "jumlah_isu_aktif": 0,
-      "penanda_masalah": "aman | perlu_perhatian | kritis",
-      "lintang": -7.1192083,
-      "bujur": 112.4181
+      "penanda_masalah": "aman | perlu_perhatian | kritis"
     }
   ],
   "meta": { "page": 1, "page_size": 20, "total_items": 0, "total_pages": 0 }
@@ -155,9 +154,11 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
     "alamat": "string",
     "jenjang": "string",
     "status_sekolah": "Negeri | Swasta",
+    "lintang": -7.1173967,
+    "bujur": 112.3937566,
     "akreditasi": "string | null",
     "nama_kepsek": "string | null",
-    "jumlah_isu_aktif": 0,
+    "jumlah_isu_aktif": 12,
     "penanda_masalah": "aman | perlu_perhatian | kritis",
     "lintang": -7.1192083,
     "bujur": 112.4181,
@@ -213,11 +214,6 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
 - `ada_sanggahan` pada setiap item `kondisi_sarana` **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di contoh response. Endpoint untuk menghitung ada sanggahan tersedia di `GET /sekolah/{npsn}/sanggahan`.
 - `penanda_masalah` di response saat ini mengembalikan `"normal"` (bukan `aman | perlu_perhatian | kritis` seperti di kontrak). Nilai threshold dan logika perhitungan belum diputuskan — lihat `INTERFACES.md` §11.
 - `jumlah_isu_aktif` saat ini selalu `0` — belum dihitung oleh backend.
-- `lintang`/`bujur` (koordinat sekolah, WGS84) **dikirim pada list & detail** —
-  sumbernya data Dapodik (diisi Oktober 2026 untuk 59 dari 62 sekolah Kec.
-  Lamongan). `null` = sekolah tidak punya koordinat di Dapodik — **FE tidak
-  boleh membuat titik/pseudo-koordinat rekaan** untuk nilai null (lihat
-  AGENTS.md §Scope: angka placeholder bukan data valid).
 - **Field berikut dikirim dengan nilai default (null/0) dan tidak dirender di frontend v1** karena data Dapodik tidak di-ingest per scope infrastruktur-only:
   - `rasio_guru_siswa` → `null`
   - `rasio_spm_terpenuhi` → `false`
@@ -268,7 +264,7 @@ Dapodik).
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
 | GET | `/dashboard/prioritas` | Publik | List klaster urut skor prioritas (opsional `?status=&limit=`) |
-| GET | `/dashboard/wilayah` | `verifikator_dinas`, `kepala_dinas` | Ringkasan kondisi wilayah |
+| GET | `/dashboard/wilayah` | `admin`, `verifikator_dinas`, `kepala_dinas` | Ringkasan kondisi wilayah (F4.11: `admin` dulu 403) |
 
 response `200`:
 ```json
@@ -296,6 +292,9 @@ response `200`:
 | GET | `/laporan/riwayat` | `warga_terverifikasi`, `komite_sekolah` | Riwayat laporan milik sendiri |
 | GET | `/laporan/{id}` | Pemilik laporan, `verifikator_dinas`, `kepala_dinas` | Detail satu laporan |
 | POST | `/upload/laporan?laporan_id={id}` | Pemilik laporan | Upload foto bukti (`multipart/form-data`, field `file` — lihat §10) |
+| GET | `/laporan/perlu-review` | `admin`, `kepala_dinas` | Daftar laporan perlu verifikasi manual (F4.7/D-21): tanpa klaster **ATAU** klaster kategori `belum_terklasifikasi` — envelope `{data, meta}` §0.2 (`page`, `page_size` default 20 maks 100) |
+| PUT | `/laporan/{id}/status` | `admin`, `kepala_dinas` | Update `status_sanggahan` — verifikasi manual per laporan (F4.7/D-21) |
+| GET | `/laporan/skor-kbm` | `admin`, `verifikator_dinas`, `kepala_dinas` | Skor dampak KBM per sekolah (F4.8/D-22) — seluruh 62 sekolah, diurutkan skor DESC |
 
 **`POST /laporan`** — request:
 ```json
@@ -318,18 +317,93 @@ response `201`:
 }
 ```
 
+**`GET /laporan/perlu-review`** — response `200` (F4.7, D-21):
+```json
+{
+  "data": [
+    {
+      "id": "string",
+      "tracking_id": "string",
+      "sekolah_npsn": "string",
+      "sekolah_nama": "string | null",
+      "fasilitas_terkait": "string | null",
+      "kondisi_dilaporkan": "baik | rusak_ringan | rusak_sedang | rusak_berat | null",
+      "deskripsi": "string",
+      "status_sanggahan": "menunggu | divalidasi | ditolak",
+      "created_at": "ISO8601",
+      "klaster": { "id": "string", "label": "string | null", "kategori": "string" } | null
+    }
+  ],
+  "meta": { "page": 1, "page_size": 20, "total_items": 0, "total_pages": 0 }
+}
+```
+Seleksi: `laporan.klaster_id IS NULL` (laporan noise, 398) **ATAU**
+`klaster.kategori = 'belum_terklasifikasi'` (klaster label-fallback, 97) → **495 laporan**.
+`klaster: null` bila laporan tidak punya klaster (noise).
+
+**`PUT /laporan/{id}/status`** — request body (F4.7, D-21):
+```json
+{ "status": "menunggu | divalidasi | ditolak" }
+```
+- `status` di luar enum → `422 UNPROCESSABLE_ENTITY`
+- Laporan tidak ada → `404 NOT_FOUND`
+- Tanpa token → `401`; role selain `admin` / `kepala_dinas` → `403`
+
+response `200`:
+```json
+{ "data": { "id": "string", "tracking_id": "string", "status_sanggahan": "string" } }
+```
+Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster — butuh kolom baru, task terpisah).
+
+
+**`GET /laporan/skor-kbm`** — response `200` (F4.8, D-22):
+```json
+{
+  "data": {
+    "ringkasan": {
+      "rata_rata_skor": 44.4,
+      "sekolah_kritis": 1,
+      "total_laporan": 600,
+      "ruang_rusak_berat": 129,
+      "distribusi_kondisi": { "baik": 154, "rusak_ringan": 147, "rusak_sedang": 145, "rusak_berat": 154 },
+      "dampak_per_jenis_ruang": [
+        { "nama_ruang": "ruang_kelas", "rusak_berat": 77, "jumlah": 769 }
+      ]
+    },
+    "sekolah": [
+      {
+        "npsn": "20506507",
+        "nama": "SD NEGERI 2 SENDANGREJO",
+        "skor_kbm": 76.4,
+        "level": "kritis",
+        "skor_laporan": 66.3,
+        "skor_dapodik": 100.0,
+        "jumlah_laporan": 3,
+        "laporan_rusak_berat": 1
+      }
+    ]
+  }
+}
+```
+- `skor_kbm` = `0.7×AVG(severity laporan)` + `0.3×Σ(weight×kondisi_rusak)/Σ(jumlah Dapodik)`, skala 0–100, 1 desimal.
+  Weight kondisi: `baik=0`, `rusak_ringan=33`, `rusak_sedang=66`, `rusak_berat=100`.
+- `level`: `≥70 kritis` · `50–69 tinggi` · `40–49 sedang` · `<40 rendah`.
+- `total_laporan` menghitung **semua** baris laporan termasuk `kondisi_dilaporkan IS NULL`.
+- `dampak_per_jenis_ruang` diurutkan `rusak_berat` DESC; `nama_ruang` nilai mentah Dapodik (bukan label tampilan).
+- `sekolah` seluruh 62 sekolah, diurutkan `skor_kbm` DESC. Tanpa token → `401`; role selain `admin` / `verifikator_dinas` / `kepala_dinas` → `403`.
+
 ---
 
 ## 5. Klasterisasi Isu — FEAT-004 (`/klaster`, `/ai`)
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
-| GET | `/klaster` | Publik | List klaster (filter `?sekolah_npsn=&kategori=&status_verifikasi=&page=&page_size=`) |
+| GET | `/klaster` | Publik | List klaster (filter `?sekolah_npsn=&kategori=&status_verifikasi=&page=&page_size=`) — default **tanpa** kategori `belum_terklasifikasi` (F4.7) |
 | GET | `/klaster/{id}` | Publik | Detail klaster + daftar laporan anggota |
 | PUT | `/klaster/{id}/verifikasi` | `verifikator_dinas` | Tetapkan hasil verifikasi (param **query**: `status`, `alasan`) |
 | GET | `/klaster/{id}/riwayat` | Publik | Riwayat status (append-only) — lihat §7 |
 | POST | `/ai/cluster` | `admin`, `verifikator_dinas` | Trigger clustering manual (`?force_reprocess=true` opsional) |
-| GET | `/ai/status` | `admin`, `verifikator_dinas` | Status pipeline (jumlah laporan belum terklaster, total klaster) |
+| GET | `/ai/status` | `admin`, `verifikator_dinas` | Status pipeline — `unclustered_laporan` = jumlah `hasil_klasterisasi='belum_diproses'`, `total_klaster`, `last_run` + `last_run_status` dari run terakhir (F4.10) |
 
 **`GET /klaster`** — response `200`:
 ```json
@@ -352,6 +426,13 @@ response `201`:
 }
 ```
 Urut `skor_prioritas` descending (null di akhir). `page_size` maks 100.
+
+F4.7 (D-21): default **menyembunyikan** klaster kategori `belum_terklasifikasi`
+(18 klaster label-fallback; total 43 klaster → 25 tampil). Parameter
+`?kategori=belum_terklasifikasi` **eksplisit tetap dilayani** (debug/admin), dan
+`GET /klaster/{id}` tidak berubah — akses by-ID tetap bisa. Klaster noise HDBSCAN
+tidak lagi dibuat sebagai record; 398 laporan noise (tanpa `klaster_id`) hanya
+dibaca lewat `GET /laporan/perlu-review` (§4).
 
 **`GET /klaster/{id}`** — response `200`:
 ```json
@@ -564,9 +645,6 @@ diimplementasikan sampai ada keputusan lanjutan.
 - **Masa tunda verifikasi vote** (`DECISIONS.md` D-08) — durasinya belum
   ditentukan (berapa hari/jam sebelum status berubah dari `pending` ke
   `terhitung`).
-- **Format `penanda_masalah`** di `GET /sekolah` (§2) — nilai
-  `aman/perlu_perhatian/kritis` masih tebakan, ambang batasnya belum
-  ditentukan dari data Dapodik.
 - **Rate limit spesifik** untuk anti-buzzer (`DECISIONS.md` D-08) — belum
   ada angka konkret (berapa vote/menit dianggap mencurigakan).
 - Endpoint ini belum dicoba terhadap `backend/app/dataset/scraping/` yang

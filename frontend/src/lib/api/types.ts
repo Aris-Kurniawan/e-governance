@@ -86,10 +86,10 @@ export interface UserMe {
 export type Jenjang = "SD" | "SMP" | "SMA" | "SMK";
 
 /**
- * `penanda_masalah`: backend v1 selalu mengirim `"normal"`
- * (lihat AGENTS.md "Scope FINAL"). Nilai `aman`/`perlu_perhatian`/`kritis`
- * ada di kontrak §2 tetapi belum dihitung backend — FE harus tetap
- * menangani keduanya.
+ * `penanda_masalah` — INTERFACES §2: `aman | perlu_perhatian | kritis`.
+ * Sejak F4.11 (D-23) backend menghitungnya dari level Skor KBM
+ * (≥70 `kritis`, 40–69 `perlu_perhatian`, <40 `aman`); `"normal"` adalah
+ * nilai legacy backend v1 yang tetap ditangani untuk kompatibilitas.
  */
 export type PenandaMasalah = "normal" | "aman" | "perlu_perhatian" | "kritis";
 
@@ -322,11 +322,48 @@ export interface DashboardPrioritasItem {
   badge: string | null;
 }
 
+export interface DashboardWilayahKlaster {
+  klaster_id: string;
+  sekolah_nama: string;
+  skor_prioritas: number;
+}
+
+export interface SekolahIsuTerbanyak {
+  npsn: string;
+  nama: string;
+  jumlah_isu: number;
+}
+
+/**
+ * `GET /dashboard/wilayah` — bentuk mengikuti INTERFACES.md §3 (sudah
+ * disinkronkan di F4.5) dan implementasi backend `routers/dashboard.py`.
+ * PERHATIAN: versi lama tipe ini memakai `klaster_aktif` +
+ * `sekolah_dengan_isu_terbanyak` + item `DashboardPrioritasItem[]` yang
+ * tidak pernah dikirim backend (lihat CHANGELOG F4.1 "Deviasi Kontrak").
+ */
 export interface DashboardWilayah {
   jumlah_sekolah: number;
-  klaster_aktif: number;
-  klaster_prioritas: DashboardPrioritasItem[];
-  sekolah_dengan_isu_terbanyak: unknown[];
+  jumlah_klaster_aktif: number;
+  klaster_prioritas: DashboardWilayahKlaster[];
+  sekolah_isu_terbanyak: SekolahIsuTerbanyak[];
+}
+
+/**
+ * `GET /audit/log` (INTERFACES.md §9).
+ *
+ * Deviasi kontrak: dokumen menetapkan `actor_role`, backend mengirim
+ * `actor_user_id` (ID, bukan nama peran). Keduanya opsional di sini supaya
+ * FE tetap bisa merender apa pun yang dikirim server; `target` menggantikan
+ * `objek_tipe`/`objek_id` dan `timestamp` menggantikan `created_at`.
+ */
+export interface AuditLogEntry {
+  audit_id: string;
+  aksi: string;
+  /** Deviasi: backend mengirim ID aktór, kontrak menyebut `actor_role`. */
+  actor_user_id?: string | null;
+  actor_role?: string | null;
+  target: string | null;
+  timestamp: string | null;
 }
 
 export interface AiStatus {
@@ -334,4 +371,45 @@ export interface AiStatus {
   total_klaster: number;
   last_run: string;
   message: string;
+}
+// ── F4.8 (D-22) — Skor dampak KBM per sekolah ───────────────────────────────
+
+export type LevelKbm = "kritis" | "tinggi" | "sedang" | "rendah";
+
+export interface DistribusiKondisi {
+  baik: number;
+  rusak_ringan: number;
+  rusak_sedang: number;
+  rusak_berat: number;
+}
+
+export interface JenisRuangRusak {
+  nama_ruang: string;
+  rusak_berat: number;
+  jumlah: number;
+}
+
+export interface SkorKbmRingkasan {
+  rata_rata_skor: number;
+  sekolah_kritis: number;
+  total_laporan: number;
+  ruang_rusak_berat: number;
+  distribusi_kondisi: DistribusiKondisi;
+  dampak_per_jenis_ruang: JenisRuangRusak[];
+}
+
+export interface SkorKbmSekolah {
+  npsn: string;
+  nama: string;
+  skor_kbm: number;
+  level: LevelKbm;
+  skor_laporan: number;
+  skor_dapodik: number;
+  jumlah_laporan: number;
+  laporan_rusak_berat: number;
+}
+
+export interface SkorKbmData {
+  ringkasan: SkorKbmRingkasan;
+  sekolah: SkorKbmSekolah[];
 }

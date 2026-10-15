@@ -14,7 +14,8 @@ from app.models.user import User
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 # F3.22 / PRD FEAT-002 — Dashboard Wilayah khusus dinas
-require_dinas = RoleChecker(["verifikator_dinas", "kepala_dinas"])
+# F4.11 (DBG-008): role `admin` ikut diizinkan (dulu 403 — deviasi kontrak).
+require_dinas = RoleChecker(["admin", "verifikator_dinas", "kepala_dinas"])
 
 
 @router.get("/prioritas")

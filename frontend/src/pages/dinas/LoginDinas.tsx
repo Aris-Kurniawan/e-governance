@@ -3,34 +3,60 @@ import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { 
-  Building2, 
-  Lock, 
-  KeyRound, 
-  Smartphone, 
-  Eye, 
-  EyeOff, 
-  HelpCircle, 
-  ShieldAlert, 
+import { useAuth } from "@/context/AuthContext"
+import {
+  Building2,
+  Lock,
+  KeyRound,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  ShieldAlert,
   ArrowRight,
-  User
+  User,
+  AlertTriangle
 } from "lucide-react"
 
+/**
+ * F4.1 — Login panel dinas (API asli).
+ *
+ * Sebelumnya form ini hanya `setTimeout` lalu navigate (login palsu), sehingga
+ * token tidak pernah ada dan `AntrianValidasi` memblokir aksi verifikasi.
+ * Sekarang memakai `POST /auth/login` + `GET /auth/me` lewat `useAuth().login`
+ * (kontrak INTERFACES.md §1: email + password). Backend tidak punya 2FA,
+ * jadi token RFC 6238 dihapus dari form.
+ */
 export default function LoginDinas() {
   const navigate = useNavigate()
-  const [nip, setNip] = useState("198503242010011008")
-  const [password, setPassword] = useState("••••••••••••")
-  const [token2Fa, setToken2Fa] = useState("849201")
+  const { login } = useAuth()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [rememberSession, setRememberSession] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const identitas = email.trim()
+    if (!identitas || !password) return
+    // Backend hanya menerima email (deviasi #8 — INTERFACES.md §1).
+    if (!identitas.includes("@")) {
+      setError("Masukkan email dinas yang terdaftar (format: nama@simakis.id).")
+      return
+    }
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 600))
-    setLoading(false)
-    navigate("/dinas/dashboard")
+    setError(null)
+    try {
+      const profile = await login(identitas, password)
+      // Peran dinas masuk ke panel internal, sisanya kembali ke portal warga.
+      const dinas = ["verifikator_dinas", "kepala_dinas", "admin"]
+      navigate(dinas.includes(profile.role) ? "/dinas/dashboard" : "/dashboard")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal masuk. Periksa email & kata sandi.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -112,24 +138,24 @@ export default function LoginDinas() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Field 1: NIP */}
+            {/* Field 1: Email Dinas */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-800">
-                NIP (18 Digit) atau Email Dinas Resmi <span className="text-rose-500">*</span>
+                Email Dinas Resmi <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <User className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input
-                  type="text"
-                  value={nip}
-                  onChange={(e) => setNip(e.target.value)}
-                  placeholder="19850324xxxxxxxxxx / nama@lamongankab.go.id"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@simakis.id"
                   className="pl-9 text-xs h-10 border-slate-200 bg-slate-50/50 focus:bg-white rounded-xl"
                   required
                 />
               </div>
               <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                <span>ⓘ Masukkan 18 digit NIP kepegawaian BKN tanpa tanda hubung/spasi.</span>
+                <span>ⓘ Login memakai email akun (bukan NIP) sesuai kontrak API autentikasi.</span>
               </p>
             </div>
 
@@ -163,30 +189,13 @@ export default function LoginDinas() {
               </div>
             </div>
 
-            {/* Field 3: 2FA Token */}
-            <div className="rounded-xl border border-blue-200/80 bg-blue-50/40 p-3.5 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Smartphone className="h-3.5 w-3.5 text-[#0B3052]" />
-                  Kode Keamanan 2FA / Token Authenticator
-                </span>
-                <span className="rounded bg-blue-100 text-[#0B3052] font-mono text-[10px] font-bold px-1.5 py-0.5">
-                  RFC 6238
-                </span>
+            {/* Pesan error autentikasi */}
+            {error && (
+              <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50/80 px-3.5 py-2.5 text-[11px] leading-relaxed text-rose-800">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" />
+                <span>{error}</span>
               </div>
-              <Input
-                type="text"
-                maxLength={6}
-                value={token2Fa}
-                onChange={(e) => setToken2Fa(e.target.value)}
-                placeholder="Contoh: 849201"
-                className="text-center font-mono font-bold tracking-[0.3em] text-sm sm:text-base h-11 bg-white border-blue-200 rounded-lg text-slate-900"
-                required
-              />
-              <p className="text-[10px] text-slate-500 text-center">
-                Buka aplikasi Google Authenticator atau periksa pesan WhatsApp kedinasan terdaftar.
-              </p>
-            </div>
+            )}
 
             {/* Remember session & Security Protocol */}
             <div className="flex items-center justify-between text-xs pt-1">

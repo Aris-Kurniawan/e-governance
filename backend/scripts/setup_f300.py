@@ -140,6 +140,17 @@ def create_admin(db: Session) -> User:
     return user
 
 
+from decimal import Decimal, InvalidOperation
+
+
+def _koord(val) -> Decimal | None:
+    """F4.11 (DBG-009): parse nilai lintang/bujur CSV → Decimal | None."""
+    try:
+        return Decimal((val or "").strip())
+    except (TypeError, ValueError, InvalidOperation):
+        return None
+
+
 def ingest_csv(db: Session) -> dict:
     """Step 2: Ingest CSV Dapodik ke tabel sekolah + kondisi_sarana."""
     if not CSV_PATH.exists():
@@ -162,6 +173,13 @@ def ingest_csv(db: Session) -> dict:
         existing = db.scalar(select(Sekolah).where(Sekolah.npsn == npsn))
         if existing:
             sekolah = existing
+            # F4.11 (DBG-009): backfill koordinat dari CSV (idempoten).
+            lintang = _koord(row.get("lintang"))
+            bujur = _koord(row.get("bujur"))
+            if lintang is not None:
+                sekolah.lintang = lintang
+            if bujur is not None:
+                sekolah.bujur = bujur
         else:
             jenjang_raw = row.get("jenjang", "SD").upper()
             if jenjang_raw not in ("SD", "SMP", "SMA", "SMK"):
@@ -188,6 +206,8 @@ def ingest_csv(db: Session) -> dict:
                 desa_kelurahan=row.get("desa_kelurahan"),
                 akreditasi=akreditasi_raw,
                 nama_kepsek=(row.get("nama_kepsek") or "")[:255],
+                lintang=_koord(row.get("lintang")),
+                bujur=_koord(row.get("bujur")),
                 sumber_data="Dapodik",
                 tanggal_pembaruan_data=datetime.now().date(),
             )

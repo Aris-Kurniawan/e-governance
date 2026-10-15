@@ -206,3 +206,136 @@ manual, bukan S3 API.
 - **Catatan kontrak**: Lihat `INTERFACES.md` §2 (Catatan penting untuk implementasi v1) untuk daftar field yang di‑hide serta keterangan unimplemented (`data_resmi`, `ada_sanggahan`).
 
 **Status:** Final (2026‑09‑28).
+
+
+---
+
+### D-21: Laporan tidak ter-cluster bukan klaster — ditangani manual oleh admin/kepala dinas
+
+**Keputusan:** Outlier HDBSCAN (`-1`) **tidak lagi** diubah menjadi record
+`Klaster` ber-label `"Belum Terklasifikasi"`. Laporan yang tidak masuk klaster
+manapun tetap disimpan apa adanya (tidak dihapus) dan ditangani lewat **endpoint
+fallback** yang hanya bisa diakses `admin` + `kepala_dinas`, lengkap dengan aksi
+verifikasi manual per laporan.
+
+> **Menggantikan:** Keputusan #5 "Outlier HDBSCAN (-1) → Opsi A: klaster
+> `belum_terklasifikasi` + review verifikator" (`docs/backend/CHANGELOG.md`
+> §3.3, 23 Sep 2026) dan `TASK_GUIDE.md` F3.3 "Outlier Handling".
+
+**Alasan:**
+
+1. **Data menyimpang dari metodologi ablation.** `experiments/evaluation.py`
+   sudah mengecualikan noise dari NMI/ARI/purity
+   (`valid_mask = y_pred != -1`) dan tidak menghitungnya sebagai klaster
+   (`n_clusters` mengurangi 1); noise hanya dilaporkan sebagai `noise_ratio`.
+   Pipeline produksi justru memaksanya menjadi klaster, sehingga praktik
+   produksi tidak lagi mencerminkan eksperimen yang jadi dasar pemilihan
+   konfigurasi.
+2. **Daftar klaster jadi tidak bermakna.** Audit 8 Okt 2026: **75 dari 100**
+   klaster ber-kategori `belum_terklasifikasi` (57 noise + 18 label-fallback),
+   mencakup **495 dari 600 laporan (82,5%)**. Hanya 25 klaster (105 laporan)
+   yang benar-benar punya kategori valid.
+3. **"Wadah buangan per sekolah" menyesatkan.** Karena pipeline berjalan
+   per sekolah dengan `min_cluster_size=3`, setiap sekolah yang punya laporan
+   yang tidak berdekatan menghasilkan satu klaster `"Belum Terklasifikasi"`.
+   Klaster seperti ini bukan temuan, hanya tempat sampah.
+4. **Verifikasi klaster tidak bisa dipakai untuknya.** Endpoint
+   `PUT /klaster/{id}/verifikasi` bekerja di atas klaster; untuk laporan yang
+   memang tidak berklaster, tindakan yang tepat adalah **penilaian manual atas
+   laporan itu sendiri**, bukan memaksa klaster palsu.
+5. **Labeling failure bukan noise.** 18 klaster sisanya adalah klaster
+   **nyata** (3–8 laporan, saling mirip, ber-label TF-IDF) yang hanya gagal
+   dipetakan ke 5 kategori oleh heuristic `labeling.py`. Menyembunyikan klaster
+   ini perlu tugas terpisah (perbaikan keyword mapping), bukan ikut dibongkar di
+   sini.
+
+**Keputusan rinci:**
+
+| Aspek | Ketentuan |
+|---|---|
+| Noise HDBSCAN (`-1`) | Tidak dibuatkan record `Klaster`; laporan ditandai `hasil_klasterisasi = 'noise'` dengan `klaster_id = NULL` |
+| Klaster ber-kategori `belum_terklasifikasi` (label fallback) | Record & laporan **dipertahankan**, tetapi **disembunyikan** dari default `GET /klaster`; tetap dapat diakses via `?kategori=belum_terklasifikasi` eksplisit atau `GET /klaster/{id}` |
+| Laporan yang perlu ditinjau | `GET /laporan/perlu-review` — `klaster_id IS NULL` **atau** `klaster.kategori = 'belum_terklasifikasi'` |
+| Aksi verifikasi manual | `PUT /laporan/{laporan_id}/status` → `status_sanggahan` (`menunggu` / `divalidasi` / `ditolak`) |
+| RBAC | `admin` + `kepala_dinas` saja |
+| Anti-loop | Kolom `laporan.hasil_klasterisasi` (`belum_diproses` / `terklaster` / `noise`) menjadi penanda "sudah diproses"; query cron memakai penanda ini, **bukan** `klaster_id IS NULL` |
+| Laporan | **Tidak pernah dihapus** oleh proses ini |
+
+**Konsekuensi:**
+
+- Ada endpoint baru di kontrak API (`INTERFACES.md` §2) → pembaruan ringan bagi
+  FE: semua angka turunan `GET /klaster` berubah (100 → 25 klaster pada data
+  dev).
+- Field `kategori = belum_terklasifikasi` **tetap ada** di enum DB (dibutuhkan
+  untuk klaster label-fallback yang masih tersimpan), tetapi tidak lagi
+  dihasilkan oleh noise HDBSCAN.
+- Setelah F4.7, cron harian 02:00 WIB hanya memproses laporan dengan
+  `hasil_klasterisasi = 'belum_diproses'`.
+
+**Status:** Disetujui (8 Okt 2026) — spesifikasi implementasi di
+`docs/backend/TASK_GUIDE.md` **F4.7**.
+
+---
+
+### D-22: Skor dampak KBM per sekolah — formula, level, dan widget pengganti data fiktif
+
+**Status:** Disetujui (Aris, 13 Okt 2026) — implementasi F4.8.
+
+**Masalah:** Halaman `LaporanSkorKbm.tsx` (FE) berisi 3 array hardcoded —
+skor per sekolah, "dampak per kategori fasilitas" dengan jumlah siswa fiktif,
+dan tren bulanan — yang tidak punya padanan backend. Field `jumlah_pd`/
+`jum_ptk` sengaja tidak di-ingest (scope infrastruktur-only, AGENTS.md),
+sehingga angka "siswa terdampak" mustahil dihitung.
+
+**Keputusan:**
+
+| Aspek | Ketentuan |
+|---|---|
+| Formula | `skor_kbm = 0.7 × AVG(severity laporan warga) + 0.3 × Σ(weight × kondisi_rusak) / Σ(jumlah Dapodik)`, skala 0–100 |
+| Bobot severity | Sama dengan `scoring.py` (D-07): baik=0, ringan=33, sedang=66, berat=100 |
+| Level | ≥70 `kritis`, 50–69 `tinggi`, 40–49 `sedang`, <40 `rendah` |
+| Endpoint | `GET /laporan/skor-kbm` (dideklarasikan **sebelum** `GET /laporan/{id}`), respons `{data: {ringkasan, sekolah}}`, `sekolah` urut `skor_kbm` DESC |
+| RBAC | `admin`, `verifikator_dinas`, `kepala_dinas` (asumsi awal; Aris dapat memveto) |
+| Cakupan | Semua sekolah (62), bukan hanya yang punya laporan; sekolah tanpa laporan → skor 0 |
+| Kolom baru DB | **Tidak ada** — dihitung on-the-fly (600 laporan + 304 baris `kondisi_sarana`) |
+
+**Widget FE diganti (data fiktif → data nyata):**
+
+| Widget lama (fiktif) | Pengganti |
+|---|---|
+| "Siswa terdampak" (KPI) | "Ruang rusak berat (Dapodik)" = 129 |
+| "Jam KBM hilang / minggu" (KPI) | "Total laporan warga" = 600 |
+| Tren bulanan (AreaTrendChart + badge "+29 poin") | **Distribusi kondisi laporan**: baik 154 / ringan 147 / sedang 145 / berat 154 |
+| Badge "NAIK 12%" | **Dihapus** — tidak ada data deret waktu (semua 600 laporan dev dibuat 5 Okt 2026) |
+| Pilih semester (3 opsi) | Teks statis "Data per Oktober 2026" |
+| Chart "Dampak per Kategori Fasilitas" (jumlah siswa fiktif) | **"Rusak Berat per Jenis Fasilitas"** — 7 nilai `nama_ruang` dari `kondisi_sarana` (ruang_kelas 77, wc_siswa 31, wc_guru 14, uks 2, perpustakaan 2, lab_ipa 2, lab_komputer 1; total 129) |
+| Kolom tabel "Jam KBM Hilang" & "Siswa Terdampak" | **"LAPORAN"** (`jumlah_laporan`) & **"RUSAK BERAT"** (`laporan_rusak_berat`) |
+| Klaim footer "SIMAKIS-AI v2 … jadwal aktif KBM semester" | Copy jujur: 70% severity laporan warga + 30% kondisi sarpras Dapodik |
+
+**Konsekuensi:**
+
+- `GET /laporan/skor-kbm` masuk kontrak `INTERFACES.md` §4.
+- Skor murni on-the-fly — tanpa tabel materialisasi; perubahan laporan/Dapodik
+  langsung tercerminkan tanpa migrasi.
+- Tren deret waktu sengaja tidak dijanjikan; butuh keputusan terpisah bila
+  kelak ada data temporal yang valid.
+
+**Status:** Disetujui (13 Okt 2026) — implementasi F4.8.
+
+
+### D-23: penanda_masalah & jumlah_isu_aktif — turunan Skor KBM dan laporan aktif
+
+**Status:** Disetujui implisit (Aris, 14 Okt 2026 — instruksi menyelesaikan DBG-007); formula dapat ditinjau ulang.
+
+**Masalah:** `GET /sekolah` selalu mengirim `penanda_masalah="normal"` (di luar kontrak §2) dan `jumlah_isu_aktif=0` — filter Direktori, KPI "Sekolah kritis", dan badge status FE mati; papan hijau padahal ada 129 ruang rusak berat (DBG-007).
+
+**Keputusan:**
+
+| Aspek | Nilai |
+|---|---|
+| `penanda_masalah` | diturunkan dari level Skor KBM (D-22): `kritis` (≥70) → `kritis`; `tinggi`/`sedang` (40–69) → `perlu_perhatian`; `rendah` (<40) → `aman` |
+| `jumlah_isu_aktif` | jumlah laporan warga sekolah dengan `status_sanggahan != 'ditolak'` (menunggu + divalidasi = isu masih berdiri) |
+| Sumber perhitungan | identik dengan `GET /laporan/skor-kbm` — on-the-fly, tanpa kolom/migrasi baru |
+| Cakupan | `GET /sekolah` (list, per halaman) dan `GET /sekolah/{npsn}` (detail) |
+
+**Konsekuensi:** nilai `"normal"` tidak lagi dikirim; distribusi live (62 sekolah): `perlu_perhatian` 39 · `aman` 22 · `kritis` 1. Update baris Scope FINAL di `AGENTS.md` memerlukan persetujuan terpisah.
