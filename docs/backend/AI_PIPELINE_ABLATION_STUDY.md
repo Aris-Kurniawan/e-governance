@@ -3,7 +3,7 @@
 > Panduan lengkap untuk melakukan ablation study pada komponen AI pipeline SIMAKIS.
 > Tujuan: Menemukan konfigurasi optimal dengan membandingkan variasi setiap komponen terhadap ground truth (manual clustering).
 
-**Update terakhir:** 21 September 2026
+**Update terakhir:** 19 Oktober 2026 — tambahan: §2.1 A4 (Potion/model2vec, rencana), §11 (uji data nyata), §12 (ablation laporan dinamis), catatan misnomer A1
 
 ---
 
@@ -12,9 +12,9 @@
 AI pipeline SIMAKIS terdiri dari 5 komponen utama:
 1. **Embedding** — Konversi teks laporan ke vektor numerik
 2. **UMAP** — Reduksi dimensi
-2. **HDBSCAN** — Algoritma clustering
-3. **TF-IDF Labeling** — Penamaan klaster berdasarkan kata kunci
-4. **Scoring** — Perhitungan skor prioritas
+3. **HDBSCAN** — Algoritma clustering
+4. **TF-IDF Labeling** — Penamaan klaster berdasarkan kata kunci
+5. **Scoring** — Perhitungan skor prioritas (pasca-klaster, di luar grid ablation — lihat §10)
 
 Untuk menemukan konfigurasi optimal, kami akan melakukan **ablation study** (pengujian setiap variasi) dan membandingkan hasilnya terhadap **ground truth (manual clustering)** yang dibuat berdasarkan pengetahuan domain.
 
@@ -274,6 +274,29 @@ embeddings = vectorizer.fit_transform(texts)  # sparse matrix (N, 1000)
 model = SentenceTransformer('all-MiniLM-L6-v2')
 embeddings = model.encode(texts)  # numpy array (N, 384)
 ```
+
+---
+
+#### A4: Potion / model2vec — Embedding Statis Multilingual *(rencana, belum diimplementasikan)*
+
+| Aspek | Detail |
+|-------|--------|
+| **Status** | **Rencana** — `embedding.py` baru mendukung `tfidf` / `indobert` / `minilm`; `model2vec` belum ada di `requirements.txt` |
+| **Cara kerja** | *Static embedding* (distilasi model2vec): tiap kata punya vektor tetap, dokumen = pooling vektor kata — **tanpa** forward pass transformer |
+| **Kandidat model** | `minishlab/potion-multilingual-128M` — 128M parameter, multilingual |
+| **Kandidat ditolak** | `mixedbread-ai/mxbai-embed-large-v1` — 335M parameter, **English-only** (tag HF `en`) → tidak layak untuk teks laporan berbahasa Indonesia |
+| **Kelebihan** | Jauh lebih cepat dari A1/A3 (inferensi statis, CPU-only), ringan, tetap menangkap kemiripan leksikal/sinonim yang tidak dimiliki TF-IDF |
+| **Kekurangan** | Bukan kontekstual (tanpa perhatian lintas kata) → kualitas semantik di bawah SBERT; butuh paket tambahan `model2vec` + unduhan model |
+| **Posisi ekspektasi** | Di antara A2 (TF-IDF) dan A1/A3 (SBERT): lebih "paham makna" dari TF-IDF, lebih murah dari MiniLM |
+| **Library** | `model2vec` |
+
+**Rencana pengujian:**
+1. Pasang `model2vec` + unduh `minishlab/potion-multilingual-128M` (butuh jaringan).
+2. Tambah `embed_texts(method="potion")` di `embedding.py` — *lazy load*, **fallback ke TF-IDF** bila model tidak tersedia (konsisten dengan guard `FALLBACK_USED` di `run_ablation.py:42`).
+3. Tambah `A4` ke `VARIANTS_A` (`run_ablation.py:46`) → bandingkan **A1/A2/A3/A4** pada ground truth yang sama (NMI/purity/ARI + waktu per kombinasi).
+4. Keputusan adopsi: menang → ganti default `pipeline.py` (butuh keputusan baru di `DECISIONS.md`, D-24 ke atas); kalah/terlalu berat → tetap A2 + hasil tetap dilaporkan di `ABLATION_RESULTS.md`.
+
+**Catatan penamaan (penting untuk laporan).** A1 di dokumen ini dinamai "IndoBERT", tetapi model yang benar-benar dipakai adalah `paraphrase-multilingual-MiniLM-L12-v2` (SBERT multilingual, ±118M parameter, 384 dimensi) — **bukan** IndoBERT. `embedding.py:35` menyebutnya `"indobert"` sebagai misnomer historis. Model IndoBERT asli (`indobenchmark/indobert-base-p1`, bare MLM+NSP tanpa pooling head) maupun SBERT Indonesia (`firqaaa/indo-sentence-bert-base`, 768 dimensi) **belum pernah diuji** di proyek ini — jangan mengklaim keduanya sebagai hasil ablation.
 
 ---
 
@@ -585,6 +608,8 @@ Step 6: Dokumentasi
 | TF-IDF (D) | 3 (D1, D2, D3) |
 | **Total kombinasi** | **3 × 3 × 3 × 3 = 81** |
 
+> **Catatan (19 Okt 2026):** varian **A4 (Potion/model2vec, §2.1)** masih tahap rencana. Bila diimplementasikan, grid bertambah menjadi 4 × 3 × 3 × 3 = **108** kombinasi (estimasi waktu naik proporsional), dan A4 wajib dilaporkan **terpisah** dari 81 kombinasi asli agar tabel lama tetap dapat direproduksi.
+
 ### 6.2 Estimasi Waktu Per Kombinasi
 
 | Komponen | Waktu (CPU only) | Waktu (GPU) |
@@ -691,10 +716,340 @@ tidak menimbulkan bias melingkar.
 - Hasil sweep (`results/` + ringkasan)
 
 ---
+
+## 10. Metode Perhitungan Skor Keparahan & Skor KBM
+
+> **Status:** spesifikasi metode — **belum diimplementasikan**. Implementasi saat ini
+> (`app/ai_pipeline/scoring.py`) memakai versi tanpa shrinkage (§10.4).
+> Perubahan yang diusulkan di sini **tidak butuh migrasi DB** (tetap on-the-fly).
+
+### 10.1 Posisi dalam pipeline (bukan komponen ablation)
+
+Skoring adalah **lapisan setelah klaster terbentuk**, bukan input ke HDBSCAN
+(`PRD.md` §6.2, `DECISIONS.md` D-04). Karena itu ia **tidak** punya varian
+A/B/C/D dan **tidak diuji** dalam ablation study §1–§8:
+
+```
+laporan.deskripsi → A2 (TF-IDF) → B1 (UMAP) → C2 (HDBSCAN) → D1 (label)
+                                                                    ↓
+                                                    ← skoring (§10 ini)
+```
+
+Konsekuensi metodologis: konfigurasi A2+B1+C2+D1 dipilih lewat NMI/purity,
+sedangkan bobot skoring dipilih lewat **expert judgment + literatur**. Dua
+mekanisme pemilihan yang berbeda — jangan dicampur saat menulis laporan.
+
+### 10.2 Skala severity laporan warga
+
+| `kondisi_dilaporkan` | Severity |
+|---|---|
+| `baik` | 0 |
+| `rusak_ringan` | 33 |
+| `rusak_sedang` | 66 |
+| `rusak_berat` | 100 |
+
+**Dasar:** interpolasi linear ordinal, `severity(i) = i / (n − 1) × 100` untuk
+`i = 0…3` dan `n = 4` tingkat. Keluarga angka yang sama dipakai Kementerian
+Pendidikan untuk penilaian kerusakan bangunan sekolah — Dirjen PAUDDIKDASMEN
+memakai `0.2 / 0.4 / 0.6 / 0.8` (`= i/5`, empat tingkat) dalam
+*"Analisis Tingkat Kerusakan Bangunan"*. Jadi 33/66/100 **bukan angka
+sembarang**, melainkan pemetaan linear yang sama pada skala 0–100.
+
+Nilai `None` atau di luar enum **dibuang dari rata-rata**, bukan dihitung 0
+(`scoring.py` `calculate_kbm_score`).
+
+### 10.3 Komponen Dapodik
+
+```
+skor_dapodik = Σ(berat×100 + sedang×66 + ringan×33) / Σ(jumlah seluruh ruang)
+```
+
+Pembilang = ruang rusak berbobot; penyebut = **seluruh** ruang termasuk yang
+baik. Skala 0–100. Definisi 4 tingkat kerusakan mengacu Panduan Sarpras
+Dapodik (Kemendikdasmen), yang juga menetapkan ambang resmi:
+
+| Tingkat | Ambang bobot kerusakan |
+|---|---|
+| Rusak Ringan | 1–30% |
+| Rusak Sedang | 31–45% |
+| Rusak Berat | 46–100% |
+
+### 10.4 Shrinkage komponen laporan (perbaikan yang diusulkan)
+
+**Masalah:** rata-rata severity dari 3 laporan diperlakukan setara dengan
+rata-rata dari 15 laporan. Pada data live, sekolah peringkat 1
+(SDN 2 SENDANGREJO) mendapat `skor_kbm = 76.4` dari **n = 3**, sementara
+SMK MUHAMMADIYAH 4 dengan **n = 15** mendapat 21.7.
+
+**Solusi:** shrinkage empirical Bayes terhadap prior global.
+
+```
+λ            = n / (n + K)
+prior        = Σ(skor_laporan_i × n_i) / Σ(n_i)        # dibobot jumlah laporan
+skor_laporan = λ × mean_severity + (1 − λ) × prior
+```
+
+- `n` = jumlah laporan sekolah dengan enum valid
+- `K` = kekuatan prior, **default 5** — **kebijakan, bukan estimasi data**
+  (dasar lengkap di §10.4.1). Nilai uji alternatif: 3 (permisif), 10 (konservatif).
+- `prior = 49.7` pada data live (62 sekolah, 600 laporan), **dihitung ulang per request**
+- `n = 0` → `skor_laporan = 0` (aturan cakupan D-22: tanpa laporan = tanpa klaim;
+  **bukan** ditarik ke prior)
+
+### 10.4.1 Dasar parameter K — kebijakan, wajib dihitung ulang
+
+**Asal metode.** Bentuk shrinkage di §10.4 identik dengan *credibility theory*
+Bühlmann (1967): `Z = n / (n + K)` dengan `K = EPV / VHM`, yaitu rasio
+*expected value of process variance* (variasi **di dalam** sekolah) terhadap
+*variance of hypothetical means* (variasi **antar**-sekolah). Bentuk yang sama
+dipakai sebagai *Bayesian average* pada peringkat IMDb:
+`WR = (v/(v+m))·R + (m/(v+m))·C`, sehingga `m` IMDb setara `K` kita.
+
+**Tiga tafsir K** (dipakai konsisten di dokumen ini):
+
+1. **Titik 50%** — saat `n = K`, data sekolah dan prior berbobot sama
+   (CAS: *"K can be thought of as the criteria for half credibility"*).
+2. **Laporan bayangan** — formula setara menambahkan `K` laporan fiktif
+   bernilai `prior` ke `n` laporan nyata.
+3. **Konservatisme** — makin besar K, makin kecil bobot data sekolah.
+
+**Status angka 5: kebijakan, bukan hasil estimasi.**
+`K = 5` **tidak** dihitung dari data dev. Angka ini ditetapkan sebagai ambang
+kebijakan ("±5 laporan sebelum data sekolah dipercaya"), analog dengan IMDb
+yang menetapkan `m = 25.000` sebagai *"minimum ratings required to be listed"* —
+juga angka pilihan manusia, bukan estimasi. Praktik lain menyarankan heuristik
+berbeda (mis. kuartil-1 jumlah vote), yang justru menegaskan **tidak ada nilai
+K universal**.
+
+**Apa kata data dev (jangan diklaim sebagai validasi K).**
+Method of moments pada 62 sekolah / 600 laporan: `EPV = 1420,8`,
+`VHM = −2,5` → `K = EPV/VHM` **tidak terdefinisi**. Aturan baku credibility:
+bila `VHM ≤ 0`, kredibilitas = 0 (tarik penuh ke prior). Validasi silang
+(prediksi laporan yang disisihkan) juga menurun monoton menuju "prior saja":
+`K=0 → MSE 1593,4 · K=5 → 1485,3 · K=50 → 1420,0 · K=∞ → 1415,9`.
+Penyebabnya: data dev **sintetis** (600 laporan dibuat 5 Okt 2026, sebaran
+severity hampir seragam), sehingga variasi antar-sekolah ≈ 0. Artinya `K = 5`
+masih **lebih percaya data** daripada yang didukung data dev — wajar untuk data
+sintetis, tetapi **bukan bukti bahwa 5 benar**.
+
+**Syarat sebelum produksi (gate):**
+
+1. Hitung ulang `K` dari laporan riil dengan `K = EPV/VHM` (method of moments),
+   lalu bandingkan dengan `K` yang meminimalkan error validasi silang.
+2. Bila `VHM ≤ 0` → set kredibilitas 0 (skor = prior) **atau** pertahankan
+   kebijakan dengan catatan eksplisit; jangan menyajikan peringkat per-sekolah
+   sebagai bermakna.
+3. Simpan hasil estimasi + tanggal + jumlah laporan pada dokumentasi rilis.
+4. `K = 5` tetap menjadi *default* sampai langkah 1–3 dijalankan; nilai `K`
+   disimpan sebagai parameter konfigurasi, bukan tersebar sebagai literal di kode.
+
+**Batasan yang wajib disebut saat presentasi:** laporan warga *self-selected*
+(bukan sampel acak), skala severity hanya 4 nilai, dan prior idealnya
+per-jenjang (SD/SMP/SMK) bila jumlah laporan per jenjang memadai.
+
+### 10.5 Formula final
+
+```
+skor_laporan  = shrinkage(mean_severity, n, prior, K)
+skor_dapodik  = Σ(berat×100 + sedang×66 + ringan×33) / Σ(jumlah ruang)
+skor_kbm      = 0.7 × skor_laporan + 0.3 × skor_dapodik
+```
+
+**Dasar pembobotan:** Simple Additive Weighting (SAW) — Machado & Santos (2024)
+memakai SAW dengan bobot diturunkan lewat Delphi untuk evaluasi performa
+bangunan sekolah (71 subkriteria → 12 kriteria → 2 dimensi, `SCORE = Σ(skor
+berbobot) / jumlah kriteria berlaku`). Bobot `0.7 / 0.3` adalah **expert
+judgment tim**, bukan hasil AHP/Delphi — jika ditanya, nyatakan demikian.
+
+Indikasi arah (bukan justifikasi bobot): Barrett et al. (2015) menemukan
+parameter *naturalness* ruang kelas (cahaya, suhu, kualitas udara) menyumbang
+~50% dampak desain terhadap progres belajar dari total 16% variansi yang
+terjelaskan — konsisten dengan memberi bobot dominan pada persepsi pengguna
+ruang (laporan warga) dibanding agregat Dapodik.
+
+**Level:**
+
+| `skor_kbm` | Level |
+|---|---|
+| ≥ 70 | `kritis` |
+| 50–69 | `tinggi` |
+| 40–49 | `sedang` |
+| < 40 | `rendah` |
+
+Turunan ke `sekolah.penanda_masalah` (D-23): `kritis` → `kritis`;
+`tinggi`/`sedang` → `perlu_perhatian`; `rendah` → `aman`.
+
+### 10.6 Flag mismatch (bukan bagian skor)
+
+13 dari 62 sekolah punya `skor_dapodik = 0.0` (seluruh ruang kondisi baik),
+sehingga `skor_kbm` maksimum mereka **70.0** — secara struktural tidak mungkin
+mencapai `kritis`. Contoh: SD MUHAMMADIYAH 1 LAMONGAN, `skor_laporan = 74.2`
+tapi `skor_kbm = 52.0`.
+
+Ini **bukan bug** dan **tidak boleh** diperbaiki dengan mengubah bobot —
+ini sinyal mismatch antara laporan warga dan Dapodik, yaitu inti mekanisme
+"Sanggah Data" (D-20). Ditangani lewat flag terpisah:
+
+```python
+mismatch = skor_laporan >= 50 and skor_dapodik == 0
+```
+
+Sekolah `mismatch = True` masuk panel verifikator sebagai kandidat sanggahan.
+Skor tidak dinaikkan artifisial.
+
+### 10.7 Hasil uji pada data live (62 sekolah, K = 5)
+
+| Sekolah | n | Sekarang | Shrinkage | Level |
+|---|---|---|---|---|
+| SDN 2 SENDANGREJO | 3 | 76.4 | **69.1** | `kritis` → `tinggi` |
+| SDN 1 MADE | 7 | 40.9 | 38.8 | `sedang` → `rendah` |
+| SDN KEPATIHAN | 10 | 53.5 | 47.3 | `tinggi` → `sedang` |
+| SMP MURNI SUNAN DRAJAT | 10 | 47.7 | 50.0 | `sedang` → `tinggi` |
+| SDN 1 SUKOMULYO | 8 | 39.8 | 44.2 | `rendah` → `sedang` |
+| SDN TLOGOANYAR | 13 | 49.8 | 50.5 | `sedang` → `tinggi` |
+| SD MUHAMMADIYAH 1 | 13 | 52.0 | 47.2 | `tinggi` → `sedang` |
+
+**8 dari 62 sekolah berpindah level.** Distribusi berubah dari
+`rendah 22 · sedang 21 · tinggi 18 · kritis 1` menjadi
+`rendah 22 · sedang 22 · tinggi 18 · kritis 0` — tidak ada lagi sekolah
+berlevel `kritis` yang dasarnya 3 sampel.
+
+### 10.8 Alternatif yang ditolak
+
+| Kandidat | Alasan ditolak |
+|---|---|
+| **Facility Condition Index (NCES)** | Butuh `cost to correct` + `replacement value`; proyek infrastruktur-only, data biaya tidak tersedia. NCES sendiri menolak pembobotan ordinal: *"aggregating these measurements would require a complex (and highly subjective) weighting formula"* → alternatifnya biaya perbaikan. |
+| **Formula per-komponen Kemendikbud** (`Σbobot komponen / Σtotal`, mis. kolom/balok/atap) | Butuh data per komponen (lebar retak, tulangan terlihat). Dapodik hanya menyediakan agregat per jenis ruang. |
+| **AHP penuh** | Butuh kuesioner pakar + uji consistency ratio. Layak bila ada waktu; belum dijalankan sehingga **tidak boleh diklaim**. |
+| **Vote-only** | Ditolak di D-06 — isu ringan tapi ramai mengalahkan isu serius. |
+
+### 10.9 Parameter yang dapat diuji (bukan bagian ablation A/B/C/D)
+
+| Parameter | Default | Alternatif | Efek |
+|---|---|---|---|
+| `K` (kekuatan prior) | 5 | 3 / 10 | Kecil → responsif terhadap n kecil; besar → konservatif |
+| `prior` | 49.7 (dinamis dari data) | konstanta 50 | Dinamis lebih tahan terhadap drift data |
+| Bobot laporan : Dapodik | 0.7 : 0.3 | 0.5 : 0.5, 0.8 : 0.2 | Sensitivitas bisa dilaporkan sebagai analisis, bukan diubah di produksi |
+
+Jika parameter ini diuji, laporkan sebagai **analisis sensitivitas skoring** —
+terpisah dari tabel ablation A/B/C/D, karena metriknya berbeda (bukan NMI,
+melainkan pergeseran level & peringkat sekolah).
+
+---
+
+## 11. Uji Klasterisasi dengan Data Nyata
+
+> **Status:** rencana — belum diimplementasikan. Suite test saat ini
+> (`backend/tests/test_ai_pipeline.py`, `backend/tests/test_evaluation.py`) hanya
+> memakai **teks sintetis pendek**.
+
+**Masalah.** Pipeline belum pernah diuji ujung-ke-ujung terhadap laporan nyata di
+dalam test otomatis. Penurunan kualitas atau crash pada data riil (600 laporan,
+variasi panjang teks, teks kosong, noise) tidak akan tertangkap suite 112 test
+yang ada.
+
+**Rencana:**
+1. Test integrasi baru (mis. `backend/tests/test_cluster_real_cases.py`): seed
+   laporan nyata → jalankan `default_pipeline.run(...)`.
+2. Assertion — menguji **ketahanan**, bukan akurasi (akurasi = domain ablation §2–§9):
+   - tidak ada exception pada 600 dokumen;
+   - ≥ 2 klaster terbentuk;
+   - semua label `kategori` termasuk enum yang sah;
+   - setiap laporan berakhir `terklaster` atau `noise` (tidak ada yang hilang);
+   - rasio noise di bawah ambang longgar (mis. < 60%) — sekadar alarm, bukan target.
+3. Tandai `@pytest.mark.integration` bila runtime > 30 detik; target suite ≥ 113.
+4. Opsional: cek determinisme (run ulang pada data yang sama → label identik).
+
+**Batas lingkup.** Test ini menjawab *"apakah pipeline tahan data nyata"*, bukan
+*"apakah klasternya bagus"* — pertanyaan kedua tetap dijawab lewat NMI/purity §3.2.
+Jangan menaruh ambang NMI di test integrasi: itu membuat suite rapuh dan menduplikasi
+peran ablation.
+
+---
+
+## 12. Ablation dengan Laporan Dinamis
+
+> **Status:** rencana — sebagian infrastruktur sudah ada (§9), tetapi belum ada
+> alur "data live → evaluasi ulang".
+
+**Situasi sekarang.**
+
+| Aspek | Kondisi |
+|---|---|
+| Sumber dokumen | `run_ablation.py::load_documents` membaca **DB** (dinamis) |
+| Cache | fingerprint dataset → cache otomatis invalid saat dokumen berubah (`run_ablation.py:210-216`) |
+| Ground truth | `manual_clusters.json` **statis** — 5 klaster, 62 `school_details`, 27 `tie_breaker_cases` (`metadata.created_date = 2026-09-29`) |
+| Akibat | Laporan baru tanpa label GT **tidak** ikut terukur NMI/ARI/purity → evaluasi eksternal hanya mencakup subset lama, sementara bagian internal (silhouette/DB/CH) tetap mengukur seluruh data |
+
+Catatan data: distribusi GT aktual **tidak merata** — `ruang_belajar 37 · sanitasi_air 13 ·
+penunjang 2 · utilitas 4 · akses_lahan 6` — berbeda dari harapan "±12–13 per
+klaster" di §1.5. Jika GT dianotasi ulang, seimbangkan atau jelaskan
+ketidakseimbangan ini secara eksplisit di laporan.
+
+**Opsi penanganan** (butuh keputusan pemilik proyek):
+
+| Opsi | Isi | Trade-off |
+|---|---|---|
+| **A (rekomendasi)** | Re-run pada data live; GT lama dipakai hanya untuk subset ber-label, cakupan dicatat eksplisit (mis. 45/600) | Cepat & jujur soal cakupan; subset bisa tidak representatif |
+| **B** | Anotasi GT baru tiap batch laporan | Akurasi tertinggi; kerja manual berulang |
+| **C** | Pakai jalur augmentasi §9 (`dataset_aug_{45,150,500,1500}.json`, `run_mcs_sweep.py`, `run_scale_sweep*.py`) | Menguji sensitivitas skala komponen; tetap berbasis template, bukan teks warga asli |
+
+**Aturan pelaporan.** Saat menjalankan ulang, laporkan juga `data_fingerprint`,
+`n_docs`, dan flag `embedding_fallback` (`run_ablation.py:280, 383, 424`). Bila
+A1/A3 jatuh ke TF-IDF, hasilnya **tidak valid** untuk klaim perbandingan neural dan
+harus dikeluarkan dari tabel perbandingan — bukan disamarkan.
+
+**Deliverable:** tabel NMI/ARI/purity + waktu per konfigurasi pada data live,
+disertai catatan cakupan GT, ditambahkan ke `ABLATION_RESULTS.md` (bukan menimpa
+tabel lama — beri label tanggal/fingerprint).
+
+---
+
 ## Referensi
 
+**Ablation & pipeline:**
 - HDBSCAN docs: https://hdbscan.readthedocs.io/
 - UMAP docs: https://umap-learn.readthedocs.io/
 - Sentence-Transformers: https://www.sbert.net/
 - Scikit-learn metrics: https://scikit-learn.org/stable/modules/model_evaluation.html
+- Paper HDBSCAN: https://arxiv.org/abs/1911.02282
+
+**Metode skoring (§10):**
+- Machado, E. L. & Santos, A. P. L. (2024). School buildings performance evaluation
+  method (SC-BPE Method). *Revista de Gestão e Secretariado*, 15(11), 1–27.
+  DOI: `10.7769/gesec.v15i11.4437` — dasar SAW + pembobotan Delphi.
+- Direktorat Jenderal PAUDDIKDASMEN, Kemendikbud. *Analisis Tingkat Kerusakan
+  Bangunan* (Rapat Koordinasi Dapodik) — bobot komponen 0.2/0.4/0.6/0.8 dan
+  rumus `Σ(bobot rusak) / Σ(bobot total) × 100%`.
+- Kemendikdasmen. *Panduan Sarpras Dapodik* — ambang tingkat kerusakan
+  (ringan 1–30%, sedang 31–45%, berat 46–100%); perhitungan mengacu formulir PUPR.
+- Barrett, P., Davies, F., Zhang, Y. & Barrett, L. (2015). The impact of classroom
+  design on pupils' learning: Final results of a holistic, multi-level analysis.
+  *Building and Environment*, 89, 118–133. DOI: `10.1016/j.buildenv.2015.02.013`
+  — 153 kelas, 27 sekolah, 3766 murid; 7 parameter desain menjelaskan 16%
+  variasi progres belajar; *naturalness* ~50% dari dampak.
+- *Synthesizing the Effect of Building Condition Quality on Academic Performance*
+  (2016). *Education Finance and Policy*, 11(1), 97–123.
+  DOI: `10.1162/edfp_a_00181` — meta-analisis; semi-partial `r = 0.10`,
+  bivariate `r = 0.12` (efek kecil tapi signifikan).
+- NCES. *Planning Guide for Maintaining School Facilities*, Ch. 3 —
+  `FCI = Cost to Correct Deficiencies / Current Facility Replacement Value`.
+  https://nces.ed.gov/pubs2003/fim/ch_3.asp
+
+**Dasar parameter K (§10.4.1):**
+- Bühlmann, H. (1967). Experience rating and credibility. *ASTIN Bulletin*,
+  4(3), 199–207 — `Z = n/(n+K)`, `K = EPV/VHM`.
+- Society of Actuaries, *Credibility Models* — estimasi EPV/VHM; `K` sebagai
+  "criteria for half credibility"; aturan `VHM ≤ 0 → Z = 0`.
+  https://www.soa.org/globalassets/assets/files/edu/c-24-05.pdf
+- Casualty Actuarial Society (2015). *Credibility for Pricing Loss Ratios and
+  Loss Costs* — estimator nonparametrik EPV (2.1) dan VHM (2.2).
+  https://www.casact.org/sites/default/files/database/forum_15fforum_korn.pdf
+- IMDb. *Ratings FAQ — Top Rated 250 weighted rating* (`m` = minimum ratings
+  required; `C` = mean rating). https://help.imdb.com/article/imdb/featured-content/ratings-faq/G67Y87TFYYP6TWAV
+- Cross Validated. *What are good resources on Bayesian rating?* — `m` tidak
+  punya nilai universal (saran: kuartil-1 jumlah vote).
+  https://stats.stackexchange.com/questions/189658/what-are-good-resources-on-bayesian-rating
+- Efron, B. & Morris, C. (1975). Data analysis using Stein's estimator and its
+  generalizations. *JASA*, 70(350), 311–319 — dasar shrinkage/empirical Bayes.
 - Paper HDBSCAN: https://arxiv.org/abs/1911.02282

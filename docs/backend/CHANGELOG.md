@@ -1145,6 +1145,65 @@ ditambah 1 temuan audit kontrak (lihat #5).
 - Audit `RoleChecker` vs INTERFACES: tak ada gap lain (verifikasi klaster verifikator-only = per kontrak).
 ---
 
+### 3.28 Fix Semantik NULL di Scoring + Spesifikasi Klasifikasi Severity (2026-10-20) ✅ SELESAI
+
+**Latar:** `laporan.kondisi_dilaporkan` diperlakukan berbeda oleh dua fungsi di
+`app/ai_pipeline/scoring.py` — `calculate_kbm_score` membuang `NULL`, sedangkan
+`calculate_priority_score` memetakannya ke `0` (= "kondisi baik"). Akibatnya laporan
+berisi keluhan berat namun tanpa nilai enum ikut menurunkan skor prioritas, dan dua
+halaman menampilkan angka dari perlakuan yang berbeda atas data yang sama.
+
+**Deliverable:**
+
+1. **`app/ai_pipeline/scoring.py` — `calculate_priority_score`.** `NULL` dan nilai di luar
+   enum kini **dibuang** dari rata-rata (bukan dipetakan ke `0`), sehingga identik dengan
+   `calculate_kbm_score`. Aturan: `NULL` = "tidak ada data", **bukan** "kondisi baik".
+2. **`tests/test_scoring_null.py` (baru, 8 test).** Cakupan: semua-`NULL` di kedua fungsi,
+   `NULL` tidak menarik rata-rata turun, nilai di luar enum, list kosong, dan test
+   konsistensi antar-kedua-fungsi.
+3. **`docs/backend/SPEC_SEVERITY_KLASIFIKASI.md` (baru, 812 baris).** Spesifikasi mandiri
+   (tidak digabung ke `TASK_GUIDE.md`) untuk klasifikasi severity dari teks laporan:
+   - §15 Lapis 1 — pertanyaan konfirmasi adaptif (bank gejala 8 komponen, diturunkan dari
+     dokumen Kemendikbud; nama awam + tabel pemetaan; pertanyaan struktural berbasis pemicu)
+   - §16 11 keputusan pemilik proyek (9 sudah ditetapkan)
+   - §17 Keputusan final: LLM sebagai pelabel (550 latih + 50 sampel diperiksa manual),
+     kolom `sumber_kondisi`, semantik `NULL` dibuang
+   - §18 Urutan implementasi 7 langkah
+   - §19 Usulan kontrak FE↔BE (4 perubahan) — **usulan, `INTERFACES.md` belum disentuh**
+4. **`docs/backend/AI_PIPELINE_ABLATION_STUDY.md` §10 (baru).** Metode perhitungan skor
+   keparahan & skor KBM: skala severity, komponen Dapodik, shrinkage lingkungan
+   (`λ = n/(n+K)`, `prior = 49.7`, `K = 5`), flag mismatch, dan alternatif yang ditolak.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `pytest tests/test_scoring_null.py` | **8/8** lulus |
+| `pytest tests/` (suite penuh) | **120/120** lulus (112 lama + 8 baru) |
+| Laporan live dengan `kondisi_dilaporkan` NULL | **0** dari 600 → tidak ada skor produksi yang berubah |
+| Klaster live dengan semua laporan NULL | **0** dari 43 |
+| Klaster live yang nilainya berubah | **1** dari 43 — `5dda3ac6` (lihat catatan) |
+| Migrasi DB | tidak ada |
+
+**Catatan:**
+
+- Bug terpisah ditemukan saat verifikasi: klaster `5dda3ac6` menyimpan `skor_keparahan = 55.86`
+  padahal perhitungan langsung menghasilkan `75.86` (selisih **20**, bukan pembulatan).
+  Penyebab: `scripts/run_clustering.py:161` menghitung `skor_keparahan = skor_prioritas - votes_count`
+  (cara mundur), dan `votes_count` saat penyimpanan berbeda dengan `jumlah_vote_terhitung`
+  yang tersimpan sekarang. **Bukan** akibat perubahan `NULL` — bug sudah ada sebelumnya.
+  Belum diperbaiki; perlu dicatat di `DEBUGGING.md` sebagai entri terpisah.
+- `docs/backend/INTERFACES.md` **sengaja tidak disentuh** — perubahan kontrak FE↔BE memerlukan
+  persetujuan Dimas. Bentuk usulan ada di `SPEC_SEVERITY_KLASIFIKASI.md` §19.
+- Sisa implementasi (kolom `sumber_kondisi`, pelabelan LLM, lapis 1 & 2) tercantum sebagai
+  urutan 7 langkah di `SPEC_SEVERITY_KLASIFIKASI.md` §18.
+- `K = 5` pada shrinkage adalah **expert judgment**, bukan hasil kalibrasi data. Estimasi `K`
+  dari data dev tidak terdefinisi (`EPV = 1420.8`, `VHM = −2.5`) karena laporan dev sintetis
+  (semua dibuat 2026-10-05, distribusi kondisi hampir uniform). Wajib disebut sebagai
+  keterbatasan; estimasi ulang dari data riil = syarat produksi.
+
+---
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

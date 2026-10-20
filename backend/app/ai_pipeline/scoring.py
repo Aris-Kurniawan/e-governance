@@ -84,11 +84,15 @@ def calculate_priority_score(
     Returns: skor_prioritas (float, range ~0–200+)
     """
     # Skor dari laporan warga (average severity)
-    if kondisi_laporan:
-        severities = [SEVERITY_MAP.get(lap.get("kondisi_dilaporkan", "baik"), 0) for lap in kondisi_laporan]
-        skor_laporan = sum(severities) / len(severities)
-    else:
-        skor_laporan = 0.0
+    # NULL / nilai di luar enum = "tidak ada data", BUKAN "kondisi baik" → dibuang.
+    # Aturan ini wajib identik dengan calculate_kbm_score (lihat
+    # docs/backend/SPEC_SEVERITY_KLASIFIKASI.md §17.3).
+    severities = [
+        SEVERITY_MAP[lap.get("kondisi_dilaporkan")]
+        for lap in kondisi_laporan
+        if lap.get("kondisi_dilaporkan") in SEVERITY_MAP
+    ]
+    skor_laporan = sum(severities) / len(severities) if severities else 0.0
 
     
     # Skor dari Dapodik (weighted sum / total fasilitas)
