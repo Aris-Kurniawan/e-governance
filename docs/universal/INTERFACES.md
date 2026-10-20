@@ -295,6 +295,8 @@ response `200`:
 | GET | `/laporan/perlu-review` | `admin`, `kepala_dinas` | Daftar laporan perlu verifikasi manual (F4.7/D-21): tanpa klaster **ATAU** klaster kategori `belum_terklasifikasi` — envelope `{data, meta}` §0.2 (`page`, `page_size` default 20 maks 100) |
 | PUT | `/laporan/{id}/status` | `admin`, `kepala_dinas` | Update `status_sanggahan` — verifikasi manual per laporan (F4.7/D-21) |
 | GET | `/laporan/skor-kbm` | `admin`, `verifikator_dinas`, `kepala_dinas` | Skor dampak KBM per sekolah (F4.8/D-22) — seluruh 62 sekolah, diurutkan skor DESC |
+| GET | `/laporan/{id}/konfirmasi` | Pemilik laporan | **[DRAFT]** Ambil pertanyaan konfirmasi severity yang dipilih AI (§4.2) |
+| POST | `/laporan/{id}/konfirmasi` | Pemilik laporan | **[DRAFT]** Kirim jawaban konfirmasi severity (§4.3) |
 
 **`POST /laporan`** — request:
 ```json
@@ -316,6 +318,28 @@ response `201`:
   }
 }
 ```
+
+<!-- DRAFT KONFIRMASI -->
+**TAMBAHAN DRAFT** — field `konfirmasi` pada respons `201` (lihat §4.1):
+
+```json
+{
+  "data": {
+    "laporan_id": "string",
+    "tracking_id": "string",
+    "status": "menunggu",
+    "created_at": "ISO8601",
+    "konfirmasi": {
+      "perlu_konfirmasi": true,
+      "jumlah_pertanyaan": 4,
+      "kedaluwarsa_pada": "ISO8601 (created_at + 24 jam)"
+    }
+  }
+}
+```
+- `perlu_konfirmasi: false` bila AI tidak menemukan pola kerusakan (mis. deskripsi terlalu umum).
+- Field ini **aditif** — FE lama yang mengabaikannya tetap berfungsi.
+- Rincian: `docs/backend/SPEC_SEVERITY_KLASIFIKASI.md` §19.2.
 
 **`GET /laporan/perlu-review`** — response `200` (F4.7, D-21):
 ```json
@@ -391,6 +415,138 @@ Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster —
 - `total_laporan` menghitung **semua** baris laporan termasuk `kondisi_dilaporkan IS NULL`.
 - `dampak_per_jenis_ruang` diurutkan `rusak_berat` DESC; `nama_ruang` nilai mentah Dapodik (bukan label tampilan).
 - `sekolah` seluruh 62 sekolah, diurutkan `skor_kbm` DESC. Tanpa token → `401`; role selain `admin` / `verifikator_dinas` / `kepala_dinas` → `403`.
+
+### 4.1 Konfirmasi Severity — Ringkasan **[DRAFT]**
+
+> ⚠️ **DRAFT — menunggu persetujuan FE (Dimas).** Bagian ini belum boleh dipakai sebagai
+> dasar implementasi FE sampai disepakati. Aturan `INTERFACES.md` baris 3–7: perubahan kontrak
+> wajib disepakati Aris & Dimas dulu.
+
+Konteks: form laporan warga **tidak** meminta warga memilih tingkat kerusakan (terlalu subjektif).
+Sebagai gantinya, setelah laporan tersimpan, warga diberi maksimal **4 pertanyaan konfirmasi**
+yang dipilih AI dari bank pertanyaan tetap (diturunkan dari dokumen Kemendikbud). Jawaban warga
+dipakai bersama teks deskripsi untuk menentukan `kondisi_dilaporkan`.
+
+Sifat: **opsional, tidak memblokir apa pun.** Laporan tetap sah bila tidak dijawab. Bila tidak
+dijawab, `kondisi_dilaporkan` tetap diisi dari deskripsi saja, dan `status_konfirmasi` menjadi
+`dilewati` setelah 24 jam.
+
+Spesifikasi lengkap (bank pertanyaan, aturan berjenjang, pemicu struktural):
+`docs/backend/SPEC_SEVERITY_KLASIFIKASI.md` §15.
+
+### 4.2 `GET /laporan/{id}/konfirmasi` **[DRAFT]**
+
+Akses: **pemilik laporan** (`403` untuk selainnya) · Tanpa token → `401` · Laporan tidak ada → `404`.
+
+response `200`:
+```json
+{
+  "data": {
+    "laporan_id": "string",
+    "status": "menunggu | terjawab | dilewati",
+    "jumlah_terjawab": 0,
+    "pertanyaan": [
+      {
+        "kode": "bagian",
+        "teks": "Bagian mana yang rusak?",
+        "tipe": "pilih_satu",
+        "pilihan": [
+          { "kode": "plafon",        "label": "Plafon / langit-langit" },
+          { "kode": "atap",          "label": "Atap" },
+          { "kode": "dinding",       "label": "Dinding" },
+          { "kode": "lantai",        "label": "Lantai" },
+          { "kode": "pintu_jendela", "label": "Pintu / jendela" },
+          { "kode": "listrik",       "label": "Listrik / lampu" },
+          { "kode": "air",           "label": "Air / kran / WC" },
+          { "kode": "drainase",      "label": "Saluran air kotor" }
+        ]
+      },
+      {
+        "kode": "gejala",
+        "teks": "Pilih yang paling berat yang Anda lihat:",
+        "tipe": "pilih_satu_bertingkat",
+        "urutan": "dari_terparah",
+        "lewati_bila_terjawab": true,
+        "pilihan": [
+          { "kode": "g4", "label": "string", "tingkat": "rusak_berat" },
+          { "kode": "g3", "label": "string", "tingkat": "rusak_sedang" },
+          { "kode": "g2", "label": "string", "tingkat": "rusak_ringan" },
+          { "kode": "g1", "label": "string", "tingkat": "baik" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Catatan bentuk:
+
+- `tipe: "pilih_satu_bertingkat"` + `urutan: "dari_terparah"` + `lewati_bila_terjawab: true`
+  memberitahu FE untuk menerapkan aturan **"jawab satu gejala → lewati gejala yang lebih ringan"**.
+  Aturan penerapannya di FE; kontrak ini hanya menyatakan bahwa aturannya berlaku, agar kedua sisi
+  tidak berbeda tafsir.
+- `label` memakai **nama awam**. Pemetaan ke istilah teknis Kemendikbud ada di BE
+  (`SPEC_SEVERITY_KLASIFIKASI.md` §15.3).
+- `tingkat` diisi nilai enum resmi agar FE dapat memakai warna/kategori yang sudah ada.
+- `status: "terjawab"` atau `"dilewati"` → `pertanyaan: []`.
+- Pertanyaan struktural (pondasi/kolom/balok) hanya muncul bila deskripsi memuat pemicu
+  (`SPEC_SEVERITY_KLASIFIKASI.md` §15.5); bila tidak ada pemicu, komponen itu tidak ditanyakan.
+
+### 4.3 `POST /laporan/{id}/konfirmasi` **[DRAFT]**
+
+Akses: **pemilik laporan**.
+
+request:
+```json
+{
+  "jawaban": [
+    { "kode": "bagian", "nilai": "plafon" },
+    { "kode": "gejala", "nilai": "g3" }
+  ]
+}
+```
+
+response `200`:
+```json
+{
+  "data": {
+    "status": "terjawab | dilewati",
+    "kondisi_dilaporkan": "baik | rusak_ringan | rusak_sedang | rusak_berat | null",
+    "sumber_kondisi": "ai | warga | null",
+    "diproses_pada": "ISO8601"
+  }
+}
+```
+
+Ketentuan:
+
+| Kasus | Respons |
+|---|---|
+| Menjawab sebagian | `200`, `status: "terjawab"`, nilai dari jawaban yang ada |
+| `jawaban: []` (warga melewati) | `200`, `status: "dilewati"` |
+| Sudah pernah dijawab | `409 CONFLICT` — tidak boleh menimpa |
+| Bukan pemilik laporan | `403` |
+| Laporan tidak ada | `404` |
+| `kode` / `nilai` tidak dikenal | `422 UNPROCESSABLE_ENTITY` |
+
+**Jawaban warga selalu menang** atas hasil ekstraksi AI dari deskripsi.
+
+### 4.4 Field Baru pada Respons Laporan **[DRAFT]**
+
+| Endpoint | Field baru | Nilai |
+|---|---|---|
+| `GET /laporan/riwayat` | `sumber_kondisi` | `ai` / `warga` / `null` |
+| `GET /laporan/riwayat` | `status_konfirmasi` | `menunggu` / `terjawab` / `dilewati` |
+| `GET /laporan/{id}` | idem | idem |
+| `GET /laporan/perlu-review` | idem | idem |
+| `GET /laporan/riwayat` | `konfirmasi_perlu_dijawab` | `boolean` — memudahkan FE menandai laporan yang belum dikonfirmasi |
+
+Makna `sumber_kondisi`: **`warga` BUKAN berarti warga mengisi dropdown severity.** Warga tidak
+pernah melihat kolom ini. `warga` hanya muncul bila manusia (mis. verifikator dinas) mengoreksi
+hasil AI saat verifikasi — dan koreksi itu harus ditandai agar cron berikutnya tidak menimpanya
+(`SPEC_SEVERITY_KLASIFIKASI.md` §17.2).
+
+---
 
 ---
 
@@ -639,6 +795,17 @@ diimplementasikan sampai ada keputusan lanjutan.
 ---
 
 ## 11. Yang Belum Diputuskan (perlu diisi sebelum implementasi final)
+
+### 11.1 Kontrak Konfirmasi Severity **[DRAFT — belum disetujui]**
+
+Lima butir berikut harus ditentukan bersama FE (Dimas) sebelum §4.1–§4.4 di atas dikunci
+(lihat `docs/backend/SPEC_SEVERITY_KLASIFIKASI.md` §19.7):
+
+- [ ] Pertanyaan konfirmasi diambil **sekali** (satu `GET`) atau **bertahap** per jawaban?
+- [ ] Nama field `kode` vs `gejala_id` — bebas, asal konsisten dua sisi.
+- [ ] Endpoint konfirmasi **terpisah** (§4.2/§4.3) atau **digabung** ke `GET /laporan/{id}`?
+- [ ] Batas waktu 24 jam → siapa yang mengubah status ke `dilewati`: cron atau saat diakses?
+- [ ] Apakah verifikator boleh mengubah jawaban warga?
 
 - **Batas ukuran & jumlah foto bukti per laporan** — belum ada angka
   resmi (§10).
