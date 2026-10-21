@@ -392,6 +392,9 @@ export interface JenisRuangRusak {
 export interface SkorKbmRingkasan {
   rata_rata_skor: number;
   sekolah_kritis: number;
+  jumlah_mismatch: number;
+  prior: number;
+  k: number;
   total_laporan: number;
   ruang_rusak_berat: number;
   distribusi_kondisi: DistribusiKondisi;
@@ -407,6 +410,7 @@ export interface SkorKbmSekolah {
   skor_dapodik: number;
   jumlah_laporan: number;
   laporan_rusak_berat: number;
+  mismatch: boolean;
 }
 
 export interface SkorKbmData {
