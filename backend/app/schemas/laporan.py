@@ -17,6 +17,25 @@ class LaporanCreateRequest(BaseModel):
 model_config = {"from_attributes": True}
 
 
+class KonfirmasiRingkas(BaseModel):
+    """Blok konfirmasi pada respons `POST /laporan` (F4.15)."""
+
+    perlu_konfirmasi: bool
+    jumlah_pertanyaan: int
+    kedaluwarsa_pada: Optional[datetime] = None
+
+
+class KonfirmasiJawaban(BaseModel):
+    kode: str
+    nilai: str
+
+
+class KonfirmasiRequest(BaseModel):
+    """Body `POST /laporan/{id}/konfirmasi`; `[]` berarti warga melewati."""
+
+    jawaban: list[KonfirmasiJawaban] = Field(default_factory=list)
+
+
 class LaporanResponse(BaseModel):
     """Response dasar untuk laporan."""
 
@@ -26,9 +45,16 @@ class LaporanResponse(BaseModel):
     sekolah_npsn: str
     fasilitas_terkait: Optional[str]
     kondisi_dilaporkan: Optional[str]
+    # F4.14: provenance nilai kondisi + status alur konfirmasi severity.
+    sumber_kondisi: Optional[str] = None
+    status_konfirmasi: Optional[str] = None
+    # Turunan: laporan baru berstatus "menunggu" sampai warga menjawab/melewati.
+    konfirmasi_perlu_dijawab: bool = False
     deskripsi: str
     status_sanggahan: str
     created_at: datetime
+    # F4.15: hanya diisi pada respons POST /laporan.
+    konfirmasi: Optional[KonfirmasiRingkas] = None
 
     model_config = {"from_attributes": True}
 

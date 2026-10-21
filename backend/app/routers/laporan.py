@@ -2,7 +2,7 @@
 
 import secrets
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from math import ceil
 from typing import Optional
 
@@ -11,7 +11,19 @@ from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.ai_pipeline.scoring import calculate_kbm_score, kbm_level
+from app.ai_pipeline.question_bank import (
+    KOMPONEN,
+    cari_pilihan,
+    pilih_pertanyaan,
+    severity_tertinggi,
+)
+from app.ai_pipeline.scoring import (
+    calculate_kbm_score,
+    compute_prior,
+    is_mismatch,
+    kbm_level,
+)
+from app.core.config import settings
 from app.core.deps import get_current_user, RoleChecker
 from app.core.audit import log_audit
 from app.core.exceptions import ApiError
@@ -21,6 +33,8 @@ from app.models.laporan import Laporan, LaporanFoto, STATUS_SANGGHAN_ENUM
 from app.models.sekolah import Sekolah, KondisiSarana
 from app.models.user import User
 from app.schemas.laporan import (
+    KonfirmasiRequest,
+    KonfirmasiRingkas,
     LaporanCreateRequest,
     LaporanResponse,
     LaporanDetailResponse,
@@ -33,6 +47,79 @@ router = APIRouter(prefix="/laporan", tags=["laporan"])
 def generate_tracking_id() -> str:
     """Generate unique tracking ID."""
     return f"LAP-{datetime.now().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
+
+
+def _laporan_fields(laporan: Laporan) -> dict:
+    """Field respons laporan yang dipakai POST, riwayat, dan detail (F4.14)."""
+    return {
+        "id": laporan.id,
+        "tracking_id": laporan.tracking_id,
+        "user_id": laporan.user_id,
+        "sekolah_npsn": laporan.sekolah_npsn,
+        "fasilitas_terkait": laporan.fasilitas_terkait,
+        "kondisi_dilaporkan": laporan.kondisi_dilaporkan,
+        "sumber_kondisi": laporan.sumber_kondisi,
+        "status_konfirmasi": laporan.status_konfirmasi,
+        "konfirmasi_perlu_dijawab": laporan.status_konfirmasi == "menunggu",
+        "deskripsi": laporan.deskripsi,
+        "status_sanggahan": laporan.status_sanggahan,
+        "created_at": laporan.created_at,
+    }
+
+
+# ── F4.15 — konfirmasi severity (lapis 1) ────────────────────────────────────
+
+KONFIRMASI_TTL = timedelta(hours=24)
+
+
+def _naive_utc(value: datetime | None) -> datetime | None:
+    """Samakan datetime SQLite/MySQL (naive) dengan jam UTC untuk perbandingan."""
+    if value is None:
+        return None
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+def _kedaluwarsa_pada(laporan: Laporan) -> datetime | None:
+    dibuat = _naive_utc(laporan.created_at)
+    return dibuat + KONFIRMASI_TTL if dibuat else None
+
+
+def _konfirmasi_ringkas(laporan: Laporan) -> KonfirmasiRingkas:
+    pertanyaan = pilih_pertanyaan(laporan.deskripsi)
+    return KonfirmasiRingkas(
+        perlu_konfirmasi=len(pertanyaan) > 1,
+        jumlah_pertanyaan=len(pertanyaan),
+        kedaluwarsa_pada=_kedaluwarsa_pada(laporan),
+    )
+
+
+def _expire_konfirmasi(laporan: Laporan, db: Session) -> bool:
+    """Transisi lazy `menunggu` → `dilewati` setelah 24 jam (opsi kontrak #4)."""
+    if laporan.status_konfirmasi != "menunggu":
+        return False
+    batas = _kedaluwarsa_pada(laporan)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if batas is not None and now >= batas:
+        laporan.status_konfirmasi = "dilewati"
+        db.commit()
+        db.refresh(laporan)
+        return True
+    return False
+
+
+def _laporan_milik(db: Session, laporan_id: str, user: User) -> Laporan:
+    laporan = db.scalar(select(Laporan).where(Laporan.id == laporan_id))
+    if not laporan:
+        raise ApiError(
+            404, "NOT_FOUND", f"Laporan dengan ID {laporan_id} tidak ditemukan"
+        )
+    if laporan.user_id != user.id:
+        raise ApiError(
+            403, "FORBIDDEN", "Konfirmasi hanya dapat diakses pemilik laporan"
+        )
+    return laporan
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -62,23 +149,20 @@ def create_laporan(
         kondisi_dilaporkan=payload.kondisi_dilaporkan,
         deskripsi=payload.deskripsi,
         status_sanggahan="menunggu",
+        # F4.14: laporan baru menunggu konfirmasi severity (opsional, F4.15).
+        status_konfirmasi="menunggu",
     )
 
     db.add(laporan)
     db.commit()
     db.refresh(laporan)
 
-    return {"data": LaporanResponse(
-        id=laporan.id,
-        tracking_id=laporan.tracking_id,
-        user_id=laporan.user_id,
-        sekolah_npsn=laporan.sekolah_npsn,
-        fasilitas_terkait=laporan.fasilitas_terkait,
-        kondisi_dilaporkan=laporan.kondisi_dilaporkan,
-        deskripsi=laporan.deskripsi,
-        status_sanggahan=laporan.status_sanggahan,
-        created_at=laporan.created_at,
-    )}
+    return {
+        "data": LaporanResponse(
+            **_laporan_fields(laporan),
+            konfirmasi=_konfirmasi_ringkas(laporan),
+        )
+    }
 
 
 @router.get("/riwayat", response_model=LaporanListResponse)
@@ -102,20 +186,7 @@ def riwayat_laporan(
     laporans = db.scalars(query).all()
 
     return LaporanListResponse(
-        data=[
-            LaporanResponse(
-                id=l.id,
-                tracking_id=l.tracking_id,
-                user_id=l.user_id,
-                sekolah_npsn=l.sekolah_npsn,
-                fasilitas_terkait=l.fasilitas_terkait,
-                kondisi_dilaporkan=l.kondisi_dilaporkan,
-                deskripsi=l.deskripsi,
-                status_sanggahan=l.status_sanggahan,
-                created_at=l.created_at,
-            )
-            for l in laporans
-        ],
+        data=[LaporanResponse(**_laporan_fields(l)) for l in laporans],
         meta={
             "page": page,
             "page_size": page_size,
@@ -190,6 +261,9 @@ def laporan_perlu_review(
                 "sekolah_nama": sek.nama if sek else None,
                 "fasilitas_terkait": lap.fasilitas_terkait,
                 "kondisi_dilaporkan": lap.kondisi_dilaporkan,
+                "sumber_kondisi": lap.sumber_kondisi,
+                "status_konfirmasi": lap.status_konfirmasi,
+                "konfirmasi_perlu_dijawab": lap.status_konfirmasi == "menunggu",
                 "deskripsi": lap.deskripsi,
                 "status_sanggahan": lap.status_sanggahan,
                 "created_at": lap.created_at.isoformat() if lap.created_at else None,
@@ -281,6 +355,9 @@ def laporan_skor_kbm(
     for npsn, kondisi in laporan_rows:
         laporan_per_sekolah[npsn].append(kondisi)
 
+    # D-24: prior global — satu sumber untuk semua sekolah pada request ini.
+    prior = compute_prior(laporan_per_sekolah)
+
     # Kondisi sarpras Dapodik per sekolah + agregat global per jenis ruang.
     sarana_rows = db.execute(
         select(
@@ -312,7 +389,10 @@ def laporan_skor_kbm(
     for sek in db.scalars(select(Sekolah)).all():
         laps = laporan_per_sekolah.get(sek.npsn, [])
         k = calculate_kbm_score(
-            laps, dapodik_per_sekolah.get(sek.npsn, dict(kosong))
+            laps,
+            dapodik_per_sekolah.get(sek.npsn, dict(kosong)),
+            prior=prior,
+            k=settings.SHRINKAGE_K,
         )
         sekolah_data.append(
             {
@@ -324,6 +404,7 @@ def laporan_skor_kbm(
                 "skor_dapodik": k["skor_dapodik"],
                 "jumlah_laporan": len(laps),
                 "laporan_rusak_berat": sum(1 for s in laps if s == "rusak_berat"),
+                "mismatch": is_mismatch(k["skor_laporan"], k["skor_dapodik"]),
             }
         )
     sekolah_data.sort(key=lambda row: row["skor_kbm"], reverse=True)
@@ -354,12 +435,130 @@ def laporan_skor_kbm(
                 "sekolah_kritis": sum(
                     1 for row in sekolah_data if row["level"] == "kritis"
                 ),
+                "jumlah_mismatch": sum(
+                    1 for row in sekolah_data if row["mismatch"]
+                ),
+                "prior": round(prior, 1),
+                "k": settings.SHRINKAGE_K,
                 "total_laporan": len(laporan_rows),
                 "ruang_rusak_berat": sum(v["rusak_berat"] for v in per_jenis.values()),
                 "distribusi_kondisi": distribusi,
                 "dampak_per_jenis_ruang": dampak_per_jenis,
             },
             "sekolah": sekolah_data,
+        }
+    }
+
+
+@router.get("/{laporan_id}/konfirmasi")
+def get_konfirmasi(
+    laporan_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """F4.15 — pertanyaan konfirmasi severity untuk pemilik laporan.
+
+    Sekali ambil (opsi kontrak #1). Laporan lama (`status_konfirmasi IS NULL`)
+    dianggap `dilewati`; laporan yang sudah lewat 24 jam ditransisikan malas.
+    """
+    laporan = _laporan_milik(db, laporan_id, user)
+    _expire_konfirmasi(laporan, db)
+
+    status_konfirmasi = laporan.status_konfirmasi or "dilewati"
+    if status_konfirmasi == "menunggu":
+        pertanyaan = pilih_pertanyaan(laporan.deskripsi)
+    else:
+        pertanyaan = []
+
+    jawaban = (laporan.jawaban_konfirmasi or {}).get("jawaban", [])
+    return {
+        "data": {
+            "laporan_id": laporan.id,
+            "status": status_konfirmasi,
+            "jumlah_terjawab": len(jawaban),
+            "pertanyaan": pertanyaan,
+        }
+    }
+
+
+@router.post("/{laporan_id}/konfirmasi")
+def post_konfirmasi(
+    laporan_id: str,
+    payload: KonfirmasiRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """F4.15 — simpan jawaban, hitung severity, kunci laporan (409 bila ulang).
+
+    `jawaban: []` = warga melewati. Nilai warga selalu menang atas ekstraksi
+    deskripsi; `sumber_kondisi` tetap `ai` karena AI yang menerjemahkan
+    jawaban menjadi enum (SPEC §17.2).
+    """
+    laporan = _laporan_milik(db, laporan_id, user)
+    _expire_konfirmasi(laporan, db)
+
+    if laporan.status_konfirmasi != "menunggu":
+        raise ApiError(
+            409, "CONFLICT", "Konfirmasi laporan ini sudah dijawab atau dilewati"
+        )
+
+    pertanyaan = pilih_pertanyaan(laporan.deskripsi)
+    bank = {q["kode"]: q for q in pertanyaan}
+
+    terlihat: set[str] = set()
+    for jawaban in payload.jawaban:
+        if jawaban.kode in terlihat:
+            raise ApiError(
+                422, "UNPROCESSABLE_ENTITY", f"Kode {jawaban.kode} dijawab lebih dari sekali"
+            )
+        terlihat.add(jawaban.kode)
+
+        if jawaban.kode == "bagian":
+            if jawaban.nilai not in KOMPONEN:
+                raise ApiError(
+                    422, "UNPROCESSABLE_ENTITY", f"Bagian tidak dikenal: {jawaban.nilai}"
+                )
+            continue
+
+        if jawaban.kode not in bank:
+            raise ApiError(
+                422, "UNPROCESSABLE_ENTITY", f"Pertanyaan tidak dikenal: {jawaban.kode}"
+            )
+        if cari_pilihan(jawaban.kode, jawaban.nilai) is None:
+            raise ApiError(
+                422,
+                "UNPROCESSABLE_ENTITY",
+                f"Pilihan {jawaban.nilai} tidak valid untuk {jawaban.kode}",
+            )
+
+    tingkat = []
+    for jawaban in payload.jawaban:
+        pilihan = cari_pilihan(jawaban.kode, jawaban.nilai)
+        if pilihan is not None:
+            tingkat.append(pilihan["tingkat"])
+    kondisi = severity_tertinggi(tingkat)
+
+    diproses = datetime.now(timezone.utc).replace(tzinfo=None)
+    status_baru = "dilewati" if not payload.jawaban else "terjawab"
+
+    laporan.status_konfirmasi = status_baru
+    laporan.jawaban_konfirmasi = {
+        "jawaban": [j.model_dump() for j in payload.jawaban],
+        "diproses_pada": diproses.isoformat(),
+    }
+    if kondisi is not None:
+        laporan.kondisi_dilaporkan = kondisi
+        laporan.sumber_kondisi = "ai"
+
+    db.commit()
+    db.refresh(laporan)
+
+    return {
+        "data": {
+            "status": status_baru,
+            "kondisi_dilaporkan": laporan.kondisi_dilaporkan,
+            "sumber_kondisi": laporan.sumber_kondisi,
+            "diproses_pada": diproses.isoformat(),
         }
     }
 
@@ -409,15 +608,7 @@ def detail_laporan(
     ]
 
     return {"data": LaporanDetailResponse(
-        id=laporan.id,
-        tracking_id=laporan.tracking_id,
-        user_id=laporan.user_id,
-        sekolah_npsn=laporan.sekolah_npsn,
-        fasilitas_terkait=laporan.fasilitas_terkait,
-        kondisi_dilaporkan=laporan.kondisi_dilaporkan,
-        deskripsi=laporan.deskripsi,
-        status_sanggahan=laporan.status_sanggahan,
-        created_at=laporan.created_at,
+        **_laporan_fields(laporan),
         sekolah=sekolah_data,
         foto=foto_data,
     )}
