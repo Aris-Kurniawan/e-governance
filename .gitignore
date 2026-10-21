@@ -71,3 +71,7 @@ pnpm-debug.log*
 # Runtime state & log pipeline (F4.10)
 pipeline_state.json
 backend/logs/
+
+
+#model indobert
+backend/app/dataset/severity/models/indobert/model.safetensors

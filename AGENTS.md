@@ -32,6 +32,22 @@
   - Salin/ pindah antar branch → normalisasi `sed 's/\r$//'` atau lewat temp `git worktree`
   - **Jangan stage/commit file yang hanya noise line-ending** (cek `git diff --stat`: kalau seluruh file berubah (>90% baris) = line-ending noise, jangan di-commit)
 
+## Merge & Resolusi Konflik (WAJIB)
+
+Konteks: merge `74b5e977` (15 Okt 2026) membuang fitur Dimas (paginasi 10/hal + tombol vote di `DashboardWilayah.tsx`) karena resolusi konflik memilih "versi remote" secara utuh. Commit tidak hilang — isi file yang hilang. Aturan di bawah mencegah terulang.
+
+- **`git config` wajib di setiap clone:** `merge.conflictStyle=zdiff3`, `merge.renormalize=true`, `rerere.enabled=true`. Tanpa `zdiff3`, konflik hanya menampilkan 2 sisi tanpa base → orang cenderung pilih satu sisi.
+- **Dilarang `git checkout --ours/--theirs <file>`** untuk file yang berubah >50 baris. Wajib baca kedua sisi:
+  - `git show :2:<path>` (sisi kita) · `git show :3:<path>` (sisi mereka) · `git show :1:<path>` (base)
+- **Gate sebelum commit merge — cek fitur tidak hilang:**
+  - `git diff -w --stat <commit-lawan> HEAD -- <file yang dia sentuh>` → kalau ada penghapusan besar, JANGAN commit.
+  - `git log --oneline <commit-lawan>..HEAD -- <file>` untuk memastikan commit lawan terwakili.
+  - Contoh kegagalan yang harus tertangkap: `git diff -w --stat 74fbcca5 HEAD -- DashboardWilayah.tsx` = 402+/795- (795 baris fitur Dimas hilang).
+- **Ukur kehilangan per fitur, bukan per file** — grep penanda fitur di kedua versi: `git show <commit>:<path> | grep -c <penanda>` vs `grep -c <penanda> <path>`. Hilang = 0 di HEAD.
+- **Merge harian untuk file yang disentuh >1 orang** (`DashboardWilayah.tsx`, `frontend/src/lib/api/types.ts`, `docs/universal/INTERFACES.md`). Jangan biarkan branch divergen >2 hari — konflik besar = resolusi tidak terbaca.
+- **`development` dan `main` wajib lewat PR** (branch protection), bukan push langsung. `--force-with-lease` bukan pengganti review.
+- **Line-ending:** `* text=auto eol=lf` + `*.py text eol=crlf` di `.gitattributes` (belum ada — perlu dibuat sekali + renormalize seluruh repo). Diff `>90% baris berubah` pada satu file = noise EOL, jangan di-commit dan jangan dijadikan dasar resolusi konflik.
+
 ## Kontrak & Keputusan (Single Source of Truth)
 
 - **FE ↔ BE:** `docs/universal/INTERFACES.md` — satu-satunya sumber kontrak API

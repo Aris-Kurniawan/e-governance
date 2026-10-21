@@ -31,6 +31,7 @@ export default function DashboardKadis() {
   const { state: sekolahState, refetch: refetchSekolah } = useFetch(() => listSekolah({ page_size: 100 }))
 
   const daftarKlaster = klasterState.status === "success" ? klasterState.data.data : []
+  const daftarSekolah = sekolahState.status === "success" ? sekolahState.data.data : []
   const totalSekolah = sekolahState.status === "success" ? sekolahState.data.meta.total_items : 0
 
   const kpi = useMemo(() => {
@@ -69,9 +70,18 @@ export default function DashboardKadis() {
   // empty state, bukan angka rekaan.
   const trenBulananIsu: { bulan: string; nilai: number }[] = []
 
-  // Koordinat sekolah belum tersedia di API (kolom lintang/bujur kosong di DB),
-  // sehingga peta menampilkan penanda centroide until data koordinat di-ingest.
-  const koordinatSekolah: Record<string, [number, number]> = {}
+  // Koordinat sekolah dari API (F4.11 — kolom `lintang`/`bujur` Dapodik).
+  // Sekolah tanpa koordinat (null) sengaja tidak dipetakan (AGENTS.md: jangan
+  // buat titik rekaan).
+  const koordinatSekolah = useMemo(() => {
+    const map: Record<string, [number, number]> = {}
+    for (const s of daftarSekolah) {
+      if (typeof s.lintang === "number" && typeof s.bujur === "number") {
+        map[s.npsn] = [s.lintang, s.bujur]
+      }
+    }
+    return map
+  }, [daftarSekolah])
 
   /**
    * Tanpa guard ini, kegagalan API diam-diam menampilkan angka `0` sehingga
@@ -286,21 +296,24 @@ export default function DashboardKadis() {
                 style={{ height: "100%", width: "100%" }}
                 scrollWheelZoom={false}
               >
-                {/* Backend v1 belum menyimpan koordinat lintang/bujur sekolah
-                    (kolom `lintang`/`bujur` kosong di basis data), jadi pin
-                    hanya ditampilkan bila koordinat benar-benar tersedia. */}
+                {/* Pin hanya untuk klaster di sekolah yang punya koordinat
+                    Dapodik (lintang/bujur); warna mengikuti ambang skor
+                    prioritas (>70 kritis, 40–70 sedang, <40 rendah) — sama
+                    dengan Peta Sebaran; klik menuju antrian validasi. */}
                 {daftarKlaster
                   .filter((k) => koordinatSekolah[k.sekolah_npsn] !== undefined)
                   .map((point) => {
                     const pos = koordinatSekolah[point.sekolah_npsn]!
+                    const skor = point.skor_prioritas ?? 0
+                    const status = skor > 70 ? "kritis" : skor >= 40 ? "sedang" : "rendah"
                     return (
                       <SeverityMarker
                         key={point.klaster_id}
                         id={point.klaster_id}
                         position={pos}
                         sekolah={point.sekolah_npsn}
-                        skor={point.skor_prioritas}
-                        status={point.status_verifikasi === "terverifikasi" ? "aman" : "kritis"}
+                        skor={skor}
+                        status={status}
                         onClick={() => navigate(`/dinas/antrian?id=${point.klaster_id}`)}
                       />
                     )

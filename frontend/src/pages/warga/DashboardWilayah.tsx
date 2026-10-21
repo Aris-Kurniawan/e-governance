@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
@@ -8,6 +8,10 @@ import { useFetch } from "@/hooks/useFetch"
 import { listSekolah } from "@/lib/api/sekolah"
 import { listKlaster } from "@/lib/api/klaster"
 import { dashboardPrioritas } from "@/lib/api/dashboard"
+import { statusVote, voteKlaster } from "@/lib/api/vote"
+import { ApiError } from "@/lib/api/errors"
+import { MapContainer, SeverityMarker } from "@/components/map"
+import { filterTitikPeta, skorTertinggiPerSekolah, statusDariSkor } from "@/lib/peta"
 import type { DashboardPrioritasItem, KlasterListItem, SekolahList } from "@/lib/api/types"
 import {
   Building2,
@@ -20,6 +24,9 @@ import {
   Plus,
   Lock,
   RotateCw,
+  ChevronLeft,
+  ChevronRight,
+  ThumbsUp,
 } from "lucide-react"
 
 /**
@@ -39,6 +46,12 @@ import {
  */
 
 const PAGE_SIZE = 100;
+
+/** Jumlah baris Matriks Integritas per halaman (sisanya lewat Prev/Next). */
+const BARIS_PER_HALAMAN = 10;
+
+/** Role yang boleh memberi vote (POST /vote). */
+const ROLE_BOLEH_VOTE = ["warga_terverifikasi", "komite_sekolah"];
 
 const OPSI_JENJANG = ["Semua", "SD", "SMP", "SMA", "SMK"] as const;
 
@@ -102,6 +115,19 @@ export default function DashboardWilayah() {
   const [filterJenjang, setFilterJenjang] = useState<string>("Semua");
   const [filterKlaster, setFilterKlaster] = useState<FilterKlaster>("semua");
 
+  // Paginasi tabel Matriks Integritas.
+  const [halaman, setHalaman] = useState(1);
+
+  // Vote (F3.2) — status per klaster + umpan balik.
+  const [votedKlaster, setVotedKlaster] = useState<Record<string, boolean>>({});
+  const [pendingVoteId, setPendingVoteId] = useState<string | null>(null);
+  const [voteBoost, setVoteBoost] = useState<Record<string, number>>({});
+  const [voteError, setVoteError] = useState<string | null>(null);
+  const [isVoteAuthOpen, setIsVoteAuthOpen] = useState(false);
+
+  // Peta sebaran (fitur 74fbcca5 — dipulihkan setelah hilang di merge 74b5e977).
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+
   const { state: sekolahState, refetch: refetchSekolah } = useFetch(() => listSekolah({ page_size: PAGE_SIZE }));
   const { state: klasterState, refetch: refetchKlaster } = useFetch(() => listKlaster({ page_size: PAGE_SIZE }));
   const { state: prioritasState } = useFetch(() => dashboardPrioritas({ limit: 20 }));
@@ -148,6 +174,20 @@ export default function DashboardWilayah() {
     [barisMatriks, filterJenjang],
   );
 
+  // ── Paginasi Matriks Integritas ────────────────────────────────────────────
+  useEffect(() => {
+    setHalaman(1);
+  }, [filterJenjang]);
+
+  const totalHalaman = Math.max(1, Math.ceil(filteredRows.length / BARIS_PER_HALAMAN));
+  const halamanAktif = Math.min(halaman, totalHalaman);
+  const barisTampil = filteredRows.slice(
+    (halamanAktif - 1) * BARIS_PER_HALAMAN,
+    halamanAktif * BARIS_PER_HALAMAN,
+  );
+  const nomorAwal = filteredRows.length === 0 ? 0 : (halamanAktif - 1) * BARIS_PER_HALAMAN + 1;
+  const nomorAkhir = Math.min(halamanAktif * BARIS_PER_HALAMAN, filteredRows.length);
+
   /** Distribusi klaster per kategori — menggantikan peta mock. */
   const sebaranKategori = useMemo(() => {
     const tally = new Map<string, number>();
@@ -163,6 +203,129 @@ export default function DashboardWilayah() {
     if (filterKlaster === "terverifikasi") return klastersPrioritas.filter((k) => k.status_verifikasi === "terverifikasi");
     return klastersPrioritas;
   }, [klastersPrioritas, filterKlaster]);
+
+  // ── Peta Sebaran Sekolah (asal: commit 74fbcca5) ──
+  /** Skor prioritas tertinggi per sekolah — menentukan warna pin. */
+  const klasterPerSekolahSkor = useMemo(
+    () => skorTertinggiPerSekolah(daftarKlaster),
+    [daftarKlaster],
+  );
+
+  /** Titik peta dari koordinat Dapodik — `null` koordinat tidak dipetakan. */
+  const titikSekolah = useMemo(
+    () =>
+      daftarSekolah
+        .filter((s) => typeof s.lintang === "number" && typeof s.bujur === "number")
+        .map((s) => {
+          const skor = klasterPerSekolahSkor.get(s.npsn) ?? 0;
+          return {
+            id: s.npsn,
+            sekolah: s.nama,
+            npsn: s.npsn,
+            alamat: s.alamat,
+            jenjang: s.jenjang,
+            skor,
+            status: statusDariSkor(skor),
+            hasKlaster: klastersPerSekolah.has(s.npsn),
+            lat: s.lintang as number,
+            lng: s.bujur as number,
+          };
+        }),
+    [daftarSekolah, klasterPerSekolahSkor, klastersPerSekolah],
+  );
+
+  /**
+   * Samakan dengan Peta Sebaran: sekolah tanpa klaster tidak dipetakan.
+   * `skor_prioritas` tidak punya nilai 0 — pin "0" lama berarti "belum ada
+   * klaster", bukan kasus tanpa prioritas.
+   */
+  const titikTerfilter = useMemo(
+    () => filterTitikPeta(titikSekolah, { hanyaBerklaster: true }),
+    [titikSekolah],
+  );
+
+  const selectedPoint = useMemo(
+    () => titikTerfilter.find((p) => p.id === selectedPinId),
+    [titikTerfilter, selectedPinId],
+  );
+
+  // ── Vote (F3.2) ────────────────────────────────────────────────────────────
+  /** `dashboard/prioritas` tidak mengirim jumlah vote → ambil dari `GET /klaster`. */
+  const voteCountById = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const k of daftarKlaster) map[k.klaster_id] = k.jumlah_vote_terhitung;
+    return map;
+  }, [daftarKlaster]);
+
+  const idKlasterTampil = useMemo(
+    () => klasterTerfilter.map((k) => k.klaster_id).join(","),
+    [klasterTerfilter],
+  );
+
+  // Status vote hanya bisa ditanyakan saat login (endpoint butuh token).
+  useEffect(() => {
+    if (!isAuthenticated || !idKlasterTampil) return;
+    let cancelled = false;
+    const ids = idKlasterTampil.split(",");
+    Promise.all(
+      ids.map((id) => statusVote(id).catch(() => null)),
+    ).then((hasil) => {
+      if (cancelled) return;
+      const next: Record<string, boolean> = {};
+      hasil.forEach((s, i) => {
+        if (s) next[ids[i]] = s.has_voted;
+      });
+      setVotedKlaster((prev) => ({ ...prev, ...next }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, idKlasterTampil]);
+
+  // Pesan error vote hilang sendiri setelah 4 detik.
+  useEffect(() => {
+    if (!voteError) return;
+    const id = setTimeout(() => setVoteError(null), 4000);
+    return () => clearTimeout(id);
+  }, [voteError]);
+
+  const roleBolehVote = !!user && ROLE_BOLEH_VOTE.includes(user.role);
+
+  const handleVote = async (klasterId: string) => {
+    if (!isAuthenticated) {
+      setIsVoteAuthOpen(true);
+      return;
+    }
+    if (!roleBolehVote) {
+      setVoteError("Hanya warga terverifikasi atau komite sekolah yang dapat memvote.");
+      return;
+    }
+    if (pendingVoteId === klasterId || votedKlaster[klasterId]) return;
+
+    setVoteError(null);
+    setPendingVoteId(klasterId);
+    setVotedKlaster((prev) => ({ ...prev, [klasterId]: true })); // optimistic
+    try {
+      await voteKlaster(klasterId);
+      setVoteBoost((prev) => ({ ...prev, [klasterId]: (prev[klasterId] ?? 0) + 1 }));
+    } catch (err) {
+      const apiErr = err instanceof ApiError ? err : null;
+      if (apiErr?.status === 409) {
+        // Sudah pernah vote — biarkan state voted.
+      } else if (apiErr?.status === 401) {
+        setVotedKlaster((prev) => ({ ...prev, [klasterId]: false }));
+        setIsVoteAuthOpen(true);
+      } else if (apiErr?.status === 403) {
+        setVotedKlaster((prev) => ({ ...prev, [klasterId]: false }));
+        setVoteError("Hanya warga terverifikasi atau komite sekolah yang dapat memvote.");
+      } else {
+        setVotedKlaster((prev) => ({ ...prev, [klasterId]: false }));
+        setVoteError("Gagal mengirim vote. Coba lagi.");
+      }
+    } finally {
+      setPendingVoteId(null);
+    }
+  };
 
   const sekolahDenganKlaster = useMemo(
     () => new Set(daftarKlaster.map((k) => k.sekolah_npsn)).size,
@@ -465,7 +628,7 @@ export default function DashboardWilayah() {
                             </td>
                           </tr>
                         ) : (
-                          filteredRows.map((row) => (
+                          barisTampil.map((row) => (
                             <tr key={row.sekolah.npsn} className="hover:bg-slate-50/80 transition-colors">
                               <td className="py-3.5 px-2">
                                 <Link to={`/sekolah/${row.sekolah.npsn}`} className="font-bold text-slate-900 hover:text-[#0B3052] block">
@@ -524,9 +687,30 @@ export default function DashboardWilayah() {
                       <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Mismatch Kritis</span>
                     </div>
                     <span className="tabular-nums">
-                      Menampilkan {filteredRows.length} dari {totalSekolah} sekolah terdaftar
+                      Menampilkan {nomorAwal}–{nomorAkhir} dari {filteredRows.length} sekolah
                       {filterJenjang !== "Semua" ? ` · difilter jenjang ${filterJenjang}` : ""}
                     </span>
+                    <div className="flex items-center gap-2">
+                      <span className="tabular-nums">Halaman {halamanAktif} dari {totalHalaman}</span>
+                      <button
+                        type="button"
+                        onClick={() => setHalaman(halamanAktif - 1)}
+                        disabled={halamanAktif <= 1}
+                        aria-label="Halaman sebelumnya"
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHalaman(halamanAktif + 1)}
+                        disabled={halamanAktif >= totalHalaman}
+                        aria-label="Halaman berikutnya"
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Next <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -599,6 +783,158 @@ export default function DashboardWilayah() {
                     Kategori &ldquo;belum_terklasifikasi&rdquo; muncul untuk laporan yang tidak masuk ambang klaster.
                   </p>
                 </div>
+
+                {/* Widget: Peta Sebaran Wilayah Audit (dipulihkan dari commit 74fbcca5) */}
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-xs font-bold tracking-wider text-slate-800 uppercase block">
+                        SEBARAN WILAYAH AUDIT
+                      </span>
+                      <span className="text-[11px] text-slate-400">Peta Sebaran Faktual Sekolah</span>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-[#0B3052] border border-blue-200/60">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+                      Kec. Lamongan
+                    </span>
+                  </div>
+
+                  {/* Map Canvas — real Leaflet map seperti di PetaSebaranDinas */}
+                  <div className="relative h-[340px] rounded-xl overflow-hidden border border-slate-200/90 shadow-inner">
+                    {/* Indikator koordinat pojok peta (digeser agar tidak menghalangi tombol zoom) */}
+                    <div className="absolute top-2.5 left-14 sm:left-16 z-[500] pointer-events-none">
+                      <div className="bg-white/95 backdrop-blur-sm rounded-md border border-slate-200/80 px-2.5 py-1 text-[10px] font-mono font-medium text-slate-600 shadow-sm flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        EPSG:4326 &middot; -7.1197&deg;, 112.4145&deg;
+                      </div>
+                    </div>
+
+                    <MapContainer
+                      center={[-7.1197, 112.4145]}
+                      zoom={13}
+                      className="w-full h-full min-h-0"
+                      style={{ height: "100%", width: "100%" }}
+                      scrollWheelZoom={false}
+                      onMapClick={() => setSelectedPinId(null)}
+                    >
+                      {titikTerfilter.map((point) => (
+                        <SeverityMarker
+                          key={point.id}
+                          id={point.id}
+                          position={[point.lat, point.lng]}
+                          sekolah={point.sekolah}
+                          skor={point.skor}
+                          status={point.status}
+                          isSelected={point.id === selectedPinId}
+                          onClick={() => setSelectedPinId((prev) => (prev === point.id ? null : point.id))}
+                        />
+                      ))}
+                    </MapContainer>
+
+                    {/* Floating Popup Card saat pin dipilih */}
+                    {selectedPoint && (
+                      <div className="absolute bottom-2.5 left-2.5 right-2.5 z-[1000] rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 p-3 shadow-lg transition-all">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              {selectedPoint.jenjang} &middot; NPSN: {selectedPoint.npsn}
+                            </span>
+                            <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                              {selectedPoint.sekolah}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                              {selectedPoint.alamat}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPinId(null)}
+                            className="h-5 w-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center shrink-0 cursor-pointer"
+                            aria-label="Tutup info"
+                          >
+                            &times;
+                          </button>
+                        </div>
+
+                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            selectedPoint.status === "kritis"
+                              ? "bg-rose-50 text-rose-700 border border-rose-200"
+                              : selectedPoint.status === "sedang"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          }`}>
+                            Skor: {selectedPoint.skor} ({selectedPoint.status === "kritis" ? "Kritis" : selectedPoint.status === "sedang" ? "Sedang" : "Rendah"})
+                          </span>
+
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              asChild
+                              size="sm"
+                              className="h-7 text-[11px] px-2.5 bg-[#0B3052] hover:bg-[#07213A] text-white font-medium rounded-lg cursor-pointer"
+                            >
+                              <Link to={`/sekolah/${selectedPoint.npsn}`}>
+                                Detail Sekolah
+                              </Link>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                handleReportClick({
+                                  npsn: selectedPoint.npsn,
+                                  nama: selectedPoint.sekolah,
+                                })
+                              }
+                              className="h-7 text-[11px] px-2 text-[#0B3052] border-blue-200 hover:bg-blue-50 font-medium rounded-lg cursor-pointer"
+                            >
+                              Laporkan
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Legend Ambang Prioritas */}
+                  <div className="flex items-center justify-between text-[11px] pt-1 text-slate-500 border-t border-slate-100">
+                    <span className="font-semibold text-slate-600">Ambang Prioritas:</span>
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" /> &lt;40
+                      </span>
+                      <span className="flex items-center gap-1 text-amber-700 font-medium">
+                        <span className="h-2 w-2 rounded-full bg-amber-500" /> 40&ndash;70
+                      </span>
+                      <span className="flex items-center gap-1 text-rose-700 font-medium">
+                        <span className="h-2 w-2 rounded-full bg-rose-600" /> &gt;70
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Info Statistik Bawah */}
+                  <div className="grid grid-cols-2 gap-4 text-xs pt-1 border-t border-slate-100">
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Sekolah Terpetakan:</span>
+                      <strong className="text-slate-800 font-bold">
+                        {titikTerfilter.length} Sekolah
+                      </strong>
+                      <span className="text-slate-400 block text-[10px] mt-0.5">
+                        {titikSekolah.length - titikTerfilter.length} belum memiliki klaster
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Koordinat Wilayah:</span>
+                      <strong className="text-slate-800 font-bold">7.1197&deg; S, 112.4145&deg; E</strong>
+                    </div>
+                  </div>
+
+                  <Button asChild variant="outline" className="w-full text-xs h-9 text-slate-700 border-slate-200 hover:bg-slate-50 font-semibold cursor-pointer">
+                    <Link to="/sekolah">
+                      Buka Direktori &amp; Peta Lengkap
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -638,6 +974,20 @@ export default function DashboardWilayah() {
                 </div>
               </div>
 
+              {voteError && (
+                <div className="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                  <span>{voteError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setVoteError(null)}
+                    aria-label="Tutup pesan"
+                    className="shrink-0 font-bold text-rose-500 hover:text-rose-700 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
@@ -661,6 +1011,9 @@ export default function DashboardWilayah() {
                     ) : (
                       klasterTerfilter.map((k) => {
                         const urgensi = labelUrgensi(k.skor_prioritas);
+                        const sudahVote = !!votedKlaster[k.klaster_id];
+                        const jumlahVote =
+                          (voteCountById[k.klaster_id] ?? 0) + (voteBoost[k.klaster_id] ?? 0);
                         return (
                           <tr key={k.klaster_id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-4 px-3">
@@ -682,14 +1035,40 @@ export default function DashboardWilayah() {
                                 <span className="h-1.5 w-1.5 rounded-full bg-current" /> {urgensi.label}
                               </span>
                               <span className="ml-2 text-[11px] text-slate-400 tabular-nums">skor {k.skor_prioritas}</span>
+                              <span className="ml-2 text-[11px] text-slate-400 tabular-nums">· {jumlahVote} vote</span>
                             </td>
                             <td className="py-4 px-3 text-right">
-                              <Link
-                                to={`/klaster/${k.klaster_id}`}
-                                className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3052] hover:underline"
-                              >
-                                Tinjau Isu
-                              </Link>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleVote(k.klaster_id)}
+                                  disabled={sudahVote || pendingVoteId === k.klaster_id}
+                                  title={sudahVote ? "Kamu sudah memvote klaster ini" : "Beri vote dukungan untuk isu ini"}
+                                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors ${
+                                    sudahVote
+                                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                                      : "border-slate-200 bg-white text-[#0B3052] hover:bg-blue-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                  }`}
+                                >
+                                  {pendingVoteId === k.klaster_id ? (
+                                    "…"
+                                  ) : sudahVote ? (
+                                    <>
+                                      <CheckCircle2 className="h-3.5 w-3.5" /> Voted
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ThumbsUp className="h-3.5 w-3.5" /> Vote
+                                    </>
+                                  )}
+                                </button>
+                                <Link
+                                  to={`/klaster/${k.klaster_id}`}
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3052] hover:underline"
+                                >
+                                  Tinjau Isu
+                                </Link>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -720,6 +1099,12 @@ export default function DashboardWilayah() {
           selectedSchoolForReport ? `/laporan/baru?sekolah=${selectedSchoolForReport.npsn}` : "/laporan/baru"
         }
         schoolName={selectedSchoolForReport?.nama}
+      />
+
+      <AuthRequiredModal
+        open={isVoteAuthOpen}
+        onOpenChange={setIsVoteAuthOpen}
+        redirectUrl="/dashboard"
       />
     </div>
   );
