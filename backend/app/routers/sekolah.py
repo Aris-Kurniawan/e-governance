@@ -181,8 +181,6 @@ def get_sekolah(npsn: str, db: Session = Depends(get_db)):
         penanda_masalah=penanda,
         akreditasi=sekolah.akreditasi,
         nama_kepsek=sekolah.nama_kepsek,
-        lintang=float(sekolah.lintang) if sekolah.lintang is not None else None,
-        bujur=float(sekolah.bujur) if sekolah.bujur is not None else None,
         rasio_guru_siswa=sekolah.data_resmi[0].rasio_guru_siswa
         if sekolah.data_resmi
         else None,
