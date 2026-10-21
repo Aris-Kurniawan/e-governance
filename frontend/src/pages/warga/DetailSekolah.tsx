@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react"
-import { Link, useParams, useSearchParams } from "react-router-dom"
+import { Link, useParams, useSearchParams, useNavigate, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import ModalFormLaporan from "@/components/composite/ModalFormLaporan"
-import AuthRequiredModal from "@/components/composite/AuthRequiredModal"
 import StatusBadge from "@/components/composite/StatusBadge"
 import { useAuth } from "@/context/AuthContext"
 import { useMemo } from "react"
@@ -125,9 +124,10 @@ const FASILITAS_STYLE: Record<FasilitasBaseline["tipe"], { icon: "building" | "f
 export default function DetailSekolah() {
   const { npsn } = useParams<{ npsn: string }>()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, user } = useAuth()
   const [isModalLaporanOpen, setIsModalLaporanOpen] = useState(false)
-  const [isAuthRequiredOpen, setIsAuthRequiredOpen] = useState(false)
 
   const { state: sekolahState } = useFetch(
     () => detailSekolah(npsn ?? ""),
@@ -201,7 +201,7 @@ export default function DetailSekolah() {
 
   const handleReportClick = () => {
     if (!isAuthenticated) {
-      setIsAuthRequiredOpen(true)
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}&action=report`)
     } else {
       setIsModalLaporanOpen(true)
     }
@@ -653,13 +653,6 @@ export default function DetailSekolah() {
           </Button>
         </div>
       </div>
-
-      {/* ── Modal Wajib Autentikasi jika Belum Login ── */}
-      <AuthRequiredModal
-        open={isAuthRequiredOpen}
-        onOpenChange={setIsAuthRequiredOpen}
-        schoolName={baseline.nama}
-      />
 
       {/* ── Modal Form Laporan ── */}
       <ModalFormLaporan

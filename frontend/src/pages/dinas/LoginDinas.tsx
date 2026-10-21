@@ -1,30 +1,22 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { AuthField } from "@/components/auth/AuthField"
 import { useAuth } from "@/context/AuthContext"
 import {
   Building2,
-  Lock,
-  KeyRound,
+  Mail,
   Eye,
   EyeOff,
-  HelpCircle,
-  ShieldAlert,
-  ArrowRight,
-  User,
-  AlertTriangle
+  ShieldCheck,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react"
 
 /**
- * F4.1 — Login panel dinas (API asli).
- *
- * Sebelumnya form ini hanya `setTimeout` lalu navigate (login palsu), sehingga
- * token tidak pernah ada dan `AntrianValidasi` memblokir aksi verifikasi.
- * Sekarang memakai `POST /auth/login` + `GET /auth/me` lewat `useAuth().login`
- * (kontrak INTERFACES.md §1: email + password). Backend tidak punya 2FA,
- * jadi token RFC 6238 dihapus dari form.
+ * F4.1 — Login panel dinas dengan estetika split-dark yang diselaraskan
+ * secara presisi dengan halaman login warga (`AuthLayout` & `Login.tsx`).
  */
 export default function LoginDinas() {
   const navigate = useNavigate()
@@ -40,16 +32,16 @@ export default function LoginDinas() {
     e.preventDefault()
     const identitas = email.trim()
     if (!identitas || !password) return
-    // Backend hanya menerima email (deviasi #8 — INTERFACES.md §1).
+
     if (!identitas.includes("@")) {
       setError("Masukkan email dinas yang terdaftar (format: nama@simakis.id).")
       return
     }
+
     setLoading(true)
     setError(null)
     try {
       const profile = await login(identitas, password)
-      // Peran dinas masuk ke panel internal, sisanya kembali ke portal warga.
       const dinas = ["verifikator_dinas", "kepala_dinas", "admin"]
       navigate(dinas.includes(profile.role) ? "/dinas/dashboard" : "/dashboard")
     } catch (err) {
@@ -59,204 +51,214 @@ export default function LoginDinas() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between relative overflow-hidden text-slate-800">
-      {/* ── Background Seal / Watermark Graphic ── */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/4 pointer-events-none opacity-[0.035]">
-        <svg width="900" height="900" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="250" cy="250" r="240" stroke="#0B3052" strokeWidth="6" strokeDasharray="12 12" />
-          <circle cx="250" cy="250" r="200" stroke="#0B3052" strokeWidth="4" />
-          <polygon points="250,50 310,180 450,190 340,290 375,430 250,360 125,430 160,290 50,190 190,180" stroke="#0B3052" strokeWidth="4" />
-          <circle cx="250" cy="250" r="110" stroke="#0B3052" strokeWidth="4" />
-        </svg>
-      </div>
+  const handleIsiAkunUji = (akunEmail: string, akunPass: string) => {
+    setEmail(akunEmail)
+    setPassword(akunPass)
+    setError(null)
+  }
 
-      {/* ── Top Header Strip ── */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-6 py-3.5 z-10">
-        <div className="mx-auto max-w-7xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1.5 shadow-sm shrink-0">
+  return (
+    <div className="min-h-screen bg-[#0B1726] text-white lg:grid lg:grid-cols-[1.05fr_0.95fr]">
+      {/* ── Kiri: Navigasi + Form Login Dinas ── */}
+      <div className="relative flex min-h-screen flex-col px-6 py-6 sm:px-10 lg:px-14 xl:px-20 justify-between">
+        {/* Topbar: Brand Titik + Navigasi */}
+        <div className="sticky top-0 z-20 -mx-6 mb-2 bg-[#0B1726]/95 backdrop-blur px-6 py-3 sm:-mx-10 sm:px-10 lg:-mx-14 lg:px-14 xl:-mx-20 xl:px-20 flex items-center justify-between">
+          <Link to="/dinas/dashboard" className="flex items-center gap-3 group">
+            <div className="h-9 w-9 rounded-full bg-white border border-white/40 p-1 flex items-center justify-center shadow-sm shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
               <img
                 src="/logo-simakis-icon.png"
                 alt="Logo SIMAKIS"
-                className="h-full w-full object-contain"
+                className="h-full w-full object-contain rounded-full"
                 onError={(e) => {
                   e.currentTarget.src = "/logo-simakis.png";
                 }}
               />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-[#0B3052] text-base tracking-tight">SIMAKIS</span>
-                <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#0B3052] border border-blue-200/70">
-                  PORTAL RESMI
-                </span>
-              </div>
-              <span className="text-[11px] text-slate-500">Pemerintah Kabupaten Lamongan · Dinas Pendidikan</span>
+            <div className="leading-tight">
+              <span className="text-sm font-extrabold tracking-tight text-white block">
+                SIMAKIS<span className="text-blue-400">.</span>
+              </span>
+              <span className="text-[10px] text-white/50 block font-medium">Portal Kedinasan</span>
             </div>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs font-medium">
-            <div className="flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-emerald-800 text-[11px] font-semibold">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Server SPBE: Aktif &amp; Terenkripsi</span>
-            </div>
-            <a 
-              href="#panduan" 
-              className="hidden sm:flex items-center gap-1 text-slate-600 hover:text-[#0B3052] transition-colors"
-            >
-              <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
-              <span>Panduan Teknis</span>
-            </a>
-          </div>
+          </Link>
+          <nav className="flex items-center gap-3 sm:gap-5 text-xs font-semibold">
+            <Link to="/dinas/dashboard" className="text-white/55 hover:text-white transition-colors">
+              Beranda
+            </Link>
+            <span className="rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 text-[11px] font-bold">
+              Portal Dinas
+            </span>
+          </nav>
         </div>
-      </header>
 
-      {/* ── Center Login Card ── */}
-      <main className="flex-1 flex items-center justify-center px-6 py-12 z-10">
-        <div className="w-full max-w-[480px] bg-white rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-200/50 p-7 sm:p-9 space-y-6">
-          {/* Badge & Icon Header */}
-          <div className="flex flex-col items-center text-center space-y-3">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800 border border-amber-200">
-              <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
-              <span>Akses Terbatas: Aparatur Dinas Pendidikan</span>
+        {/* Konten Form */}
+        <div className="flex flex-1 items-center justify-center lg:justify-start my-auto">
+          <div className="w-full max-w-[430px] py-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/25 bg-blue-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-300 mb-3">
+              <Building2 className="h-3.5 w-3.5 text-blue-400" />
+              <span>Aparatur Dinas Pendidikan</span>
             </div>
 
-            <div className="h-14 w-14 rounded-2xl bg-[#0B3052] text-white flex items-center justify-center shadow-md">
-              <Building2 className="h-7 w-7" />
-            </div>
+            <h1 className="text-[32px] sm:text-[38px] font-extrabold leading-[1.12] tracking-tight text-white">
+              Portal Dinas<span className="text-blue-400">.</span>
+            </h1>
 
-            <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
-                Portal Dinas Pendidikan
-              </h1>
-              <p className="mt-1 text-xs sm:text-[13px] text-slate-500 leading-relaxed max-w-sm">
-                Sistem Audit Partisipatif &amp; Pengambilan Keputusan Sarpras Kecamatan Lamongan
-              </p>
-            </div>
-          </div>
+            <p className="mt-3 text-sm text-white/55 leading-relaxed">
+              Panel verifikasi, audit sarpras, dan tindak lanjut isu fasilitas sekolah Kecamatan Lamongan.
+            </p>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Field 1: Email Dinas */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800">
-                Email Dinas Resmi <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nama@simakis.id"
-                  className="pl-9 text-xs h-10 border-slate-200 bg-slate-50/50 focus:bg-white rounded-xl"
-                  required
-                />
-              </div>
-              <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                <span>ⓘ Login memakai email akun (bukan NIP) sesuai kontrak API autentikasi.</span>
-              </p>
-            </div>
+            <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+              <AuthField
+                label="Email Dinas Resmi"
+                type="email"
+                placeholder="nama@simakis.id"
+                autoComplete="email"
+                icon={<Mail className="h-4 w-4" />}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
 
-            {/* Field 2: Password */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-slate-800">
-                  Kata Sandi Akun <span className="text-rose-500">*</span>
-                </label>
-                <a href="#helpdesk" className="text-[#0B3052] hover:underline font-semibold text-[11px]">
-                  Bantuan Masuk (IT Helpdesk)
-                </a>
-              </div>
-              <div className="relative">
-                <KeyRound className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan kata sandi kedinasan"
-                  className="pl-9 pr-9 text-xs h-10 border-slate-200 bg-slate-50/50 focus:bg-white rounded-xl"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              <AuthField
+                label="Kata Sandi Akun"
+                type={showPassword ? "text" : "password"}
+                placeholder="Masukkan kata sandi dinas"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="h-8 w-8 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
+                    title={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                }
+              />
+
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-2 cursor-pointer select-none">
+                  <Checkbox
+                    id="remember-dinas"
+                    checked={rememberSession}
+                    onCheckedChange={(checked) => setRememberSession(Boolean(checked))}
+                    className="border-white/25 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                  />
+                  <label htmlFor="remember-dinas" className="text-xs text-white/55 cursor-pointer">
+                    Ingat sesi kedinasan (30 hari)
+                  </label>
+                </div>
+                <Link
+                  to="/login"
+                  className="text-xs font-semibold text-white/55 hover:text-blue-400 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                  Bukan aparatur?
+                </Link>
               </div>
-            </div>
 
-            {/* Pesan error autentikasi */}
-            {error && (
-              <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50/80 px-3.5 py-2.5 text-[11px] leading-relaxed text-rose-800">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Remember session & Security Protocol */}
-            <div className="flex items-center justify-between text-xs pt-1">
-              <label className="flex items-center gap-2 cursor-pointer select-none text-slate-700">
-                <Checkbox
-                  checked={rememberSession}
-                  onCheckedChange={(c) => setRememberSession(!!c)}
-                />
-                <span className="text-[11px] font-medium">Ingat sesi kedinasan (12 jam kerja)</span>
-              </label>
-              <span className="text-[10px] font-mono text-slate-400">TLS 1.3 · AES-256</span>
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold rounded-xl text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
-            >
-              {loading ? (
-                <span>Memverifikasi Kredensial...</span>
-              ) : (
-                <>
-                  <span>Masuk ke Panel Verifikator</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-xs font-medium text-rose-200 flex items-start gap-2.5"
+                >
+                  <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
               )}
-            </Button>
 
-            {/* Legal Notice Card */}
-            <div className="rounded-xl bg-slate-50 border border-slate-200/70 p-3 flex items-start gap-2.5 text-[11px] text-slate-600 leading-relaxed">
-              <Lock className="h-4 w-4 text-[#0B3052] shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-slate-800">Pemberitahuan Akuntabilitas Hukum (UU ITE):</strong> Sistem ini dilindungi UU No. 11/2008 &amp; UU No. 27/2022. Segala aktivitas masuk, verifikasi mismatch sarana, dan alokasi perbaikan tercatat otomatis pada <strong>Log Audit PDP</strong> terikat NIP aparatur.
+              <Button
+                type="submit"
+                disabled={loading || !email || !password}
+                className="mt-2 w-full h-[52px] rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {loading ? "Memverifikasi Kredensial…" : "Masuk ke Panel Dinas"}
+              </Button>
+
+              {/* Pintasan Akun Uji Cepat */}
+              <div className="pt-4 border-t border-white/10 mt-6">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-blue-400" /> Akun Pengujian Sistem
+                  </span>
+                  <span className="text-[10px] text-white/35">Klik untuk mengisi</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-left">
+                  <button
+                    type="button"
+                    onClick={() => handleIsiAkunUji("bambang@simakis.id", "Dinas123!")}
+                    className="p-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs transition-colors cursor-pointer text-left"
+                  >
+                    <div className="font-bold text-blue-300">Bambang H., S.T.</div>
+                    <div className="text-[10px] text-white/45 truncate">Verifikator Sarpras</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleIsiAkunUji("kadis@simakis.id", "Dinas123!")}
+                    className="p-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs transition-colors cursor-pointer text-left"
+                  >
+                    <div className="font-bold text-emerald-300">Kepala Dinas</div>
+                    <div className="text-[10px] text-white/45 truncate">Pengambil Kebijakan</div>
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Switch to Citizen Portal */}
-            <div className="pt-2 text-center text-xs text-slate-500">
-              Bukan aparatur dinas pendidikan?{" "}
-              <Link to="/" className="font-bold text-[#0B3052] hover:underline">
-                Beralih ke Portal Warga &amp; Komite Sekolah
-              </Link>
-            </div>
-          </form>
-        </div>
-      </main>
-
-      {/* ── Footer ── */}
-      <footer className="bg-white border-t border-slate-200/80 px-6 py-4 text-center text-xs text-slate-500 z-10">
-        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>&copy; 2026 SIMAKIS · Inisiatif Riset Kolaboratif PSDKU Lamongan PENS &amp; Dinas Pendidikan Kab. Lamongan</span>
-          <div className="flex items-center gap-3 text-[11px] text-slate-400">
-            <span>Standar Keamanan SPBE KemenPAN-RB</span>
-            <span>•</span>
-            <span>Kepatuhan UU PDP No. 27/2022</span>
-            <span>•</span>
-            <span>Sertifikasi Tanda Tangan BSrE / BSSN</span>
+            </form>
           </div>
         </div>
-      </footer>
+
+        {/* Footer */}
+        <footer className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-white/30 pt-6 border-t border-white/5">
+          <span>&copy; 2026 Disdik Kab. Lamongan &middot; SPBE Terpadu</span>
+          <span>Kepatuhan UU PDP No. 27/2022 &middot; Enkripsi AES-256</span>
+        </footer>
+      </div>
+
+      {/* ── Kanan: Foto Institusional + Overlay + Badge SPBE ── */}
+      <aside className="relative hidden lg:block overflow-hidden bg-[#0E1F33]">
+        <img
+          src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=1600&q=80"
+          alt="Gedung Sarpras Sekolah Lamongan"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        {/* Overlay Gelap */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B1726] via-[#0B1726]/50 to-[#0B1726]/70" />
+        <div className="absolute inset-0 bg-[#0B1726]/40" />
+
+        {/* Garis Kurva Putus-Putus Khas SIMAKIS */}
+        <svg
+          viewBox="0 0 100 800"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 h-full w-24 xl:w-28"
+        >
+          <path
+            d="M72 0 C 18 130, 92 270, 42 410 C 2 520, 84 650, 52 800"
+            fill="none"
+            stroke="rgba(255,255,255,0.35)"
+            strokeWidth="1.2"
+            strokeDasharray="7 9"
+            strokeLinecap="round"
+          />
+        </svg>
+
+        {/* Floating Security Badge Card */}
+        <div className="absolute top-10 right-10 max-w-sm rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-5 shadow-2xl">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-300">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white tracking-wide">AUTENTIKASI APARATUR SPBE</div>
+              <div className="text-[11px] text-white/60">Hak akses tersertifikasi RBAC &amp; Audit Trail</div>
+            </div>
+          </div>
+          <p className="mt-3 text-[11px] text-white/70 leading-relaxed border-t border-white/10 pt-2.5">
+            Sistem pengawasan berkala sarana dan prasarana pendidikan berbasis pangkalan data terintegrasi Dapodikdasmen.
+          </p>
+        </div>
+      </aside>
     </div>
   )
 }
