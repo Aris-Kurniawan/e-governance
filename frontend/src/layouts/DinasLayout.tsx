@@ -24,7 +24,8 @@ import {
   CheckCheck,
   School,
   Ticket,
-  BadgeCheck
+  BadgeCheck,
+  Inbox
 } from "lucide-react"
 import { useFetch } from "@/hooks/useFetch"
 import { listKlaster } from "@/lib/api/klaster"
@@ -290,6 +291,12 @@ export default function DinasLayout() {
       active: location.pathname.startsWith("/dinas/antrian"),
     },
     {
+      to: "/dinas/perlu-review",
+      label: "Perlu Review",
+      icon: Inbox,
+      active: location.pathname.startsWith("/dinas/perlu-review"),
+    },
+    {
       to: "/dinas/ingest",
       label: "Ingest Data CSV",
       icon: FileText,
@@ -306,6 +313,12 @@ export default function DinasLayout() {
       label: "Tabel Verifikasi",
       icon: SlidersHorizontal,
       active: location.pathname.startsWith("/dinas/tabel"),
+    },
+    {
+      to: "/dinas/status",
+      label: "Status Tindak Lanjut",
+      icon: Clock,
+      active: location.pathname.startsWith("/dinas/status") || location.pathname.startsWith("/dinas/tindak-lanjut"),
     },
     {
       to: "/dinas/skor-kbm",
@@ -329,11 +342,11 @@ export default function DinasLayout() {
           {/* Brand Header */}
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
             <Link to="/dinas/dashboard" className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1.5 shadow-sm shrink-0">
+              <div className="h-11 w-11 rounded-full bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-sm shrink-0 overflow-hidden">
                 <img
                   src="/logo-simakis-icon.png"
                   alt="Logo SIMAKIS"
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-contain rounded-full"
                   onError={(e) => {
                     e.currentTarget.src = "/logo-simakis.png";
                   }}

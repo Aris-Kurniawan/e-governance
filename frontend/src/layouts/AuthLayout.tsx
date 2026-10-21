@@ -22,11 +22,23 @@ export default function AuthLayout() {
       <div className="relative flex min-h-screen flex-col px-6 py-6 sm:px-10 lg:px-14 xl:px-20">
         {/* Topbar ala mockup: titik brand + nav Beranda / Masuk / Daftar */}
         <div className="sticky top-0 z-20 -mx-6 mb-2 bg-[#0B1726]/95 backdrop-blur px-6 py-3 sm:-mx-10 sm:px-10 lg:-mx-14 lg:px-14 xl:-mx-20 xl:px-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <span className="h-3.5 w-3.5 rounded-full bg-blue-500 shadow-[0_0_16px_rgba(59,130,246,0.85)] transition-transform group-hover:scale-110" />
-            <span className="text-sm font-extrabold tracking-tight text-white">
-              SIMAKIS<span className="text-blue-400">.</span>
-            </span>
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="h-9 w-9 rounded-full bg-white border border-white/40 p-1 flex items-center justify-center shadow-sm shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src="/logo-simakis-icon.png"
+                alt="Logo SIMAKIS"
+                className="h-full w-full object-contain rounded-full"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo-simakis.png";
+                }}
+              />
+            </div>
+            <div className="leading-tight">
+              <span className="text-sm font-extrabold tracking-tight text-white block">
+                SIMAKIS<span className="text-blue-400">.</span>
+              </span>
+              <span className="text-[10px] text-white/50 block font-medium">Kab. Lamongan</span>
+            </div>
           </Link>
           <nav className="flex items-center gap-4 sm:gap-6 text-xs font-semibold text-white/55">
             <Link to="/" className="hover:text-white transition-colors">
@@ -99,18 +111,6 @@ export default function AuthLayout() {
             strokeLinecap="round"
           />
         </svg>
-
-        {/* Watermark logo kanan bawah */}
-        <div className="absolute bottom-7 right-8">
-          <img
-            src="/logo-simakis-icon.png"
-            alt="SIMAKIS"
-            className="h-14 w-14 object-contain opacity-90 drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)]"
-            onError={(e) => {
-              e.currentTarget.style.display = "none"
-            }}
-          />
-        </div>
       </aside>
     </div>
   )

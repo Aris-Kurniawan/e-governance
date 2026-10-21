@@ -32,6 +32,7 @@ export default function WargaLayout() {
             <nav className="hidden items-center gap-1.5 md:flex">
               <Nav active={location.pathname === "/dashboard"} to="/dashboard" label="Dashboard" />
               <Nav active={location.pathname === "/laporan/wilayah"} to="/laporan/wilayah" label="Dashboard Wilayah" />
+              <Nav active={location.pathname.startsWith("/klaster")} to="/klaster" label="Klaster Isu" />
               <Nav active={location.pathname.startsWith("/sekolah")} to="/sekolah" label="Direktori Sekolah" />
               <Nav active={location.pathname.startsWith("/laporan/riwayat")} to="/laporan/riwayat" label="Riwayat Laporan" />
               <Nav active={location.pathname === "/tentang"} to="/tentang" label="Tentang Data" />

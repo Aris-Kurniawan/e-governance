@@ -68,6 +68,21 @@ export async function statusTindakLanjut(id: string) {
   return { status_terkini: terakhir?.status ?? null, riwayat };
 }
 
+/**
+ * `POST /klaster/{id}/status?status=&alasan=` — `verifikator_dinas`, `kepala_dinas`.
+ * Memperbarui status penanganan / tindak lanjut klaster.
+ */
+export function updateStatusKlaster(
+  id: string,
+  status: StatusPenanganan,
+  alasan?: string,
+): Promise<{ klaster_id: string; status: string; message: string }> {
+  return postData(`/klaster/${encodeURIComponent(id)}/status`, undefined, {
+    status,
+    alasan,
+  });
+}
+
 /** `POST /ai/cluster` — `admin`, `verifikator_dinas`. Pipeline lambat. */
 export function triggerClustering(forceReprocess = false) {
   return postData<{ klaster_created: number; message: string }>("/ai/cluster", undefined, {

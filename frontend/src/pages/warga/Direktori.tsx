@@ -24,10 +24,10 @@ import type { SekolahList } from "@/lib/api/types"
 /**
  * F4.1 — baris tabel diperluas dari respons `GET /sekolah`.
  *
- * Backend v1 mengirim `penanda_masalah` yang selalu bernilai "normal"
- * (AGENTS.md §Scope FINAL) dan tidak mengirim tanggal audit per sekolah,
- * sehingga label status diturunkan dari `penanda_masalah` dan kolom audit
- * diisi "Belum tersedia" — bukan angka rekaan.
+ * `penanda_masalah` dihitung nyata oleh backend sejak F4.11 (`kritis` /
+ * `perlu_perhatian` / `normal` — INTERFACES.md §2); label status diturunkan
+ * dari field tersebut. Tanggal audit per sekolah tidak dikirim backend,
+ * sehingga kolom audit diisi "Belum tersedia" — bukan angka rekaan.
  */
 type StatusIntegritas = "Selisih Kritis" | "Selisih Minor" | "Data Sesuai"
 

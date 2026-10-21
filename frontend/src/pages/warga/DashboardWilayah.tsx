@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
-import AuthRequiredModal from "@/components/composite/AuthRequiredModal"
 import { useAuth } from "@/context/AuthContext"
 import { useFetch } from "@/hooks/useFetch"
 import { listSekolah } from "@/lib/api/sekolah"
@@ -13,6 +12,8 @@ import { ApiError } from "@/lib/api/errors"
 import { MapContainer, SeverityMarker } from "@/components/map"
 import { filterTitikPeta, skorTertinggiPerSekolah, statusDariSkor } from "@/lib/peta"
 import type { DashboardPrioritasItem, KlasterListItem, SekolahList } from "@/lib/api/types"
+import NumberedPagination from "@/components/composite/NumberedPagination"
+import AuthRequiredModal from "@/components/composite/AuthRequiredModal"
 import {
   Building2,
   AlertTriangle,
@@ -24,8 +25,6 @@ import {
   Plus,
   Lock,
   RotateCw,
-  ChevronLeft,
-  ChevronRight,
   ThumbsUp,
 } from "lucide-react"
 
@@ -46,9 +45,7 @@ import {
  */
 
 const PAGE_SIZE = 100;
-
-/** Jumlah baris Matriks Integritas per halaman (sisanya lewat Prev/Next). */
-const BARIS_PER_HALAMAN = 10;
+const ITEMS_PER_PAGE = 10;
 
 /** Role yang boleh memberi vote (POST /vote). */
 const ROLE_BOLEH_VOTE = ["warga_terverifikasi", "komite_sekolah"];
@@ -110,13 +107,10 @@ function kelasSkor(skor: number): string {
 export default function DashboardWilayah() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const [isAuthRequiredOpen, setIsAuthRequiredOpen] = useState(false);
-  const [selectedSchoolForReport, setSelectedSchoolForReport] = useState<{ npsn: string; nama: string } | null>(null);
   const [filterJenjang, setFilterJenjang] = useState<string>("Semua");
   const [filterKlaster, setFilterKlaster] = useState<FilterKlaster>("semua");
-
-  // Paginasi tabel Matriks Integritas.
-  const [halaman, setHalaman] = useState(1);
+  const [pageMatriks, setPageMatriks] = useState<number>(1);
+  const [pageKlaster, setPageKlaster] = useState<number>(1);
 
   // Vote (F3.2) — status per klaster + umpan balik.
   const [votedKlaster, setVotedKlaster] = useState<Record<string, boolean>>({});
@@ -130,7 +124,7 @@ export default function DashboardWilayah() {
 
   const { state: sekolahState, refetch: refetchSekolah } = useFetch(() => listSekolah({ page_size: PAGE_SIZE }));
   const { state: klasterState, refetch: refetchKlaster } = useFetch(() => listKlaster({ page_size: PAGE_SIZE }));
-  const { state: prioritasState } = useFetch(() => dashboardPrioritas({ limit: 20 }));
+  const { state: prioritasState } = useFetch(() => dashboardPrioritas({ limit: PAGE_SIZE }));
 
   const daftarSekolah: SekolahList[] = sekolahState.status === "success" ? sekolahState.data.data : [];
   const totalSekolah = sekolahState.status === "success" ? sekolahState.data.meta.total_items : 0;
@@ -174,20 +168,6 @@ export default function DashboardWilayah() {
     [barisMatriks, filterJenjang],
   );
 
-  // ── Paginasi Matriks Integritas ────────────────────────────────────────────
-  useEffect(() => {
-    setHalaman(1);
-  }, [filterJenjang]);
-
-  const totalHalaman = Math.max(1, Math.ceil(filteredRows.length / BARIS_PER_HALAMAN));
-  const halamanAktif = Math.min(halaman, totalHalaman);
-  const barisTampil = filteredRows.slice(
-    (halamanAktif - 1) * BARIS_PER_HALAMAN,
-    halamanAktif * BARIS_PER_HALAMAN,
-  );
-  const nomorAwal = filteredRows.length === 0 ? 0 : (halamanAktif - 1) * BARIS_PER_HALAMAN + 1;
-  const nomorAkhir = Math.min(halamanAktif * BARIS_PER_HALAMAN, filteredRows.length);
-
   /** Distribusi klaster per kategori — menggantikan peta mock. */
   const sebaranKategori = useMemo(() => {
     const tally = new Map<string, number>();
@@ -203,6 +183,30 @@ export default function DashboardWilayah() {
     if (filterKlaster === "terverifikasi") return klastersPrioritas.filter((k) => k.status_verifikasi === "terverifikasi");
     return klastersPrioritas;
   }, [klastersPrioritas, filterKlaster]);
+
+  const handleFilterJenjang = (val: string) => {
+    setFilterJenjang(val);
+    setPageMatriks(1);
+  };
+
+  const handleFilterKlaster = (val: FilterKlaster) => {
+    setFilterKlaster(val);
+    setPageKlaster(1);
+  };
+
+  const totalPagesMatriks = Math.max(1, Math.ceil(filteredRows.length / ITEMS_PER_PAGE));
+  const currentPageMatriks = Math.min(Math.max(1, pageMatriks), totalPagesMatriks);
+  const paginatedMatriksRows = useMemo(() => {
+    const start = (currentPageMatriks - 1) * ITEMS_PER_PAGE;
+    return filteredRows.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredRows, currentPageMatriks]);
+
+  const totalPagesKlaster = Math.max(1, Math.ceil(klasterTerfilter.length / ITEMS_PER_PAGE));
+  const currentPageKlaster = Math.min(Math.max(1, pageKlaster), totalPagesKlaster);
+  const paginatedKlasterRows = useMemo(() => {
+    const start = (currentPageKlaster - 1) * ITEMS_PER_PAGE;
+    return klasterTerfilter.slice(start, start + ITEMS_PER_PAGE);
+  }, [klasterTerfilter, currentPageKlaster]);
 
   // ── Peta Sebaran Sekolah (asal: commit 74fbcca5) ──
   /** Skor prioritas tertinggi per sekolah — menentukan warna pin. */
@@ -366,12 +370,14 @@ export default function DashboardWilayah() {
 
   const handleReportClick = (school?: { npsn: string; nama: string }) => {
     if (!isAuthenticated) {
-      setSelectedSchoolForReport(school ?? null);
-      setIsAuthRequiredOpen(true);
+      const destination = school
+        ? `/laporan/baru?sekolah=${school.npsn}`
+        : "/laporan/baru";
+      navigate(`/login?redirect=${encodeURIComponent(destination)}`);
     } else if (school) {
       navigate(`/laporan/baru?sekolah=${school.npsn}`);
     } else {
-      navigate("/sekolah");
+      navigate("/laporan/baru");
     }
   };
 
@@ -574,7 +580,7 @@ export default function DashboardWilayah() {
                       >
                         <Plus className="h-3.5 w-3.5 mr-1" /> Laporkan Temuan
                       </Button>
-                      <Select value={filterJenjang} onValueChange={setFilterJenjang}>
+                      <Select value={filterJenjang} onValueChange={handleFilterJenjang}>
                         <SelectTrigger
                           aria-label="Filter jenjang sekolah"
                           className={`h-8 w-auto gap-2 rounded-lg border-slate-200 bg-white px-3 text-xs font-medium shadow-sm whitespace-nowrap inline-flex items-center ${
@@ -628,7 +634,7 @@ export default function DashboardWilayah() {
                             </td>
                           </tr>
                         ) : (
-                          barisTampil.map((row) => (
+                          paginatedMatriksRows.map((row) => (
                             <tr key={row.sekolah.npsn} className="hover:bg-slate-50/80 transition-colors">
                               <td className="py-3.5 px-2">
                                 <Link to={`/sekolah/${row.sekolah.npsn}`} className="font-bold text-slate-900 hover:text-[#0B3052] block">
@@ -679,38 +685,36 @@ export default function DashboardWilayah() {
                     </table>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-100 text-[11px] text-slate-500">
-                    <div className="flex items-center gap-3">
-                      <span>Keterangan:</span>
-                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Sesuai</span>
-                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> Selisih Minor</span>
-                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Mismatch Kritis</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 text-[11px] text-slate-500">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span>Keterangan:</span>
+                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Sesuai</span>
+                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> Selisih Minor</span>
+                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Mismatch Kritis</span>
+                      </div>
+                      <div className="tabular-nums">
+                        {filteredRows.length === 0 ? (
+                          "0 sekolah"
+                        ) : (
+                          <>
+                            Menampilkan{" "}
+                            <strong className="text-slate-700">
+                              {(currentPageMatriks - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPageMatriks * ITEMS_PER_PAGE, filteredRows.length)}
+                            </strong>{" "}
+                            dari <strong className="text-slate-700">{filteredRows.length}</strong> sekolah
+                            {filterJenjang !== "Semua" ? ` (difilter jenjang ${filterJenjang})` : ""}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <span className="tabular-nums">
-                      Menampilkan {nomorAwal}–{nomorAkhir} dari {filteredRows.length} sekolah
-                      {filterJenjang !== "Semua" ? ` · difilter jenjang ${filterJenjang}` : ""}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="tabular-nums">Halaman {halamanAktif} dari {totalHalaman}</span>
-                      <button
-                        type="button"
-                        onClick={() => setHalaman(halamanAktif - 1)}
-                        disabled={halamanAktif <= 1}
-                        aria-label="Halaman sebelumnya"
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft className="h-3.5 w-3.5" /> Prev
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHalaman(halamanAktif + 1)}
-                        disabled={halamanAktif >= totalHalaman}
-                        aria-label="Halaman berikutnya"
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        Next <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    {totalPagesMatriks > 1 && (
+                      <NumberedPagination
+                        currentPage={currentPageMatriks}
+                        totalPages={totalPagesMatriks}
+                        onPageChange={setPageMatriks}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -955,7 +959,7 @@ export default function DashboardWilayah() {
                   ] as { id: FilterKlaster; label: string }[]).map((chip) => (
                     <button
                       key={chip.id}
-                      onClick={() => setFilterKlaster(chip.id)}
+                      onClick={() => handleFilterKlaster(chip.id)}
                       className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
                         filterKlaster === chip.id
                           ? "bg-[#0B3052] text-white font-semibold"
@@ -1009,7 +1013,7 @@ export default function DashboardWilayah() {
                         </td>
                       </tr>
                     ) : (
-                      klasterTerfilter.map((k) => {
+                      paginatedKlasterRows.map((k) => {
                         const urgensi = labelUrgensi(k.skor_prioritas);
                         const sudahVote = !!votedKlaster[k.klaster_id];
                         const jumlahVote =
@@ -1078,11 +1082,27 @@ export default function DashboardWilayah() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-xs text-slate-500">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
                 <span className="tabular-nums">
-                  Menampilkan {klasterTerfilter.length} klaster
-                  {totalKlaster > klastersPrioritas.length ? ` · 20 teratas dari ${totalKlaster}` : ""}
+                  {klasterTerfilter.length === 0 ? (
+                    "0 klaster"
+                  ) : (
+                    <>
+                      Menampilkan{" "}
+                      <strong className="text-slate-700">
+                        {(currentPageKlaster - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPageKlaster * ITEMS_PER_PAGE, klasterTerfilter.length)}
+                      </strong>{" "}
+                      dari <strong className="text-slate-700">{klasterTerfilter.length}</strong> klaster
+                    </>
+                  )}
                 </span>
+                {totalPagesKlaster > 1 && (
+                  <NumberedPagination
+                    currentPage={currentPageKlaster}
+                    totalPages={totalPagesKlaster}
+                    onPageChange={setPageKlaster}
+                  />
+                )}
                 <Link to="/laporan/riwayat" className="text-xs font-bold text-[#0B3052] hover:underline">
                   Lihat riwayat laporan
                 </Link>
@@ -1091,16 +1111,6 @@ export default function DashboardWilayah() {
           </>
         )}
       </div>
-
-      <AuthRequiredModal
-        open={isAuthRequiredOpen}
-        onOpenChange={setIsAuthRequiredOpen}
-        redirectUrl={
-          selectedSchoolForReport ? `/laporan/baru?sekolah=${selectedSchoolForReport.npsn}` : "/laporan/baru"
-        }
-        schoolName={selectedSchoolForReport?.nama}
-      />
-
       <AuthRequiredModal
         open={isVoteAuthOpen}
         onOpenChange={setIsVoteAuthOpen}

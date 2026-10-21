@@ -13,11 +13,11 @@ export default function PublicLayout() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-sm shrink-0">
+              <div className="h-10 w-10 rounded-full bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-sm shrink-0 overflow-hidden">
                 <img
                   src="/logo-simakis-icon.png"
                   alt="Logo SIMAKIS"
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-contain rounded-full"
                   onError={(e) => {
                     e.currentTarget.src = "/logo-simakis.png";
                   }}
@@ -32,6 +32,7 @@ export default function PublicLayout() {
             <nav className="hidden items-center gap-1.5 md:flex">
               <NavLink to="/" label="Home" active={location.pathname === "/"} />
               <NavLink to="/laporan/wilayah" label="Dashboard Wilayah" active={location.pathname === "/laporan/wilayah"} />
+              <NavLink to="/klaster" label="Klaster Isu" active={location.pathname.startsWith("/klaster")} />
               <NavLink to="/sekolah" label="Direktori Sekolah" active={location.pathname === "/sekolah"} />
               <NavLink to="/laporan/riwayat" label="Riwayat Laporan" active={location.pathname === "/laporan/riwayat"} />
               <NavLink to="/tentang" label="Tentang Data" active={location.pathname === "/tentang"} />
@@ -109,6 +110,7 @@ export default function PublicLayout() {
             <h4 className="mb-4 text-xs font-bold uppercase tracking-wider text-white">Portal</h4>
             <ul className="space-y-2.5 text-xs sm:text-sm">
               <li><Link to="/sekolah" className="hover:text-white transition-colors">Direktori Sekolah</Link></li>
+              <li><Link to="/klaster" className="hover:text-white transition-colors">Klaster Isu</Link></li>
               <li><Link to="/laporan/riwayat" className="hover:text-white transition-colors">Laporan Saya</Link></li>
               <li><Link to="/tentang" className="hover:text-white transition-colors">Tentang Data</Link></li>
             </ul>

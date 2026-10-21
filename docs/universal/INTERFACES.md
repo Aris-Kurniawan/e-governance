@@ -295,8 +295,8 @@ response `200`:
 | GET | `/laporan/perlu-review` | `admin`, `kepala_dinas` | Daftar laporan perlu verifikasi manual (F4.7/D-21): tanpa klaster **ATAU** klaster kategori `belum_terklasifikasi` — envelope `{data, meta}` §0.2 (`page`, `page_size` default 20 maks 100) |
 | PUT | `/laporan/{id}/status` | `admin`, `kepala_dinas` | Update `status_sanggahan` — verifikasi manual per laporan (F4.7/D-21) |
 | GET | `/laporan/skor-kbm` | `admin`, `verifikator_dinas`, `kepala_dinas` | Skor dampak KBM per sekolah (F4.8/D-22) — seluruh 62 sekolah, diurutkan skor DESC |
-| GET | `/laporan/{id}/konfirmasi` | Pemilik laporan | **[DRAFT]** Ambil pertanyaan konfirmasi severity yang dipilih AI (§4.2) |
-| POST | `/laporan/{id}/konfirmasi` | Pemilik laporan | **[DRAFT]** Kirim jawaban konfirmasi severity (§4.3) |
+| GET | `/laporan/{id}/konfirmasi` | Pemilik laporan | Ambil pertanyaan konfirmasi severity yang dipilih AI (§4.2) |
+| POST | `/laporan/{id}/konfirmasi` | Pemilik laporan | Kirim jawaban konfirmasi severity (§4.3) |
 
 **`POST /laporan`** — request:
 ```json
@@ -319,8 +319,8 @@ response `201`:
 }
 ```
 
-<!-- DRAFT KONFIRMASI -->
-**TAMBAHAN DRAFT** — field `konfirmasi` pada respons `201` (lihat §4.1):
+<!-- KONFIRMASI -->
+**TAMBAHAN** — field `konfirmasi` pada respons `201` (lihat §4.1):
 
 ```json
 {
@@ -425,6 +425,7 @@ Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster —
 
 ### 4.1 Konfirmasi Severity — Ringkasan ✅ **(F4.15)**
 
+> ✅ **Disetujui 20 Okt 2026** (Aris & Dimas, §11.1) — §4.1–§4.4 sah sebagai dasar implementasi.
 **Status: ✅ backend final (20 Okt 2026).** Kontrak dikunci dengan default yang disetujui
 (§19.7): satu `GET` mengembalikan semua pertanyaan · field `kode`/`nilai` · endpoint terpisah ·
 kedaluwarsa **lazy saat diakses** · verifikator tidak mengubah jawaban. Modal FE dikerjakan
@@ -439,6 +440,9 @@ deskripsi. Pertanyaan struktural hanya muncul bila deskripsi memuat pemicu
 Sifat: **opsional, tidak memblokir apa pun.** Laporan tetap sah bila tidak dijawab. Bila tidak
 dijawab dalam **24 jam**, status menjadi `dilewati` saat endpoint diakses (tanpa cron). Jawaban
 disimpan di `laporan.jawaban_konfirmasi` (JSON) untuk audit + fitur lapis 2.
+
+Spesifikasi lengkap (bank pertanyaan, aturan berjenjang, pemicu struktural):
+`docs/backend/SPEC_SEVERITY_KLASIFIKASI.md` §15.
 
 ### 4.2 `GET /laporan/{id}/konfirmasi` ✅
 
@@ -825,16 +829,16 @@ diimplementasikan sampai ada keputusan lanjutan.
 
 ## 11. Yang Belum Diputuskan (perlu diisi sebelum implementasi final)
 
-### 11.1 Kontrak Konfirmasi Severity **[DRAFT — belum disetujui]**
+### 11.1 Kontrak Konfirmasi Severity ✅ **[Disetujui 20 Okt 2026]**
 
-Lima butir berikut harus ditentukan bersama FE (Dimas) sebelum §4.1–§4.4 di atas dikunci
+Lima butir berikut disepakati bersama FE (Dimas) — §4.1–§4.4 di atas terkunci sebagai kontrak
 (lihat `docs/backend/SPEC_SEVERITY_KLASIFIKASI.md` §19.7):
 
-- [ ] Pertanyaan konfirmasi diambil **sekali** (satu `GET`) atau **bertahap** per jawaban?
-- [ ] Nama field `kode` vs `gejala_id` — bebas, asal konsisten dua sisi.
-- [ ] Endpoint konfirmasi **terpisah** (§4.2/§4.3) atau **digabung** ke `GET /laporan/{id}`?
-- [ ] Batas waktu 24 jam → siapa yang mengubah status ke `dilewati`: cron atau saat diakses?
-- [ ] Apakah verifikator boleh mengubah jawaban warga?
+- [x] Pertanyaan konfirmasi diambil **sekali** — satu `GET` memuat seluruh pertanyaan (tanpa bertahap).
+- [x] Nama field **`kode`** (bukan `gejala_id`) — konsisten dua sisi.
+- [x] Endpoint konfirmasi **terpisah** (§4.2 `GET` / §4.3 `POST`) — tidak digabung ke `GET /laporan/{id}`.
+- [x] Batas waktu 24 jam → status `dilewati` di-flip **lazy saat diakses** (bukan oleh cron).
+- [x] Verifikator **TIDAK boleh** mengubah jawaban warga (koreksi kondisi terjadi di jalur verifikasi dengan penanda `sumber_kondisi`).
 
 - **Batas ukuran & jumlah foto bukti per laporan** — belum ada angka
   resmi (§10).

@@ -2,9 +2,11 @@ import { useState, useRef } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useFetch } from "@/hooks/useFetch"
+import PertanyaanKonfirmasi from "@/components/warga/PertanyaanKonfirmasi"
 import { detailSekolah } from "@/lib/api/sekolah"
-import { kirimLaporan } from "@/lib/api/laporan"
-import type { SekolahDetail } from "@/lib/api/types"
+import { kirimLaporan, uploadFotoBukti } from "@/lib/api/laporan"
+import { ApiError } from "@/lib/api/errors"
+import type { SekolahDetail, StatusKonfirmasi } from "@/lib/api/types"
 import {
   CheckCircle2,
   Send,
@@ -13,41 +15,109 @@ import {
   Info,
   X,
   ImageIcon,
+  Copy,
+  Check,
+  HelpCircle,
 } from "lucide-react"
 
 type TipeTemuan = "mismatch" | "kerusakan_baru"
 
+const MIN_DESKRIPSI = 20
+const MAX_DESKRIPSI = 2000
+const MAX_FOTO_BYTES = 5 * 1024 * 1024
+
+const LABEL_TIPE: Record<TipeTemuan, string> = {
+  mismatch: "[Ketidaksesuaian Data]",
+  kerusakan_baru: "[Kerusakan Baru]",
+}
+
+/**
+ * Buang metadata EXIF dengan re-encode di browser: gambar dirender ulang ke
+ * canvas lalu di-export sebagai JPEG — sifat canvas melepas seluruh metadata
+ * (termasuk koordinat GPS yang mungkin tertempel di foto ponsel).
+ */
+async function stripExif(file: File): Promise<File> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = () => reject(new Error("Gambar tidak dapat dibaca"))
+      el.src = url
+    })
+    const canvas = document.createElement("canvas")
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return file
+    ctx.drawImage(img, 0, 0)
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.92),
+    )
+    if (!blob) return file
+    return new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" })
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export default function FormLaporan() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const npsnParam = searchParams.get("sekolah") || "70002205"
+  // Rute /laporan/baru sudah dibungkus ProtectedRoute (App.tsx) — user belum
+  // login diarahkan ke /login?redirect=… otomatis sebelum halaman ini tampil.
+  const npsn = (searchParams.get("sekolah") || "").trim()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [npsn] = useState(npsnParam)
   const [tipeTemuan, setTipeTemuan] = useState<TipeTemuan>("mismatch")
   const [lokasiSpesifik, setLokasiSpesifik] = useState("")
   const [deskripsi, setDeskripsi] = useState("")
-  const [isAnonim, setIsAnonim] = useState(true)
   const [loading, setLoading] = useState(false)
   const [trackingId, setTrackingId] = useState<string | null>(null)
   const [errorGagal, setErrorGagal] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const [fotoFile, setFotoFile] = useState<File | null>(null)
+  const [fotoError, setFotoError] = useState<string | null>(null)
+  const [fotoStatus, setFotoStatus] = useState<"kosong" | "terkirim" | "gagal">("kosong")
   const [dragOver, setDragOver] = useState(false)
 
+  // ── F4.13 — Konfirmasi severity pasca-laporan (opsional, §4.1) ────────────
+  const [laporanId, setLaporanId] = useState<string | null>(null)
+  const [perluKonfirmasi, setPerluKonfirmasi] = useState(false)
+  const [konfirmasiOpen, setKonfirmasiOpen] = useState(false)
+  const [konfirmasiStatus, setKonfirmasiStatus] = useState<StatusKonfirmasi | null>(null)
+  const [konfirmasiKondisi, setKonfirmasiKondisi] = useState<string | null>(null)
+
   const { state: sekolahState } = useFetch(
-    () => (npsn.trim() ? detailSekolah(npsn.trim()) : Promise.resolve(null as unknown as SekolahDetail)),
-    [npsn]
+    () => (npsn ? detailSekolah(npsn) : Promise.resolve(null as unknown as SekolahDetail)),
+    [npsn],
   )
   const sekolah = sekolahState.status === "success" ? sekolahState.data : null
+  const sekolahTidakDitemukan =
+    sekolahState.status === "error" && sekolahState.code === "NOT_FOUND"
+  const sekolahDimuat = sekolah !== null && sekolahState.status === "success"
 
-  const displayName = sekolah?.nama || "SMAN 1 Sukodadi"
-  const displayNpsn = npsn || "70002205"
+  const displayName = sekolah
+    ? sekolah.nama
+    : sekolahState.status === "loading"
+      ? "Memuat data sekolah…"
+      : sekolahTidakDitemukan
+        ? "Sekolah tidak ditemukan"
+        : `NPSN ${npsn}`
 
-  // Ringkasan baseline dapodik
+  // Baseline dari data nyata — tanpa angka demo fallback.
   const baselineText = sekolah?.ringkasan_sarpras?.total_unit
-    ? `${sekolah.ringkasan_sarpras.total_unit} unit sarpras: ${sekolah.ringkasan_sarpras.total_baik} baik dan ${sekolah.ringkasan_sarpras.total_rusak_berat || 6} rusak berat.`
-    : "24 ruang kelas: 18 baik dan 6 rusak berat."
+    ? `${sekolah.ringkasan_sarpras.total_unit} unit sarpras: ${sekolah.ringkasan_sarpras.total_baik} baik dan ${sekolah.ringkasan_sarpras.total_rusak_berat} rusak berat.`
+    : sekolahState.status === "loading"
+      ? "Memuat baseline sekolah…"
+      : sekolahTidakDitemukan
+        ? "Baseline tidak tersedia — sekolah tidak ditemukan."
+        : "Baseline Dapodik tidak tersedia untuk sekolah ini."
+
+  const deskripsiValid =
+    deskripsi.trim().length >= MIN_DESKRIPSI && deskripsi.length <= MAX_DESKRIPSI
+  const submitDisabled = loading || !deskripsiValid || !npsn || !sekolahDimuat
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -60,8 +130,15 @@ export default function FormLaporan() {
   const handleFileChange = (file: File | null) => {
     if (!file) return
     const allowed = ["image/png", "image/jpeg"]
-    if (!allowed.includes(file.type)) return
-    if (file.size > 5 * 1024 * 1024) return
+    if (!allowed.includes(file.type)) {
+      setFotoError("Format harus PNG atau JPG.")
+      return
+    }
+    if (file.size > MAX_FOTO_BYTES) {
+      setFotoError("Ukuran foto maksimal 5 MB.")
+      return
+    }
+    setFotoError(null)
     setFotoFile(file)
   }
 
@@ -72,23 +149,89 @@ export default function FormLaporan() {
     handleFileChange(file)
   }
 
+  const handleCopyTracking = async () => {
+    if (!trackingId) return
+    try {
+      await navigator.clipboard.writeText(trackingId)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard bisa diblokir browser — biarkan, user masih bisa salin manual.
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!displayNpsn || !deskripsi || deskripsi.length < 20) return
+    if (submitDisabled) return
     setLoading(true)
+    setErrorGagal(null)
     try {
       const res = await kirimLaporan({
-        sekolah_npsn: displayNpsn,
-        fasilitas_terkait: lokasiSpesifik || null,
-        deskripsi,
+        sekolah_npsn: npsn,
+        fasilitas_terkait: lokasiSpesifik.trim() || null,
+        // Tipe temuan dikirim sebagai prefix agar AI pipeline mendapat konteks
+        // jenis temuan tanpa menambah field baru di kontrak backend.
+        deskripsi: `${LABEL_TIPE[tipeTemuan]} ${deskripsi.trim()}`,
       })
+      // Laporan sudah tersimpan — foto bukti menyusul. Gagal upload tidak
+      // membatalkan laporan; hanya ditandai di layar sukses.
+      if (fotoFile) {
+        try {
+          const bersih = await stripExif(fotoFile)
+          await uploadFotoBukti(res.id, bersih)
+          setFotoStatus("terkirim")
+        } catch {
+          setFotoStatus("gagal")
+        }
+      }
       setTrackingId(res.tracking_id)
-      setErrorGagal(null)
+      // F4.13 — banner konfirmasi hanya bila backend menandai perlu (§4.1:
+      // opsional, tidak memblokir laporan yang sudah tersimpan).
+      setLaporanId(res.id)
+      setPerluKonfirmasi(res.konfirmasi?.perlu_konfirmasi === true)
+      setKonfirmasiStatus(res.konfirmasi?.perlu_konfirmasi ? "menunggu" : null)
     } catch (err) {
-      setErrorGagal(err instanceof Error ? err.message : "Gagal mengirim laporan.")
+      if (err instanceof ApiError) {
+        if (err.code === "UNAUTHORIZED") {
+          const redirect = encodeURIComponent(`/laporan/baru?sekolah=${encodeURIComponent(npsn)}`)
+          navigate(`/login?redirect=${redirect}&action=report`)
+          return
+        }
+        if (err.code === "FORBIDDEN") {
+          setErrorGagal(
+            "Akun Anda menunggu verifikasi dinas. Laporan hanya bisa dikirim oleh warga terverifikasi atau komite sekolah.",
+          )
+          return
+        }
+        if (err.code === "NOT_FOUND") {
+          setErrorGagal("Sekolah tidak ditemukan. Periksa kembali atau pilih sekolah lain.")
+          return
+        }
+        setErrorGagal(err.message)
+      } else {
+        setErrorGagal("Gagal mengirim laporan. Periksa koneksi internet lalu coba lagi.")
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  // Tanpa ?sekolah= — arahkan warga memilih sekolah dulu, jangan menebak NPSN.
+  if (!npsn) {
+    return (
+      <div className="min-h-screen bg-slate-50/60 py-10 px-4 sm:px-6 flex items-center justify-center">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200/90 bg-white p-8 text-center shadow-xl space-y-4">
+          <h1 className="text-xl font-bold text-slate-900">Pilih Sekolah Terlebih Dahulu</h1>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Laporan harus terkait dengan sekolah tertentu. Buka Direktori Sekolah, lalu tekan
+            tombol &ldquo;Lapor&rdquo; pada kartu sekolah yang ingin diaudit.
+          </p>
+          <Button asChild className="rounded-xl bg-[#64748b] hover:bg-[#475569] text-white font-medium px-5 py-2.5 h-auto">
+            <Link to="/sekolah">Buka Direktori Sekolah</Link>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   // Tampilan Sukses
@@ -102,12 +245,87 @@ export default function FormLaporan() {
           <div>
             <h1 className="text-xl font-bold text-slate-900">Laporan Berhasil Dikirim</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Laporan audit kamu sudah diterima dan sedang menunggu verifikasi oleh tim audit partisipatif.
+              Laporan audit kamu sudah diterima dan sedang menunggu verifikasi oleh tim audit
+              partisipatif.
             </p>
-            <div className="mt-4 inline-block rounded-lg bg-slate-100 px-4 py-2 text-xs text-slate-600 border border-slate-200">
-              Tracking ID: <strong className="font-mono text-slate-900">{trackingId}</strong>
+            {fotoStatus === "terkirim" && (
+              <p className="mt-2 text-xs text-emerald-600 font-medium">Foto bukti berhasil diunggah.</p>
+            )}
+            {fotoStatus === "gagal" && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 text-left leading-relaxed">
+                Foto bukti gagal diunggah — <strong>laporan tetap tersimpan dan sah</strong> tanpa
+                foto. Kamu bisa melampirkan bukti saat verifikasi jika diminta.
+              </div>
+            )}
+            <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-xs text-slate-600 border border-slate-200">
+              <span>
+                Tracking ID: <strong className="font-mono text-slate-900">{trackingId}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyTracking}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
+                aria-label="Salin Tracking ID"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3 w-3 text-emerald-600" /> Tersalin
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3" /> Salin
+                  </>
+                )}
+              </button>
             </div>
           </div>
+
+          {/* F4.13 T3 — banner konfirmasi (opsional, SPEC §19.6: tidak memblokir) */}
+          {perluKonfirmasi && konfirmasiStatus === null && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3.5 text-left space-y-2.5">
+              <p className="text-xs text-blue-950 leading-relaxed flex items-start gap-2">
+                <HelpCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                <span>
+                  <strong>AI menemukan pola pada deskripsimu</strong> — jawab beberapa pertanyaan
+                  singkat agar tingkat kerusakan lebih akurat (±1 menit). Boleh juga dilewati,
+                  laporanmu tetap sah.
+                </span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setKonfirmasiOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 cursor-pointer"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" /> Jawab Sekarang
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKonfirmasiStatus("dilewati")}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold px-3.5 py-2 border border-slate-200 cursor-pointer"
+                >
+                  Lewati
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Status ringkas konfirmasi setelah diputuskan */}
+          {konfirmasiStatus && konfirmasiStatus !== "menunggu" && (
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              Konfirmasi tingkat kerusakan:{" "}
+              <strong className="text-slate-700">
+                {konfirmasiStatus === "terjawab" ? "Terjawab" : "Dilewati"}
+              </strong>
+              {konfirmasiKondisi && (
+                <span className="text-slate-400 font-normal">
+                  · kondisi: {konfirmasiKondisi.replace(/_/g, " ")}
+                </span>
+              )}
+            </p>
+          )}
+
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             <Button asChild className="rounded-xl bg-[#64748b] hover:bg-[#475569] text-white font-medium">
               <Link to="/laporan/riwayat">Lihat Riwayat Laporan</Link>
@@ -117,6 +335,25 @@ export default function FormLaporan() {
             </Button>
           </div>
         </div>
+
+        {/* F4.13 T3 — modal pertanyaan konfirmasi */}
+        {laporanId && (
+          <PertanyaanKonfirmasi
+            laporanId={laporanId}
+            open={konfirmasiOpen}
+            onOpenChange={setKonfirmasiOpen}
+            onSelesai={(hasil) => {
+              setKonfirmasiOpen(false)
+              if (hasil) {
+                setKonfirmasiStatus(hasil.status)
+                setKonfirmasiKondisi(hasil.kondisi_dilaporkan)
+              } else {
+                // 409 — sudah pernah dijawab (mis. tab lain) → tutup + tandai.
+                setKonfirmasiStatus("terjawab")
+              }
+            }}
+          />
+        )}
       </div>
     )
   }
@@ -157,7 +394,8 @@ export default function FormLaporan() {
             Audit Ketidaksesuaian Data Sekolah
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-            Bandingkan catatan Dapodik dengan kondisi riil di {displayName}. Formulir ini hanya untuk demonstrasi.
+            Bandingkan catatan Dapodik dengan kondisi riil di {displayName}. Laporanmu akan
+            diverifikasi oleh tim audit partisipatif.
           </p>
         </div>
 
@@ -169,8 +407,18 @@ export default function FormLaporan() {
               Sekolah yang Diperiksa
             </label>
             <div className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm text-slate-800 font-medium">
-              {displayName} (NPSN: {displayNpsn})
+              {displayName} (NPSN: {npsn})
             </div>
+            {sekolahTidakDitemukan && (
+              <p className="mt-1.5 text-[11px] text-red-600 leading-relaxed">
+                Sekolah dengan NPSN {npsn} tidak ditemukan — laporan tidak dapat dikirim. Pilih
+                sekolah lain dari{" "}
+                <Link to="/sekolah" className="underline font-semibold">
+                  Direktori Sekolah
+                </Link>
+                .
+              </p>
+            )}
           </div>
 
           {/* Catatan Baseline Dapodik */}
@@ -178,9 +426,7 @@ export default function FormLaporan() {
             <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-bold text-blue-700">Catatan Baseline Dapodik</p>
-              <p className="text-xs text-blue-600 mt-0.5">
-                {baselineText}
-              </p>
+              <p className="text-xs text-blue-600 mt-0.5">{baselineText}</p>
             </div>
           </div>
 
@@ -233,6 +479,9 @@ export default function FormLaporan() {
                 )
               })}
             </div>
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              Pilihan ini dilampirkan otomatis ke awal deskripsi agar AI mengenali jenis temuan.
+            </p>
           </div>
 
           {/* Lokasi Ruang Spesifik */}
@@ -259,13 +508,29 @@ export default function FormLaporan() {
               value={deskripsi}
               onChange={(e) => setDeskripsi(e.target.value)}
               rows={3}
+              maxLength={MAX_DESKRIPSI}
               placeholder="Jelaskan kondisi riil secara objektif. Contoh: Genteng pecah sehingga air menetes ke meja praktikum..."
               className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 transition-colors resize-none min-h-[96px]"
               required
             />
-            <p className="text-[11px] text-slate-400 mt-1">
-              Minimal 20 karakter. Jangan mencantumkan NIK atau data pribadi.
-            </p>
+            <div className="flex items-start justify-between gap-3 mt-1">
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Minimal {MIN_DESKRIPSI} karakter. Jangan mencantumkan NIK atau data pribadi.
+                {deskripsi.length > 0 && deskripsi.trim().length < MIN_DESKRIPSI && (
+                  <span className="text-amber-600 font-medium">
+                    {" "}
+                    Kurang {MIN_DESKRIPSI - deskripsi.trim().length} karakter lagi.
+                  </span>
+                )}
+              </p>
+              <span
+                className={`text-[11px] tabular-nums shrink-0 ${
+                  deskripsi.length >= MAX_DESKRIPSI ? "text-rose-500 font-semibold" : "text-slate-400"
+                }`}
+              >
+                {deskripsi.length}/{MAX_DESKRIPSI}
+              </span>
+            </div>
           </div>
 
           {/* Lampiran Bukti Foto */}
@@ -300,7 +565,7 @@ export default function FormLaporan() {
                   <p className="text-xs font-semibold text-emerald-700">{fotoFile.name}</p>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setFotoFile(null) }}
+                    onClick={(e) => { e.stopPropagation(); setFotoFile(null); setFotoError(null) }}
                     className="text-[11px] text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                   >
                     Hapus file
@@ -316,49 +581,36 @@ export default function FormLaporan() {
                 </>
               )}
             </div>
+            {fotoError && (
+              <p className="text-[11px] text-rose-600 mt-1.5">{fotoError}</p>
+            )}
             <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-              Foto diproses ulang tanpa metadata EXIF di browser. Foto tidak diunggah dalam mode demonstrasi.
+              Foto diunggah sebagai bukti setelah laporan tersimpan; metadata EXIF dibuang di
+              browser sebelum unggah.
             </p>
           </div>
 
-          {/* Toggle Anonim */}
-          <div
-            onClick={() => setIsAnonim((v) => !v)}
-            className="rounded-xl border border-slate-200 bg-white p-4 flex items-center justify-between cursor-pointer hover:border-slate-300 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="h-5 w-5 text-slate-800 shrink-0" />
-              <div>
-                <span className="text-sm font-semibold text-slate-800 block">
-                  Kirim Sebagai Laporan Anonim
-                </span>
-                <span className="text-xs text-slate-500 block mt-0.5">
-                  Identitas profil contoh disamarkan dalam pratinjau.
-                </span>
-              </div>
+          {/* Info Privasi (pengganti toggle anonim — backend selalu mencatat
+              pelapor untuk keperluan tracking, identitas tidak dipublikasikan) */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex items-start gap-3">
+            <ShieldCheck className="h-5 w-5 text-slate-700 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-sm font-semibold text-slate-800 block">
+                Privasi Pelapor
+              </span>
+              <span className="text-xs text-slate-500 block mt-0.5 leading-relaxed">
+                Identitas kamu tidak ditampilkan ke publik. Laporan dilacak lewat Tracking ID
+                untuk proses verifikasi.
+              </span>
             </div>
-            {/* Switch Button */}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isAnonim}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0 ${
-                isAnonim ? "bg-[#0B3052]" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                  isAnonim ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
           </div>
 
           {/* Disclaimer */}
           <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 flex items-start gap-2.5">
             <Info className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
             <p className="text-xs text-slate-500 leading-relaxed">
-              Laporan hanya ditambahkan ke sesi pratinjau dan tidak dikirim ke dinas. Jangan gunakan informasi sensitif.
+              Laporan dikirim ke dinas untuk verifikasi. Jangan gunakan informasi sensitif
+              seperti NIK atau nama korban.
             </p>
           </div>
 
@@ -374,14 +626,14 @@ export default function FormLaporan() {
             </Button>
             <Button
               type="submit"
-              disabled={loading || !deskripsi || deskripsi.length < 20}
+              disabled={submitDisabled}
               className="rounded-xl bg-[#64748b] hover:bg-[#475569] text-white px-5 py-2.5 text-sm font-medium shadow flex items-center gap-2 cursor-pointer h-auto transition-colors disabled:opacity-50"
             >
               {loading ? (
-                "Mengirim…"
+                fotoFile ? "Mengirim & mengunggah…" : "Mengirim…"
               ) : (
                 <>
-                  <Send className="h-4 w-4" /> Kirim Audit (Simulasi)
+                  <Send className="h-4 w-4" /> Kirim Laporan
                 </>
               )}
             </Button>
@@ -390,4 +642,4 @@ export default function FormLaporan() {
       </div>
     </div>
   )
-}
+}

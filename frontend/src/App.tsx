@@ -1,4 +1,6 @@
+import { Suspense, lazy } from "react"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { Loader2 } from "lucide-react"
 import { ErrorBoundary } from "@/components/errors/ErrorBoundary"
 import { AuthProvider } from "@/context/AuthContext"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
@@ -7,25 +9,33 @@ import AuthLayout from "@/layouts/AuthLayout"
 import WargaLayout from "@/layouts/WargaLayout"
 import DinasLayout from "@/layouts/DinasLayout"
 import Landing from "@/pages/warga/Landing"
-import Login from "@/pages/warga/Login"
-import Registrasi from "@/pages/warga/Registrasi"
-import DashboardWilayah from "@/pages/warga/DashboardWilayah"
-import Direktori from "@/pages/warga/Direktori"
-import DetailSekolah from "@/pages/warga/DetailSekolah"
-import DetailKlaster from "@/pages/warga/DetailKlaster"
-import FormLaporan from "@/pages/warga/FormLaporan"
-import RiwayatLaporan from "@/pages/warga/RiwayatLaporan"
-import TentangData from "@/pages/warga/TentangData"
+
+// ── F4.3 — lazy-load halaman per rute (React.lazy + Suspense) ────────────────
+// Landing tetap eager sebagai entry utama; sisanya terpotong jadi chunk terpisah
+// sehingga bundle awal jauh lebih kecil (turunkan peringatan chunk > 500 kB).
+const Login = lazy(() => import("@/pages/warga/Login"))
+const Registrasi = lazy(() => import("@/pages/warga/Registrasi"))
+const DashboardWilayah = lazy(() => import("@/pages/warga/DashboardWilayah"))
+const Direktori = lazy(() => import("@/pages/warga/Direktori"))
+const DetailSekolah = lazy(() => import("@/pages/warga/DetailSekolah"))
+const DetailKlaster = lazy(() => import("@/pages/warga/DetailKlaster"))
+const FormLaporan = lazy(() => import("@/pages/warga/FormLaporan"))
+const RiwayatLaporan = lazy(() => import("@/pages/warga/RiwayatLaporan"))
+const TentangData = lazy(() => import("@/pages/warga/TentangData"))
+const DaftarKlaster = lazy(() => import("@/pages/warga/DaftarKlaster"))
+const StatusTindakLanjutWarga = lazy(() => import("@/pages/warga/StatusTindakLanjutWarga"))
 
 // Dinas (Pemerintah) Pages
-import LoginDinas from "@/pages/dinas/LoginDinas"
-import DashboardKadis from "@/pages/dinas/DashboardKadis"
-import AntrianValidasi from "@/pages/dinas/AntrianValidasi"
-import IngestDataCsv from "@/pages/dinas/IngestDataCsv"
-import PetaSebaranDinas from "@/pages/dinas/PetaSebaranDinas"
-import TabelVerifikasi from "@/pages/dinas/TabelVerifikasi"
-import LaporanSkorKbm from "@/pages/dinas/LaporanSkorKbm"
-import LogAuditPdp from "@/pages/dinas/LogAuditPdp"
+const LoginDinas = lazy(() => import("@/pages/dinas/LoginDinas"))
+const DashboardKadis = lazy(() => import("@/pages/dinas/DashboardKadis"))
+const AntrianValidasi = lazy(() => import("@/pages/dinas/AntrianValidasi"))
+const IngestDataCsv = lazy(() => import("@/pages/dinas/IngestDataCsv"))
+const PetaSebaranDinas = lazy(() => import("@/pages/dinas/PetaSebaranDinas"))
+const TabelVerifikasi = lazy(() => import("@/pages/dinas/TabelVerifikasi"))
+const StatusTindakLanjut = lazy(() => import("@/pages/dinas/StatusTindakLanjut"))
+const LaporanSkorKbm = lazy(() => import("@/pages/dinas/LaporanSkorKbm"))
+const LogAuditPdp = lazy(() => import("@/pages/dinas/LogAuditPdp"))
+const LaporanPerluReview = lazy(() => import("@/pages/dinas/LaporanPerluReview"))
 
 function NotFound() {
   return (
@@ -37,12 +47,23 @@ function NotFound() {
   )
 }
 
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center px-6">
+      <span className="inline-flex items-center gap-2 text-body-sm font-medium text-ink-tertiary">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" /> Memuat halaman…
+      </span>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <ErrorBoundary>
-          <Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
             {/* Public (Warga) */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Landing />} />
@@ -50,8 +71,11 @@ export default function App() {
               <Route path="/laporan/wilayah" element={<DashboardWilayah />} />
               <Route path="/sekolah" element={<Direktori />} />
               <Route path="/sekolah/:npsn" element={<DetailSekolah />} />
+              <Route path="/klaster" element={<DaftarKlaster />} />
               <Route path="/klaster/:klasterId" element={<DetailKlaster />} />
+              <Route path="/klaster/:klasterId/status" element={<StatusTindakLanjutWarga />} />
               <Route path="/laporan/riwayat" element={<RiwayatLaporan />} />
+              <Route path="/laporan/publik" element={<RiwayatLaporan />} />
             </Route>
 
             {/* Auth Warga (Login / Registrasi) — shell split-dark */}
@@ -95,9 +119,12 @@ export default function App() {
               <Route index element={<DashboardKadis />} />
               <Route path="dashboard" element={<DashboardKadis />} />
               <Route path="antrian" element={<AntrianValidasi />} />
+              <Route path="perlu-review" element={<LaporanPerluReview />} />
               <Route path="ingest" element={<IngestDataCsv />} />
               <Route path="peta" element={<PetaSebaranDinas />} />
               <Route path="tabel" element={<TabelVerifikasi />} />
+              <Route path="status" element={<StatusTindakLanjut />} />
+              <Route path="tindak-lanjut" element={<StatusTindakLanjut />} />
               <Route path="skor-kbm" element={<LaporanSkorKbm />} />
               <Route path="log-audit" element={<LogAuditPdp />} />
             </Route>
@@ -105,6 +132,7 @@ export default function App() {
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </ErrorBoundary>
       </AuthProvider>
     </BrowserRouter>

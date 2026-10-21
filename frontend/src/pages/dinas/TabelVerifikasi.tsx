@@ -12,13 +12,27 @@ import {
   ArrowRight,
   RotateCw,
   AlertTriangle,
+  ClipboardCheck,
+  Clock,
+  MessageSquare,
+  Gauge,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { useFetch } from "@/hooks/useFetch"
-import { listKlaster } from "@/lib/api/klaster"
-import { listSekolah } from "@/lib/api/sekolah"
 import { useAuth } from "@/context/AuthContext"
-import type { KlasterListItem, StatusKlaster } from "@/lib/api/types"
+import { listKlaster, detailKlaster } from "@/lib/api/klaster"
+import { listSekolah } from "@/lib/api/sekolah"
+import { overridePrioritas } from "@/lib/api/vote"
+import { ApiError } from "@/lib/api/errors"
+import type { KlasterListItem, StatusKlaster, KlasterDetail } from "@/lib/api/types"
 
 /**
  * F4.1 — Rekap Verifikasi Sarpras (`/dinas/tabel`).
@@ -92,13 +106,102 @@ interface BarisTabel {
 }
 
 export default function TabelVerifikasi() {
-  const { role } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("Semua");
   const [filterJenjang, setFilterJenjang] = useState("Semua");
   const [sortKey, setSortKey] = useState<SortKey>("skorPrioritas");
   const [sortAsc, setSortAsc] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Modal Detail Klaster Internal (khusus panel dinas, tidak ke dashboard warga)
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailData, setDetailData] = useState<{
+    klaster: KlasterDetail | null;
+    namaSekolah: string | null;
+    jenjang: string;
+  } | null>(null);
+
+  const handleBukaDetail = async (row: BarisTabel) => {
+    setDetailModalOpen(true);
+    setDetailLoading(true);
+    setDetailData({ klaster: null, namaSekolah: row.namaSekolah, jenjang: row.jenjang });
+    try {
+      const data = await detailKlaster(row.klaster.klaster_id);
+      setDetailData({ klaster: data, namaSekolah: row.namaSekolah, jenjang: row.jenjang });
+    } catch {
+      setDetailData({
+        klaster: { ...row.klaster, sekolah_nama: row.namaSekolah, created_at: "", laporan: [] },
+        namaSekolah: row.namaSekolah,
+        jenjang: row.jenjang,
+      });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // ── F3.4 §B2 — Override urutan prioritas manual (kepala_dinas) ────────────
+  // INTERFACES.md §7: `PUT /vote/klaster/{id}/override?urutan_prioritas=&alasan=`
+  // `alasan` WAJIB (422 REASON_REQUIRED) — PAGE_STATES §B2 & §C.1 (audit trail).
+  const { role } = useAuth();
+  const bolehOverride = role === "kepala_dinas";
+
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideTarget, setOverrideTarget] = useState<BarisTabel | null>(null);
+  const [overrideUrutan, setOverrideUrutan] = useState("");
+  const [overrideAlasan, setOverrideAlasan] = useState("");
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
+  const [overrideSuccess, setOverrideSuccess] = useState<string | null>(null);
+
+  const handleBukaOverride = (row: BarisTabel, posisiSaatIni: number) => {
+    setOverrideTarget(row);
+    setOverrideUrutan(String(row.klaster.urutan_prioritas_override ?? posisiSaatIni));
+    setOverrideAlasan("");
+    setOverrideError(null);
+    setOverrideSuccess(null);
+    setOverrideOpen(true);
+  };
+
+  const handleSubmitOverride = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!overrideTarget) return;
+
+    const urutan = Number(overrideUrutan);
+    if (!Number.isInteger(urutan) || urutan < 1) {
+      setOverrideError("Peringkat harus berupa bilangan bulat ≥ 1.");
+      return;
+    }
+    if (!overrideAlasan.trim()) {
+      setOverrideError("Alasan override wajib diisi untuk audit trail.");
+      return;
+    }
+
+    setOverrideSubmitting(true);
+    setOverrideError(null);
+    try {
+      const res = await overridePrioritas(overrideTarget.klaster.klaster_id, urutan, overrideAlasan.trim());
+      setOverrideSuccess(
+        `Prioritas dikunci ke urutan #${res.urutan_prioritas_override} — alasan tercatat untuk audit.`
+      );
+      await refetch();
+      setTimeout(() => setOverrideOpen(false), 1400);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setOverrideError(
+          err.code === "REASON_REQUIRED"
+            ? "Alasan wajib diisi (backend menolak tanpa alasan)."
+            : err.code === "FORBIDDEN"
+              ? "Hanya Kepala Dinas yang boleh mengubah urutan prioritas."
+              : err.message
+        );
+      } else {
+        setOverrideError("Gagal menyimpan override prioritas.");
+      }
+    } finally {
+      setOverrideSubmitting(false);
+    }
+  };
 
   const { state: klasterState, refetch } = useFetch(() => listKlaster({ page_size: PAGE_SIZE }));
   const { state: sekolahState } = useFetch(() => listSekolah({ page_size: PAGE_SIZE }));
@@ -371,9 +474,10 @@ export default function TabelVerifikasi() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {paginatedData.map((row) => {
+                  {paginatedData.map((row, idx) => {
                     const k = row.klaster;
                     const cfg = STATUS_META[k.status_verifikasi];
+                    const posisiSaatIni = (pageSafe - 1) * ITEMS_PER_PAGE + idx + 1;
                     return (
                       <tr key={k.klaster_id} className="hover:bg-slate-50/60 transition-colors">
                         <td className="py-3.5 px-4">
@@ -423,27 +527,50 @@ export default function TabelVerifikasi() {
                           >
                             {k.skor_prioritas ?? "—"}
                           </span>
+                          {k.urutan_prioritas_override !== null && (
+                            <div className="text-[10px] font-bold text-[#0B3052] bg-blue-50 border border-blue-200/70 rounded px-1.5 py-0.5 mt-1 inline-block">
+                              override #{k.urutan_prioritas_override}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3.5 px-3">
                           <div className="text-slate-900 font-bold tabular-nums">{k.jumlah_vote_terhitung ?? 0}</div>
                           <div className="text-[11px] text-slate-400">suara</div>
                         </td>
                         <td className="py-3.5 px-3 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            <Link
-                              to={`/klaster/${k.klaster_id}`}
-                              className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-[#0B3052]"
-                            >
-                              <Eye className="h-3.5 w-3.5" /> Detail
-                            </Link>
-                            {role === "verifikator_dinas" && (
-                              <Link
-                                to="/dinas/antrian"
-                                className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3052] hover:underline"
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            {bolehOverride && (
+                              <button
+                                type="button"
+                                onClick={() => handleBukaOverride(row, posisiSaatIni)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/70 transition-colors cursor-pointer"
+                                title="Override Urutan Prioritas Manual (Kepala Dinas) — alasan wajib"
                               >
-                                Verifikasi
-                              </Link>
+                                <Gauge className="h-3.5 w-3.5 text-amber-600" /> Prioritas
+                              </button>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => handleBukaDetail(row)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                              title="Lihat Pratinjau Detail Klaster Internal Dinas"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-slate-500" /> Detail
+                            </button>
+                            <Link
+                              to={`/dinas/antrian?id=${k.klaster_id}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#0B3052] bg-blue-50 hover:bg-blue-100 border border-blue-200/70 transition-colors"
+                              title="Buka Lembar Verifikasi Lengkap"
+                            >
+                              <ClipboardCheck className="h-3.5 w-3.5 text-[#0B3052]" /> Verifikasi
+                            </Link>
+                            <Link
+                              to={`/dinas/status?id=${k.klaster_id}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/70 transition-colors"
+                              title="Kelola Status Tindak Lanjut"
+                            >
+                              <Clock className="h-3.5 w-3.5 text-emerald-700" /> Tindak Lanjut
+                            </Link>
                           </div>
                         </td>
                       </tr>
@@ -536,6 +663,238 @@ export default function TabelVerifikasi() {
           </div>
         </>
       )}
+
+      {/* ── Dialog Pratinjau Detail Klaster Internal (Dinas Only) ── */}
+      <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+        <DialogContent className="max-w-2xl bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#0B3052] border border-blue-200">
+                AUDIT INTERNAL SARPRAS
+              </span>
+              <span className="text-xs font-mono text-slate-400">
+                {detailData?.klaster?.klaster_id ?? "Memuat…"}
+              </span>
+            </div>
+            <DialogTitle className="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center justify-between">
+              <span>{detailData?.klaster?.label ?? "Detail Klaster Isu"}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Pratinjau resmi isu sarpras untuk keperluan verifikasi dan tindakan Dinas Pendidikan.
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailLoading && (
+            <div className="py-12 text-center text-xs font-semibold text-slate-500">
+              <RotateCw className="h-5 w-5 animate-spin mx-auto mb-2 text-[#0B3052]" />
+              Memuat data lengkap klaster…
+            </div>
+          )}
+
+          {!detailLoading && detailData?.klaster && (
+            <div className="space-y-5 pt-3">
+              {/* Profil Sekolah & Kategori */}
+              <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+                <div>
+                  <span className="text-slate-400 block text-[11px] font-medium">Sekolah / NPSN</span>
+                  <span className="font-bold text-slate-800 text-sm block mt-0.5">
+                    {detailData.namaSekolah ?? detailData.klaster.sekolah_nama ?? "—"}
+                  </span>
+                  <span className="font-mono text-slate-500 text-[11px]">
+                    NPSN: {detailData.klaster.sekolah_npsn} &middot; {detailData.jenjang}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[11px] font-medium">Kategori &amp; Status</span>
+                  <span className="font-bold text-slate-800 block mt-0.5 uppercase tracking-wide">
+                    {detailData.klaster.kategori.replace(/_/g, " ")}
+                  </span>
+                  <span className="text-slate-500 text-[11px]">
+                    Status Penanganan: <strong className="text-slate-700">{detailData.klaster.status_penanganan ?? "Belum ada"}</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Skor & Metrik */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-slate-200/80 p-3 bg-white text-center">
+                  <span className="text-[11px] font-medium text-slate-400 block">Skor Prioritas</span>
+                  <span className="text-xl font-black text-[#0B3052] tabular-nums">
+                    {detailData.klaster.skor_prioritas ?? "—"}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-slate-200/80 p-3 bg-white text-center">
+                  <span className="text-[11px] font-medium text-slate-400 block">Skor Keparahan</span>
+                  <span className="text-xl font-black text-rose-700 tabular-nums">
+                    {detailData.klaster.skor_keparahan ?? "—"}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-slate-200/80 p-3 bg-white text-center">
+                  <span className="text-[11px] font-medium text-slate-400 block">Dukungan Warga</span>
+                  <span className="text-xl font-black text-emerald-700 tabular-nums">
+                    {detailData.klaster.jumlah_vote_terhitung ?? 0} <span className="text-xs font-normal text-slate-400">suara</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Laporan Warga dalam Klaster */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <span className="flex items-center gap-1.5">
+                    <MessageSquare className="h-4 w-4 text-[#0B3052]" />
+                    Laporan Anggota dalam Klaster ({detailData.klaster.laporan?.length ?? 0})
+                  </span>
+                </div>
+                {(!detailData.klaster.laporan || detailData.klaster.laporan.length === 0) ? (
+                  <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-dashed border-slate-200">
+                    Belum ada detail teks laporan tersinkronisasi pada klaster ini.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {detailData.klaster.laporan.map((lap) => (
+                      <div
+                        key={lap.laporan_id}
+                        className="rounded-lg border border-slate-200/70 p-3 bg-white text-xs space-y-1 hover:border-slate-300 transition-colors"
+                      >
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-700">
+                            {lap.fasilitas_terkait ?? "Fasilitas"} &middot;{" "}
+                            <span className="font-semibold text-rose-700">
+                              {lap.kondisi_dilaporkan?.replace(/_/g, " ") ?? "Kondisi tidak dicantumkan"}
+                            </span>
+                          </span>
+                          <span className="text-slate-400">
+                            {lap.created_at ? new Date(lap.created_at).toLocaleDateString("id-ID") : "—"}
+                          </span>
+                        </div>
+                        <p className="text-slate-600 text-[12px] leading-relaxed">
+                          "{lap.deskripsi}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons inside Dialog */}
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  onClick={() => setDetailModalOpen(false)}
+                  className="text-xs font-semibold h-9"
+                >
+                  Tutup
+                </Button>
+                <Link to={`/dinas/status?id=${detailData.klaster.klaster_id}`}>
+                  <Button
+                    variant="outline"
+                    className="text-xs font-bold h-9 border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5"
+                  >
+                    <Clock className="h-3.5 w-3.5" /> Kelola Tindak Lanjut
+                  </Button>
+                </Link>
+                <Link to={`/dinas/antrian?id=${detailData.klaster.klaster_id}`}>
+                  <Button
+                    className="text-xs font-bold h-9 bg-[#0B3052] hover:bg-[#07213A] text-white flex items-center gap-1.5"
+                  >
+                    <ClipboardCheck className="h-3.5 w-3.5" /> Buka Lembar Verifikasi
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── F3.4 §B2: Dialog Override Urutan Prioritas (kepala_dinas) ── */}
+      <Dialog open={overrideOpen} onOpenChange={setOverrideOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-extrabold text-slate-900">
+              <Gauge className="h-4 w-4 text-amber-600" /> Override Urutan Prioritas
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-600 leading-relaxed">
+              {overrideTarget ? (
+                <>
+                  <strong>{overrideTarget.namaSekolah ?? overrideTarget.klaster.sekolah_npsn}</strong> —{" "}
+                  {overrideTarget.klaster.label ?? overrideTarget.klaster.kategori}. Skor sistem:{" "}
+                  <strong>{overrideTarget.klaster.skor_prioritas}</strong>. Pengubahan manual
+                  tercatat pada log audit.
+                </>
+              ) : (
+                "Menyesuaikan urutan prioritas manual di atas perhitungan sistem."
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitOverride} className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <label htmlFor="override-urutan" className="text-xs font-bold text-slate-700 block">
+                Peringkat Baru <span className="text-rose-600">*</span>
+              </label>
+              <input
+                id="override-urutan"
+                type="number"
+                min={1}
+                step={1}
+                required
+                value={overrideUrutan}
+                onChange={(e) => setOverrideUrutan(e.target.value)}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0B3052]"
+                placeholder="mis. 1"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="override-alasan" className="text-xs font-bold text-slate-700 block">
+                Alasan Override <span className="text-rose-600">*</span>
+              </label>
+              <textarea
+                id="override-alasan"
+                required
+                rows={3}
+                value={overrideAlasan}
+                onChange={(e) => setOverrideAlasan(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0B3052] resize-y"
+                placeholder="Wajib diisi — dipertahankan untuk audit trail (PAGE_STATES §B2)..."
+              />
+              <p className="text-[11px] text-slate-400">
+                Tanpa alasan, backend menolak dengan <span className="font-mono">422 REASON_REQUIRED</span>.
+              </p>
+            </div>
+
+            {overrideError && (
+              <div role="alert" className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">
+                {overrideError}
+              </div>
+            )}
+            {overrideSuccess && (
+              <div role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+                {overrideSuccess}
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOverrideOpen(false)}
+                disabled={overrideSubmitting}
+                className="text-xs"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={overrideSubmitting || !!overrideSuccess}
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xs cursor-pointer"
+              >
+                {overrideSubmitting ? "Menyimpan..." : "Simpan Override"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

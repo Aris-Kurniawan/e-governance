@@ -6,7 +6,7 @@
 > Bentuk data apa pun diambil dari `API_CLIENT.md` §3 / `INTERFACES.md` —
 > jangan mendefinisikan ulang.
 
-**Update terakhir:** 1 Oktober 2026
+**Update terakhir:** 21 Oktober 2026
 
 ---
 
@@ -42,45 +42,176 @@ Status diverifikasi terhadap kode pada 1 Oktober 2026.
 | F2.7 | Form Laporan | Selesai | — |
 | F2.8 | Riwayat Laporan | Selesai | — |
 | F2.9 | Page States & Error Boundary | Selesai | `hooks/useFetch.ts`, `components/errors/ErrorBoundary.tsx`, `lib/api/errors.ts` |
-| F3.1 | Klaster Isu | **Sebagian** | `DetailKlaster.tsx` sudah ada (badge status, skor prioritas, laporan anggota); `InstitutionalStepper` & halaman list klaster belum ada |
-| F3.2 | Voting | **Belum** | Tidak ada UI vote di halaman mana pun — pendukung API/mock sudah siap (lihat detail di bawah) |
-| F3.3 | Status Tindak Lanjut | **Belum** | Belum ada halaman/rute status publik per klaster; `useStatusPolling` sudah ada tetapi belum dipakai |
-| F3.4 | Portal Pemerintah | **Sebagian** | `DinasLayout` (spesifikasi menyebut `PemerintahLayout`), DashboardKadis, verifikasi klaster §B1 (AntrianValidasi) ✓; override prioritas §B2 & update status §B3 belum |
+| F3.1 | Klaster Isu | **✅ Selesai** | `DetailKlaster.tsx` + `InstitutionalStepper` (`components/composite/`, ekspor `tahapDariStatus`) + halaman list `DaftarKlaster.tsx` (rute `/klaster`, filter kategori, `NumberedPagination`) + nav "Klaster Isu" (Public/Warga) |
+| F3.2 | Voting | **✅ Selesai** | UI vote di `DetailKlaster.tsx`: dialog konfirmasi → `POST /vote`, badge pending **Menunggu Masa Tunda** / **Sudah Vote**, `409 ALREADY_VOTED` → tombol disabled, `401` → `/login?redirect=…` (smoke live 21 Okt 2026: status → vote → duplikat 409 ✓) |
+| F3.3 | Status Tindak Lanjut | **✅ Selesai** | `StatusTindakLanjutWarga.tsx` (rute `/klaster/:klasterId/status`) — `useStatusPolling` 15s, 8 status, alasan wajib tampil, stepper, timeline riwayat |
+| F3.4 | Portal Pemerintah | **✅ Selesai** | §B1 AntrianValidasi ✓ · §B2 override prioritas di `TabelVerifikasi.tsx` (dialog alasan wajib, `REASON_REQUIRED`/`FORBIDDEN`, badge `override #N`) · §B3 loop `dalam_proses` di `StatusTindakLanjut.tsx` (dialog tetap terbuka) — smoke live 21 Okt 2026: override 200/422-alasan/403-verifikator ✓ |
 | F4.1 | Ganti Mock → API Asli | **✅ 100%** | `src/lib/api/` dipakai 19 halaman; `src/mocks/` dihapus; build hijau; smoke test 14/14 + 4 halaman lanjutan + `LaporanSkorKbm` (13 Okt 2026, endpoint `GET /laporan/skor-kbm` F4.8/D-22 live). Halaman sebelumnya di-wire 8 Okt 2026: `DashboardWilayah`, `RiwayatLaporan`, `TabelVerifikasi`, `LogAuditPdp` (lihat CHANGELOG § *Halaman yang Masih Pakai Data Demo*) |
-| F4.2 | Black-box Testing | **Belum** | Belum ada catatan pengujian state `PAGE_STATES.md` |
-| F4.3 | Perf & Aksesibilitas | **Belum** | Rute masih import statis (belum lazy-load); audit Lighthouse belum |
-| F4.4 | Dokumentasi Final | **Belum** | — |
+| F4.2 | Black-box Testing | **Sebagian** | Smoke API live 21 Okt 2026 (lihat CHANGELOG § *Catatan Black-box F4.2*): perlu-review/skor-kbm/ai-status/vote/override/PUT status ✓ · **sisa**: uji state UI browser (`PAGE_STATES.md` A1–B3, loading/empty/error) |
+| F4.3 | Perf & Aksesibilitas | **Sebagian** | ✅ Lazy-load semua rute `React.lazy` + `Suspense` (App.tsx; Landing eager) — chunk per halaman terbentuk, `index` utama 321 kB · sisa: audit Lighthouse (target ≥ 90) |
+| F4.4 | Dokumentasi Final | **Sebagian** | TASK_GUIDE (tabel + checklist) & CHANGELOG sinkron 21 Okt 2026; `INTERFACES.md` §4.1–§4.4 dikunci · sisa: audit sinkron dokumen `docs/frontend/` lain (FLOWS, STRUKTUR_MODULAR, UI_COMPONENTS) terhadap kode final |
+| F4.13 | Konfirmasi Severity Pasca-Laporan | **Sebagian (FE ✅ 100%)** | T1–T6 kode + kontrak selesai: types + `getKonfirmasi`/`postKonfirmasi`, `PertanyaanKonfirmasi.tsx`, banner+modal `FormLaporan`, badge Riwayat, `INTERFACES` §4.1–§4.4 DRAFT dilepas + §11.1 dicentang · **tertunda**: smoke live (endpoint `GET/POST /laporan/{id}/konfirmasi` belum ada di `backend/app/routers/laporan.py`) |
 
 ### Detail Task Tertunda (belum selesai / terlewat)
 
-- [ ] **F3.2 — Voting** *(belum dikerjakan)*: target halaman **Detail Klaster Isu**
-  (`src/pages/warga/DetailKlaster.tsx`, rute `/klaster/:klasterId`, `PAGE_STATES.md §A3`).
-  Wajib: tombol **Vote** → konfirmasi → **Vote Tercatat**; akun masa tunda → badge
-  **Menunggu Masa Tunda** (bukan "Sudah Vote"); `409 ALREADY_VOTED` → tombol
-  **Sudah Vote** (disabled). Pendukung sudah tersedia: `lib/api/klaster.ts`
-  (`voteKlaster()`, `api.vote(id)`), type `VoteResponse`, mock `voteContoh` /
-  `votePendingContoh` (`mocks/klaster.ts`).
-- [ ] **F3.3 — Status Tindak Lanjut** *(belum dikerjakan)*: halaman status publik
-  per klaster, 6 status + alasan wajib (`PAGE_STATES.md §A5`), memakai
-  `useStatusPolling` (sudah tersedia, belum dipakai halaman mana pun).
-- [ ] **F3.1 — sisa**: komponen `InstitutionalStepper` (folder
-  `src/components/institutional/` masih `.gitkeep`) dan daftar/list klaster isu
-  sebagai tampilan sendiri (saat ini hanya widget di Dashboard Wilayah & kartu 3
-  Detail Sekolah).
-- [ ] **F3.4 — sisa**: override prioritas (`PAGE_STATES.md §B2` — tombol kolom
-  AKSI di `TabelVerifikasi.tsx` saat ini belum punya handler) dan update status
-  penanganan + loop "masih berlangsung" (§B3).
+- [x] **F3.2 — Voting**: ✅ — UI vote di `DetailKlaster.tsx` (`PAGE_STATES.md §A3`):
+  dialog konfirmasi → `POST /vote?klaster_id=…`; hasil `pending` → badge **Menunggu
+  Masa Tunda**; `409 ALREADY_VOTED` → tombol **Sudah Vote** (disabled); `401` →
+  `/login?redirect=…`. Smoke live 21 Okt 2026 (status → vote → duplikat 409 ✓).
+  Catatan: mock `voteContoh`/`votePendingContoh` sudah tidak ada (mock dihapus F4.1).
+- [x] **F3.3 — Status Tindak Lanjut**: ✅ — `pages/warga/StatusTindakLanjutWarga.tsx`,
+  rute `/klaster/:klasterId/status`, 8 status + alasan wajib (`PAGE_STATES.md §A5`),
+  `useStatusPolling` 15 detik, timeline `GET /klaster/{id}/riwayat` append-only.
+- [x] **F3.1 — sisa**: ✅ — `InstitutionalStepper` di `src/components/composite/`
+  (bukan `institutional/` yang `.gitkeep` — mengikuti pemakaian nyata) + halaman
+  `src/pages/warga/DaftarKlaster.tsx` (rute `/klaster`).
+- [x] **F3.4 — sisa**: ✅ — override prioritas (`§B2`) di `TabelVerifikasi.tsx`
+  (tombol kolom AKSI → dialog alasan wajib, badge `override #N`, handle
+  `REASON_REQUIRED`/`FORBIDDEN`) dan loop status (`§B3`) di `StatusTindakLanjut.tsx`
+  (`dalam_proses` membuka dialog kembali, bukan state akhir).
 - [x] **F4.1 — Ganti Mock → API Asli**: ✅ 100% — seluruh pemakaian `src/mocks/` diganti
   `src/lib/api/` tanpa mengubah struktur komponen. `LaporanSkorKbm` di-wire 13 Okt 2026
   (`GET /laporan/skor-kbm`, F4.8/D-22).
 - [ ] **F4.2 — Black-box Testing**: uji manual seluruh state `PAGE_STATES.md`
-  (normal & gagal).
-- [ ] **F4.3 — Perf & Aksesibilitas**: lazy-load route, audit Lighthouse
-  (target aksesibilitas ≥ 90).
+  (normal & gagal). **Progres 21 Okt 2026**: smoke API live selesai (hasil di
+  `CHANGELOG.md` § *Catatan Black-box F4.2*) — termasuk perbaikan `alembic upgrade
+  head` (DB ketinggalan → `GET /laporan/perlu-review` 500 Unknown column
+  `hasil_klasterisasi`, kini 200). Sisa: eksplorasi state UI per perintah uji.
+- [ ] **F4.3 — Perf & Aksesibilitas**: **lazy-load route ✅ 21 Okt 2026**
+  (`React.lazy` + `Suspense` di `App.tsx`, seluruh halaman kecuali Landing);
+  sisa audit Lighthouse (target aksesibilitas ≥ 90).
 - [ ] **F4.4 — Dokumentasi Final**: sinkronkan seluruh dokumen `docs/frontend/`
-  dengan kode final.
+  dengan kode final. **Progres 21 Okt 2026**: tabel Status + checklist ini +
+  `CHANGELOG.md` sinkron; `INTERFACES.md` §4.1–§4.4 dikunci (DRAFT dilepas);
+  sisa audit dokumen lain (FLOWS, STRUKTUR_MODULAR, UI_COMPONENTS, MOCK_DATA —
+  `MOCK_DATA.md` kemungkinan usang karena `src/mocks/` sudah dihapus).
 
 > Penanda: `[ ]` = tertunda, `[x]` = selesai. Audit terakhir 1 Oktober 2026.
+
+### F4.13 — Konfirmasi Severity Pasca-Laporan (Lapis 1) — ✅ FE SELESAI
+
+> **Status 21 Okt 2026:** FE T1–T6 selesai (types + API layer, `PertanyaanKonfirmasi`,
+> integrasi `FormLaporan`, badge `RiwayatLaporan`, build hijau, kontrak dikunci).
+> **Tertunda:** smoke live — endpoint backend `GET/POST /laporan/{id}/konfirmasi`
+> belum diimplement (`backend/app/routers/laporan.py`), sehingga alur jawab
+> diverifikasi dari kontrak saja (GET → 404 `NOT_FOUND` tertangani UI dengan ramah).
+> Task code mengikuti penomoran `SPEC_SEVERITY_KLASIFIKASI.md` §16 (butir 1).
+> **Sumber kebenaran:** kontrak `INTERFACES.md` §4.1–§4.4 (**dikunci 20 Okt 2026**) ·
+> spesifikasi `SPEC_SEVERITY_KLASIFIKASI.md` §15, §19.
+
+#### Konteks & Prinsip
+
+- Bukan form sebelum kirim. Alurnya: **warga kirim laporan → 201 → AI memilih
+  maksimal 4 pertanyaan relevan dari bank pertanyaan → warga menjawab (opsional)
+  → jawaban + deskripsi → `kondisi_dilaporkan`**.
+- **Prinsip mutlak:** konfirmasi **opsional, tidak memblokir**. Laporan tetap sah
+  tanpa dijawab; desain tidak boleh memaksa (SPEC §19.6).
+- **Jawaban warga selalu menang** atas ekstraksi AI dari deskripsi (SPEC §15.6).
+- Skala 24 jam: lewat batas → `status_konfirmasi = dilewati`,
+  `kondisi_dilaporkan` diisi dari deskripsi saja.
+
+#### Gate (wajib lulus sebelum coding)
+
+- [x] **5 keputusan kontrak dijawab** (INTERFACES §11.1 / SPEC §19.7) — 20 Okt 2026:
+      sekali GET · field `kode` · endpoint terpisah · flip `dilewati` lazy saat
+      diakses · verifikator TIDAK boleh ubah jawaban warga.
+- [x] `INTERFACES.md` §4.1–§4.4 **dikunci** (label DRAFT dilepas) — Aris & Dimas.
+- [ ] Endpoint backend `GET/POST /laporan/{id}/konfirmasi` **live** untuk smoke
+      test (implementasi lapis 1, SPEC §18 item 5) — **belum ada di `laporan.py`**.
+
+#### Tahapan Pengerjaan
+
+**T1 — API layer** (`lib/api/types.ts`, `lib/api/laporan.ts`)
+- Type baru: `KonfirmasiInfo` (`perlu_konfirmasi, jumlah_pertanyaan,
+  kedaluwarsa_pada`), `KonfirmasiPertanyaan` (`kode, teks,
+  tipe: "pilih_satu" | "pilih_satu_bertingkat", urutan?,
+  lewati_bila_terjawab?, pilihan: {kode,label,tingkat?}[]`),
+  `KonfirmasiDetail`, `KonfirmasiHasil`.
+- Extend `LaporanResponse` + `RiwayatLaporanItem` dengan field aditif:
+  `konfirmasi?`, `sumber_kondisi?`, `status_konfirmasi?`,
+  `konfirmasi_perlu_dijawab?` (semua optional — FE tahan bila backend belum
+  mengirim).
+- Fungsi: `getKonfirmasi(laporanId)`, `postKonfirmasi(laporanId, jawaban)`
+  (POST dengan `jawaban: []` = lewati). Handle `409 CONFLICT` → ApiError khusus
+  "sudah pernah dijawab".
+
+**T2 — Komponen `PertanyaanKonfirmasi`** (baru, `components/warga/`)
+- **Q bagian** (`pilih_satu`): radio 8 nama awam sesuai kontrak (Plafon, Atap,
+  Dinding, Lantai, Pintu/jendela, Listrik, Air, Drainase).
+- **Q gejala** (`pilih_satu_bertingkat`, `urutan: dari_terparah`,
+  `lewati_bila_terjawab: true`): daftar dari terparah ke teringan; **aturan di
+  FE**: begitu satu gejala dipilih, opsi di bawahnya disembunyikan/di-disable
+  (warna tingkat memakai field `tingkat` yang sudah enum resmi).
+- Tombol global **"Lewati semua pertanyaan"** selalu terlihat (SPEC §19.6) →
+  POST `jawaban: []` → tutup.
+- Layout: modal/step di atas layar sukses; gaya selaras FormLaporan
+  (rounded-xl, slate).
+
+**T3 — Integrasi `FormLaporan.tsx`**
+- Layar sukses → baca `res.konfirmasi?.perlu_konfirmasi`:
+  - `true` → banner: "AI menemukan pola pada deskripsimu — jawab 4 pertanyaan
+    singkat agar tingkat kerusakan lebih akurat (±1 menit)" + tombol **Jawab
+    Sekarang** / **Lewati**.
+  - `false`/absen → tampil tanpa banner.
+- Modal konfirmasi menutup → perbarui state ringkas ("Terjawab"/"Dilewati").
+- Error path: `401` redirect login, `403`/`404` pesan ramah, `409` → tutup
+  modal + info "sudah pernah dijawab".
+
+**T4 — `RiwayatLaporan.tsx`**
+- Badge status konfirmasi per baris (`konfirmasi_perlu_dijawab` /
+  `status_konfirmasi`): **"Perlu dikonfirmasi"** (klik → lanjutkan jawab,
+  selama < 24 jam), "Terjawab", "Dilewati".
+- Toleran field hilang (backend belum kirim) → tidak render badge apa pun.
+
+**T5 — Kasus tepi (wajib tercakup)**
+
+| Kasus | Perilaku UI |
+|---|---|
+| Tab ditutup sebelum dijawab | Laporan tetap ada; badge di riwayat mengarahkan menjawab selama < 24 jam |
+| Jawab sebagian | Kirim yang ada (kontrak: `200, terjawab`) |
+| Semua jawaban "tidak"/gejala terendah | Tetap sah → `baik` |
+| `kedaluwarsa_pada` lewat | Sembunyikan aksi jawab; badge jadi "Dilewati" |
+| Status `terjawab`/`dilewati` dari GET | `pertanyaan: []` → jangan render pilihan kosong |
+
+**T6 — Verifikasi**
+- `npm run build:frontend` hijau.
+- Smoke backend live: register/login → kirim laporan deskripsi spesifik → 201
+  berkonfirmasi `perlu_konfirmasi: true` → jawab → cek `kondisi_dilaporkan`
+  berubah di `GET /laporan/riwayat` → jawab ulang → `409`.
+- Uji lewati, uji 403 (bukan pemilik).
+- Update baris F4.13 di tabel Status + `docs/frontend/CHANGELOG.md`.
+
+#### File yang Disentuh
+
+| File | Aksi |
+|---|---|
+| `src/lib/api/types.ts` | type konfirmasi + extend laporan |
+| `src/lib/api/laporan.ts` | `getKonfirmasi`, `postKonfirmasi` |
+| `src/components/warga/PertanyaanKonfirmasi.tsx` | **baru** — modal pertanyaan |
+| `src/pages/warga/FormLaporan.tsx` | banner + integrasi modal |
+| `src/pages/warga/RiwayatLaporan.tsx` | badge status konfirmasi |
+| `docs/frontend/TASK_GUIDE.md`, `CHANGELOG.md` | dokumentasi (akhir) |
+
+#### Estimasi (adaptasi SPEC §19.6)
+
+| Item | Besar |
+|---|---|
+| API layer + types | kecil |
+| Komponen pilih-satu | kecil |
+| Gejala bertingkat + aturan lewati | **sedang** |
+| Integrasi FormLaporan + banner | sedang |
+| Badge riwayat + edge cases | kecil |
+| **Total** | **±2–3 hari kerja FE**, terhitung setelah gate lulus |
+
+#### Rekomendasi 5 Keputusan Terbuka (bahan diskusi Aris–Dimas — **belum final**)
+
+| # | Pertanyaan | Rekomendasi FE | Alasan |
+|---|---|---|---|
+| 1 | Sekali GET atau bertahap? | **Sekali GET** (sesuai draft §19.3); GET-ulang sekali hanya bila pertanyaan bagian belum terjawab dan AI belum bisa pilih gejala | Max 4 pertanyaan, tanpa state server per tahap |
+| 2 | `kode` vs `gejala_id`? | **`kode`** | Sudah dipakai konsisten di draft §19.3/§19.4 |
+| 3 | Terpisah atau gabung `GET /laporan/{id}`? | **Terpisah** | Respons laporan tetap ringan; concern campur (data vs alur konfirmasi) |
+| 4 | 24 jam → cron atau saat diakses? | **Saat diakses** (lazy flip ke `dilewati` saat GET konfirmasi/riwayat) | Tanpa cron baru; state selalu akurat saat dibaca |
+| 5 | Verifikator boleh ubah jawaban warga? | **Tidak** | Konsisten "jawaban warga menang"; koreksi lewat jalur `sumber_kondisi` terpisah |
 
 ---
 

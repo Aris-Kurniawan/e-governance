@@ -170,6 +170,62 @@ export interface SanggahanItem {
 
 // ── §4 Laporan ───────────────────────────────────────────────────────────────
 
+/**
+ * F4.13 — Konfirmasi Severity Pasca-Laporan (INTERFACES.md §4.1–§4.4,
+ * disetujui 20 Okt 2026: sekali GET · field `kode` · endpoint terpisah ·
+ * lazy flip `dilewati` · verifikator tidak boleh ubah jawaban — §11.1).
+ *
+ * Sifat: opsional, tidak memblokir; jawaban warga selalu menang atas
+ * ekstraksi AI (SPEC_SEVERITY_KLASIFIKASI.md §15.6).
+ */
+export type StatusKonfirmasi = "menunggu" | "terjawab" | "dilewati";
+export type SumberKondisi = "ai" | "warga" | null;
+
+/** Ikhtisar alur konfirmasi — dikirim pada respons POST /laporan (opsional). */
+export interface KonfirmasiInfo {
+  perlu_konfirmasi: boolean;
+  jumlah_pertanyaan?: number;
+  kedaluwarsa_pada?: string | null;
+}
+
+export interface KonfirmasiPilihan {
+  kode: string;
+  label: string;
+  /** Enum kondisi resmi — hanya pada pilihan gejala (`pilih_satu_bertingkat`). */
+  tingkat?: string;
+}
+
+export interface KonfirmasiPertanyaan {
+  kode: string;
+  teks: string;
+  tipe: "pilih_satu" | "pilih_satu_bertingkat";
+  urutan?: "dari_terparah";
+  /** Aturan FE: begitu satu gejala terjawab, opsi lebih ringan dilewati. */
+  lewati_bila_terjawab?: boolean;
+  pilihan: KonfirmasiPilihan[];
+}
+
+/** Respons `GET /laporan/{id}/konfirmasi` (§4.2). */
+export interface KonfirmasiDetail {
+  laporan_id: string;
+  status: StatusKonfirmasi;
+  jumlah_terjawab: number;
+  pertanyaan: KonfirmasiPertanyaan[];
+}
+
+export interface JawabanKonfirmasi {
+  kode: string;
+  nilai: string;
+}
+
+/** Respons `POST /laporan/{id}/konfirmasi` (§4.3). */
+export interface KonfirmasiHasil {
+  status: "terjawab" | "dilewati";
+  kondisi_dilaporkan: string | null;
+  sumber_kondisi: SumberKondisi;
+  diproses_pada: string;
+}
+
 export type KondisiDilaporkan =
   | "rusak_ringan"
   | "rusak_sedang"
@@ -203,6 +259,11 @@ export interface LaporanResponse {
   deskripsi: string;
   status_sanggahan: string;
   created_at: string;
+  /** F4.13 — ikhtisar alur konfirmasi pada respons pembuatan laporan (opsional). */
+  konfirmasi?: KonfirmasiInfo | null;
+  /** F4.13 (§4.4) — status konfirmasi severity (opsional, toleran bila BE belum kirim). */
+  status_konfirmasi?: StatusKonfirmasi | null;
+  sumber_kondisi?: SumberKondisi | null;
 }
 
 export interface RiwayatLaporanItem {
@@ -214,11 +275,34 @@ export interface RiwayatLaporanItem {
   deskripsi: string;
   status_sanggahan: string;
   created_at: string;
+  /** F4.13 (§4.4) — semua field konfirmasi opsional: FE tidak render bila absen. */
+  status_konfirmasi?: StatusKonfirmasi | null;
+  sumber_kondisi?: SumberKondisi | null;
+  /** true bila laporan masih boleh dijawab (< 24 jam). */
+  konfirmasi_perlu_dijawab?: boolean;
 }
 
 export interface LaporanDetail extends LaporanResponse {
   sekolah: { npsn: string; nama: string; jenjang: string } | null;
   foto: { id: string; storage_key: string; created_at: string }[];
+}
+
+/**
+ * F4.7 (D-21) — baris `GET /laporan/perlu-review` (INTERFACES.md §4):
+ * laporan tanpa klaster (noise HDBSCAN) ATAU klaster kategori
+ * `belum_terklasifikasi`. `klaster: null` bila laporan tidak punya klaster.
+ */
+export interface LaporanPerluReview {
+  id: string;
+  tracking_id: string;
+  sekolah_npsn: string;
+  sekolah_nama: string | null;
+  fasilitas_terkait: string | null;
+  kondisi_dilaporkan: string | null;
+  deskripsi: string;
+  status_sanggahan: string;
+  created_at: string;
+  klaster: { id: string; label: string | null; kategori: string } | null;
 }
 
 // ── §5 Klaster ───────────────────────────────────────────────────────────────
@@ -371,6 +455,8 @@ export interface AiStatus {
   unclustered_laporan: number;
   total_klaster: number;
   last_run: string;
+  /** F4.10 — status run terakhir pipeline (`sukses` / `gagal` / null bila belum pernah). */
+  last_run_status?: string | null;
   message: string;
 }
 // ── F4.8 (D-22) — Skor dampak KBM per sekolah ───────────────────────────────

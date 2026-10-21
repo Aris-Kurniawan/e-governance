@@ -1,8 +1,20 @@
-import { Link, useParams } from "react-router-dom"
+import { useState } from "react"
+import { Link, useLocation, useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import StatusBadge from "@/components/composite/StatusBadge"
 import { useFetch } from "@/hooks/useFetch"
+import { useAuth } from "@/context/AuthContext"
 import { detailKlaster } from "@/lib/api/klaster"
+import { statusVote, voteKlaster } from "@/lib/api/vote"
+import { ApiError } from "@/lib/api/errors"
 import {
   ChevronRight,
   ArrowLeft,
@@ -10,6 +22,12 @@ import {
   CalendarDays,
   Info,
   Inbox,
+  ThumbsUp,
+  CheckCircle2,
+  Clock3,
+  LogIn,
+  AlertTriangle,
+  ShieldQuestion,
 } from "lucide-react"
 
 // Label kategori klaster — memakai taksonomi backend v1 (INTERFACES.md §5).
@@ -51,10 +69,79 @@ const STATUS_PENJELASAN: Record<string, string> = {
 
 export default function DetailKlaster() {
   const { klasterId } = useParams<{ klasterId: string }>()
+  const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+
   const { state, refetch } = useFetch(
     () => detailKlaster(klasterId ?? ""),
     [klasterId],
   )
+
+  // ── F3.2 (PAGE_STATES §A3) — status vote akun ini pada klaster ────────────
+  // Tamu: fetch dilewati (resolve null → state "empty"), tombol mengarahkan
+  // ke login. Login: `GET /vote/status/{id}` (INTERFACES §6).
+  const { state: voteState, refetch: refetchVote } = useFetch(
+    () => (isAuthenticated && klasterId ? statusVote(klasterId) : Promise.resolve(null)),
+    [klasterId, isAuthenticated],
+  )
+
+  const [konfirmasiOpen, setKonfirmasiOpen] = useState(false)
+  const [submittingVote, setSubmittingVote] = useState(false)
+  const [voteFeedback, setVoteFeedback] = useState<
+    { pesan: string; tipe: "sukses" | "info" | "gagal" } | null
+  >(null)
+
+  const vote = voteState.status === "success" ? voteState.data : null
+  const sudahVote = vote?.has_voted ?? false
+  const votePending = vote?.status_vote === "pending"
+  const voteLoading = voteState.status === "loading"
+
+  const keLogin = () => {
+    const redirect = encodeURIComponent(location.pathname + location.search)
+    navigate(`/login?redirect=${redirect}`)
+  }
+
+  const kirimVote = async () => {
+    if (!klasterId) return
+    setSubmittingVote(true)
+    setVoteFeedback(null)
+    try {
+      const res = await voteKlaster(klasterId)
+      setVoteFeedback(
+        res.status_vote === "pending"
+          ? {
+              pesan:
+                "Vote tercatat — menunggu masa tunda verifikasi akun (belum dihitung ke skor).",
+              tipe: "info",
+            }
+          : { pesan: "Vote tercatat — dukunganmu menaikkan skor prioritas isu ini.", tipe: "sukses" },
+      )
+      setKonfirmasiOpen(false)
+      refetchVote()
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.code === "ALREADY_VOTED") {
+          setKonfirmasiOpen(false)
+          setVoteFeedback({ pesan: "Anda sudah memberikan vote sebelumnya.", tipe: "info" })
+          refetchVote()
+          return
+        }
+        if (err.code === "UNAUTHORIZED") {
+          setKonfirmasiOpen(false)
+          keLogin()
+          return
+        }
+        setVoteFeedback({ pesan: err.message, tipe: "gagal" })
+        setKonfirmasiOpen(false)
+        return
+      }
+      setVoteFeedback({ pesan: "Gagal mengirim vote. Coba lagi.", tipe: "gagal" })
+      setKonfirmasiOpen(false)
+    } finally {
+      setSubmittingVote(false)
+    }
+  }
 
   // ── Memuat / gagal ────────────────────────────────────────────────────────
   if (state.status === "loading") {
@@ -178,6 +265,103 @@ export default function DetailKlaster() {
           </div>
         </div>
 
+        {/* ── F3.2: Vote / Dukungan Warga (PAGE_STATES §A3) ── */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5 min-w-0">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-500 tracking-wider uppercase">
+                <ThumbsUp className="h-4 w-4 text-primary" />
+                <span>Dukungan Warga</span>
+              </div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {sudahVote
+                  ? votePending
+                    ? "Vote Anda sudah tercatat dan sedang menunggu masa tunda verifikasi akun."
+                    : "Vote Anda sudah tercatat dan terhitung dalam skor prioritas isu ini."
+                  : "Berikan dukungan (vote) agar skor prioritas isu ini naik dan lebih cepat ditangani Dinas. Satu akun satu suara."}
+              </p>
+              <Link
+                to={`/klaster/${klasterId}/status`}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+              >
+                <ShieldQuestion className="h-3.5 w-3.5" /> Lihat status tindak lanjut isu
+              </Link>
+            </div>
+
+            <div className="shrink-0 flex flex-col items-start sm:items-end gap-2">
+              {voteLoading ? (
+                <Button
+                  disabled
+                  className="bg-primary text-white text-xs h-10 px-5 rounded-lg opacity-60 cursor-wait"
+                >
+                  Memuat status vote...
+                </Button>
+              ) : !isAuthenticated ? (
+                <Button
+                  onClick={keLogin}
+                  className="bg-primary hover:opacity-90 text-white text-xs h-10 px-5 rounded-lg cursor-pointer"
+                >
+                  <LogIn className="h-4 w-4 mr-1.5" /> Vote
+                </Button>
+              ) : sudahVote && votePending ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning-light text-warning-text border border-warning-border px-4 py-2.5 text-xs font-bold">
+                  <Clock3 className="h-4 w-4" /> Menunggu Masa Tunda
+                </span>
+              ) : sudahVote ? (
+                <Button
+                  disabled
+                  className="bg-primary-light text-primary border border-primary-border text-xs h-10 px-5 rounded-lg cursor-not-allowed"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" /> Sudah Vote
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setKonfirmasiOpen(true)}
+                  className="bg-primary hover:opacity-90 text-white text-xs h-10 px-5 rounded-lg cursor-pointer"
+                >
+                  <ThumbsUp className="h-4 w-4 mr-1.5" /> Vote Sekarang
+                </Button>
+              )}
+
+              <span className="text-[11px] text-slate-400">
+                {klaster.jumlah_vote_terhitung} dukungan terhitung
+              </span>
+            </div>
+          </div>
+
+          {/* Feedback vote */}
+          {voteFeedback && (
+            <div
+              role="alert"
+              className={`rounded-xl border px-4 py-3 text-xs font-semibold flex items-start justify-between gap-3 ${
+                voteFeedback.tipe === "gagal"
+                  ? "border-rose-300 bg-rose-50 text-rose-900"
+                  : voteFeedback.tipe === "info"
+                    ? "border-warning-border bg-warning-light text-warning-text"
+                    : "border-emerald-300 bg-emerald-50 text-emerald-900"
+              }`}
+            >
+              <span className="flex items-start gap-2">
+                {voteFeedback.tipe === "gagal" ? (
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                ) : voteFeedback.tipe === "info" ? (
+                  <Clock3 className="h-4 w-4 shrink-0 mt-0.5" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                )}
+                <span>{voteFeedback.pesan}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setVoteFeedback(null)}
+                className="text-current hover:opacity-70 text-xs font-bold underline cursor-pointer shrink-0"
+              >
+                Tutup
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* ── Laporan Anggota ── */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -233,6 +417,40 @@ export default function DetailKlaster() {
           </Link>
         </div>
       </div>
+
+      {/* ── F3.2: Dialog konfirmasi vote (sekali klik, 1 akun 1 suara) ── */}
+      <Dialog open={konfirmasiOpen} onOpenChange={setKonfirmasiOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-extrabold text-slate-900">
+              <ThumbsUp className="h-4 w-4 text-primary" /> Dukung isu ini?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-600 leading-relaxed">
+              Vote Anda akan menaikkan skor prioritas isu ini agar lebih cepat ditangani Dinas.
+              Satu akun hanya boleh vote satu kali untuk isu yang sama.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setKonfirmasiOpen(false)}
+              disabled={submittingVote}
+              className="text-xs"
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              onClick={kirimVote}
+              disabled={submittingVote}
+              className="bg-primary hover:opacity-90 text-white text-xs cursor-pointer"
+            >
+              {submittingVote ? "Mengirim..." : "Ya, Vote Sekarang"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
