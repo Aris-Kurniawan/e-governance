@@ -3,7 +3,8 @@
  *
  * Akses (INTERFACES.md §3):
  * - `GET /dashboard/prioritas` → **publik**
- * - `GET /dashboard/wilayah`  → `verifikator_dinas`, `kepala_dinas`
+ * - `GET /dashboard/wilayah`  → `admin`, `verifikator_dinas`, `kepala_dinas`
+ *   (admin-compatible sejak F4.11; butuh token dinas)
  */
 
 import { getData, getPage, postForm, unwrap, request, type Page } from "./client";

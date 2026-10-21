@@ -28,7 +28,7 @@ import {
 import { useFetch } from "@/hooks/useFetch"
 import { useAuth } from "@/context/AuthContext"
 import { ROLE_LABEL } from "@/lib/api/types"
-import { detailKlaster, listKlaster, verifikasiKlaster, riwayatStatus } from "@/lib/api/klaster"
+import { detailKlaster, listKlaster, statusPipeline, verifikasiKlaster, riwayatStatus } from "@/lib/api/klaster"
 import { ApiError } from "@/lib/api/errors"
 import type { KlasterDetail, KlasterListItem } from "@/lib/api/types"
 
@@ -136,6 +136,9 @@ export default function AntrianValidasi() {
   // Wajib bergantung pada `daftarKlasterDinas`: saat pertama dirender datanya
   // masih kosong (status loading), sehingga pencocokan tidak akan pernah terjadi bila dependensi hanya `urlId`.
   const { state: listState, refetch: refetchList } = useFetch(() => listKlaster({ page_size: 100 }))
+  // F4.10 — status pipeline AI (GET /ai/status, admin|kepala_dinas).
+  // Gagal memuat tidak merusak halaman: strip status disembunyikan.
+  const { state: aiStatusState } = useFetch(() => statusPipeline())
   const daftarKlasterDinas: KlasterIsuDinas[] = useMemo(
     () => (listState.status === "success" ? listState.data.data.map(keTampilan) : []),
     [listState],
@@ -461,16 +464,43 @@ export default function AntrianValidasi() {
           </div>
         </div>
 
-        {/* AI Stream Sub-indicator */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-            <span className="text-[11px]">
-              Klasterisasi: <strong>14 mnt lalu</strong> · Stream AI Aktif - Worker 02
+        {/* Status Pipeline AI — F4.10 (GET /ai/status, admin|kepala_dinas).
+            Sebelumnya hardcoded ("14 mnt lalu", "DBSCAN Epsilon 0.82") —
+            kini memakai angka nyata; strip disembunyikan senyap bila gagal
+            memuat (mis. role tanpa akses). */}
+        {aiStatusState.status === "success" && (
+          <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  aiStatusState.data.last_run_status === "gagal"
+                    ? "bg-rose-500"
+                    : "bg-blue-600 animate-pulse"
+                }`}
+              />
+              <span className="text-[11px]">
+                Pipeline AI · run terakhir{" "}
+                <strong>
+                  {aiStatusState.data.last_run
+                    ? new Date(aiStatusState.data.last_run).toLocaleString("id-ID", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "belum pernah"}
+                </strong>
+                {aiStatusState.data.last_run_status
+                  ? ` · ${aiStatusState.data.last_run_status}`
+                  : ""}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono">
+              {aiStatusState.data.total_klaster} klaster ·{" "}
+              {aiStatusState.data.unclustered_laporan} laporan belum terproses
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 font-mono">DBSCAN Epsilon: 0.82 | MinPts: 4 aduan</span>
-        </div>
+        )}
       </div>
 
       {/* Decision feedback alert — sukses (hijau, auto-dismiss) vs gagal
