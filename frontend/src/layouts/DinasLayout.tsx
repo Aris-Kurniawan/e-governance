@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -62,6 +63,19 @@ interface NotificationItem {
 export default function DinasLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, roleLabel, logout } = useAuth()
+
+  // Data profil dinamis dari user terautentikasi (DBG-013)
+  const namaPetugas = user?.nama || "Petugas Dinas"
+  const emailPetugas = user?.email || "dinas@lamongankab.go.id"
+  const nipPetugas = user?.nip || "—"
+  const inisialPetugas = useMemo(() => {
+    if (!user?.nama) return "PD"
+    const parts = user.nama.trim().split(/\s+/)
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }, [user?.nama])
+  const jabatanPetugas = roleLabel || "Verifikator Sarpras"
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("")
@@ -375,15 +389,18 @@ export default function DinasLayout() {
           <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/60">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="h-8 w-8 rounded-lg bg-[#0B3052] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                BH
+                {inisialPetugas}
               </div>
               <div className="leading-tight truncate">
-                <span className="font-bold text-xs text-slate-800 block truncate">Bambang H., S.T.</span>
-                <span className="text-[10px] text-slate-400 block truncate">Verifikator Sarpras</span>
+                <span className="font-bold text-xs text-slate-800 block truncate">{namaPetugas}</span>
+                <span className="text-[10px] text-slate-400 block truncate">{jabatanPetugas}</span>
               </div>
             </div>
             <button
-              onClick={() => navigate("/dinas/login")}
+              onClick={() => {
+                logout()
+                navigate("/dinas/login")
+              }}
               title="Keluar ke Portal Login Dinas"
               className="h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
             >
@@ -729,17 +746,17 @@ export default function DinasLayout() {
                   <div className="p-4 bg-slate-50/90">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-xl bg-[#0B3052] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
-                        BH
+                        {inisialPetugas}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h3 className="font-bold text-xs text-slate-900 truncate">Bambang H., S.T.</h3>
+                          <h3 className="font-bold text-xs text-slate-900 truncate">{namaPetugas}</h3>
                           <span className="rounded bg-blue-100 text-[#0B3052] text-[9px] font-bold px-1.5 py-0.2 shrink-0">
                             PNS
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate">bambang.sarpras@lamongankab.go.id</p>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">NIP: 19820415 200801 1 009</p>
+                        <p className="text-[11px] text-slate-500 truncate">{emailPetugas}</p>
+                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">NIP: {nipPetugas}</p>
                       </div>
                     </div>
 
@@ -747,7 +764,7 @@ export default function DinasLayout() {
                       <span className="text-slate-500 font-medium">Status Hak Akses:</span>
                       <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        Verifikator Utama
+                        {jabatanPetugas}
                       </span>
                     </div>
                   </div>
@@ -849,14 +866,14 @@ export default function DinasLayout() {
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-[#0B3052] text-white flex items-center justify-center font-bold text-base shadow-sm">
-                BH
+                {inisialPetugas}
               </div>
               <div>
                 <DialogTitle className="text-base font-extrabold text-slate-900">
-                  Bambang Hariyanto, S.T.
+                  {namaPetugas}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-500">
-                  Verifikator Sarpras · Sub-Bagian Perencanaan Disdik Lamongan
+                  {jabatanPetugas} · Dinas Pendidikan Lamongan
                 </DialogDescription>
               </div>
             </div>
@@ -866,11 +883,11 @@ export default function DinasLayout() {
             <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5 space-y-2">
               <div className="flex justify-between">
                 <span className="text-slate-400">NIP:</span>
-                <span className="font-mono font-bold text-slate-800">19820415 200801 1 009</span>
+                <span className="font-mono font-bold text-slate-800">{nipPetugas}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Pangkat / Golongan:</span>
-                <span className="font-semibold text-slate-800">Penata Tk. I (III/d)</span>
+                <span className="text-slate-400">Peran / Jabatan:</span>
+                <span className="font-semibold text-slate-800">{jabatanPetugas}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Instansi:</span>
@@ -878,7 +895,7 @@ export default function DinasLayout() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Email Resmi:</span>
-                <span className="font-mono text-slate-800">bambang.sarpras@lamongankab.go.id</span>
+                <span className="font-mono text-slate-800">{emailPetugas}</span>
               </div>
             </div>
 

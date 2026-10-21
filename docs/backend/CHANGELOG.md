@@ -1549,6 +1549,34 @@ aturan AGENTS.md hanya saat diminta ("commit"). Sisa backlog: 50 label manual F4
 - Build frontend `npm run build` (tsc + vite) sukses tanpa error.
 - Line-ending bersih (LF pada frontend, CRLF pada file docs backend).
 
+## 3.35 DBG-013 — Profil Pegawai Pemerintah Dinamis & Kolom NIP (2026-10-21) ✅ SELESAI
+
+**Perbaikan DBG-013 (Opsi A yang disetujui pengguna):**
+
+1. **Database & Backend:**
+   - Migrasi Alembic `63a2411c6508_dbg_013_users_nip.py` menambahkan kolom `users.nip` (`VARCHAR(30)`, nullable).
+   - Model `User` (`backend/app/models/user.py`) ditambahkan kolom `nip`.
+   - Endpoint `GET /auth/me` (`backend/app/routers/auth.py`) kini mengembalikan field `nip`.
+   - Script seed akun dinas (`backend/scripts/seed_dinas_accounts.py`) dan baris akun dinas DB live diperbarui dengan NIP resmi:
+     - `verifikator@simakis.id` (`verifikator_dinas`): `19840822 201001 1 007`
+     - `kepala.dinas@simakis.id` (`kepala_dinas`): `19720315 199803 1 004`
+     - `admin@simakis.id` (`admin`): `19790512 200501 1 003`
+   - Dump database `database/simakis.sql` diregenerasi pada head Alembic terbaru (`63a2411c6508`).
+
+2. **Frontend UI & Cetak Dokumen:**
+   - Interface `UserMe` (`frontend/src/lib/api/types.ts`) ditambahkan properti `nip?: string | null`.
+   - `frontend/src/layouts/DinasLayout.tsx`:
+     - Sidebar bawah (nama, inisial, role) kini membaca dinamis dari `useAuth().user`.
+     - Dropdown akun flyout & modal "Profil Pegawai" menampilkan nama, NIP, email, dan jabatan akun yang sedang login.
+     - Aksi logout dinas memanggil `logout()` dari `useAuth()`.
+   - `frontend/src/components/composite/CetakRingkasanEksekutif.tsx`:
+     - Metadata pencetak ("Dicetak pada ... Oleh: ...") dan kolom tanda tangan kini dinamis mencantumkan nama, jabatan, dan NIP akun yang sedang bertugas.
+
+**Bukti verifikasi:**
+- `verify_schema_parity.py` PARITY OK (98 kolom cocok antara model dan DB MySQL).
+- `pytest tests/ -q` → **169/169** test lulus.
+- Frontend build `npm run build` (`tsc && vite build`) sukses tanpa error tipe.
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

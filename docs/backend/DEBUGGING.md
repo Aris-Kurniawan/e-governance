@@ -34,7 +34,7 @@
 | DBG-010 | `ingest.py` baca `row.get("nama_sekolah")` padahal header CSV = `nama` → nama bisa "Unknown" | `routers/ingest.py` | ✅ SELESAI | F4.11 — key `nama` + fallback; test ingest CSV resmi |
 | DBG-011 | Semua `422` dipetakan jadi `REASON_REQUIRED`; `PUT /laporan/{id}/status` wajib `UNPROCESSABLE_ENTITY` (§4). *400 generik = sesuai §0.3 (diagnosis awal salah)* | `main.py` handler | ✅ SELESAI | F4.11 — `ApiError(api_code)` + baris §0.3 + tipe FE; live 422 code benar |
 | DBG-012 | Rute `/dinas/*` tanpa `ProtectedRoute` — guest melihat "Data tidak dapat dimuat" (401) seolah backend mati; `ProtectedRoute` abaikan `isLoading` + tak punya `loginPath` | `App.tsx:87-95`, `components/auth/ProtectedRoute.tsx` | ✅ SELESAI | `ProtectedRoute` menangani `isLoading`, `loginPath="/dinas/login"`, `allowedRoles`; rute `/dinas/*` dibungkus guard; copy basi `LogAuditPdp.tsx` dirapikan; build lolos |
-| DBG-013 | Profil pemerintah hardcode "Bambang H., S.T." + NIP/email/jabatan palsu — `useAuth` tidak dipakai (grep 0) | `DinasLayout.tsx:381,736,856`, `CetakRingkasanEksekutif.tsx:94,257` | ⚪ | Rencana: dinamis dari `useAuth().user`; keputusan: tambah kolom `nip` (migrasi) vs tampil tanpa NIP |
+| DBG-013 | Profil pemerintah hardcode "Bambang H., S.T." + NIP/email/jabatan palsu — `useAuth` tidak dipakai (grep 0) | `DinasLayout.tsx:381,736,856`, `CetakRingkasanEksekutif.tsx:94,257` | ✅ SELESAI | Migrasi Alembic `63a2411c6508` tambah `users.nip`; `GET /auth/me` & `UserMe` menyertakan `nip`; akun dinas di-seed NIP; `DinasLayout` & `CetakRingkasanEksekutif` kini dinamis dari `useAuth().user` |
 | DBG-014 | Test klasterisasi hanya data sintetis — pipeline tak pernah diuji dengan laporan nyata (600) | `tests/test_ai_pipeline.py`, `tests/test_evaluation.py` | 🔴 | Rencana: test integrasi `default_pipeline` pada data real + ambang longgar |
 | DBG-015 | Uji ablasi "laporan dinamis" belum ada — ground truth `manual_clusters.json` statis (fingerprint `46ff8dc4`, 45 dokumen) | `ai_pipeline/experiments/manual_clusters.json` | ⚪ | Rencana: re-run data live (subset GT dicatat) vs anotasi GT baru vs augmentasi — keputusan makna "dinamis" |
 | DBG-016 | Embedding Potion/mxbai belum dievaluasi (grep `potion\|mxbai` = 0); mxbai English-only → bukan kandidat | `embedding.py`, `experiments/run_ablation.py` | 🔴 | Rencana: varian ablation A4 Potion multilingual vs A1/A3; keputusan adopsi → D-xx |
@@ -147,15 +147,23 @@
   3. `frontend/src/pages/dinas/LogAuditPdp.tsx`: Copy basi pada empty state dirapikan menjadi *"Belum ada aksi sensitif tercatat di tabel audit_log."*
 - **Verifikasi:** Build frontend `npm run build` (tsc + vite) sukses tanpa error tipe.
 
-### DBG-013 ⚪ — Profil pemerintah hardcode (nama/NIP/jabatan palsu) (2026-10-18)
+### DBG-013 ✅ — Profil pemerintah hardcode (nama/NIP/jabatan palsu) (2026-10-18)
 
 - **Gejala:** sidebar, header, dan dokumen cetak selalu menampilkan "Bambang H., S.T." + NIP `19820415 200801 1 009` + email `bambang.sarpras@lamongankab.go.id` + inisial "BH", apa pun akun yang login (`admin@simakis.id`, `kepala.dinas@…`, dll).
 - **Akar:** identitas ditulis hardcode saat layout/cetak dibuat; `DinasLayout.tsx` tidak memakai `useAuth` sama sekali (grep = 0). Model `User` (`models/user.py:24-34`) punya `nama/email/role/status_verifikasi` tetapi **tidak ada kolom NIP**; `/auth/me` (→ tipe `UserMe`) juga tidak mengembalikan NIP (grep `nip` di models & `types.ts` = 0).
 - **Dampak:** identitas salah pada UI harian **dan** dokumen cetak resmi (Ringkasan Eksekutif) — pelanggaran tata kelola akun.
-- **Rencana (keputusan ⚪):**
-  - **Opsi A (rekomendasi):** migrasi Alembic tambah `users.nip` (VARCHAR(20), nullable) + seed NIP 4 akun dinas + extend `UserMe`/`/auth/me` + ganti 5 titik hardcode (`DinasLayout:381,736,856`, `CetakRingkasanEksekutif:94,257`) dengan data `useAuth().user` (inisial dihitung dari `nama`; jabatan diturunkan dari `role`).
-  - **Opsi B:** tampilkan nama/email/role dinamis saja, hapus baris NIP (tanpa migrasi).
-- **Verifikasi (setelah keputusan):** login tiap akun dinas → sidebar & cetak menampilkan identitas akun tersebut; pytest + `verify_schema_parity.py` (guard DBG-001) untuk opsi A.
+- **Penyelesaian (Opsi A, 2026-10-21):**
+  1. Migrasi Alembic `63a2411c6508_dbg_013_users_nip.py` menambahkan kolom `users.nip` (`VARCHAR(30)`, nullable).
+  2. Model `User` (`backend/app/models/user.py`) ditambahkan atribut `nip: Mapped[str | None]`.
+  3. Endpoint `GET /auth/me` (`backend/app/routers/auth.py`) dan tipe frontend `UserMe` (`frontend/src/lib/api/types.ts`) ditambahkan field `nip`.
+  4. Seed akun dinas (`backend/scripts/seed_dinas_accounts.py`) dan akun live diupdate dengan NIP resmi:
+     - `verifikator@simakis.id` (verifikator_dinas): `19840822 201001 1 007`
+     - `kepala.dinas@simakis.id` (kepala_dinas): `19720315 199803 1 004`
+     - `admin@simakis.id` (admin): `19790512 200501 1 003`
+  5. Dump database `database/simakis.sql` diregenerasi dan schema parity verified (98 kolom).
+  6. `frontend/src/layouts/DinasLayout.tsx`: Sidebar bawah, profile flyout dropdown, dan modal profil verifikator diubah dinamis membaca `user.nama`, `user.email`, `user.nip`, `roleLabel`, dan inisial otomatis.
+  7. `frontend/src/components/composite/CetakRingkasanEksekutif.tsx`: Metadata pencetak dan tanda tangan verifikator kini dinamis mengambil nama, jabatan/peran, dan NIP akun yang sedang mencetak dokumen.
+- **Verifikasi:** `verify_schema_parity.py` PARITY OK (98 kolom) · pytest **169/169** lulus · frontend build (`npm run build`) sukses tanpa error.
 
 ### DBG-014 🔴 — Test klasterisasi hanya data sintetis (2026-10-18)
 

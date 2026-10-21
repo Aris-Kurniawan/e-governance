@@ -31,6 +31,7 @@ AKUN = [
         "nama": "Verifikator Dinas Sarpras",
         "role": "verifikator_dinas",
         "nik": "3524010202020002",
+        "nip": "19840822 201001 1 007",
     },
     {
         "email": "kepala.dinas@simakis.id",
@@ -38,20 +39,22 @@ AKUN = [
         "nama": "Kepala Dinas Pendidikan Lamongan",
         "role": "kepala_dinas",
         "nik": "3524010303030003",
+        "nip": "19720315 199803 1 004",
     },
 ]
 
 
 def upsert(db: Session, spec: dict) -> User:
-    """Buat akun bila belum ada; perbarui password bila sudah ada."""
+    """Buat akun bila belum ada; perbarui password & NIP bila sudah ada."""
     user = db.scalar(select(User).where(User.email == spec["email"]))
     if user:
         user.password_hash = hash_password(spec["password"])
         user.role = spec["role"]
         user.status_verifikasi = "terverifikasi"
+        user.nip = spec.get("nip")
         db.commit()
         db.refresh(user)
-        print(f"  [UPDATE] {spec['email']} | role: {spec['role']} | password direset")
+        print(f"  [UPDATE] {spec['email']} | role: {spec['role']} | nip: {user.nip}")
         return user
 
     user = User(
@@ -60,6 +63,7 @@ def upsert(db: Session, spec: dict) -> User:
         password_hash=hash_password(spec["password"]),
         role=spec["role"],
         status_verifikasi="terverifikasi",
+        nip=spec.get("nip"),
     )
     db.add(user)
     db.commit()

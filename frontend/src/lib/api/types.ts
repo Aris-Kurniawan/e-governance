@@ -77,6 +77,7 @@ export interface UserMe {
   nama: string;
   email: string;
   role: Role;
+  nip?: string | null;
   status_verifikasi: StatusVerifikasi;
   sekolah_terkait_npsn: string | null;
 }
