@@ -23,8 +23,44 @@ from app.models.laporan import Laporan
 from app.models.klaster import Klaster
 from app.models.sekolah import Sekolah
 from app.ai_pipeline.pipeline import default_pipeline
-from app.ai_pipeline.scoring import calculate_priority_score
+from app.ai_pipeline.scoring import calculate_score_components, hitung_kondisi_dapodik
+from app.ai_pipeline.severity import classify_severity
 from app.core.pipeline_state import record_pipeline_run
+
+
+def apply_severity(laporan_list: list[Laporan]) -> int:
+    """F4.16 tahap 5 — isi severity hanya bila belum ada dan bukan koreksi warga.
+
+    Guard wajib: ``kondisi_dilaporkan IS NULL`` DAN ``sumber_kondisi != 'warga'``.
+    Mengembalikan jumlah baris yang diisi.
+    """
+    if settings.SEVERITY_METHOD != "k1":
+        print(
+            f"  ⚠️  SEVERITY_METHOD={settings.SEVERITY_METHOD} belum didukung; dilewati"
+        )
+        return 0
+
+    kandidat = [
+        lap
+        for lap in laporan_list
+        if lap.kondisi_dilaporkan is None and lap.sumber_kondisi != "warga"
+    ]
+    if not kandidat:
+        return 0
+
+    hasil = classify_severity(
+        [
+            {
+                "deskripsi": lap.deskripsi or "",
+                "jawaban": (lap.jawaban_konfirmasi or {}).get("jawaban"),
+            }
+            for lap in kandidat
+        ]
+    )
+    for lap, kondisi in zip(kandidat, hasil):
+        lap.kondisi_dilaporkan = kondisi
+        lap.sumber_kondisi = "ai"
+    return len(kandidat)
 
 
 def get_unclustered_laporan_by_school(db: Session) -> dict[str, list[Laporan]]:
@@ -79,6 +115,13 @@ def run_clustering_job():
         for sekolah_npsn, laporan_list in grouped.items():
             print(f"\n[{datetime.now()}] Processing {sekolah_npsn}: {len(laporan_list)} laporan...")
             
+            # F4.16 tahap 5: severity dari teks (+ jawaban lapis 1) sebelum
+            # scoring klaster. Hanya baris NULL & bukan koreksi warga.
+            if settings.SEVERITY_ENABLED:
+                diisi = apply_severity(laporan_list)
+                if diisi:
+                    print(f"  ✓ Severity terisi untuk {diisi} laporan (K1).")
+
             # Extract texts WITH index tracking (FIX: prevent index misalignment)
             texts_with_idx = [(i, lap.deskripsi) for i, lap in enumerate(laporan_list) 
                               if lap.deskripsi]
@@ -132,33 +175,21 @@ def run_clustering_job():
                     
                     # Calculate scores
                     kondisi_laporan = [
-                        {"kondisi_dilaporkan": lap.kondisi_dilaporkan or "baik"}
+                        {"kondisi_dilaporkan": lap.kondisi_dilaporkan}
                         for lap in laps_in_cluster
                     ]
                     
-                    # Get kondisi_sarana for this school
-                    from app.models.sekolah import KondisiSarana
-                    stmt_sarana = select(KondisiSarana).where(
-                        KondisiSarana.sekolah_npsn == sekolah_npsn
-                    )
-                    sarana_list = db.execute(stmt_sarana).scalars().all()
-                    
-                    kondisi_dapodik = {"total": 0, "berat": 0, "sedang": 0, "ringan": 0}
-                    for sarana in sarana_list:
-                        kondisi_dapodik["total"] += sarana.jumlah or 0
-                        kondisi_dapodik["berat"] += sarana.kondisi_rusak_berat or 0
-                        kondisi_dapodik["sedang"] += sarana.kondisi_rusak_sedang or 0
-                        kondisi_dapodik["ringan"] += sarana.kondisi_rusak_ringan or 0
-                    
+                    # Get kondisi_sarana for this school (DBG-021/022: helper
+                    # bersama, tanpa back-calc `prioritas - votes`).
+                    kondisi_dapodik = hitung_kondisi_dapodik(db, sekolah_npsn)
+
                     votes_count = len(laps_in_cluster)  # Each report = 1 vote weight (simplified)
-                    
-                    skor_prioritas = calculate_priority_score(
+
+                    skor_keparahan, skor_prioritas = calculate_score_components(
                         kondisi_laporan=kondisi_laporan,
                         kondisi_dapodik=kondisi_dapodik,
                         votes=votes_count,
                     )
-                    
-                    skor_keparahan = skor_prioritas - votes_count  # Back-calculate
                     
                     # Create Klaster
                     klaster = Klaster(

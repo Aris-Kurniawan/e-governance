@@ -719,9 +719,9 @@ tidak menimbulkan bias melingkar.
 
 ## 10. Metode Perhitungan Skor Keparahan & Skor KBM
 
-> **Status:** spesifikasi metode — **belum diimplementasikan**. Implementasi saat ini
-> (`app/ai_pipeline/scoring.py`) memakai versi tanpa shrinkage (§10.4).
-> Perubahan yang diusulkan di sini **tidak butuh migrasi DB** (tetap on-the-fly).
+> **Status:** ✅ **diimplementasikan (F4.12, 20 Okt 2026)** di `app/ai_pipeline/scoring.py`
+> (`compute_prior`, `calculate_kbm_score`, `is_mismatch`, `estimate_k`), dipakai dua call site
+> (`routers/laporan.py`, `routers/sekolah.py`). Tidak butuh migrasi DB (tetap on-the-fly).
 
 ### 10.1 Posisi dalam pipeline (bukan komponen ablation)
 
@@ -774,7 +774,7 @@ Dapodik (Kemendikdasmen), yang juga menetapkan ambang resmi:
 | Rusak Sedang | 31–45% |
 | Rusak Berat | 46–100% |
 
-### 10.4 Shrinkage komponen laporan (perbaikan yang diusulkan)
+### 10.4 Shrinkage komponen laporan (yang diterapkan)
 
 **Masalah:** rata-rata severity dari 3 laporan diperlakukan setara dengan
 rata-rata dari 15 laporan. Pada data live, sekolah peringkat 1
@@ -883,8 +883,8 @@ Turunan ke `sekolah.penanda_masalah` (D-23): `kritis` → `kritis`;
 
 13 dari 62 sekolah punya `skor_dapodik = 0.0` (seluruh ruang kondisi baik),
 sehingga `skor_kbm` maksimum mereka **70.0** — secara struktural tidak mungkin
-mencapai `kritis`. Contoh: SD MUHAMMADIYAH 1 LAMONGAN, `skor_laporan = 74.2`
-tapi `skor_kbm = 52.0`.
+mencapai `kritis`. Contoh: SD MUHAMMADIYAH 1 LAMONGAN, `skor_laporan` 74,2 (sebelum shrinkage) → **67,4**
+(setelah shrinkage) tetapi `skor_kbm` hanya **47,2** karena Dapodik 0.
 
 Ini **bukan bug** dan **tidak boleh** diperbaiki dengan mengubah bobot —
 ini sinyal mismatch antara laporan warga dan Dapodik, yaitu inti mekanisme
@@ -899,13 +899,14 @@ Skor tidak dinaikkan artifisial.
 
 ### 10.7 Hasil uji pada data live (62 sekolah, K = 5)
 
-| Sekolah | n | Sekarang | Shrinkage | Level |
+| Sekolah | n | `skor_kbm` sekarang | Setelah shrinkage | Level |
 |---|---|---|---|---|
-| SDN 2 SENDANGREJO | 3 | 76.4 | **69.1** | `kritis` → `tinggi` |
+| SDN 2 SENDANGREJO | 3 | 76.4 | **69.2** | `kritis` → `tinggi` |
 | SDN 1 MADE | 7 | 40.9 | 38.8 | `sedang` → `rendah` |
 | SDN KEPATIHAN | 10 | 53.5 | 47.3 | `tinggi` → `sedang` |
+| SMP NEGERI 3 LAMONGAN | 12 | 53.4 | 48.2 | `tinggi` → `sedang` |
 | SMP MURNI SUNAN DRAJAT | 10 | 47.7 | 50.0 | `sedang` → `tinggi` |
-| SDN 1 SUKOMULYO | 8 | 39.8 | 44.2 | `rendah` → `sedang` |
+| SDN 1 SUKOMULYO | 8 | 39.8 | 44.3 | `rendah` → `sedang` |
 | SDN TLOGOANYAR | 13 | 49.8 | 50.5 | `sedang` → `tinggi` |
 | SD MUHAMMADIYAH 1 | 13 | 52.0 | 47.2 | `tinggi` → `sedang` |
 

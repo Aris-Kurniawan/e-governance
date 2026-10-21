@@ -1,0 +1,150 @@
+{
+  "sumber_test": "LLM_SEMENTARA",
+  "n_test": 50,
+  "hasil": {
+    "K1_aturan_kata_kunci": {
+      "accuracy": 0.48,
+      "macro_f1": 0.2467,
+      "confusion_matrix": [
+        [
+          0,
+          6,
+          0,
+          0
+        ],
+        [
+          0,
+          22,
+          5,
+          9
+        ],
+        [
+          0,
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          4,
+          0,
+          1
+        ]
+      ],
+      "labels": [
+        "baik",
+        "rusak_ringan",
+        "rusak_sedang",
+        "rusak_berat"
+      ]
+    },
+    "K2_tfidf_logreg": {
+      "accuracy": 0.72,
+      "macro_f1": 0.5841,
+      "confusion_matrix": [
+        [
+          6,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          26,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          2
+        ]
+      ],
+      "labels": [
+        "baik",
+        "rusak_ringan",
+        "rusak_sedang",
+        "rusak_berat"
+      ]
+    },
+    "K3_tfidf_svm": {
+      "accuracy": 0.74,
+      "macro_f1": 0.61,
+      "confusion_matrix": [
+        [
+          5,
+          1,
+          0,
+          0
+        ],
+        [
+          6,
+          28,
+          2,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          2
+        ]
+      ],
+      "labels": [
+        "baik",
+        "rusak_ringan",
+        "rusak_sedang",
+        "rusak_berat"
+      ]
+    },
+    "K4_indobert": {
+      "accuracy": 0.7,
+      "macro_f1": 0.5722,
+      "confusion_matrix": [
+        [
+          5,
+          1,
+          0,
+          0
+        ],
+        [
+          5,
+          26,
+          4,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          2
+        ]
+      ],
+      "labels": [
+        "baik",
+        "rusak_ringan",
+        "rusak_sedang",
+        "rusak_berat"
+      ]
+    }
+  }
+}
