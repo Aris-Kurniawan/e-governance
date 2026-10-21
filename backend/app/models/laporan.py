@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, gen_uuid
@@ -18,6 +18,13 @@ KATEGORI_ENUM = (
 KONDISI_ENUM = ("baik", "rusak_ringan", "rusak_sedang", "rusak_berat")
 STATUS_SANGGHAN_ENUM = ("menunggu", "divalidasi", "ditolak")
 
+# F4.14 (D-24 lanjutan, SPEC §17.2): asal nilai `kondisi_dilaporkan`.
+# `warga` BUKAN input dropdown warga — hanya koreksi manusia (verifikator)
+# yang tidak boleh ditimpa cron AI. NULL = belum ada sumber.
+SUMBER_KONDISI_ENUM = ("ai", "warga")
+# F4.14: status alur konfirmasi severity (lapis 1, F4.15). NULL = laporan lama.
+STATUS_KONFIRMASI_ENUM = ("menunggu", "terjawab", "dilewati")
+
 
 class Laporan(Base, TimestampMixin):
     __tablename__ = "laporan"
@@ -32,6 +39,17 @@ class Laporan(Base, TimestampMixin):
     kondisi_dilaporkan: Mapped[str | None] = mapped_column(
         Enum(*KONDISI_ENUM, name="kondisi_dilaporkan"), nullable=True
     )
+    # F4.14: provenance + status konfirmasi. Tanpa server_default — 600 baris
+    # lama tetap NULL (bukan "menunggu"); laporan baru di-set di router.
+    sumber_kondisi: Mapped[str | None] = mapped_column(
+        Enum(*SUMBER_KONDISI_ENUM, name="sumber_kondisi"), nullable=True
+    )
+    status_konfirmasi: Mapped[str | None] = mapped_column(
+        Enum(*STATUS_KONFIRMASI_ENUM, name="status_konfirmasi"), nullable=True
+    )
+    # F4.15: jawaban mentah + waktu proses, untuk audit & fitur lapis 2.
+    # Bentuk: {"jawaban": [{"kode": "...", "nilai": "..."}], "diproses_pada": "..."}
+    jawaban_konfirmasi: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     deskripsi: Mapped[str] = mapped_column(Text)
     klaster_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("klaster.id"), nullable=True
