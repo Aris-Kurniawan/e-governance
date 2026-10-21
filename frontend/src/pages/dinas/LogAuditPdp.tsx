@@ -197,8 +197,7 @@ export default function LogAuditPdp() {
           <ShieldCheck className="h-10 w-10 text-slate-200 mx-auto" />
           <p className="text-sm font-semibold text-slate-500">Belum ada entri log</p>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Backend v1 belum menuliskan aksi sensitif ke tabel <code className="font-mono">audit_log</code>, jadi
-            halaman ini kosong sampai pencatatan diaktifkan.
+            Belum ada aksi sensitif tercatat di tabel <code className="font-mono">audit_log</code>.
           </p>
         </div>
       )}

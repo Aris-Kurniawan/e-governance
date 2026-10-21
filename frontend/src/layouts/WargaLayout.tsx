@@ -29,16 +29,27 @@ export default function WargaLayout() {
               </div>
             </Link>
 
-            <nav className="hidden items-center gap-1 md:flex">
+            <nav className="hidden items-center gap-1.5 md:flex">
               <Nav active={location.pathname === "/dashboard"} to="/dashboard" label="Dashboard" />
+              <Nav active={location.pathname === "/laporan/wilayah"} to="/laporan/wilayah" label="Dashboard Wilayah" />
               <Nav active={location.pathname.startsWith("/sekolah")} to="/sekolah" label="Direktori Sekolah" />
               <Nav active={location.pathname.startsWith("/laporan/riwayat")} to="/laporan/riwayat" label="Riwayat Laporan" />
+              <Nav active={location.pathname === "/tentang"} to="/tentang" label="Tentang Data" />
             </nav>
           </div>
 
           <div className="flex items-center gap-3">
+            <Button
+              asChild
+              size="sm"
+              className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-sm cursor-pointer"
+            >
+              <Link to="/laporan/baru">
+                Buat Laporan
+              </Link>
+            </Button>
             <span className="hidden text-body-sm text-ink-secondary md:block">{user?.nama || "Siti Aminah"}</span>
-            <Button variant="ghost" size="sm" onClick={logout} className="cursor-pointer">
+            <Button variant="ghost" size="sm" onClick={logout} className="cursor-pointer text-slate-600 hover:text-rose-600 text-xs">
               Keluar
             </Button>
           </div>
