@@ -1,20 +1,30 @@
-import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import AuthRequiredModal from "@/components/composite/AuthRequiredModal"
 import { useAuth } from "@/context/AuthContext"
-import { ShieldCheck, FileText, MessageSquare, Plus, Lock, CheckCircle2 } from "lucide-react"
+import {
+  ShieldCheck,
+  FileText,
+  MessageSquare,
+  Plus,
+  Lock,
+  CheckCircle2,
+  Sparkles,
+  Layers,
+  Calculator,
+  ThumbsUp,
+  Camera,
+  Search,
+} from "lucide-react"
 
 export default function Landing() {
   const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
-  const [isAuthRequiredOpen, setIsAuthRequiredOpen] = useState(false)
 
-  // Gerbang autentikasi pelaporan (CHANGELOG "Proteksi & Gerbang Autentikasi Pelaporan"):
-  // belum login → modal Wajib Masuk / Daftar; sudah login → langsung ke form laporan.
+  // Gerbang autentikasi pelaporan:
+  // belum login → langsung diarahkan ke halaman login; sudah login → langsung ke form laporan.
   const handleMulaiLapor = () => {
     if (!isAuthenticated) {
-      setIsAuthRequiredOpen(true)
+      navigate("/login?redirect=" + encodeURIComponent("/laporan/baru"))
     } else {
       navigate("/laporan/baru")
     }
@@ -165,48 +175,255 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Cara Melaporkan ── */}
-      <section className="bg-[#F8FAFC] py-10 md:py-14 border-y border-slate-100">
+      {/* ── Mekanisme Sistem Klusterisasi AI ── */}
+      <section className="bg-[#F8FAFC] py-14 md:py-20 border-y border-slate-100">
         <div className="mx-auto max-w-7xl px-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
-            Cara melaporkan kondisi fasilitas
-          </h2>
-          <p className="mt-2 max-w-2xl text-slate-600 text-sm md:text-base leading-relaxed">
-            Supaya laporan bisa langsung diverifikasi dan tidak berupa keluhan tanpa dasar, prosesnya mengikuti tiga langkah berikut.
-          </p>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {/* Step 1 */}
-            <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
-              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B3052] text-sm font-bold text-white shadow-sm">
-                1
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-900 mb-3">
+                <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                <span>Teknologi Kecerdasan Buatan (AI)</span>
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Buka Direktori Sekolah</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Cari sekolah yang ingin dilaporkan dan periksa catatan resmi Dapodik untuk fasilitas yang dimaksud.
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                Mekanisme Klusterisasi Isu Otomatis
+              </h2>
+              <p className="mt-3 text-slate-600 text-sm md:text-base leading-relaxed">
+                SIMAKIS tidak membiarkan aduan masyarakat tercecer menjadi ribuan keluhan terisolasi.
+                Sistem secara otomatis menganalisis teks aduan Anda dan menggabungkannya ke dalam satu
+                <strong> Klaster Isu Terpadu</strong>.
               </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 bg-white p-3 rounded-xl border border-slate-200 shrink-0">
+              <Layers className="h-4 w-4 text-[#0B3052]" />
+              <span>Pipeline: TF-IDF Semantik + UMAP + HDBSCAN</span>
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Step 1: Parsing & Feature Extraction */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all">
+              <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center font-bold text-sm mb-4 border border-blue-100">
+                01
+              </div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">
+                Analisis Teks &amp; Kata Kunci Sarpras
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Saat Anda menulis aduan, model NLP (Natural Language Processing) mengekstraksi kata kunci
+                kerusakan fisik seperti <em>"atap bocor"</em>, <em>"plafon retak"</em>, <em>"sanitasi mampet"</em>,
+                atau <em>"kusen lapuk"</em>.
+              </p>
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Ekstraksi 300 fitur semantik
+              </div>
+            </div>
+
+            {/* Step 2: Clustering */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all">
+              <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center font-bold text-sm mb-4 border border-blue-100">
+                02
+              </div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">
+                Pengelompokan Otomatis (Klaster Isu)
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Laporan dari orang tua murid, guru, atau warga yang mengeluhkan ruang atau fasilitas yang sama di satu
+                sekolah otomatis disatukan ke dalam 1 ID Klaster. Tidak ada aduan yang terduplikasi.
+              </p>
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Pengelompokan bebas bias
+              </div>
+            </div>
+
+            {/* Step 3: Collective Voice */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all">
+              <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center font-bold text-sm mb-4 border border-blue-100">
+                03
+              </div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">
+                Kekuatan Suara Bersama ke Dinas
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Klaster isu menjadi representasi resmi di dashboard Dinas Pendidikan. Warga lain di sekitar
+                sekolah dapat langsung memberikan dukungan (vote) sehingga posisi urgensi penanganan meningkat.
+              </p>
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> 1 NIK = 1 Dukungan Kuat
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Mekanisme Perhitungan Skor Prioritas & Keparahan ── */}
+      <section className="bg-white py-14 md:py-20 border-b border-slate-100">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900 mb-3">
+              <Calculator className="h-3.5 w-3.5 text-emerald-600" />
+              <span>Transparansi Algoritma Pengambilan Keputusan</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Bagaimana Skor Prioritas Penanganan Dihitung?
+            </h2>
+            <p className="mt-3 text-slate-600 text-sm md:text-base leading-relaxed">
+              Dinas Pendidikan tidak memilih sekolah mana yang diperbaiki berdasarkan firasat atau kedekatan.
+              SIMAKIS menerapkan formula matematis yang objektif dan transparan.
+            </p>
+          </div>
+
+          {/* Formula Visual Banner */}
+          <div className="rounded-2xl bg-[#0B3052] text-white p-6 sm:p-8 shadow-xl mb-10 max-w-4xl mx-auto">
+            <div className="text-center space-y-3">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-blue-300">
+                RUMUS FORMULA PRIORITAS SARPRAS (D-07)
+              </span>
+              <div className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white flex flex-wrap items-center justify-center gap-2">
+                <span className="bg-white/10 px-3 py-1 rounded-lg">Skor Prioritas</span>
+                <span className="text-blue-300">=</span>
+                <span className="bg-white/10 px-3 py-1 rounded-lg">Skor Keparahan</span>
+                <span className="text-blue-300">+</span>
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-lg flex items-center gap-1.5">
+                  <ThumbsUp className="h-4 w-4" /> Dukungan Warga (Vote)
+                </span>
+              </div>
+              <p className="text-xs text-white/70 max-w-2xl mx-auto mt-2 leading-relaxed">
+                Di mana <strong>Skor Keparahan = 70% Bobot Fakta Laporan Warga + 30% Bobot Kerusakan Dapodik</strong>.
+              </p>
+            </div>
+          </div>
+
+          {/* 3 Penjelasan Komponen Skor */}
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-black text-[#0B3052]">70%</span>
+                <span className="text-xs font-bold text-slate-500 bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                  Bobot Terbesar
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-900 text-base">Fakta Lapangan Warga</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Kondisi riil yang dirasakan langsung oleh siswa dan guru memegang porsi terbesar.
+                Laporan kerusakan berat yang mengancam keselamatan proses belajar-mengajar (KBM) langsung mendapat nilai urgensi tinggi.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-black text-[#0B3052]">30%</span>
+                <span className="text-xs font-bold text-slate-500 bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                  Data Resmi
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-900 text-base">Catatan Dapodik Kemendikbud</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Data resmi sarpras sekolah (kondisi baik, rusak ringan, sedang, berat) dari pangkalan data resmi
+                Kemendikbud digunakan sebagai basis pembanding objektivitas agar anggaran tepat sasaran.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-black text-emerald-800">+1 Poin</span>
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-md">
+                  Per 1 Suara Sah
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-900 text-base">Partisipasi &amp; Dukungan Warga</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Setiap 1 warga terverifikasi kependudukan (1 NIK) yang memberi tombol dukungan akan menaikkan skor prioritas klaster isu.
+                Semakin banyak dukungan masyarakat, semakin cepat Dinas menjadwalkan audit fisik dan renovasi!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Panduan Cara Melaporkan yang Benar ── */}
+      <section className="bg-[#F8FAFC] py-14 md:py-20 border-b border-slate-100">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="max-w-2xl mb-12">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-900 mb-3">
+              <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
+              <span>Panduan Pelaporan Warga</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Mekanisme Cara Melaporkan yang Benar
+            </h2>
+            <p className="mt-3 text-slate-600 text-sm md:text-base leading-relaxed">
+              Ikuti 4 langkah terstruktur berikut agar laporan ketidaksesuaian fasilitas Anda cepat disetujui
+              dan segera ditindaklanjuti oleh verifikator Dinas Pendidikan.
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Step 1 */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-[#0B3052] text-white flex items-center justify-center font-bold text-sm mb-4">
+                  1
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">Pilih Unit &amp; Ruang Spesifik</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Buka <strong>Direktori Sekolah</strong>, pilih sekolah yang dimaksud, dan tentukan fasilitas yang rusak
+                  (contoh: <em>"Ruang Kelas 4B"</em> atau <em>"Laboratorium Komputer"</em>), bukan keluhan umum tanpa lokasi.
+                </p>
+              </div>
+              <div className="mt-5 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1">
+                <Search className="h-3.5 w-3.5" /> Pilih dari daftar Dapodik
+              </div>
             </div>
 
             {/* Step 2 */}
-            <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
-              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B3052] text-sm font-bold text-white shadow-sm">
-                2
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-[#0B3052] text-white flex items-center justify-center font-bold text-sm mb-4">
+                  2
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">Jelaskan Letak Kerusakan Faktual</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Tuliskan deskripsi faktual: bagian mana yang rusak, kapan mulai terjadi, dan bagaimana dampaknya
+                  terhadap kegiatan belajar siswa (contoh: <em>"Atap bocor 3 titik, air merembes ke instalasi listrik"</em>).
+                </p>
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Bandingkan dengan kondisi nyata</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Jika kondisi di lapangan berbeda dari catatan Dapodik, isi sanggahan lengkap dengan keterangan dan foto.
-              </p>
+              <div className="mt-5 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1">
+                <FileText className="h-3.5 w-3.5" /> Berikan fakta, bukan opini
+              </div>
             </div>
 
             {/* Step 3 */}
-            <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
-              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B3052] text-sm font-bold text-white shadow-sm">
-                3
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-[#0B3052] text-white flex items-center justify-center font-bold text-sm mb-4">
+                  3
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">Lampirkan Foto Bukti Otentik</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Unggah foto kondisi fisik asli di lapangan dengan pencahayaan jelas. Foto yang menunjukkan detail
+                  kerusakan mempercepat verifikator menyetujui laporan Anda.
+                </p>
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Didukung warga, diteruskan ke Dinas</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Laporan serupa dikelompokkan otomatis, warga lain bisa memberi dukungan, lalu Dinas menindaklanjuti dengan audit fisik.
-              </p>
+              <div className="mt-5 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1">
+                <Camera className="h-3.5 w-3.5" /> Format JPG/PNG foto nyata
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-[#0B3052] text-white flex items-center justify-center font-bold text-sm mb-4">
+                  4
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">Ajak Komite &amp; Warga Mendukung</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Setelah terbit menjadi klaster isu, bagikan tautan aduan kepada wali murid dan komite sekolah untuk
+                  memberikan dukungan (vote). Isu dengan dukungan tinggi diprioritaskan oleh Kadis.
+                </p>
+              </div>
+              <div className="mt-5 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1">
+                <ThumbsUp className="h-3.5 w-3.5" /> Dorong kuorum dukungan
+              </div>
             </div>
           </div>
         </div>
@@ -294,7 +511,7 @@ export default function Landing() {
                   </Button>
                   <Button asChild className="bg-[#0B3052] hover:bg-[#07213A] text-white border border-white/30 font-semibold px-6 py-3.5 h-auto rounded-lg text-sm shadow-sm transition-all cursor-pointer">
                     <Link to="/laporan/riwayat">
-                      Riwayat Laporan Saya
+                      Riwayat Laporan
                     </Link>
                   </Button>
                 </>
@@ -305,9 +522,9 @@ export default function Landing() {
                       Daftar Akun Warga
                     </Button>
                   </Link>
-                  <Link to="/login?redirect=%2Flaporan%2Fbaru&action=report">
+                  <Link to="/laporan/riwayat">
                     <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white border border-white/30 font-semibold px-6 py-3.5 h-auto rounded-lg text-sm shadow-sm transition-all cursor-pointer">
-                      Masuk Akun
+                      Riwayat Laporan
                     </Button>
                   </Link>
                 </>
@@ -316,13 +533,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      {/* ── Modal Wajib Autentikasi jika Belum Login ── */}
-      <AuthRequiredModal
-        open={isAuthRequiredOpen}
-        onOpenChange={setIsAuthRequiredOpen}
-        redirectUrl="/laporan/baru"
-      />
     </>
   )
 }
