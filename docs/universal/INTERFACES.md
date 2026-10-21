@@ -212,8 +212,8 @@ internal untuk cross-check, sesuai `ARCHITECTURE.md` §3.2 dan §6.
 **Catatan penting untuk implementasi v1 (september 2026):**
 - `data_resmi` blok (sumber, tanggal_pembaruan, tanggal_verifikasi_baseline) **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di schema. Datanya tersedia di kolom `sekolah.sumber_data` dan `sekolah.tanggal_pembaruan_data` di DB.
 - `ada_sanggahan` pada setiap item `kondisi_sarana` **tidak diimplementasi di v1** — field ini tidak dikirim oleh backend meskipun ada di contoh response. Endpoint untuk menghitung ada sanggahan tersedia di `GET /sekolah/{npsn}/sanggahan`.
-- `penanda_masalah` di response saat ini mengembalikan `"normal"` (bukan `aman | perlu_perhatian | kritis` seperti di kontrak). Nilai threshold dan logika perhitungan belum diputuskan — lihat `INTERFACES.md` §11.
-- `jumlah_isu_aktif` saat ini selalu `0` — belum dihitung oleh backend.
+- `penanda_masalah` (F4.11/D-23 + F4.12/D-24) = turunan level `skor_kbm` yang sama dengan `GET /laporan/skor-kbm`: `kritis` → `kritis`; `tinggi`/`sedang` → `perlu_perhatian`; `rendah` → `aman`. Prior shrinkage dibaca **global** agar nilai tidak berubah antar halaman.
+- `jumlah_isu_aktif` = laporan warga dengan `status_sanggahan != "ditolak"` (menunggu + divalidasi).
 - **Field berikut dikirim dengan nilai default (null/0) dan tidak dirender di frontend v1** karena data Dapodik tidak di-ingest per scope infrastruktur-only:
   - `rasio_guru_siswa` → `null`
   - `rasio_spm_terpenuhi` → `false`
@@ -380,13 +380,16 @@ response `200`:
 Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster — butuh kolom baru, task terpisah).
 
 
-**`GET /laporan/skor-kbm`** — response `200` (F4.8, D-22):
+**`GET /laporan/skor-kbm`** — response `200` (F4.8, D-22 + F4.12, D-24):
 ```json
 {
   "data": {
     "ringkasan": {
-      "rata_rata_skor": 44.4,
-      "sekolah_kritis": 1,
+      "rata_rata_skor": 44.6,
+      "sekolah_kritis": 0,
+      "jumlah_mismatch": 5,
+      "prior": 49.7,
+      "k": 5,
       "total_laporan": 600,
       "ruang_rusak_berat": 129,
       "distribusi_kondisi": { "baik": 154, "rusak_ringan": 147, "rusak_sedang": 145, "rusak_berat": 154 },
@@ -398,43 +401,46 @@ Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster —
       {
         "npsn": "20506507",
         "nama": "SD NEGERI 2 SENDANGREJO",
-        "skor_kbm": 76.4,
-        "level": "kritis",
-        "skor_laporan": 66.3,
+        "skor_kbm": 69.2,
+        "level": "tinggi",
+        "skor_laporan": 55.9,
         "skor_dapodik": 100.0,
         "jumlah_laporan": 3,
-        "laporan_rusak_berat": 1
+        "laporan_rusak_berat": 1,
+        "mismatch": false
       }
     ]
   }
 }
 ```
-- `skor_kbm` = `0.7×AVG(severity laporan)` + `0.3×Σ(weight×kondisi_rusak)/Σ(jumlah Dapodik)`, skala 0–100, 1 desimal.
+- `skor_laporan` = `λ × AVG(severity laporan) + (1−λ) × prior`, `λ = n/(n+k)`; `n` = laporan dengan `kondisi_dilaporkan` enum valid. `n = 0` → `skor_laporan = 0` (tidak ditarik ke prior).
+- `skor_kbm` = `0.7×skor_laporan` + `0.3×Σ(weight×kondisi_rusak)/Σ(jumlah Dapodik)`, skala 0–100, 1 desimal.
   Weight kondisi: `baik=0`, `rusak_ringan=33`, `rusak_sedang=66`, `rusak_berat=100`.
+- `prior` = `Σ(rata-rata_sekolah × n) / Σ n` dari **seluruh** laporan (global per request, bukan per halaman); `k` = kekuatan prior (config `SHRINKAGE_K`, default 5).
+- `mismatch` = `skor_laporan ≥ 50 AND skor_dapodik == 0` — dihitung **setelah** shrinkage; penanda saja, tidak mengubah skor. `jumlah_mismatch` = jumlah sekolah dengan `mismatch = true`.
 - `level`: `≥70 kritis` · `50–69 tinggi` · `40–49 sedang` · `<40 rendah`.
-- `total_laporan` menghitung **semua** baris laporan termasuk `kondisi_dilaporkan IS NULL`.
+- `total_laporan` menghitung **semua** baris laporan termasuk `kondisi_dilaporkan IS NULL`; `n`/`jumlah_laporan` per sekolah hanya enum valid.
 - `dampak_per_jenis_ruang` diurutkan `rusak_berat` DESC; `nama_ruang` nilai mentah Dapodik (bukan label tampilan).
 - `sekolah` seluruh 62 sekolah, diurutkan `skor_kbm` DESC. Tanpa token → `401`; role selain `admin` / `verifikator_dinas` / `kepala_dinas` → `403`.
 
-### 4.1 Konfirmasi Severity — Ringkasan **[DRAFT]**
+### 4.1 Konfirmasi Severity — Ringkasan ✅ **(F4.15)**
 
-> ⚠️ **DRAFT — menunggu persetujuan FE (Dimas).** Bagian ini belum boleh dipakai sebagai
-> dasar implementasi FE sampai disepakati. Aturan `INTERFACES.md` baris 3–7: perubahan kontrak
-> wajib disepakati Aris & Dimas dulu.
+**Status: ✅ backend final (20 Okt 2026).** Kontrak dikunci dengan default yang disetujui
+(§19.7): satu `GET` mengembalikan semua pertanyaan · field `kode`/`nilai` · endpoint terpisah ·
+kedaluwarsa **lazy saat diakses** · verifikator tidak mengubah jawaban. Modal FE dikerjakan
+Dimas setelah kontrak ini.
 
-Konteks: form laporan warga **tidak** meminta warga memilih tingkat kerusakan (terlalu subjektif).
-Sebagai gantinya, setelah laporan tersimpan, warga diberi maksimal **4 pertanyaan konfirmasi**
-yang dipilih AI dari bank pertanyaan tetap (diturunkan dari dokumen Kemendikbud). Jawaban warga
-dipakai bersama teks deskripsi untuk menentukan `kondisi_dilaporkan`.
+Konteks: form laporan warga **tidak** meminta warga memilih tingkat kerusakan. Setelah laporan
+tersimpan, warga diberi maksimal **4 pertanyaan** yang **dipilih** (bukan dikarang) dari bank
+pertanyaan tetap: 1 pertanyaan bagian + maksimal 3 gejala untuk komponen yang terdeteksi dari
+deskripsi. Pertanyaan struktural hanya muncul bila deskripsi memuat pemicu
+(`SPEC_SEVERITY_KLASIFIKASI.md` §15.5).
 
 Sifat: **opsional, tidak memblokir apa pun.** Laporan tetap sah bila tidak dijawab. Bila tidak
-dijawab, `kondisi_dilaporkan` tetap diisi dari deskripsi saja, dan `status_konfirmasi` menjadi
-`dilewati` setelah 24 jam.
+dijawab dalam **24 jam**, status menjadi `dilewati` saat endpoint diakses (tanpa cron). Jawaban
+disimpan di `laporan.jawaban_konfirmasi` (JSON) untuk audit + fitur lapis 2.
 
-Spesifikasi lengkap (bank pertanyaan, aturan berjenjang, pemicu struktural):
-`docs/backend/SPEC_SEVERITY_KLASIFIKASI.md` §15.
-
-### 4.2 `GET /laporan/{id}/konfirmasi` **[DRAFT]**
+### 4.2 `GET /laporan/{id}/konfirmasi` ✅
 
 Akses: **pemilik laporan** (`403` untuk selainnya) · Tanpa token → `401` · Laporan tidak ada → `404`.
 
@@ -462,16 +468,18 @@ response `200`:
         ]
       },
       {
-        "kode": "gejala",
+        "kode": "gejala_plafon",
         "teks": "Pilih yang paling berat yang Anda lihat:",
         "tipe": "pilih_satu_bertingkat",
         "urutan": "dari_terparah",
         "lewati_bila_terjawab": true,
+        "komponen": "Plafon / langit-langit",
         "pilihan": [
-          { "kode": "g4", "label": "string", "tingkat": "rusak_berat" },
-          { "kode": "g3", "label": "string", "tingkat": "rusak_sedang" },
-          { "kode": "g2", "label": "string", "tingkat": "rusak_ringan" },
-          { "kode": "g1", "label": "string", "tingkat": "baik" }
+          { "kode": "g4", "label": "Apakah ada bagian plafon yang sudah jatuh?", "tingkat": "rusak_berat" },
+          { "kode": "g3", "label": "Apakah plafon terlihat melengkung atau melendut ke bawah?", "tingkat": "rusak_berat" },
+          { "kode": "g2", "label": "Apakah ada bagian plafon yang sudah lepas dari rangkanya?", "tingkat": "rusak_sedang" },
+          { "kode": "g1", "label": "Apakah cat plafon terlihat mengelupas meluas?", "tingkat": "rusak_ringan" },
+          { "kode": "g0", "label": "Tidak ada gejala / komponen terlihat baik", "tingkat": "baik" }
         ]
       }
     ]
@@ -481,27 +489,25 @@ response `200`:
 
 Catatan bentuk:
 
-- `tipe: "pilih_satu_bertingkat"` + `urutan: "dari_terparah"` + `lewati_bila_terjawab: true`
-  memberitahu FE untuk menerapkan aturan **"jawab satu gejala → lewati gejala yang lebih ringan"**.
-  Aturan penerapannya di FE; kontrak ini hanya menyatakan bahwa aturannya berlaku, agar kedua sisi
-  tidak berbeda tafsir.
-- `label` memakai **nama awam**. Pemetaan ke istilah teknis Kemendikbud ada di BE
-  (`SPEC_SEVERITY_KLASIFIKASI.md` §15.3).
-- `tingkat` diisi nilai enum resmi agar FE dapat memakai warna/kategori yang sudah ada.
+- `kode` pertanyaan gejala selalu `gejala_<komponen>` (8 komponen) atau `gejala_struktur`.
+- Dua baris teratas boleh sama-sama `tingkat: "rusak_berat"` karena dokumen membedakan
+  "Sangat Berat" dan "Berat", sedangkan enum aplikasi hanya punya `rusak_berat`.
+- `g0` = pernyataan **"tidak ada gejala"** (komponen baik), bukan "tidak menjawab".
+- `tipe` + `urutan` + `lewati_bila_terjawab` memberitahu FE menerapkan aturan **"jawab satu
+  gejala → lewati gejala yang lebih ringan"**.
+- `label` memakai nama awam; pemetaan ke istilah teknis tetap di BE.
 - `status: "terjawab"` atau `"dilewati"` → `pertanyaan: []`.
-- Pertanyaan struktural (pondasi/kolom/balok) hanya muncul bila deskripsi memuat pemicu
-  (`SPEC_SEVERITY_KLASIFIKASI.md` §15.5); bila tidak ada pemicu, komponen itu tidak ditanyakan.
+- Laporan lama (`status_konfirmasi IS NULL`) dikembalikan sebagai `dilewati` dengan
+  `pertanyaan: []` — alur konfirmasi tidak ditawarkan ulang.
 
-### 4.3 `POST /laporan/{id}/konfirmasi` **[DRAFT]**
+### 4.3 `POST /laporan/{id}/konfirmasi` ✅
 
-Akses: **pemilik laporan**.
-
-request:
+Akses: **pemilik laporan**. Request:
 ```json
 {
   "jawaban": [
     { "kode": "bagian", "nilai": "plafon" },
-    { "kode": "gejala", "nilai": "g3" }
+    { "kode": "gejala_plafon", "nilai": "g3" }
   ]
 }
 ```
@@ -522,24 +528,47 @@ Ketentuan:
 
 | Kasus | Respons |
 |---|---|
-| Menjawab sebagian | `200`, `status: "terjawab"`, nilai dari jawaban yang ada |
-| `jawaban: []` (warga melewati) | `200`, `status: "dilewati"` |
-| Sudah pernah dijawab | `409 CONFLICT` — tidak boleh menimpa |
+| Menjawab sebagian | `200`, `status: "terjawab"`, severity tertinggi dari jawaban yang ada |
+| Hanya menjawab `bagian` | `200`, `status: "terjawab"`, `kondisi_dilaporkan` tidak berubah |
+| `jawaban: []` (warga melewati) | `200`, `status: "dilewati"`, kondisi tidak berubah |
+| Sudah pernah dijawab/dilewati, atau lewat 24 jam | `409 CONFLICT` — tidak boleh menimpa |
 | Bukan pemilik laporan | `403` |
 | Laporan tidak ada | `404` |
-| `kode` / `nilai` tidak dikenal | `422 UNPROCESSABLE_ENTITY` |
+| `kode` / `nilai` tidak dikenal, atau `kode` duplikat | `422 UNPROCESSABLE_ENTITY` |
 
-**Jawaban warga selalu menang** atas hasil ekstraksi AI dari deskripsi.
+**Jawaban warga selalu menang** atas ekstraksi deskripsi. `sumber_kondisi` diisi `ai` karena AI
+yang menerjemahkan jawaban menjadi enum (SPEC §17.2); `warga` khusus koreksi verifikator.
 
-### 4.4 Field Baru pada Respons Laporan **[DRAFT]**
+### 4.4 Field Baru pada Respons Laporan ✅ **(F4.14)**
+
+**Status: ✅ diimplementasikan (F4.14).** Kolom DB `laporan.sumber_kondisi`
+(`ai`/`warga`, nullable) dan `laporan.status_konfirmasi`
+(`menunggu`/`terjawab`/`dilewati`, nullable) — migrasi `f4a14b7c9e21`.
+Keduanya **tanpa backfill**: laporan lama tetap `NULL` (bukan `menunggu`).
+`konfirmasi_perlu_dijawab` adalah field turunan, bukan kolom.
 
 | Endpoint | Field baru | Nilai |
 |---|---|---|
-| `GET /laporan/riwayat` | `sumber_kondisi` | `ai` / `warga` / `null` |
-| `GET /laporan/riwayat` | `status_konfirmasi` | `menunggu` / `terjawab` / `dilewati` |
+| `POST /laporan` | `sumber_kondisi`, `status_konfirmasi`, `konfirmasi_perlu_dijawab`, `konfirmasi` | laporan baru: `null`, `"menunggu"`, `true`, blok `{perlu_konfirmasi, jumlah_pertanyaan, kedaluwarsa_pada}` |
+| `GET /laporan/riwayat` | ketiga field | dari DB; laporan lama: `null` / `null` / `false` |
 | `GET /laporan/{id}` | idem | idem |
 | `GET /laporan/perlu-review` | idem | idem |
-| `GET /laporan/riwayat` | `konfirmasi_perlu_dijawab` | `boolean` — memudahkan FE menandai laporan yang belum dikonfirmasi |
+
+`konfirmasi_perlu_dijawab = (status_konfirmasi == "menunggu")` — memudahkan FE
+menandai laporan yang belum dikonfirmasi tanpa menduplikasi logika status.
+
+`konfirmasi` pada `POST /laporan` (F4.15):
+
+```json
+{
+  "perlu_konfirmasi": true,
+  "jumlah_pertanyaan": 4,
+  "kedaluwarsa_pada": "2026-10-21T08:30:00"
+}
+```
+
+`perlu_konfirmasi = false` bila deskripsi tidak menyebut komponen apa pun (hanya pertanyaan
+`bagian` yang tersedia). `kedaluwarsa_pada = created_at + 24 jam`.
 
 Makna `sumber_kondisi`: **`warga` BUKAN berarti warga mengisi dropdown severity.** Warga tidak
 pernah melihat kolom ini. `warga` hanya muncul bila manusia (mis. verifikator dinas) mengoreksi

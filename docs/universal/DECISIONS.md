@@ -339,3 +339,106 @@ sehingga angka "siswa terdampak" mustahil dihitung.
 | Cakupan | `GET /sekolah` (list, per halaman) dan `GET /sekolah/{npsn}` (detail) |
 
 **Konsekuensi:** nilai `"normal"` tidak lagi dikirim; distribusi live (62 sekolah): `perlu_perhatian` 39 · `aman` 22 · `kritis` 1. Update baris Scope FINAL di `AGENTS.md` memerlukan persetujuan terpisah.
+
+### D-24: Shrinkage Skor KBM + Penanda Mismatch — `K = 5` kebijakan, estimasi ulang sebelum produksi
+
+**Status:** ✅ Diimplementasikan (F4.12, 20 Okt 2026). Disetujui Aris, 19 Okt 2026.
+
+**Masalah:** `skor_laporan` (D-22) adalah rata-rata biasa severity, sehingga sekolah berdata sedikit mudah bernilai ekstrem: `SD NEGERI 2 SENDANGREJO` (n=3) mendapat `skor_kbm` **76,4** (peringkat 1, `kritis`) dari `skor_laporan` 66,3, vs `SD MUHAMMADIYAH 1 LAMONGAN` (n=13) `skor_kbm` 52,0. Sampel 3 laporan diperlakukan setara 13 laporan.
+
+**Keputusan:**
+
+| Aspek | Ketentuan |
+|---|---|
+| Formula laporan | `λ = n/(n+K)`; `skor_laporan = λ × rata-rata severity + (1−λ) × prior` |
+| `K` | **5** — **kebijakan** (lihat butir Dasar K), bukan hasil estimasi data |
+| `prior` | **dinamis** per request: `Σ(rata-rata_sekolah × n) / Σ n`; live = 49,7 |
+| `n = 0` | `skor_laporan = 0` — aturan cakupan D-22 dipertahankan (**bukan** prior) |
+| Dapodik, bobot, level | tidak berubah: `0.7/0.3`; ≥70 / 50 / 40 |
+| Mismatch | `skor_laporan ≥ 50 AND skor_dapodik == 0` — penanda saja, skor tidak diubah |
+| Tampilan mismatch | halaman **Skor KBM** saja; tidak mengubah `penanda_masalah` |
+| Sumber kebenaran | dua call site (`routers/laporan.py`, `routers/sekolah.py`) memakai **helper prior yang sama**, dihitung **global** (bukan per halaman) |
+
+**Dasar K (ringkas; lengkap di `AI_PIPELINE_ABLATION_STUDY.md` §10.4.1):**
+
+- Rumus adalah *credibility theory* Bühlmann: `Z = n/(n+K)`, `K = EPV/VHM`; bentuk sama dengan *Bayesian average* IMDb (`m`).
+- Tafsir K: titik 50% kredibilitas · jumlah "laporan bayangan" · konservatisme.
+- **`K = 5` adalah kebijakan**, analog IMDb `m = 25.000` — bukan angka hasil hitungan.
+- Data dev tidak bisa memvalidasi K: `EPV = 1420,8`, `VHM = −2,5` → `K` tak terdefinisi; validasi silang menurun monoton ke "prior saja" (`K=5 → MSE 1485,3` vs `K=∞ → 1415,9`).
+- Aturan baku: `VHM ≤ 0` → kredibilitas 0 (tarik penuh ke prior).
+
+**Gate produksi (wajib):**
+
+1. Hitung ulang `K = EPV/VHM` dari laporan riil + bandingkan dengan `K` hasil validasi silang.
+2. Bila `VHM ≤ 0`, nyatakan peringkat per-sekolah tidak bermakna (skor = prior) atau dokumentasikan alasan mempertahankan kebijakan.
+3. Catat hasil estimasi, tanggal, dan jumlah laporan pada dokumentasi rilis.
+4. `K` disimpan sebagai parameter konfigurasi (default 5), bukan literal tersebar di kode.
+
+**Dampak terukur (data live, 62 sekolah, 600 laporan):** 8 sekolah berpindah level; `kritis` 1 → 0; distribusi `rendah 22 · sedang 21 · tinggi 18 · kritis 1` → `22 / 22 / 18 / 0`; kepekaan K=3 → 6, K=5 → 8, K=10 → 16; 13 sekolah `skor_dapodik = 0`, **5** di antaranya mismatch setelah shrinkage (set sama dengan sebelum shrinkage: SDN KEPATIHAN, SMP MUHAMMADIYAH 2, SD MUHAMMADIYAH 1, SMAS MUHAMMADIYAH 4, SD ISLAM ZAWIYAH AL-AZHAR).
+
+**Implementasi (F4.12, 20 Okt 2026):** `SHRINKAGE_K = 5` di `core/config.py`; `compute_prior`, `is_mismatch`, `estimate_k` di `ai_pipeline/scoring.py`; dua call site (`routers/laporan.py`, `routers/sekolah.py`) memakai prior global yang sama. Live: `prior = 49,7`, `k = 5`, `jumlah_mismatch = 5`, `estimate_k() = None` (VHM ≤ 0). 135 test lulus.
+
+**Konsekuensi:** kontrak `INTERFACES.md` bertambah field `prior`, `k`, `mismatch`, `jumlah_mismatch`; tidak ada migrasi DB (tetap on-the-fly); `calculate_priority_score` (level klaster) tidak disentuh.
+
+---
+
+### D-25: Konfirmasi Severity Lapis 1 — bank pertanyaan tetap, kontrak final backend
+
+**Status:** ✅ Backend diimplementasikan (F4.15, 20 Okt 2026). Modal FE menunggu Dimas.
+
+**Keputusan:**
+
+| Aspek | Ketentuan |
+|---|---|
+| Bentuk pertanyaan | maksimal 4: 1 `bagian` + maksimal 3 `gejala_<komponen>` |
+| Bank | 8 komponen nama awam × gejala bertingkat + opsi `g0` "tidak ada gejala" |
+| Pemilih | deterministik dari kata kunci deskripsi; AI tidak mengarang kalimat |
+| Struktural | `gejala_struktur` hanya bila pemicu §15.5 muncul |
+| Ambil pertanyaan | satu `GET` (bukan bertahap) |
+| Field | `kode` + `nilai`; kode gejala `gejala_<komponen>` |
+| Penyimpanan | `laporan.jawaban_konfirmasi` JSON (audit + fitur lapis 2) |
+| Kedaluwarsa | 24 jam, transisi **lazy** saat endpoint diakses |
+| Jawaban | severity tertinggi menang; `g0` → `baik`; jawaban warga menang atas teks |
+| `sumber_kondisi` | `ai` (AI menerjemahkan jawaban → enum), bukan `warga` |
+| Verifikator | tidak dapat mengubah jawaban warga pada endpoint ini |
+
+**Konsekuensi:** laporan lama (`status_konfirmasi IS NULL`) dianggap `dilewati` dan tidak
+ditawari konfirmasi ulang; `POST` kedua → `409 CONFLICT`; kode/nilai asing → `422`.
+
+---
+
+### D-26: Sumber label severity — LLM 550 + verifikasi manual 50; K1 sebagai baseline
+
+**Status:** ⏳ Kerangka + ablation K1–K4 selesai (K3 menang 74,00% test set; label LLM);
+**verifikasi manual 50 ditunda ke minggu depan (≥ 28 Okt 2026)** — lihat Amandemen di bawah.
+
+**Keputusan:**
+
+| Aspek | Ketentuan |
+|---|---|
+| Label latih | 550 laporan dari LLM (satu permintaan per laporan) |
+| Test set | 50 laporan acak (seed 42), **tidak** dipakai melatih |
+| Verifikasi | 50 label LLM diperiksa manual Aris; `label_manual` di `test_50.csv` |
+| Prompt | 4 definisi Kemendikbud + alasan + output terkunci + catat model/versi |
+| Dilarang | label seed `setup_f300.py` (acak/uniform) |
+| Baseline | K1 aturan kata kunci; pembanding K2 LogReg, K3 SVM, K4 IndoBERT |
+| Metrik | akurasi, macro-F1, confusion matrix |
+| Integrasi cron | guard `kondisi_dilaporkan IS NULL` + `sumber_kondisi != 'warga'`; set `ai` |
+| Gate | `SEVERITY_ENABLED=false` sampai ablation selesai — jangan menimpa 600 baris dengan baseline mentah |
+
+**Keterbatasan wajib dilaporkan:** 50 sampel tidak cukup untuk generalisasi; akurasi LLM pada
+sampel adalah batas atas classifier, bukan akurasi populasi.
+
+**Amandemen (21 Okt 2026 — keputusan Aris):** verifikasi manual **ditunda ke minggu depan
+(≥ 28 Okt 2026)** dan wajib memenuhi 3 syarat agar angka `--labels manual` dapat dipakai:
+
+1. **Rubrik dulu** — buat `docs/backend/RUBRIK_LABEL_MANUAL.md` (definisi `severity.py:25` +
+   daftar periksa pengambil keputusan + aturan ambigu + penanda `ragu`); tanpa rubrik penilaian
+   subjektif.
+2. **Mode blind** — isi lewat `test_50_blind.csv` tanpa kolom `label_llm`; Aris sudah mengetahui
+   skor ablation sebelumnya (risiko *anchoring*); isian awal disimpan sebagai `label_manual_v1`
+   untuk mengukur anchoring.
+3. **Rerun final** — `severity_ablation.py --labels manual --indobert-model app/dataset/severity/models/indobert`
+   setelah `50/50`, lalu update `CHANGELOG.md` §3.32 + `ABLATION_SEVERITY_RESULTS.md`.
+
+Dua bias (isi setelah tahu skor; tanpa rubrik) wajib ditulis jujur di bagian metodologi skripsi.
