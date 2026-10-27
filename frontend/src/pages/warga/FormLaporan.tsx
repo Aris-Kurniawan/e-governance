@@ -190,6 +190,9 @@ export default function FormLaporan() {
       setLaporanId(res.id)
       setPerluKonfirmasi(res.konfirmasi?.perlu_konfirmasi === true)
       setKonfirmasiStatus(res.konfirmasi?.perlu_konfirmasi ? "menunggu" : null)
+      // DBG-024 — langsung buka modal agar warga tidak melewatkan pertanyaan
+      // (sebelumnya hanya banner pasif tanpa pemicu otomatis).
+      if (res.konfirmasi?.perlu_konfirmasi) setKonfirmasiOpen(true)
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === "UNAUTHORIZED") {
@@ -280,8 +283,10 @@ export default function FormLaporan() {
             </div>
           </div>
 
-          {/* F4.13 T3 — banner konfirmasi (opsional, SPEC §19.6: tidak memblokir) */}
-          {perluKonfirmasi && konfirmasiStatus === null && (
+          {/* F4.13 T3 — banner konfirmasi (opsional, SPEC §19.6: tidak memblokir).
+              DBG-024 — juga tampil saat status masih "menunggu" (warga menutup
+              modal tanpa menjawab) agar pertanyaan tetap bisa diakses. */}
+          {perluKonfirmasi && (konfirmasiStatus === null || konfirmasiStatus === "menunggu") && (
             <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3.5 text-left space-y-2.5">
               <p className="text-xs text-blue-950 leading-relaxed flex items-start gap-2">
                 <HelpCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
