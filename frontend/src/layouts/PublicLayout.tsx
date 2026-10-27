@@ -4,7 +4,10 @@ import { useAuth } from "@/context/AuthContext"
 
 export default function PublicLayout() {
   const location = useLocation()
-  const { isAuthenticated, user, logout } = useAuth()
+  const { isAuthenticated, user, role, roleLabel, logout } = useAuth()
+
+  const isDinasStaff = role === "admin" || role === "verifikator_dinas" || role === "kepala_dinas"
+  const dashboardTarget = isDinasStaff ? "/dinas/dashboard" : "/dashboard"
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -42,15 +45,16 @@ export default function PublicLayout() {
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <Link
-                to="/dashboard"
+                to={dashboardTarget}
                 className="flex items-center gap-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 px-3 py-1.5 transition-colors"
+                title={`Buka dashboard ${isDinasStaff ? "Dinas" : "Warga"}`}
               >
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0B3052] text-[11px] font-bold text-white">
                   {user?.nama?.charAt(0) || "U"}
                 </div>
                 <div className="leading-tight hidden sm:block text-left">
-                  <span className="text-xs font-bold text-slate-800 block">{user?.nama}</span>
-                  <span className="text-[10px] text-emerald-600 font-semibold">Warga Terverifikasi</span>
+                  <span className="text-xs font-bold text-slate-800 block truncate max-w-[140px]">{user?.nama}</span>
+                  <span className="text-[10px] text-blue-700 font-semibold">{roleLabel ?? "Warga Terdaftar"}</span>
                 </div>
               </Link>
               <Button

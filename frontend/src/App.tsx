@@ -89,7 +89,7 @@ export default function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["warga_umum", "warga_terverifikasi", "komite_sekolah"]}>
                     <DashboardWilayah />
                   </ProtectedRoute>
                 }
@@ -97,7 +97,7 @@ export default function App() {
               <Route
                 path="/laporan/baru"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["warga_umum", "warga_terverifikasi", "komite_sekolah"]}>
                     <FormLaporan />
                   </ProtectedRoute>
                 }
