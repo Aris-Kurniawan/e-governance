@@ -14,7 +14,6 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.klaster import Klaster, StatusLog
 from app.models.laporan import Laporan
-from app.ai_pipeline.pipeline import default_pipeline
 from app.ai_pipeline.scoring import calculate_score_components, hitung_kondisi_dapodik
 
 
@@ -63,6 +62,7 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
                 lap.hasil_klasterisasi = "noise"
             continue
         
+        from app.ai_pipeline.pipeline import default_pipeline
         result = default_pipeline.run(texts)
         labels = result["labels"]
         cluster_meta = result["cluster_meta"]
