@@ -719,18 +719,72 @@ ws#### F3.0c — Running Test Suite A (Embedding Variations)
 
 ---
 
+#### F3.0g — Ablation A4: Potion Embedding *(selesai 21 Okt 2026)*
+
+**Latar belakang:** Saran dosen (21 Okt 2026) — bandingkan embedding IndoBERT/MiniLM yang besar dengan alternatif lebih ringan. Potion (`minishlab/potion-multilingual-128M`) dipilih karena multilingual, CPU-only, dan jauh lebih kecil (~128 MB).
+
+**Tujuan:** Jalankan 27 kombinasi A4 × B1–B3 × C1–C3 × D1–D3 dan bandingkan NMI/ARI/Purity/Noise vs A1–A3 pada ground truth yang sama.
+
+**Hasil Eksekusi:**
+- 27 kombinasi A4 selesai dieksekusi dan disimpan di `backend/app/ai_pipeline/experiments/results/A4_*.json` serta `summary_report.csv`.
+- Konfigurasi seimbang terbaik: **A4_B1_C2** (UMAP 10 + HDBSCAN min_cluster_size=3, min_samples=2) menghasilkan NMI = 0.1958, Purity = 0.6923, Noise = 16.1% (9 klaster).
+- Konfigurasi tanpa reduksi A4_B2_C2 mencatat NMI 0.4413 namun anomali karena 88.7% data dibuang sebagai noise (hanya 7 dokumen masuk 2 klaster).
+- **Keputusan:** A2 (TF-IDF 300 fitur, NMI = 0.3874, Noise 35.6%) tetap dipertahankan sebagai konfigurasi produksi utama. A4 didokumentasikan di `ABLATION_RESULTS.md` & `AI_PIPELINE_ABLATION_STUDY.md`.
+
+**Langkah implementasi:**
+
+1. **`app/ai_pipeline/embedding.py`** — tambah branch `method="potion"`:
+   ```python
+   if method == "potion":
+       from model2vec import StaticModel
+       model = StaticModel.from_pretrained("minishlab/potion-multilingual-128M")
+       return np.asarray(model.encode(texts), dtype=np.float32)
+   ```
+   Sisipkan sebelum `raise ValueError(...)`. Tambah fallback ke TF-IDF bila `StaticModel` tidak tersedia (konsisten dengan guard `FALLBACK_USED` di `run_ablation.py`).
+
+2. **`app/ai_pipeline/experiments/run_ablation.py`** — tambah `"potion"` ke `VARIANTS_A`:
+   ```python
+   VARIANTS_A = ["tfidf", "indobert", "minilm", "potion"]  # tambah "potion"
+   ```
+   27 kombinasi baru akan otomatis terbuat dari loop yang sudah ada.
+
+3. **Jalankan** (dari folder `backend/`):
+   ```bash
+   ./venv/bin/python app/ai_pipeline/experiments/run_ablation.py --embedding potion
+   ```
+   Atau jalankan seluruh suite bila flag `--embedding` belum ada (27 kombinasi saja yang baru).
+
+4. **`docs/backend/ABLATION_RESULTS.md`** — tambah tabel A4 di bawah tabel A1–A3 (jangan timpa — beri header baru `## Tambahan A4: Potion (21 Okt 2026)`).
+
+5. **Keputusan adopsi:**
+   - A4 NMI > A2 (0,3874) → ganti default `pipeline.py` + catat di `DECISIONS.md` (D-24+)
+   - A4 NMI ≤ A2 → tetap A2, hasil A4 tetap dilaporkan sebagai perbandingan untuk laporan/skripsi
+
+**Deliverable:**
+- `embedding.py` dengan branch `method="potion"`
+- 27 file hasil `A4_B*_C*_D*.json` di `experiments/results/`
+- Tabel A4 di `ABLATION_RESULTS.md`
+- Keputusan adopsi di `DECISIONS.md` (D-24 atau lebih)
+
+**Estimasi Waktu:** ~2–3 jam (termasuk unduhan model ~128 MB + 27 run @~5–10 detik/run)
+
+**Catatan:** Jangan jalankan seluruh 108 kombinasi sekaligus — jalankan A4 dulu (27 kombinasi), bandingkan hasilnya, baru putuskan apakah perlu iterasi lanjutan.
+
+---
+
 **Ringkasan F3.0 Sub-tasks:**
 
-| Sub-task | Tujuan | Durasi | Dependen |
-|----------|--------|--------|----------|
-| F3.0a | Manual clustering | 1 hari | - |
-| F3.0b | Framework setup | 2 hari | F3.0a |
-| F3.0c | Test suite A (embedding) | 1 hari | F3.0b |
-| F3.0d | Test suite B (baseline + MiniLM) | Paralel F3.0c | F3.0b |
-| F3.0e | Analysis & reporting | 2 hari | F3.0c + F3.0d |
-| F3.0f | Optimal config implementation | 1 hari | F3.0e |
+| Sub-task | Tujuan | Durasi | Dependen | Status |
+|----------|--------|--------|----------|--------|
+| F3.0a | Manual clustering | 1 hari | - | ✅ |
+| F3.0b | Framework setup | 2 hari | F3.0a | ✅ |
+| F3.0c | Test suite A (embedding) | 1 hari | F3.0b | ✅ |
+| F3.0d | Test suite B (baseline + MiniLM) | Paralel F3.0c | F3.0b | ✅ |
+| F3.0e | Analysis & reporting | 2 hari | F3.0c + F3.0d | ✅ |
+| F3.0f | Optimal config implementation | 1 hari | F3.0e | ✅ |
+| **F3.0g** | **Ablation A4: Potion embedding** | **~2–3 jam** | **F3.0f** | **⏳ Belum** |
 
-**Total: 1 minggu** (F3.0a → F3.0b → F3.0c/F3.0d paralel → F3.0e → F3.0f)
+**Total awal: 1 minggu** (F3.0a–F3.0f selesai). F3.0g tambahan atas saran dosen.
 
 ---
 

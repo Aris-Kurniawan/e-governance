@@ -290,10 +290,11 @@ response `200`:
 |---|---|---|---|
 | POST | `/laporan` | `warga_terverifikasi`, `komite_sekolah` | Kirim laporan baru |
 | GET | `/laporan/riwayat` | `warga_terverifikasi`, `komite_sekolah` | Riwayat laporan milik sendiri |
+| GET | `/laporan/publik` | Publik | Daftar aduan mandiri tervalidasi dinas (`klaster_id IS NULL`, `status_sanggahan = 'divalidasi'`) — DBG-023, D-29 |
 | GET | `/laporan/{id}` | Pemilik laporan, `verifikator_dinas`, `kepala_dinas` | Detail satu laporan |
-| POST | `/upload/laporan?laporan_id={id}` | Pemilik laporan | Upload foto bukti (`multipart/form-data`, field `file` — lihat §10) |
-| GET | `/laporan/perlu-review` | `admin`, `kepala_dinas` | Daftar laporan perlu verifikasi manual (F4.7/D-21): tanpa klaster **ATAU** klaster kategori `belum_terklasifikasi` — envelope `{data, meta}` §0.2 (`page`, `page_size` default 20 maks 100) |
-| PUT | `/laporan/{id}/status` | `admin`, `kepala_dinas` | Update `status_sanggahan` — verifikasi manual per laporan (F4.7/D-21) |
+| GET | `/laporan/publik` | Publik | Daftar aduan mandiri tervalidasi dinas (`klaster_id IS NULL`, `status_sanggahan = 'divalidasi'`) — DBG-023, D-29 |
+| GET | `/laporan/perlu-review` | `admin`, `verifikator_dinas`, `kepala_dinas` | Daftar laporan perlu verifikasi manual (F4.7/D-21/D-30): tanpa klaster **ATAU** klaster kategori `belum_terklasifikasi` — envelope `{data, meta}` §0.2 (`page`, `page_size` default 20 maks 100). Catatan: `kepala_dinas` read-only untuk pengawasan |
+| PUT | `/laporan/{id}/status` | `admin`, `verifikator_dinas` | Update `status_sanggahan` — verifikasi manual per laporan oleh staf teknis dinas (F4.7/D-21/D-30) |
 | GET | `/laporan/skor-kbm` | `admin`, `verifikator_dinas`, `kepala_dinas` | Skor dampak KBM per sekolah (F4.8/D-22) — seluruh 62 sekolah, diurutkan skor DESC |
 | GET | `/laporan/{id}/konfirmasi` | Pemilik laporan | Ambil pertanyaan konfirmasi severity yang dipilih AI (§4.2) |
 | POST | `/laporan/{id}/konfirmasi` | Pemilik laporan | Kirim jawaban konfirmasi severity (§4.3) |
@@ -422,6 +423,14 @@ Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster —
 - `total_laporan` menghitung **semua** baris laporan termasuk `kondisi_dilaporkan IS NULL`; `n`/`jumlah_laporan` per sekolah hanya enum valid.
 - `dampak_per_jenis_ruang` diurutkan `rusak_berat` DESC; `nama_ruang` nilai mentah Dapodik (bukan label tampilan).
 - `sekolah` seluruh 62 sekolah, diurutkan `skor_kbm` DESC. Tanpa token → `401`; role selain `admin` / `verifikator_dinas` / `kepala_dinas` → `403`.
+
+---
+
+### 4.4 Verifikasi Manual Laporan Non-Klaster / Noise (F4.7, D-21, D-30)
+
+- `GET /laporan/perlu-review`: dapat diakses oleh `admin`, `verifikator_dinas`, dan `kepala_dinas` (fungsi pengawasan).
+- `PUT /laporan/{id}/status`: hanya dapat dieksekusi oleh `admin` dan `verifikator_dinas`. Role `kepala_dinas` atau warga menghasilkan `403 FORBIDDEN`.
+
 
 ### 4.1 Konfirmasi Severity — Ringkasan ✅ **(F4.15)**
 
@@ -677,8 +686,8 @@ Pipeline inline memakai konfigurasi optimal ablation (A2+B1+C2+D1).
 
 | Method | Endpoint | Akses | Deskripsi |
 |---|---|---|---|
-| POST | `/vote?klaster_id={id}` | `warga_terverifikasi`, `komite_sekolah` | Vote klaster (satu akun satu suara) |
-| GET | `/vote/status/{klaster_id}` | User login | Cek status vote sendiri pada klaster ini |
+| POST | `/vote?klaster_id={id}` | `warga_umum`, `warga_terverifikasi`, `komite_sekolah` | Vote klaster (satu akun satu suara, D-28) |
+| GET | `/vote/status/{klaster_id}` | `warga_umum`, `warga_terverifikasi`, `komite_sekolah` | Cek status vote sendiri pada klaster ini |
 | PUT | `/vote/klaster/{id}/skor` | `admin` | Hitung ulang skor prioritas klaster |
 | PUT | `/vote/klaster/{id}/override?urutan_prioritas=&alasan=` | `kepala_dinas` | Override urutan prioritas manual (lihat §7) |
 

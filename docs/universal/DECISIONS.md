@@ -442,3 +442,75 @@ sampel adalah batas atas classifier, bukan akurasi populasi.
    setelah `50/50`, lalu update `CHANGELOG.md` §3.32 + `ABLATION_SEVERITY_RESULTS.md`.
 
 Dua bias (isi setelah tahu skor; tanpa rubrik) wajib ditulis jujur di bagian metodologi skripsi.
+
+---
+
+### D-27: Penyederhanaan Dashboard Wilayah — Penggantian Matriks Integritas Sekolah dengan Daftar Klaster Isu Terkini
+
+**Status:** ✅ Disetujui (22 Okt 2026 — keputusan Aris)
+
+**Konteks & Masalah:**
+Halaman Dashboard Wilayah Warga (`DashboardWilayah.tsx`) sebelumnya menampilkan komponen "Matriks Integritas Sarana Sekolah" (daftar 62 sekolah) di posisi atas sebelum tabel klaster. Banyak sekolah menampilkan data nol/strip (Klaster: 0, Belum Verifikasi: 0, Skor: —, Status: Sesuai), yang tidak informatif dan membingungkan warga karena esensi utama SIMAKIS adalah penanganan isu berbasis klaster AI dan voting partisipatif warga. Tabel isu sarpras aktual justru tertimbun di bagian paling bawah.
+
+**Keputusan:**
+1. Mengambil alih frontend untuk menghapus komponen tabel **Matriks Integritas Sarana Sekolah** dari halaman `DashboardWilayah.tsx`.
+2. Menjadikan tabel **Daftar Klaster Isu Terkini** sebagai tabel utama dan sentral di dashboard warga.
+3. Tabel utama ini berfokus langsung pada klaster masalah sarpras yang ditemukan AI, status verifikasi dinas, tingkat urgensi / skor prioritas, dan tombol aksi partisipasi (Vote Dukungan Warga & Detail).
+
+---
+
+### D-28: Pembukaan Hak Vote untuk Semua Akun Warga Terdaftar (warga_umum)
+
+**Status:** ✅ Disetujui (22 Okt 2026 — keputusan Aris)
+
+**Konteks & Masalah:**
+1. Endpoint `POST /vote` dan `GET /vote/status/{id}` sebelumnya dibatasi hanya untuk `warga_terverifikasi` dan `komite_sekolah` (`vote.py:23`).
+2. Akun warga baru yang mendaftar secara default memperoleh `role = "warga_umum"` dan `status_verifikasi = "menunggu"` (`models/user.py:28`).
+3. Pada panel web admin dinas, **tidak ada halaman maupun endpoint untuk memverifikasi akun warga**.
+4. Akibatnya, seluruh warga yang mendaftar dan login tidak pernah bisa memberikan vote (selalu terbentur HTTP 403 Forbidden).
+
+**Keputusan:**
+1. **Memperluas otorisasi vote backend**: `require_warga` di `routers/vote.py` mencakup `warga_umum`, `warga_terverifikasi`, dan `komite_sekolah`.
+2. **Mempertahankan isolasi staf dinas**: Akun aparatur dinas (`verifikator_dinas`, `kepala_dinas`, `admin`) tetap **tidak diperbolehkan vote** (403 Forbidden) agar skor prioritas murni berasal dari aspirasi warga/komite sekolah.
+3. **Penyelarasan frontend**: `ROLE_BOLEH_VOTE` di `DashboardWilayah.tsx` ditambahkan `warga_umum`, sehingga tombol vote langsung aktif saat warga masuk. Pesan error 403 disesuaikan menjadi *"Vote hanya untuk akun warga dan komite sekolah."*
+4. **Cakupan terbatas**: Keputusan ini difokuskan pada fitur voting agar partisipasi warga berfungsi tanpa terblokir ketiadaan modul verifikasi identitas warga di web dinas.
+
+---
+
+### D-29: Ekspos Publik Aduan Mandiri Tervalidasi Dinas (DBG-023)
+
+**Status:** ✅ Disetujui (22 Okt 2026 — keputusan Aris)
+
+**Konteks & Masalah:**
+Laporan warga yang dikategorikan noise oleh AI HDBSCAN (`klaster_id IS NULL`) tetapi telah diverifikasi dan divalidasi keabsahannya oleh Kepala Dinas (`status_sanggahan = 'divalidasi'`) sebelumnya tidak pernah muncul di tab "Transparansi Publik" `/laporan/riwayat`. Hal ini dikarenakan tab tersebut hanya menampilkan data klaster dari `GET /klaster`. Akibatnya, aduan sah warga non-klaster seolah-olah hilang setelah divalidasi dinas.
+
+**Keputusan:**
+1. **Endpoint Baru `GET /laporan/publik`**:
+   - Terbuka untuk umum (publik) tanpa autentikasi.
+   - Mengambil laporan yang `status_sanggahan = 'divalidasi'` dan `klaster_id IS NULL`.
+   - Mengikuti privasi PDP: `user_id` di-deidentifikasi menjadi string kosong agar tidak mengekspos pengenal pelapor.
+2. **Pemisahan Tampilan di Frontend (`RiwayatLaporan.tsx`)**:
+   - Menambahkan sub-filter switcher pada tab Transparansi Publik: `[Klaster Isu Sarpras]` vs `[Aduan Mandiri Tervalidasi]`.
+   - Aduan mandiri tervalidasi ditampilkan dengan badge `✓ Terverifikasi Dinas (Aduan Mandiri)` dan detail sekolah serta sarpras terkait.
+
+---
+
+### D-30: Pemisahan Wewenang Review Aduan: Verifikator Lapangan vs Pengawasan Kepala Dinas (DBG-017)
+
+**Status:** ✅ Disetujui (22 Okt 2026 — keputusan Aris)
+
+**Konteks & Masalah:**
+Pada implementasi awal F4.7 (D-21), verifikasi laporan non-klaster / noise di `/dinas/perlu-review` dibebankan kepada `kepala_dinas`. Secara tata kelola pemerintahan daerah (mengacu pada Permendagri No. 8/2023 tentang Pengelolaan Pengaduan Pelayanan Publik dan pedoman SP4N-LAPOR!), verifikasi teknis/lapangan atas berkas laporan fisik adalah kewenangan **Pejabat Pengelola Pengaduan (Verifikator Dinas)**, bukan Pejabat Pembina/Pengarah (Kepala Dinas). Membebankan verifikasi teknis ratusan aduan individu kepada satu orang Kepala Dinas menjadi hambatan (*bottleneck*) operasional. Di sisi lain, Kepala Dinas tetap membutuhkan visibilitas pengawasan terhadap seluruh aduan yang masuk.
+
+**Keputusan:**
+1. **Endpoint `GET /laporan/perlu-review` (Read)**:
+   - Diperluas untuk: `admin`, `verifikator_dinas`, dan `kepala_dinas`.
+   - Mengizinkan staf teknis (verifikator) memantau antrean kerja, serta mengizinkan Kepala Dinas melihat rekap aduan dalam rangka fungsi pengawasan (read-only).
+2. **Endpoint `PUT /laporan/{id}/status` (Write / Eksekusi Verifikasi)**:
+   - Dibatasi secara tegas untuk: `admin` dan `verifikator_dinas`.
+   - Menolak akses `kepala_dinas` (HTTP 403 Forbidden) untuk aksi ubah status aduan mandiri secara teknis, mengembalikan wewenang ke staf verifikator dinas.
+3. **Penyelarasan Frontend (`LaporanPerluReview.tsx`)**:
+   - Pengecekan izin aksi di antarmuka diselaraskan: `bolehAksi = role === "admin" || role === "verifikator_dinas"`.
+   - Untuk pengguna dengan peran `kepala_dinas`, tombol aksi "Validasi" dan "Tolak" disembunyikan/dinonaktifkan dan diganti indikator status *"Mode Pengawasan (Hanya Verifikator Dinas yang berwenang memvalidasi)"*.
+
+

@@ -1577,6 +1577,100 @@ aturan AGENTS.md hanya saat diminta ("commit"). Sisa backlog: 50 label manual F4
 - `pytest tests/ -q` → **169/169** test lulus.
 - Frontend build `npm run build` (`tsc && vite build`) sukses tanpa error tipe.
 
+## 3.36 DBG-018 & D-28 — Pembukaan Hak Vote Warga Terdaftar & Status Vote Terhitung Langsung (2026-10-22) ✅ SELESAI
+
+**Perbaikan DBG-018 & Keputusan Produk D-28:**
+
+1. **Masalah:**
+   - User baru register otomatis memperoleh `role = "warga_umum"` dan `status_verifikasi = "menunggu"`.
+   - Endpoint `POST /vote` membatasi `require_warga = RoleChecker(["warga_terverifikasi", "komite_sekolah"])`.
+   - Panel admin dinas tidak memiliki modul/halaman untuk verifikasi warga, sehingga akun warga tidak pernah bisa vote (HTTP 403 Forbidden).
+   - Vote baru di backend disimpan dengan status `"pending"`, memicu pesan frontend *"menunggu masa tunda verifikasi akun"* padahal skor prioritas langsung dihitung dan dinaikkan saat itu juga.
+
+2. **Perubahan:**
+   - `backend/app/routers/vote.py`:
+     - `require_warga` diperluas: `RoleChecker(["warga_umum", "warga_terverifikasi", "komite_sekolah"])`. Akun staf dinas (`admin`, `verifikator_dinas`, `kepala_dinas`) tetap dilarang vote (403 Forbidden).
+     - Objek vote yang dibuat langsung disimpan dengan `status_vote = "terhitung"`.
+   - `backend/tests/test_blackbox.py`:
+     - Menambahkan test regresi `test_vote_warga_umum_happy_dan_staf_forbidden_403` (warga_umum sukses vote 200 OK, staf dinas ditolak 403).
+   - `frontend/src/pages/warga/DashboardWilayah.tsx`:
+     - `ROLE_BOLEH_VOTE` ditambahkan `"warga_umum"`. Pesan error 403 diselaraskan menjadi *"Vote hanya untuk akun warga dan komite sekolah."*
+     - Tombol "Buat Aduan Baru" dipindahkan ke baris header di atas filter chips klaster.
+     - Penataan lebar kolom tabel: kolom `ISU & SEKOLAH` diperlebar (`w-auto`), padding kolom status & aksi dipersempit agar proporsional tanpa overflow.
+   - `frontend/src/pages/warga/DaftarKlaster.tsx` & `DetailKlaster.tsx`:
+     - Menghilangkan logika dan banner teks *"menunggu masa tunda verifikasi akun"*.
+     - Feedback vote langsung sukses dan tombol langsung berubah menjadi *"Sudah Vote"* (centang hijau).
+   - Dokumen:
+     - `docs/universal/DECISIONS.md`: Mencatat **D-28**.
+     - `docs/universal/INTERFACES.md`: Menyelaraskan akses role pada `POST /vote` dan `GET /vote/status/{klaster_id}`.
+     - `docs/backend/DEBUGGING.md`: Menandai **DBG-018** `✅ SELESAI`.
+
+**Bukti verifikasi:**
+- Pytest `test_blackbox.py` vote flow lulus 100% (5/5 passed).
+- Frontend `npm run build` sukses 100% (2319 modul ter-bundle hijau).
+
+## 3.39 DBG-024 — Modal Pertanyaan Konfirmasi Severity Otomatis Terbuka di Kedua Jalur Submit (2026-10-22) ✅ SELESAI
+
+**Perbaikan DBG-024:**
+- **Masalah:** Setelah submit laporan, modal `PertanyaanKonfirmasi` (lapis 1 konfirmasi severity, F4.15) tidak pernah muncul — warga hanya melihat banner pasif, sehingga pertanyaan severity mudah terlewat. Backend sudah benar menandai `konfirmasi.perlu_konfirmasi = true`.
+- **Akar (dua jalur submit):**
+  1. `pages/warga/FormLaporan.tsx` — state `konfirmasiOpen` tidak pernah diset `true` di `handleSubmit`.
+  2. `components/composite/ModalFormLaporan.tsx` (jalur "Buat Aduan Baru" dari `DetailSekolah.tsx`) — memanggil `kirimLaporan()` tetapi **membuang `res.konfirmasi`** dan tidak merender `PertanyaanKonfirmasi` sama sekali. Jalur inilah yang dipakai saat pengujian.
+- **Perbaikan:**
+  - `FormLaporan.tsx`: `if (res.konfirmasi?.perlu_konfirmasi) setKonfirmasiOpen(true)`; banner diperluas agar tetap tampil saat `status_konfirmasi = 'menunggu'`.
+  - `ModalFormLaporan.tsx`: simpan `laporanId` + `perluKonfirmasi`; auto-open `PertanyaanKonfirmasi` (nested dialog); tombol "Jawab Sekarang" sebagai jalur alternatif; penanda "terjawab"; reset state di `handleReset`.
+- **Dokumentasi:** `docs/backend/DEBUGGING.md` DBG-024 (ringkasan + detail, termasuk pelajaran "dua jalur submit") · `docs/frontend/CHANGELOG.md`.
+- **Verifikasi:** `npx tsc --noEmit` bersih · `npm run build` hijau (17,1 s) · modul Vite dev memuat `setKonfirmasiOpen(true)` + `PertanyaanKonfirmasi` · live `POST /laporan` mengembalikan `konfirmasi.perlu_konfirmasi = true` (`jumlah_pertanyaan: 2`).
+- **Catatan terbuka:** klik-uji UI di browser belum dijalankan (harness browser tidak tersedia saat perbaikan) — perlu reload manual oleh Aris untuk konfirmasi visual.
+
+---
+
+## 3.38 DBG-017 & D-30 — Pemisahan Wewenang Review Aduan: Verifikator Lapangan vs Pengawasan Kepala Dinas (2026-10-22) ✅ SELESAI
+
+**Perbaikan DBG-017 & Keputusan Produk D-30:**
+- **Latar Belakang Birokrasi:** Mengacu pada Permendagri No. 8/2023 dan pedoman SP4N-LAPOR!, verifikasi teknis/lapangan atas berkas laporan fisik adalah kewenangan Pejabat Pengelola Pengaduan (Verifikator Dinas), bukan Kepala Dinas. Membebankan verifikasi teknis aduan mandiri kepada satu orang Kepala Dinas menjadi hambatan operasional, sedangkan Kepala Dinas tetap memerlukan fungsi pengawasan (monitoring).
+- **Perubahan Backend & Kontrak:**
+  - `GET /laporan/perlu-review`: `RoleChecker(["admin", "verifikator_dinas", "kepala_dinas"])` — verifikator dan kepala dinas dapat membaca daftar laporan noise.
+  - `PUT /laporan/{id}/status`: `RoleChecker(["admin", "verifikator_dinas"])` — hanya verifikator dan admin yang dapat memvalidasi/menolak status sanggahan aduan. Kepala dinas ditolak (403).
+- **Perubahan Frontend:**
+  - `LaporanPerluReview.tsx`: Hak aksi dibatasi untuk `admin` dan `verifikator_dinas`. Akun `kepala_dinas` menerima tampilan mode pengawasan (read-only).
+- **Dokumentasi Terkait:**
+  - `docs/universal/DECISIONS.md`: Menambahkan **D-30**.
+  - `docs/universal/INTERFACES.md`: Memperbarui tabel RBAC §4.
+  - `docs/backend/DEBUGGING.md`: Menandai **DBG-017** `✅ SELESAI`.
+
+---
+
+## 3.37 DBG-023 & D-29 — Ekspos Publik Aduan Mandiri Tervalidasi Dinas (2026-10-22) ✅ SELESAI
+
+**Perbaikan DBG-023 & Keputusan Produk D-29:**
+
+1. **Masalah:**
+   - Laporan warga yang diverifikasi oleh Kepala Dinas melalui `/dinas/perlu-review` (`status_sanggahan = 'divalidasi'`) namun berstatus noise HDBSCAN (`klaster_id IS NULL`) tidak pernah muncul pada tab "Transparansi Publik" `/laporan/riwayat` karena tab tersebut hanya membaca `GET /klaster`.
+   - Contoh kasus: SMP SUNAN GIRI 1 LAMONGAN (`TRK-AUG-500-0460`).
+
+2. **Perubahan:**
+   - `backend/app/routers/laporan.py`:
+     - Menambahkan endpoint publik `GET /laporan/publik`.
+     - Menyaring laporan dengan kondisi `Laporan.status_sanggahan == "divalidasi"` dan `Laporan.klaster_id.is_(None)`.
+     - Menerapkan de-identifikasi `user_id` menjadi string kosong untuk kepatuhan privasi UU PDP di ranah publik.
+   - `backend/tests/test_blackbox.py`:
+     - Menambahkan unit test `test_laporan_publik_hanya_divalidasi_tanpa_klaster`.
+   - `frontend/src/lib/api/laporan.ts`:
+     - Menambahkan fungsi client `listLaporanPublik()`.
+   - `frontend/src/pages/warga/RiwayatLaporan.tsx`:
+     - Menambahkan sub-filter switcher: `[Klaster Isu Sarpras]` vs `[Aduan Mandiri Tervalidasi]`.
+     - Menampilkan kartu khusus aduan mandiri dengan badge `✓ Terverifikasi Dinas (Aduan Mandiri)` dan rincian sarpras sekolah.
+   - Dokumen:
+     - `docs/universal/INTERFACES.md`: Menambahkan spesifikasi `GET /laporan/publik`.
+     - `docs/universal/DECISIONS.md`: Menambahkan **D-29**.
+     - `docs/backend/DEBUGGING.md`: Menandai **DBG-023** `✅ SELESAI`.
+
+**Bukti verifikasi:**
+- Pytest `test_blackbox.py -k test_laporan_publik` lulus 100%.
+- Endpoint `GET /laporan/publik` live mengembalikan aduan `TRK-AUG-500-0460` (SMP SUNAN GIRI 1).
+- Frontend `npm run build` sukses 100% tanpa error.
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.
