@@ -2,6 +2,9 @@
 
 **Ablation Framework selesai:** 81 kombinasi (A1–A3 × B1–B3 × C1–C3 × D1–D3) dijalankan pada dataset **45 dokumen** (sekolah dengan laporan warga), dievaluasi vs ground truth manual `manual_clusters.json` (5 kategori hibrida).
 
+> **Klarifikasi Penamaan Varian A1:**
+> Varian yang pada log dan kode awal dilabeli "IndoBERT" sebenarnya mengeksekusi model **`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`** (~471 MB, SBERT Multilingual 12-layer). Penyebutan "IndoBERT" di tabel bawah merupakan penamaan alias historis di repositori. Model IndoBERT asli (`indobenchmark/indobert-base-p1`, 497 MB) hanya digunakan pada evaluasi klasifikasi severity (F4.16).
+
 ---
 
 ## 1. Top 10 Konfigurasi (Ranked by NMI)
@@ -264,3 +267,39 @@
 Jika di masa depan SIMAKIS melayani ribuan laporan, pipeline clustering dapat mengadopsi fungsi adaptif parameter:
 $$\text{min\_cluster\_size}(n) = \max\left(3, \, \left\lfloor\sqrt{n}\right\rfloor\right)$$
 dengan `min_samples = max(2, min_cluster_size // 2)` untuk menjaga kestabilan klaster di semua rentang volume laporan.
+
+---
+
+## 9. Tambahan A4: Potion Multilingual (21 Okt 2026)
+
+Eksperimen F3.0g: evaluasi static embedding `minishlab/potion-multilingual-128M` (distilasi model2vec, 256 dimensi, CPU-only) sebanyak 27 kombinasi (A4 × B1–B3 × C1–C3 × D1–D3) pada dataset benchmark 62 sekolah dengan laporan (fingerprint `b2bb7951`).
+
+### 9.1 Ringkasan Metrik 27 Kombinasi A4
+
+> Catatan: Varian pelabelan D (D1 unigram, D2 unigram+bigram, D3 +stopwords) menghasilkan skor evaluasi klasterisasi identik per pasangan B × C karena pelabelan tidak mengubah partisi klaster.
+
+| Kombinasi | n_clusters | NMI | ARI | Purity | Noise Ratio | Silhouette | Davies-Bouldin |
+|---|---|---|---|---|---|---|---|
+| **A4_B2_C2_D{1,2,3}** | 2 | 0.4413* | 0.2000 | 0.7143 | 0.887* | 0.099 | 1.628 |
+| **A4_B1_C2_D{1,2,3}** | 9 | 0.1958 | -0.0021 | 0.6923 | 0.161 | 0.054 | 1.986 |
+| **A4_B3_C2_D{1,2,3}** | 6 | 0.1850 | 0.0663 | 0.7059 | 0.177 | 0.056 | 2.171 |
+| **A4_B3_C1_D{1,2,3}** | 4 | 0.1389 | 0.0428 | 0.6383 | 0.242 | 0.092 | 2.433 |
+| **A4_B1_C1_D{1,2,3}** | 3 | 0.1223 | 0.0160 | 0.6667 | 0.177 | 0.068 | 2.806 |
+| **A4_B1_C3_D{1,2,3}** | 3 | 0.0906 | -0.0135 | 0.6458 | 0.226 | 0.094 | 2.452 |
+| **A4_B3_C3_D{1,2,3}** | 2 | 0.0767 | -0.0106 | 0.6571 | 0.435 | 0.118 | 2.316 |
+| **A4_B2_C1_D{1,2,3}** | 0 | 0.0000 | 0.0000 | 0.0000 | 1.000 | -1.000 | 999.000 |
+| **A4_B2_C3_D{1,2,3}** | 0 | 0.0000 | 0.0000 | 0.0000 | 1.000 | -1.000 | 999.000 |
+
+*\*Catatan anomali A4_B2_C2: NMI 0.4413 tampak tinggi karena noise ratio ekstrem (0.887 = 55 dari 62 dokumen dianggap noise / terbuang), sehingga hanya mengelompokkan 7 dokumen ke dalam 2 klaster mini.*
+
+### 9.2 Analisis dan Kesimpulan A4 vs A1/A2/A3
+
+1. **Kualitas Klaster Berimbang:**
+   - Konfigurasi A4 yang menghasilkan klaster realistis dan seimbang adalah **A4_B1_C2** (UMAP 10, HDBSCAN sensitif: 9 klaster, NMI = 0.1958, Noise = 16.1%) dan **A4_B3_C2** (UMAP 5, HDBSCAN sensitif: 6 klaster, NMI = 0.1850, Noise = 17.7%).
+   - Keduanya masih berada di bawah konfigurasi produksi **A2_B1_C2** (TF-IDF 300 fitur, NMI = 0.3874, Noise = 35.6%) dan **A3** (MiniLM, NMI = 0.3555).
+2. **Karakteristik Static Embedding Model2Vec pada Domain Spesifik:**
+   - Potion-multilingual-128M menggunakan representasi statis per kata tanpa mekanisme perhatian kontekstual (*cross-word attention*). Pada korpus laporan pengaduan sarpras sekolah di Lamongan, kata-kata teknis lokal/informal memiliki dispersi vektor yang kurang tajam dibanding TF-IDF unigram berbobot tinggi.
+3. **Keputusan Adopsi (D-24/D-27):**
+   - **Tetap mempertahankan A2 (TF-IDF 300 fitur + UMAP n=10 + HDBSCAN min_cluster_size=3, min_samples=2) sebagai default production pipeline**.
+   - Model A4 (`minishlab/potion-multilingual-128M`) didokumentasikan resmi di laporan studi ablasi sebagai alternatif static embedding berbobot ringan (~128 MB model / 489 MB safetensors, CPU-only) yang dapat dipanggil via `method="potion"` di `app/ai_pipeline/embedding.py`.
+

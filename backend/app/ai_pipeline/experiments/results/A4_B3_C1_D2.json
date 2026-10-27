@@ -1,0 +1,59 @@
+{
+  "config": "A4_B3_C1_D2",
+  "variants": {
+    "embedding": "A4",
+    "reduction": "B3",
+    "clustering": "C1",
+    "labeling": "D2"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "b2bb7951",
+  "n_docs": 62,
+  "metrics": {
+    "silhouette": 0.0922199934720993,
+    "davies_bouldin": 2.4331892684219185,
+    "ari": 0.04283387257063012,
+    "nmi": 0.13894126892865555,
+    "purity": 0.6382978723404256,
+    "homogeneity": 0.15309649805797823,
+    "completeness": 0.12718207498621298,
+    "v_measure": 0.13894126892865552,
+    "noise_ratio": 0.24193548387096775
+  },
+  "n_clusters": 4,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "tidak",
+      "dan",
+      "kegiatan",
+      "kegiatan belajar",
+      "belajar"
+    ],
+    "1": [
+      "dan",
+      "tidak",
+      "rusak",
+      "sudah",
+      "sudah berlangsung"
+    ],
+    "2": [
+      "dan",
+      "siswa",
+      "tidak",
+      "keselamatan",
+      "keselamatan siswa"
+    ],
+    "3": [
+      "sekolah",
+      "tidak",
+      "dan",
+      "siswa",
+      "air"
+    ]
+  },
+  "runtime_sec": 0.06,
+  "generated_at": "2026-10-21T20:46:13"
+}

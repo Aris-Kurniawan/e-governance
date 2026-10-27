@@ -208,13 +208,15 @@ print('Ground truth saved to manual_clusters.json')
 
 Embedding adalah langkah pertama mengubah teks laporan menjadi angka yang bisa diproses clustering.
 
-#### A1: IndoBERT (paraphrase-multilingual-MiniLM-L12-v2)
+#### A1: SBERT Multilingual (paraphrase-multilingual-MiniLM-L12-v2)
+
+> **Catatan Klarifikasi Model:** Di dalam kode dan log awal, varian ini sering dilabeli "IndoBERT" sebagai misnomer historis (`embedding.py` dan `run_ablation.py`). Model fisik yang sebenarnya diunduh dan dieksekusi adalah **`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`** (SBERT Multilingual, 118M parameter, 384 dimensi, ~471 MB). Model IndoBERT asli (`indobenchmark/indobert-base-p1`, 497 MB) hanya digunakan pada klasifikasi severity F4.16 (K4).
 
 | Aspek | Detail |
 |-------|--------|
-| **Cara kerja** | Model transformer pre-trained, menghasilkan vektor 384 dimensi |
-| **Kelebihan** | Paham konteks & semantik Bahasa Indonesia (multilingual), akurasi tinggi |
-| **Kekurangan** | Butuh GPU/RAM besar (~2GB), lambat tanpa GPU (~30 detik per batch) |
+| **Cara kerja** | Model transformer pre-trained (Sentence-BERT), menghasilkan vektor 384 dimensi |
+| **Kelebihan** | Paham konteks & semantik lintas bahasa termasuk Bahasa Indonesia (multilingual), akurasi tinggi |
+| **Kekurangan** | Butuh GPU/RAM (~471 MB), lambat tanpa GPU (~26–30 detik per batch) |
 | **Cocok untuk** | Teks panjang (>10 kata), data banyak, butuh pemahaman konteks |
 | **Contoh input** | "Atap ruang kelas 3 bocor saat hujan, plafon rusak" |
 | **Contoh output** | `[0.023, -0.156, 0.892, ..., -0.341]` (384 angka) |
@@ -277,24 +279,48 @@ embeddings = model.encode(texts)  # numpy array (N, 384)
 
 ---
 
-#### A4: Potion / model2vec — Embedding Statis Multilingual *(rencana, belum diimplementasikan)*
+#### A4: Potion / model2vec — Embedding Statis Multilingual *(disetujui, siap diimplementasikan)*
 
 | Aspek | Detail |
 |-------|--------|
-| **Status** | **Rencana** — `embedding.py` baru mendukung `tfidf` / `indobert` / `minilm`; `model2vec` belum ada di `requirements.txt` |
-| **Cara kerja** | *Static embedding* (distilasi model2vec): tiap kata punya vektor tetap, dokumen = pooling vektor kata — **tanpa** forward pass transformer |
-| **Kandidat model** | `minishlab/potion-multilingual-128M` — 128M parameter, multilingual |
-| **Kandidat ditolak** | `mixedbread-ai/mxbai-embed-large-v1` — 335M parameter, **English-only** (tag HF `en`) → tidak layak untuk teks laporan berbahasa Indonesia |
-| **Kelebihan** | Jauh lebih cepat dari A1/A3 (inferensi statis, CPU-only), ringan, tetap menangkap kemiripan leksikal/sinonim yang tidak dimiliki TF-IDF |
-| **Kekurangan** | Bukan kontekstual (tanpa perhatian lintas kata) → kualitas semantik di bawah SBERT; butuh paket tambahan `model2vec` + unduhan model |
+| **Status** | **Disetujui untuk diimplementasikan** — atas saran dosen (21 Okt 2026). `model2vec` sudah terpasang di venv (`pip install model2vec`); model belum ter-cache |
+| **Cara kerja** | *Static embedding* (distilasi model2vec): tiap kata punya vektor tetap, dokumen = rata-rata (mean pooling) vektor kata — **tanpa** forward pass transformer, **tanpa** GPU |
+| **Model** | `minishlab/potion-multilingual-128M` — multilingual (termasuk Indonesia), ~128 MB |
+| **Ditolak** | `mixedbread-ai/mxbai-embed-large-v1` — English-only (tag HF `en`) → tidak layak untuk teks laporan berbahasa Indonesia |
+| **Kelebihan** | CPU-only, inferensi statis (tidak dilatih ulang), ringan (~128 MB vs ~471 MB SBERT Multilingual), menangkap kemiripan semantik yang tidak dimiliki TF-IDF |
+| **Kekurangan** | Tidak kontekstual (tanpa perhatian lintas kata) → kualitas semantik di bawah SBERT; unduhan model butuh jaringan |
 | **Posisi ekspektasi** | Di antara A2 (TF-IDF) dan A1/A3 (SBERT): lebih "paham makna" dari TF-IDF, lebih murah dari MiniLM |
-| **Library** | `model2vec` |
+| **Library** | `model2vec` (sudah terpasang) |
 
-**Rencana pengujian:**
-1. Pasang `model2vec` + unduh `minishlab/potion-multilingual-128M` (butuh jaringan).
-2. Tambah `embed_texts(method="potion")` di `embedding.py` — *lazy load*, **fallback ke TF-IDF** bila model tidak tersedia (konsisten dengan guard `FALLBACK_USED` di `run_ablation.py:42`).
-3. Tambah `A4` ke `VARIANTS_A` (`run_ablation.py:46`) → bandingkan **A1/A2/A3/A4** pada ground truth yang sama (NMI/purity/ARI + waktu per kombinasi).
-4. Keputusan adopsi: menang → ganti default `pipeline.py` (butuh keputusan baru di `DECISIONS.md`, D-24 ke atas); kalah/terlalu berat → tetap A2 + hasil tetap dilaporkan di `ABLATION_RESULTS.md`.
+**Alur eksekusi A4:**
+```
+45 dokumen laporan
+       │
+       ▼
+StaticModel.from_pretrained("minishlab/potion-multilingual-128M").encode(teks)
+       │   → vektor dense (dimensi ~256), CPU-only, tidak dilatih ulang
+       ▼
+UMAP B1/B2/B3  +  HDBSCAN C1/C2/C3  (dikontrol sama dengan A1–A3)
+       │
+       ▼
+NMI, ARI, Purity, Noise ratio  →  dibandingkan tabel ABLATION_RESULTS.md
+```
+
+**Implementasi yang harus dikerjakan:**
+1. Tambah branch `method="potion"` di `embedding.py` — lazy load `StaticModel`, fallback ke TF-IDF bila model tidak tersedia (konsisten dengan guard `FALLBACK_USED` di `run_ablation.py`).
+2. Tambah `"potion"` ke `VARIANTS_A` di `run_ablation.py` → 27 kombinasi baru (A4 × B1–B3 × C1–C3 × D1–D3).
+3. Jalankan 27 kombinasi → bandingkan NMI/ARI/Purity/Noise/waktu dengan A1–A3.
+4. Tambah baris A4 ke tabel `ABLATION_RESULTS.md` (jangan timpa tabel 81 kombinasi lama — beri label terpisah).
+5. Keputusan adopsi: bila A4 menang → ganti default `pipeline.py` + catat di `DECISIONS.md` (D-24+); bila kalah → tetap A2, hasil A4 tetap dilaporkan.
+
+**Target tabel perbandingan setelah A4 selesai:**
+
+| Kode | Model | Ukuran | NMI terbaik | Waktu | GPU? |
+|------|-------|--------|-------------|-------|------|
+| A1 | `paraphrase-multilingual-MiniLM-L12-v2` | ~278 MB | 0,2311 | — | Opsional |
+| A2 | TF-IDF 300 fitur | ~0 MB | **0,3874** ← production | ~detik | Tidak |
+| A3 | `all-MiniLM-L6-v2` | ~90 MB | 0,3555 | — | Opsional |
+| **A4** | `potion-multilingual-128M` | ~128 MB | 0,1958 (seimbang) / 0,4413* (noise 88.7%) | <1 detik | **Tidak** |
 
 **Catatan penamaan (penting untuk laporan).** A1 di dokumen ini dinamai "IndoBERT", tetapi model yang benar-benar dipakai adalah `paraphrase-multilingual-MiniLM-L12-v2` (SBERT multilingual, ±118M parameter, 384 dimensi) — **bukan** IndoBERT. `embedding.py:35` menyebutnya `"indobert"` sebagai misnomer historis. Model IndoBERT asli (`indobenchmark/indobert-base-p1`, bare MLM+NSP tanpa pooling head) maupun SBERT Indonesia (`firqaaa/indo-sentence-bert-base`, 768 dimensi) **belum pernah diuji** di proyek ini — jangan mengklaim keduanya sebagai hasil ablation.
 
@@ -602,21 +628,24 @@ Step 6: Dokumentasi
 
 | Variabel | Jumlah Opsi |
 |----------|------------|
-| Embedding (A) | 3 (A1, A2, A3) |
+| Embedding (A) | 4 (A1, A2, A3, **A4**) |
 | UMAP (B) | 3 (B1, B2, B3) |
 | HDBSCAN (C) | 3 (C1, C2, C3) |
 | TF-IDF (D) | 3 (D1, D2, D3) |
-| **Total kombinasi** | **3 × 3 × 3 × 3 = 81** |
+| **Total kombinasi awal** | 3 × 3 × 3 × 3 = **81** (sudah selesai) |
+| **Tambahan A4** | 1 × 3 × 3 × 3 = **27** kombinasi baru |
+| **Total keseluruhan** | **108** kombinasi |
 
-> **Catatan (19 Okt 2026):** varian **A4 (Potion/model2vec, §2.1)** masih tahap rencana. Bila diimplementasikan, grid bertambah menjadi 4 × 3 × 3 × 3 = **108** kombinasi (estimasi waktu naik proporsional), dan A4 wajib dilaporkan **terpisah** dari 81 kombinasi asli agar tabel lama tetap dapat direproduksi.
+> **Catatan (21 Okt 2026):** A4 (Potion/model2vec) **disetujui** atas saran dosen. 27 kombinasi A4 wajib dilaporkan **terpisah** dari 81 kombinasi asli agar tabel lama tetap dapat direproduksi — jangan timpa baris A1–A3 di `ABLATION_RESULTS.md`.
 
 ### 6.2 Estimasi Waktu Per Kombinasi
 
 | Komponen | Waktu (CPU only) | Waktu (GPU) |
 |----------|------------------|------------|
-| Embedding A1 (IndoBERT) | ~30 detik | ~5 detik |
+| Embedding A1 (IndoBERT/MiniLM multilingual) | ~30 detik | ~5 detik |
 | Embedding A2 (TF-IDF) | ~1 detik | - |
-| Embedding A3 (MiniLM) | ~10 detik | ~2 detik |
+| Embedding A3 (MiniLM small) | ~10 detik | ~2 detik |
+| **Embedding A4 (Potion static)** | **~2–5 detik** | **- (CPU-only)** |
 | UMAP | ~5 detik | - |
 | HDBSCAN | ~2 detik | - |
 | TF-IDF Labeling | ~1 detik | - |

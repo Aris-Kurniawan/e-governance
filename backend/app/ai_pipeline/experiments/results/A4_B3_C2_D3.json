@@ -1,0 +1,73 @@
+{
+  "config": "A4_B3_C2_D3",
+  "variants": {
+    "embedding": "A4",
+    "reduction": "B3",
+    "clustering": "C2",
+    "labeling": "D3"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "b2bb7951",
+  "n_docs": 62,
+  "metrics": {
+    "silhouette": 0.056222256273031235,
+    "davies_bouldin": 2.1714090456173136,
+    "ari": 0.06634921357399794,
+    "nmi": 0.18501807959172734,
+    "purity": 0.7058823529411765,
+    "homogeneity": 0.23293872598767984,
+    "completeness": 0.15345001798948593,
+    "v_measure": 0.18501807959172734,
+    "noise_ratio": 0.1774193548387097
+  },
+  "n_clusters": 6,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "berbahaya",
+      "keselamatan",
+      "berbahaya bagi",
+      "bagi",
+      "bagi keselamatan"
+    ],
+    "1": [
+      "belajar",
+      "kegiatan belajar",
+      "kegiatan",
+      "belajar mengajar",
+      "mengajar"
+    ],
+    "2": [
+      "jumlah",
+      "kelas",
+      "berlangsung",
+      "lama",
+      "sejak lama"
+    ],
+    "3": [
+      "rusak",
+      "kelas",
+      "berlangsung",
+      "sejak lama",
+      "sejak"
+    ],
+    "4": [
+      "rusak",
+      "berbahaya",
+      "keselamatan",
+      "berbahaya bagi",
+      "bagi keselamatan"
+    ],
+    "5": [
+      "air",
+      "saat",
+      "bagi",
+      "keselamatan",
+      "berbahaya bagi"
+    ]
+  },
+  "runtime_sec": 0.08,
+  "generated_at": "2026-10-21T20:46:13"
+}

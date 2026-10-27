@@ -43,7 +43,7 @@ DATA_FP = ""
 FALLBACK_USED = {}
 
 # Varian komponen (AI_PIPELINE_ABLATION_STUDY.md §2)
-VARIANTS_A = ["A1", "A2", "A3"]  # IndoBERT, TF-IDF, MiniLM
+VARIANTS_A = ["A1", "A2", "A3", "A4"]  # IndoBERT, TF-IDF, MiniLM, Potion-multilingual-128M
 VARIANTS_B = ["B1", "B2", "B3"]  # UMAP n=10, tanpa UMAP, UMAP n=5
 VARIANTS_C = ["C1", "C2", "C3"]  # HDBSCAN default/sensitif/konservatif
 VARIANTS_D = ["D1", "D2", "D3"]  # TF-IDF unigram/uni+bigram/+stopword
@@ -131,11 +131,23 @@ def load_documents(include_empty=False):
 # ---------------------------------------------------------------------------
 
 def embed_texts(texts, variant):
-    """A1 IndoBERT / A2 TF-IDF / A3 MiniLM. Return np.ndarray (n_docs, n_features)."""
+    """A1 IndoBERT / A2 TF-IDF / A3 MiniLM / A4 Potion. Return np.ndarray (n_docs, n_features)."""
     if variant == "A2":
         from sklearn.feature_extraction.text import TfidfVectorizer
         vec = TfidfVectorizer(max_features=300, lowercase=True)
         return vec.fit_transform(texts).toarray().astype(np.float32)
+
+    if variant == "A4":
+        model_name = "minishlab/potion-multilingual-128M"
+        try:
+            from model2vec import StaticModel
+            model = StaticModel.from_pretrained(model_name)
+            FALLBACK_USED[variant] = False
+            return np.asarray(model.encode(texts), dtype=np.float32)
+        except Exception as e:
+            print(f"  [warn] {variant} ({model_name}) gagal: {e} → fallback ke TF-IDF")
+            FALLBACK_USED[variant] = True
+            return embed_texts(texts, "A2")
 
     model_name = (
         "paraphrase-multilingual-MiniLM-L12-v2" if variant == "A1"
