@@ -16,6 +16,7 @@ import Landing from "@/pages/warga/Landing"
 const Login = lazy(() => import("@/pages/warga/Login"))
 const Registrasi = lazy(() => import("@/pages/warga/Registrasi"))
 const DashboardWilayah = lazy(() => import("@/pages/warga/DashboardWilayah"))
+const DashboardWarga = lazy(() => import("@/pages/warga/Dashboard"))
 const Direktori = lazy(() => import("@/pages/warga/Direktori"))
 const DetailSekolah = lazy(() => import("@/pages/warga/DetailSekolah"))
 const DetailKlaster = lazy(() => import("@/pages/warga/DetailKlaster"))
@@ -90,7 +91,7 @@ export default function App() {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <DashboardWilayah />
+                    <DashboardWarga />
                   </ProtectedRoute>
                 }
               />
