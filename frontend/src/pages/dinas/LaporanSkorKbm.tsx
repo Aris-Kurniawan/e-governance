@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { AlertTriangle, ArrowRight, BarChart2, Download, ShieldCheck, TrendingDown, Wrench } from "lucide-react"
+import { AlertTriangle, ArrowRight, BarChart2, Download, Scale, ShieldCheck, TrendingDown, Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { HorizontalBarChart } from "@/components/charts"
 import { useFetch } from "@/hooks/useFetch"
@@ -107,7 +107,7 @@ export default function LaporanSkorKbm() {
       {ringkasan && (
         <>
           {/* KPI Summary Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 shadow-sm space-y-3">
               <div className="h-9 w-9 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">
                 <TrendingDown className="h-5 w-5" />
@@ -148,6 +148,19 @@ export default function LaporanSkorKbm() {
               <div>
                 <div className="text-3xl font-extrabold text-slate-900">{ringkasan.total_laporan.toLocaleString("id-ID")}</div>
                 <p className="text-xs text-slate-500 mt-0.5">Total laporan warga</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="h-9 w-9 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                  <Scale className="h-5 w-5" />
+                </div>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 border border-slate-200">AUDIT</span>
+              </div>
+              <div>
+                <div className="text-3xl font-extrabold text-slate-900">{ringkasan.jumlah_mismatch}</div>
+                <p className="text-xs text-slate-500 mt-0.5">Mismatch laporan vs Dapodik</p>
               </div>
             </div>
           </div>
@@ -248,6 +261,7 @@ export default function LaporanSkorKbm() {
                     <th className="py-3 px-4 text-center">SKOR KBM</th>
                     <th className="py-3 px-4 text-center">LAPORAN</th>
                     <th className="py-3 px-4 text-center">RUSAK BERAT</th>
+                    <th className="py-3 px-4 text-center">MISMATCH</th>
                     <th className="py-3 px-4 text-right">RINCIAN</th>
                   </tr>
                 </thead>
@@ -264,12 +278,27 @@ export default function LaporanSkorKbm() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className={`font-black text-xs px-2.5 py-1 rounded ${row.skor_kbm >= 70 ? "bg-rose-100 text-rose-800" : row.skor_kbm >= 50 ? "bg-amber-100 text-amber-800" : row.skor_kbm >= 40 ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"}`}>
+                        <span
+                          className={`font-black text-xs px-2.5 py-1 rounded cursor-help ${row.skor_kbm >= 70 ? "bg-rose-100 text-rose-800" : row.skor_kbm >= 50 ? "bg-amber-100 text-amber-800" : row.skor_kbm >= 40 ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"}`}
+                          title={`Skor laporan ${row.skor_laporan} · Skor Dapodik ${row.skor_dapodik}`}
+                        >
                           {row.skor_kbm}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center font-semibold text-slate-700">{row.jumlah_laporan}</td>
                       <td className="py-3.5 px-4 text-center font-bold text-slate-900">{row.laporan_rusak_berat}</td>
+                      <td className="py-3.5 px-4 text-center">
+                        {row.mismatch ? (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-800 border border-amber-200 cursor-help"
+                            title="Laporan warga menilai rusak (skor laporan ≥ 50) tetapi Dapodik mencatat 0 kerusakan."
+                          >
+                            <AlertTriangle className="h-3 w-3" /> MISMATCH
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
                       <td className="py-3.5 px-4 text-right">
                         <Link to="/dinas/tabel" className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3052] hover:underline">
                           Tabel <ArrowRight className="h-3 w-3" />
@@ -286,9 +315,11 @@ export default function LaporanSkorKbm() {
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Skor KBM dihitung otomatis: <strong>70%</strong> rata-rata severity laporan warga + <strong>30%</strong> kondisi sarpras Dapodik, skala 0–100.</span>
+              <span>
+                Skor laporan = λ × rata-rata severity + (1−λ) × prior, λ = n/(n+{ringkasan.k}) · Skor KBM = <strong>70%</strong> skor laporan + <strong>30%</strong> Dapodik. Mismatch: skor laporan ≥ 50 tetapi Dapodik 0.
+              </span>
             </div>
-            <span className="font-mono text-[11px] text-slate-400 shrink-0">Rev: LAM-KBM-2026-08A · {PERIODE}</span>
+            <span className="font-mono text-[11px] text-slate-400 shrink-0">Rev: LAM-KBM-2026-10A · K={ringkasan.k} · prior {ringkasan.prior.toLocaleString("id-ID")}</span>
           </div>
         </>
       )}

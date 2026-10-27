@@ -1,0 +1,94 @@
+{
+  "config": "A4_B1_C2_D2",
+  "variants": {
+    "embedding": "A4",
+    "reduction": "B1",
+    "clustering": "C2",
+    "labeling": "D2"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "b2bb7951",
+  "n_docs": 62,
+  "metrics": {
+    "silhouette": 0.053966667503118515,
+    "davies_bouldin": 1.9855727619193486,
+    "ari": -0.002095373118189136,
+    "nmi": 0.19576781714175215,
+    "purity": 0.6923076923076923,
+    "homogeneity": 0.2993535742716257,
+    "completeness": 0.14544074311361577,
+    "v_measure": 0.19576781714175215,
+    "noise_ratio": 0.16129032258064516
+  },
+  "n_clusters": 9,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "dan",
+      "kelas",
+      "siswa",
+      "sudah berlangsung",
+      "berlangsung"
+    ],
+    "1": [
+      "tidak",
+      "dan",
+      "siswa",
+      "area",
+      "berbahaya"
+    ],
+    "2": [
+      "siswa",
+      "tidak",
+      "dan",
+      "sekolah",
+      "keselamatan"
+    ],
+    "3": [
+      "dan",
+      "sekolah",
+      "tidak",
+      "siswa",
+      "rusak"
+    ],
+    "4": [
+      "sekolah",
+      "tidak",
+      "air",
+      "siswa",
+      "dan"
+    ],
+    "5": [
+      "tidak",
+      "dan",
+      "sudah",
+      "ada",
+      "di"
+    ],
+    "6": [
+      "dan",
+      "tidak",
+      "rusak",
+      "sudah",
+      "kelas"
+    ],
+    "7": [
+      "tidak",
+      "dan",
+      "sudah",
+      "guru",
+      "berbahaya"
+    ],
+    "8": [
+      "belajar",
+      "kegiatan",
+      "kegiatan belajar",
+      "tidak",
+      "belajar mengajar"
+    ]
+  },
+  "runtime_sec": 0.1,
+  "generated_at": "2026-10-21T20:46:12"
+}

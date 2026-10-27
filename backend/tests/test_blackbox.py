@@ -83,6 +83,16 @@ def make_klaster(db, sekolah: Sekolah, kategori="ruang_belajar") -> Klaster:
     return klaster
 
 
+def reset_laporan(db) -> None:
+    """Kosongkan tabel laporan.
+
+    D-24: prior shrinkage bersifat GLOBAL, jadi sisa laporan dari test lain
+    akan menggeser skor. Test yang menguji angka pasti wajib membersihkan dulu.
+    """
+    db.query(Laporan).delete()
+    db.commit()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Health & amplop respons gagal (error handling)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -259,6 +269,43 @@ class TestLaporanFlow:
         r = test_client.get(f"/laporan/{uuid.uuid4()}", headers=auth(token))
         assert r.status_code == 404
 
+    def test_laporan_publik_hanya_divalidasi_tanpa_klaster(self, test_client, db_session):
+        """DBG-023 (D-29): GET /laporan/publik terbuka tanpa auth, hanya tampilkan yang divalidasi & klaster_id NULL."""
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+
+        # 1. Laporan noise tervalidasi (harus muncul)
+        lap_valid = make_laporan(db_session, user, sekolah)
+        lap_valid.status_sanggahan = "divalidasi"
+        lap_valid.klaster_id = None
+
+        # 2. Laporan menunggu (tidak boleh muncul)
+        lap_menunggu = make_laporan(db_session, user, sekolah)
+        lap_menunggu.status_sanggahan = "menunggu"
+        lap_menunggu.klaster_id = None
+
+        # 3. Laporan divalidasi tetapi sudah berklaster (tidak boleh muncul di mandiri)
+        klaster = make_klaster(db_session, sekolah)
+        lap_klaster = make_laporan(db_session, user, sekolah)
+        lap_klaster.status_sanggahan = "divalidasi"
+        lap_klaster.klaster_id = klaster.id
+
+        db_session.commit()
+
+        # Panggil endpoint publik tanpa header token auth
+        r = test_client.get("/laporan/publik")
+        assert r.status_code == 200
+        body = r.json()
+        assert "data" in body and "meta" in body
+        tracking_ids = [item["tracking_id"] for item in body["data"]]
+        assert lap_valid.tracking_id in tracking_ids
+        assert lap_menunggu.tracking_id not in tracking_ids
+        assert lap_klaster.tracking_id not in tracking_ids
+
+        # Verifikasi de-identifikasi user_id
+        valid_item = next(item for item in body["data"] if item["tracking_id"] == lap_valid.tracking_id)
+        assert valid_item["user_id"] == ""
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. Klaster — endpoint publik baru (F4.5)
@@ -316,6 +363,25 @@ class TestVoteFlow:
         token = login(test_client, user.email)
         r = test_client.post("/vote", params={"klaster_id": str(uuid.uuid4())}, headers=auth(token))
         assert r.status_code == 404
+
+    def test_vote_warga_umum_happy_dan_staf_forbidden_403(self, test_client, db_session):
+        """D-28: warga_umum (default register) boleh vote, staf dinas tetap 403."""
+        warga = make_user(db_session, role="warga_umum")
+        dinas = make_user(db_session, role="verifikator_dinas")
+        sekolah = make_sekolah(db_session)
+        klaster = make_klaster(db_session, sekolah)
+
+        token_warga = login(test_client, warga.email)
+        token_dinas = login(test_client, dinas.email)
+
+        # Staf dinas dilarang vote
+        r_dinas = test_client.post("/vote", params={"klaster_id": klaster.id}, headers=auth(token_dinas))
+        assert r_dinas.status_code == 403
+
+        # Warga umum berhasil vote
+        r_warga = test_client.post("/vote", params={"klaster_id": klaster.id}, headers=auth(token_warga))
+        assert r_warga.status_code == 200, r_warga.text
+        assert r_warga.json()["data"]["vote_id"]
 
     def test_vote_happy_dan_duplikat_409(self, test_client, db_session):
         user = make_user(db_session)
@@ -603,6 +669,7 @@ class TestFallbackReviewF47:
         # Anonim → 401
         assert test_client.get("/laporan/perlu-review").status_code == 401
 
+        # Warga → 403
         warga = make_user(db_session, role="warga_terverifikasi")
         token = login(test_client, warga.email)
         assert (
@@ -610,13 +677,23 @@ class TestFallbackReviewF47:
             == 403
         )
 
+        # Verifikator dinas → 200 (D-30: staf teknis verifikasi)
         veri = make_user(db_session, role="verifikator_dinas")
         token = login(test_client, veri.email)
         assert (
             test_client.get("/laporan/perlu-review", headers=auth(token)).status_code
-            == 403
+            == 200
         )
 
+        # Kepala dinas → 200 (D-30: mode pengawasan / read-only)
+        kepala = make_user(db_session, role="kepala_dinas")
+        token = login(test_client, kepala.email)
+        assert (
+            test_client.get("/laporan/perlu-review", headers=auth(token)).status_code
+            == 200
+        )
+
+        # Admin → 200
         admin = make_user(db_session, role="admin")
         token = login(test_client, admin.email)
         r = test_client.get("/laporan/perlu-review", headers=auth(token))
@@ -694,9 +771,9 @@ class TestFallbackReviewF47:
         )
         assert r.status_code == 403
 
-        # Admin → 200 & nilai berubah
-        admin = make_user(db_session, role="admin")
-        token = login(test_client, admin.email)
+        # Verifikator dinas berhak update status (D-30) → 200 & nilai berubah
+        veri = make_user(db_session, role="verifikator_dinas")
+        token = login(test_client, veri.email)
         r = test_client.put(
             f"/laporan/{lap.id}/status",
             json={"status": "divalidasi"},
@@ -708,9 +785,9 @@ class TestFallbackReviewF47:
         assert body["data"]["status_sanggahan"] == "divalidasi"
         assert lap.status_sanggahan == "divalidasi"
 
-        # Kepala dinas juga berhak → 200
-        kepala = make_user(db_session, role="kepala_dinas")
-        token = login(test_client, kepala.email)
+        # Admin juga berhak → 200
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
         r = test_client.put(
             f"/laporan/{lap.id}/status",
             json={"status": "ditolak"},
@@ -718,6 +795,16 @@ class TestFallbackReviewF47:
         )
         assert r.status_code == 200
         assert r.json()["data"]["status_sanggahan"] == "ditolak"
+
+        # Kepala dinas DITOLAK (D-30: read-only, verifikasi teknis oleh verifikator) → 403
+        kepala = make_user(db_session, role="kepala_dinas")
+        token = login(test_client, kepala.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 403
 
     def test_put_status_invalid_422(self, test_client, db_session):
         owner = make_user(db_session)
@@ -782,11 +869,15 @@ class TestSkorKbmF48:
         assert set(ringkasan) == {
             "rata_rata_skor",
             "sekolah_kritis",
+            "jumlah_mismatch",
+            "prior",
+            "k",
             "total_laporan",
             "ruang_rusak_berat",
             "distribusi_kondisi",
             "dampak_per_jenis_ruang",
         }
+        assert ringkasan["k"] == 5
         assert set(ringkasan["distribusi_kondisi"]) == {
             "baik",
             "rusak_ringan",
@@ -811,6 +902,7 @@ class TestSkorKbmF48:
         for s in sekolah_rows:
             assert 0 <= s["skor_kbm"] <= 100
             assert s["level"] in ("kritis", "tinggi", "sedang", "rendah")
+            assert isinstance(s["mismatch"], bool)
             assert set(s) == {
                 "npsn",
                 "nama",
@@ -820,20 +912,20 @@ class TestSkorKbmF48:
                 "skor_dapodik",
                 "jumlah_laporan",
                 "laporan_rusak_berat",
+                "mismatch",
             }
 
     def test_skor_kbm_formula_deterministik(self, test_client, db_session):
-        """0.7×AVG(severity) + 0.3×dapodik, skala 0–100, level per D-22."""
+        """F4.12/D-24: shrinkage λ=n/(n+5) ke prior global, lalu bobot 0.7/0.3."""
+        reset_laporan(db_session)
         user = make_user(db_session)
 
-        # Sekolah A: 1 laporan rusak_berat (100), tanpa data Dapodik
-        # → 0.7×100 + 0.3×0 = 70.0 → kritis (batas bawah)
+        # Sekolah A: 1 laporan rusak_berat (100), tanpa data Dapodik.
         sek_a = make_sekolah(db_session)
         lap_a = make_laporan(db_session, user, sek_a)
         lap_a.kondisi_dilaporkan = "rusak_berat"
 
-        # Sekolah B: 1 laporan rusak_sedang (66), Dapodik 10/10 rusak berat (100)
-        # → 0.7×66 + 0.3×100 = 46.2 + 30 = 76.2
+        # Sekolah B: 1 laporan rusak_sedang (66), Dapodik 10/10 rusak berat (100).
         sek_b = make_sekolah(db_session)
         lap_b = make_laporan(db_session, user, sek_b)
         lap_b.kondisi_dilaporkan = "rusak_sedang"
@@ -854,19 +946,128 @@ class TestSkorKbmF48:
         token = login(test_client, admin.email)
         r = test_client.get("/laporan/skor-kbm", headers=auth(token))
         assert r.status_code == 200
-        rows = {s["npsn"]: s for s in r.json()["data"]["sekolah"]}
+        body = r.json()["data"]
+        rows = {s["npsn"]: s for s in body["sekolah"]}
+
+        # Prior global = (100 + 66) / 2 = 83.0; λ = 1/(1+5).
+        prior = 83.0
+        assert body["ringkasan"]["prior"] == prior
+        lam = 1 / (1 + 5)
+        laporan_a = round(lam * 100 + (1 - lam) * prior, 1)  # 85.8
+        laporan_b = round(lam * 66 + (1 - lam) * prior, 1)   # 80.2
 
         a = rows[sek_a.npsn]
-        assert a["skor_kbm"] == 70.0
-        assert a["level"] == "kritis"
+        assert a["skor_laporan"] == laporan_a
+        assert a["skor_kbm"] == round(0.7 * laporan_a + 0.3 * 0.0, 1)  # 60.1
+        assert a["level"] == "tinggi"
         assert a["jumlah_laporan"] == 1
         assert a["laporan_rusak_berat"] == 1
+        # Laporan tinggi (85.8 ≥ 50) tapi Dapodik 0 → mismatch.
+        assert a["mismatch"] is True
 
         b = rows[sek_b.npsn]
-        assert b["skor_kbm"] == 76.2
-        assert b["skor_laporan"] == 66.0
+        assert b["skor_laporan"] == laporan_b
         assert b["skor_dapodik"] == 100.0
+        assert b["skor_kbm"] == round(0.7 * laporan_b + 0.3 * 100.0, 1)  # 86.1
         assert b["level"] == "kritis"
+
+    def test_prior_global_bukan_per_halaman(self, test_client, db_session):
+        """D-24: prior dihitung dari seluruh laporan, bukan hanya halaman ini."""
+        reset_laporan(db_session)
+        user = make_user(db_session)
+
+        tinggi = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, tinggi)
+        lap.kondisi_dilaporkan = "rusak_berat"  # 100
+
+        rendah = make_sekolah(db_session)
+        for _ in range(10):
+            l = make_laporan(db_session, user, rendah)
+            l.kondisi_dilaporkan = "baik"  # 0
+        db_session.commit()
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        body = test_client.get("/laporan/skor-kbm", headers=auth(token)).json()["data"]
+
+        # prior = 100 / 11 = 9.09 → 9.1; λ = 1/6.
+        assert body["ringkasan"]["prior"] == 9.1
+        row = next(s for s in body["sekolah"] if s["npsn"] == tinggi.npsn)
+        assert row["skor_laporan"] == 24.2
+        assert row["skor_kbm"] == 17.0
+        assert row["level"] == "rendah"
+        assert row["mismatch"] is False
+
+        # Penanda memakai prior yang sama → "aman", bukan "kritis".
+        detail = test_client.get(f"/sekolah/{tinggi.npsn}").json()["data"]
+        assert detail["penanda_masalah"] == "aman"
+        listed = test_client.get("/sekolah", params={"page_size": 100}).json()["data"]
+        item = next(x for x in listed if x["npsn"] == tinggi.npsn)
+        assert item["penanda_masalah"] == "aman"
+
+    def test_mismatch_false_bila_shrinkage_di_bawah_50(self, test_client, db_session):
+        """Mismatch dihitung SETELAH shrinkage (D-24)."""
+        reset_laporan(db_session)
+        user = make_user(db_session)
+
+        # C: n=1, mean 66 (di atas 50 sebelum shrinkage).
+        c = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, c)
+        lap.kondisi_dilaporkan = "rusak_sedang"
+
+        # 10 laporan baik → prior = 66/11 = 6.0; C = (66 + 5×6)/6 = 16.0.
+        d = make_sekolah(db_session)
+        for _ in range(10):
+            l = make_laporan(db_session, user, d)
+            l.kondisi_dilaporkan = "baik"
+        db_session.commit()
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        body = test_client.get("/laporan/skor-kbm", headers=auth(token)).json()["data"]
+        row = next(s for s in body["sekolah"] if s["npsn"] == c.npsn)
+
+        assert row["skor_laporan"] == 16.0
+        assert row["skor_dapodik"] == 0.0
+        assert row["mismatch"] is False
+
+    def test_mismatch_true_bila_data_cukup_tinggi(self, test_client, db_session):
+        reset_laporan(db_session)
+        user = make_user(db_session)
+
+        # E: n=10, mean 66; F: 1 laporan baik → prior = 660/11 = 60.0.
+        # E = 10/15×66 + 5/15×60 = 64.0 → mismatch (Dapodik 0).
+        e = make_sekolah(db_session)
+        for _ in range(10):
+            l = make_laporan(db_session, user, e)
+            l.kondisi_dilaporkan = "rusak_sedang"
+        f = make_sekolah(db_session)
+        l = make_laporan(db_session, user, f)
+        l.kondisi_dilaporkan = "baik"
+        db_session.commit()
+
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+        body = test_client.get("/laporan/skor-kbm", headers=auth(token)).json()["data"]
+        row = next(s for s in body["sekolah"] if s["npsn"] == e.npsn)
+
+        assert body["ringkasan"]["prior"] == 60.0
+        assert row["skor_laporan"] == 64.0
+        assert row["mismatch"] is True
+        assert body["ringkasan"]["jumlah_mismatch"] >= 1
+
+    def test_tanpa_laporan_prior_nol_dan_skor_nol(self, test_client, db_session):
+        reset_laporan(db_session)
+        make_sekolah(db_session)
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
+
+        body = test_client.get("/laporan/skor-kbm", headers=auth(token)).json()["data"]
+        assert body["ringkasan"]["prior"] == 0.0
+        for row in body["sekolah"]:
+            assert row["jumlah_laporan"] == 0
+            assert row["skor_laporan"] == 0.0
+            assert row["mismatch"] is False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1051,6 +1252,7 @@ class TestPenandaIsuKoordinatF411:
         assert data["lintang"] is None
 
     def test_laporan_berat_menjadi_kritis_dan_isu(self, test_client, db_session):
+        reset_laporan(db_session)
         user = make_user(db_session)
         sek = make_sekolah(db_session)
         lap = make_laporan(db_session, user, sek)
@@ -1074,6 +1276,7 @@ class TestPenandaIsuKoordinatF411:
         assert data["jumlah_isu_aktif"] == 1  # hanya yang non-ditolak
 
     def test_list_sekolah_sertakan_penanda_dan_isu(self, test_client, db_session):
+        reset_laporan(db_session)
         user = make_user(db_session)
         sek = make_sekolah(db_session)
         lap = make_laporan(db_session, user, sek)
@@ -1127,3 +1330,307 @@ class TestIngestDapodikF411:
         assert data["nama"] == "SD Ingest CSV Uji"  # bukan "Unknown"
         assert data["lintang"] == pytest.approx(-7.1234567)
         assert data["bujur"] == pytest.approx(112.4567890)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 12. F4.14 — provenance kondisi + status konfirmasi severity
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestLaporanProvenanceF414:
+    def test_post_baru_status_konfirmasi_menunggu(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        token = login(test_client, user.email)
+
+        r = test_client.post(
+            "/laporan",
+            headers=auth(token),
+            json={
+                "sekolah_npsn": sekolah.npsn,
+                "deskripsi": "Langit-langit ruang kelas retak dan berjamur",
+            },
+        )
+        assert r.status_code == 201, r.text
+        data = r.json()["data"]
+        assert data["status_konfirmasi"] == "menunggu"
+        assert data["sumber_kondisi"] is None
+        assert data["konfirmasi_perlu_dijawab"] is True
+
+        lap = db_session.query(Laporan).filter(Laporan.id == data["id"]).one()
+        assert lap.status_konfirmasi == "menunggu"
+        assert lap.sumber_kondisi is None
+
+    def test_detail_dan_riwayat_memantulkan_provenance(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sekolah)
+        token = login(test_client, user.email)
+
+        # Baris lama (sebelum F4.14): NULL, bukan "menunggu".
+        detail = test_client.get(f"/laporan/{lap.id}", headers=auth(token)).json()["data"]
+        assert detail["sumber_kondisi"] is None
+        assert detail["status_konfirmasi"] is None
+        assert detail["konfirmasi_perlu_dijawab"] is False
+
+        lap.sumber_kondisi = "ai"
+        lap.status_konfirmasi = "terjawab"
+        lap.kondisi_dilaporkan = "rusak_sedang"
+        db_session.commit()
+
+        detail = test_client.get(f"/laporan/{lap.id}", headers=auth(token)).json()["data"]
+        assert detail["sumber_kondisi"] == "ai"
+        assert detail["status_konfirmasi"] == "terjawab"
+        assert detail["konfirmasi_perlu_dijawab"] is False
+
+        riwayat = test_client.get("/laporan/riwayat", headers=auth(token)).json()["data"]
+        item = next(x for x in riwayat if x["id"] == lap.id)
+        assert item["sumber_kondisi"] == "ai"
+        assert item["status_konfirmasi"] == "terjawab"
+        assert item["konfirmasi_perlu_dijawab"] is False
+
+    def test_perlu_review_memantulkan_provenance(self, test_client, db_session):
+        admin = make_user(db_session, role="admin")
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sekolah)
+        token = login(test_client, admin.email)
+
+        r = test_client.get("/laporan/perlu-review", headers=auth(token))
+        assert r.status_code == 200, r.text
+        item = next(x for x in r.json()["data"] if x["id"] == lap.id)
+        assert item["sumber_kondisi"] is None
+        assert item["status_konfirmasi"] is None
+        assert item["konfirmasi_perlu_dijawab"] is False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 13. F4.15 — konfirmasi severity (bank pertanyaan + endpoint)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestKonfirmasiF415:
+    def test_bank_lengkap_8_komponen(self):
+        from app.ai_pipeline.question_bank import GEJALA, KOMPONEN, TIDAK_ADA_GEJALA
+
+        assert len(KOMPONEN) == 8
+        for kode, data in KOMPONEN.items():
+            assert data["label"]
+            assert data["teknis"]
+            assert data["kata_kunci"]
+            assert len(GEJALA[kode]) >= 3
+            assert all("tingkat" in g and "rujukan" in g for g in GEJALA[kode])
+        assert TIDAK_ADA_GEJALA["tingkat"] == "baik"
+
+    def test_pemilih_maksimal_4_pertanyaan(self):
+        from app.ai_pipeline.question_bank import pilih_pertanyaan
+
+        q = pilih_pertanyaan(
+            "Atap bocor, plafon jatuh, dinding retak, dan lantai keramik pecah"
+        )
+        assert len(q) == 4
+        assert q[0]["kode"] == "bagian"
+        assert all(item["kode"].startswith("gejala_") for item in q[1:])
+        # Gejala selalu berurutan dari yang paling parah.
+        assert q[1]["pilihan"][0]["kode"] == "g4"
+        assert q[1]["pilihan"][-1]["kode"] == "g0"
+
+    def test_pemilih_tanpa_komponen_hanya_bagian(self):
+        from app.ai_pipeline.question_bank import pilih_pertanyaan
+
+        q = pilih_pertanyaan("Sekolah ini butuh perbaikan segera")
+        assert len(q) == 1
+        assert q[0]["kode"] == "bagian"
+
+    def test_pemicu_struktural(self):
+        from app.ai_pipeline.question_bank import pilih_pertanyaan
+
+        q = pilih_pertanyaan(
+            "Bangunan miring dan plesteran jatuh sampai besi terlihat"
+        )
+        assert any(item["kode"] == "gejala_struktur" for item in q)
+
+    def test_post_laporan_menyertakan_blok_konfirmasi(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        token = login(test_client, user.email)
+        r = test_client.post(
+            "/laporan",
+            headers=auth(token),
+            json={
+                "sekolah_npsn": sekolah.npsn,
+                "deskripsi": "Atap ruang kelas bocor dan plafon melendut",
+            },
+        )
+        assert r.status_code == 201, r.text
+        konfirmasi = r.json()["data"]["konfirmasi"]
+        assert konfirmasi["perlu_konfirmasi"] is True
+        assert konfirmasi["jumlah_pertanyaan"] == 3  # bagian + atap + plafon
+        assert konfirmasi["kedaluwarsa_pada"]
+
+    def test_get_konfirmasi_owner_dan_rbac(self, test_client, db_session):
+        owner = make_user(db_session)
+        other = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, owner, sekolah)
+        lap.status_konfirmasi = "menunggu"
+        lap.deskripsi = "Dinding kelas retak dan cat mengelupas"
+        db_session.commit()
+
+        r = test_client.get(f"/laporan/{lap.id}/konfirmasi", headers=auth(login(test_client, owner.email)))
+        assert r.status_code == 200, r.text
+        data = r.json()["data"]
+        assert data["status"] == "menunggu"
+        assert data["jumlah_terjawab"] == 0
+        assert data["pertanyaan"][0]["kode"] == "bagian"
+        assert any(q["kode"] == "gejala_dinding" for q in data["pertanyaan"])
+
+        r = test_client.get(f"/laporan/{lap.id}/konfirmasi", headers=auth(login(test_client, other.email)))
+        assert r.status_code == 403
+        assert r.json()["error"]["code"] == "FORBIDDEN"
+
+        r = test_client.get(f"/laporan/{uuid.uuid4()}/konfirmasi", headers=auth(login(test_client, owner.email)))
+        assert r.status_code == 404
+
+    def test_post_konfirmasi_hitung_severity_dan_kunci(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sekolah)
+        lap.status_konfirmasi = "menunggu"
+        lap.deskripsi = "Dinding kelas retak lebar, atap bocor"
+        db_session.commit()
+        token = login(test_client, user.email)
+
+        r = test_client.post(
+            f"/laporan/{lap.id}/konfirmasi",
+            headers=auth(token),
+            json={
+                "jawaban": [
+                    {"kode": "bagian", "nilai": "dinding"},
+                    {"kode": "gejala_dinding", "nilai": "g2"},
+                    {"kode": "gejala_atap", "nilai": "g0"},
+                ]
+            },
+        )
+        assert r.status_code == 200, r.text
+        data = r.json()["data"]
+        assert data["status"] == "terjawab"
+        assert data["kondisi_dilaporkan"] == "rusak_sedang"  # severity tertinggi
+        assert data["sumber_kondisi"] == "ai"
+        assert data["diproses_pada"]
+
+        db_session.refresh(lap)
+        assert lap.status_konfirmasi == "terjawab"
+        assert lap.sumber_kondisi == "ai"
+        assert len(lap.jawaban_konfirmasi["jawaban"]) == 3
+
+        # Sudah dijawab → tidak boleh menimpa.
+        r2 = test_client.post(
+            f"/laporan/{lap.id}/konfirmasi",
+            headers=auth(token),
+            json={"jawaban": []},
+        )
+        assert r2.status_code == 409
+        assert r2.json()["error"]["code"] == "CONFLICT"
+
+        g = test_client.get(f"/laporan/{lap.id}/konfirmasi", headers=auth(token))
+        assert g.json()["data"]["status"] == "terjawab"
+        assert g.json()["data"]["pertanyaan"] == []
+        assert g.json()["data"]["jumlah_terjawab"] == 3
+
+    def test_post_konfirmasi_lewati(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sekolah)
+        lap.status_konfirmasi = "menunggu"
+        db_session.commit()
+
+        r = test_client.post(
+            f"/laporan/{lap.id}/konfirmasi",
+            headers=auth(login(test_client, user.email)),
+            json={"jawaban": []},
+        )
+        assert r.status_code == 200
+        assert r.json()["data"]["status"] == "dilewati"
+        assert r.json()["data"]["kondisi_dilaporkan"] is None
+
+    def test_post_konfirmasi_semua_baik(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sekolah)
+        lap.status_konfirmasi = "menunggu"
+        lap.deskripsi = "Atap bocor"
+        db_session.commit()
+
+        r = test_client.post(
+            f"/laporan/{lap.id}/konfirmasi",
+            headers=auth(login(test_client, user.email)),
+            json={"jawaban": [{"kode": "gejala_atap", "nilai": "g0"}]},
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["data"]["kondisi_dilaporkan"] == "baik"
+
+    def test_post_konfirmasi_invalid_422(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sekolah)
+        lap.status_konfirmasi = "menunggu"
+        lap.deskripsi = "Atap bocor"
+        db_session.commit()
+        token = login(test_client, user.email)
+
+        r = test_client.post(
+            f"/laporan/{lap.id}/konfirmasi",
+            headers=auth(token),
+            json={"jawaban": [{"kode": "gejala_atap", "nilai": "g9"}]},
+        )
+        assert r.status_code == 422
+        assert r.json()["error"]["code"] == "UNPROCESSABLE_ENTITY"
+
+        r = test_client.post(
+            f"/laporan/{lap.id}/konfirmasi",
+            headers=auth(token),
+            json={
+                "jawaban": [
+                    {"kode": "bagian", "nilai": "atap"},
+                    {"kode": "bagian", "nilai": "dinding"},
+                ]
+            },
+        )
+        assert r.status_code == 422
+
+    def test_kedaluwarsa_lazy_24_jam(self, test_client, db_session):
+        from datetime import datetime, timedelta, timezone
+
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sekolah)
+        lap.status_konfirmasi = "menunggu"
+        lap.deskripsi = "Atap bocor"
+        lap.created_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=25)
+        db_session.commit()
+        token = login(test_client, user.email)
+
+        r = test_client.get(f"/laporan/{lap.id}/konfirmasi", headers=auth(token))
+        assert r.status_code == 200
+        assert r.json()["data"]["status"] == "dilewati"
+        assert r.json()["data"]["pertanyaan"] == []
+        db_session.refresh(lap)
+        assert lap.status_konfirmasi == "dilewati"
+
+        r = test_client.post(
+            f"/laporan/{lap.id}/konfirmasi",
+            headers=auth(token),
+            json={"jawaban": [{"kode": "gejala_atap", "nilai": "g2"}]},
+        )
+        assert r.status_code == 409
+
+    def test_laporan_lama_tanpa_status_dianggap_dilewati(self, test_client, db_session):
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        lap = make_laporan(db_session, user, sekolah)  # status_konfirmasi NULL
+
+        r = test_client.get(
+            f"/laporan/{lap.id}/konfirmasi", headers=auth(login(test_client, user.email))
+        )
+        assert r.status_code == 200
+        assert r.json()["data"]["status"] == "dilewati"
+        assert r.json()["data"]["pertanyaan"] == []

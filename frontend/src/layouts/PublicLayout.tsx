@@ -3,7 +3,6 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { LayoutDashboard, History, LogOut, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
-import { ROLE_LABEL } from "@/lib/api/types"
 
 /** Badge status akun warga — `UserMe.status_verifikasi` (menunggu/terverifikasi/ditolak). */
 const STATUS_VERIFIKASI_META: Record<
@@ -36,7 +35,10 @@ const STATUS_VERIFIKASI_META: Record<
 export default function PublicLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isAuthenticated, user, logout } = useAuth()
+  const { isAuthenticated, user, role, roleLabel, logout } = useAuth()
+
+  const isDinasStaff = role === "admin" || role === "verifikator_dinas" || role === "kepala_dinas"
+  const dashboardTarget = isDinasStaff ? "/dinas/dashboard" : "/dashboard"
 
   // ── Menu akun dropdown (pola sama dengan DinasLayout) ─────────────────────
   const [isAccountOpen, setIsAccountOpen] = useState(false)
@@ -105,10 +107,8 @@ export default function PublicLayout() {
                   {user?.nama?.charAt(0) || "U"}
                 </div>
                 <div className="leading-tight hidden sm:block text-left">
-                  <span className="text-xs font-bold text-slate-800 block">{user?.nama}</span>
-                  <span className="text-[10px] text-emerald-600 font-semibold">
-                    {user ? ROLE_LABEL[user.role] : "Warga Terverifikasi"}
-                  </span>
+                  <span className="text-xs font-bold text-slate-800 block truncate max-w-[140px]">{user?.nama}</span>
+                  <span className="text-[10px] text-blue-700 font-semibold">{roleLabel ?? "Warga Terdaftar"}</span>
                 </div>
               </button>
 
@@ -156,7 +156,7 @@ export default function PublicLayout() {
                       type="button"
                       onClick={() => {
                         setIsAccountOpen(false)
-                        navigate("/dashboard")
+                        navigate(dashboardTarget)
                       }}
                       className="w-full px-3 py-2 rounded-xl text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center justify-between transition-colors cursor-pointer group"
                     >

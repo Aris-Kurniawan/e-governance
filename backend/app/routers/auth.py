@@ -111,6 +111,7 @@ def get_me(user: User = Depends(deps.get_current_user)):
             "nama": user.nama,
             "email": user.email,
             "role": user.role,
+            "nip": user.nip,
             "status_verifikasi": user.status_verifikasi,
             "sekolah_terkait_npsn": user.sekolah_terkait_npsn
         }

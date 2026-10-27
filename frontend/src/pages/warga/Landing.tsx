@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 
 export default function Landing() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, roleLabel } = useAuth()
   const navigate = useNavigate()
 
   // Gerbang autentikasi pelaporan:
@@ -81,7 +81,7 @@ export default function Landing() {
                 {isAuthenticated ? (
                   <div className="flex items-center gap-2 text-xs text-emerald-700 font-medium bg-emerald-50/80 border border-emerald-200/60 rounded-lg px-3 py-1.5 w-fit">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span>Masuk sebagai <strong>{user?.nama}</strong> (Akun Terverifikasi — Siap Melaporkan)</span>
+                    <span>Masuk sebagai <strong>{user?.nama}</strong> ({roleLabel ?? "Akun Terdaftar"} — Siap Melaporkan)</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-xs text-slate-600 font-medium bg-white/70 backdrop-blur-sm border border-slate-200/70 rounded-lg px-3 py-1.5 w-fit">

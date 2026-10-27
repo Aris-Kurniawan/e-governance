@@ -1,0 +1,52 @@
+{
+  "config": "A4_B1_C1_D3",
+  "variants": {
+    "embedding": "A4",
+    "reduction": "B1",
+    "clustering": "C1",
+    "labeling": "D3"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "b2bb7951",
+  "n_docs": 62,
+  "metrics": {
+    "silhouette": 0.06804779171943665,
+    "davies_bouldin": 2.805502269878044,
+    "ari": 0.01597850519545337,
+    "nmi": 0.12234285668115166,
+    "purity": 0.6666666666666666,
+    "homogeneity": 0.12761388912262542,
+    "completeness": 0.11748998730396007,
+    "v_measure": 0.12234285668115166,
+    "noise_ratio": 0.1774193548387097
+  },
+  "n_clusters": 3,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ],
+    "0": [
+      "kegiatan belajar",
+      "belajar",
+      "kegiatan",
+      "mengajar",
+      "belajar mengajar"
+    ],
+    "1": [
+      "air",
+      "rusak",
+      "saat",
+      "bagi",
+      "pendidikan"
+    ],
+    "2": [
+      "rusak",
+      "sejak",
+      "berlangsung sejak",
+      "lama",
+      "berlangsung"
+    ]
+  },
+  "runtime_sec": 0.08,
+  "generated_at": "2026-10-21T20:46:12"
+}

@@ -12,12 +12,15 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.klaster import Klaster, Vote
 from app.models.laporan import Laporan
-from app.ai_pipeline.scoring import calculate_priority_score
+from app.ai_pipeline.scoring import (
+    calculate_score_components,
+    hitung_kondisi_dapodik,
+)
 
 
 router = APIRouter(prefix="/vote", tags=["vote"])
 
-require_warga = RoleChecker(["warga_terverifikasi", "komite_sekolah"])
+require_warga = RoleChecker(["warga_umum", "warga_terverifikasi", "komite_sekolah"])
 
 
 @router.post("")
@@ -37,16 +40,20 @@ async def create_vote(
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Sudah vote di klaster ini")
 
-    vote = Vote(klaster_id=klaster_id, user_id=current_user.id, status_vote="pending")
+    vote = Vote(klaster_id=klaster_id, user_id=current_user.id, status_vote="terhitung")
     db.add(vote)
 
     klaster.jumlah_vote_terhitung = (klaster.jumlah_vote_terhitung or 0) + 1
-    laporan_list = db.scalars(select(Laporan).where(Laporan.klaster_id == klaster_id)).all()
-    kondisi_laporan = [{"kondisi_dilaporkan": lap.kondisi_dilaporkan or "baik"} for lap in laporan_list]
-    kondisi_dapodik = {"total": 0, "berat": 0, "sedang": 0, "ringan": 0}
-    skor = calculate_priority_score(kondisi_laporan, kondisi_dapodik, klaster.jumlah_vote_terhitung)
-    klaster.skor_prioritas = Decimal(str(skor))
-    klaster.skor_keparahan = Decimal(str(skor - klaster.jumlah_vote_terhitung))
+    laporan_list = db.scalars(select(Laporan).where(Laporan.klaster_id == klaster.id)).all()
+    kondisi_laporan = [{"kondisi_dilaporkan": lap.kondisi_dilaporkan} for lap in laporan_list]
+    # DBG-022: komponen Dapodik wajib dari DB — sebelumnya hardcoded nol sehingga
+    # setiap vote menulis ulang skor tanpa bobot 30% Dapodik.
+    kondisi_dapodik = hitung_kondisi_dapodik(db, klaster.sekolah_npsn)
+    skor_keparahan, skor_prioritas = calculate_score_components(
+        kondisi_laporan, kondisi_dapodik, klaster.jumlah_vote_terhitung
+    )
+    klaster.skor_prioritas = Decimal(str(skor_prioritas))
+    klaster.skor_keparahan = Decimal(str(skor_keparahan))
 
     db.commit()
     return {"data": {"vote_id": vote.id, "status_vote": vote.status_vote}}
@@ -96,13 +103,15 @@ async def recalculate_skor(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Klaster tidak ditemukan")
 
     laporan_list = db.scalars(select(Laporan).where(Laporan.klaster_id == klaster_id)).all()
-    kondisi_laporan = [{"kondisi_dilaporkan": lap.kondisi_dilaporkan or "baik"} for lap in laporan_list]
-    kondisi_dapodik = {"total": 0, "berat": 0, "sedang": 0, "ringan": 0}
+    kondisi_laporan = [{"kondisi_dilaporkan": lap.kondisi_dilaporkan} for lap in laporan_list]
+    # DBG-022: endpoint "hitung ulang" justru merusak data sebelumnya (Dapodik
+    # hardcoded nol) — kini query komponen Dapodik yang sebenarnya.
+    kondisi_dapodik = hitung_kondisi_dapodik(db, klaster.sekolah_npsn)
     votes = klaster.jumlah_vote_terhitung or 0
-    skor = calculate_priority_score(kondisi_laporan, kondisi_dapodik, votes)
+    skor_keparahan, skor = calculate_score_components(kondisi_laporan, kondisi_dapodik, votes)
 
     klaster.skor_prioritas = Decimal(str(skor))
-    klaster.skor_keparahan = Decimal(str(skor - votes))
+    klaster.skor_keparahan = Decimal(str(skor_keparahan))
     db.commit()
 
     return {

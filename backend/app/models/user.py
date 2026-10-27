@@ -29,6 +29,8 @@ class User(Base, TimestampMixin):
     status_verifikasi: Mapped[str] = mapped_column(
         Enum(*STATUS_VERIFIKASI_ENUM, name="status_verifikasi"), default="menunggu"
     )
+    # DBG-013: NIP resmi pegawai pemerintah (dinas/verifikator/kadis/admin). Nullable untuk warga.
+    nip: Mapped[str | None] = mapped_column(String(30), nullable=True)
     sekolah_terkait_npsn: Mapped[str | None] = mapped_column(
         String(20), ForeignKey("sekolah.npsn"), nullable=True
     )

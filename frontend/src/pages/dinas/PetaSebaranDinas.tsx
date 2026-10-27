@@ -22,6 +22,7 @@ import { listSekolah, detailSekolah } from "@/lib/api/sekolah"
 import type { KondisiSarana } from "@/lib/api/types"
 import { MapContainer, SeverityMarker, MapLegend } from "@/components/map"
 import { AreaTrendChart, HorizontalBarChart } from "@/components/charts"
+import { filterTitikPeta, statusDariSkor } from "@/lib/peta"
 
 interface KlasterRingkas {
   klasterId: string
@@ -41,6 +42,7 @@ interface PointItem {
   status: "kritis" | "sedang" | "rendah"
   lat: number
   lng: number
+  hasKlaster: boolean
   topKlasterId: string | null
   klasterIds: string[]
   dukunganWarga: number
@@ -68,12 +70,6 @@ const STATUS_FILTER: Record<string, "kritis" | "sedang" | "rendah"> = {
   "Mismatch Kritis (>70)": "kritis",
   "Selisih Sedang (40-70)": "sedang",
   "Rendah (<40)": "rendah",
-}
-
-function statusDariSkor(skor: number): "kritis" | "sedang" | "rendah" {
-  if (skor > 70) return "kritis"
-  if (skor >= 40) return "sedang"
-  return "rendah"
 }
 
 function kondisiDominanDapodik(s: KondisiSarana): string | null {
@@ -152,6 +148,7 @@ export default function PetaSebaranDinas() {
           jenjang: s.jenjang,
           skor,
           status: statusDariSkor(skor),
+          hasKlaster: klasters.length > 0,
           lat: s.lintang as number,
           lng: s.bujur as number,
           topKlasterId: top?.klasterId ?? null,
@@ -161,16 +158,15 @@ export default function PetaSebaranDinas() {
       })
   }, [daftarSekolah, klasterPerSekolah])
 
-  const titikTerfilter = useMemo(() => {
-    const jenjangValid = JENJANG_FILTER[jenjang] ?? []
-    const statusValid = STATUS_FILTER[status]
-    return titikSekolah.filter((p) => {
-      if (jenjangValid.length > 0 && !jenjangValid.includes(p.jenjang)) return false
-      if (statusValid && p.status !== statusValid) return false
-      if (onlyMismatch && (klasterPerSekolah.get(p.npsn)?.length ?? 0) === 0) return false
-      return true
-    })
-  }, [titikSekolah, jenjang, status, onlyMismatch, klasterPerSekolah])
+  const titikTerfilter = useMemo(
+    () =>
+      filterTitikPeta(titikSekolah, {
+        hanyaBerklaster: onlyMismatch,
+        jenjang: JENJANG_FILTER[jenjang] ?? [],
+        status: STATUS_FILTER[status],
+      }),
+    [titikSekolah, jenjang, status, onlyMismatch],
+  )
 
   const jumlahTanpaKoordinat = daftarSekolah.length - titikSekolah.length
 

@@ -56,7 +56,7 @@ export const SeverityMarker: React.FC<SeverityMarkerProps> = ({
   }, [skor, scale])
 
   const customIcon = useMemo(() => {
-    const isKritis = status === "kritis" || skor >= 70
+    const isKritis = status === "kritis" || skor > 70
     const isSedang = !isKritis && (status === "sedang" || skor >= 40)
 
     const bgClass = isKritis ? "#E11D48" : isSedang ? "#F59E0B" : "#10B981"

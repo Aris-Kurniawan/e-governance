@@ -719,18 +719,72 @@ ws#### F3.0c — Running Test Suite A (Embedding Variations)
 
 ---
 
+#### F3.0g — Ablation A4: Potion Embedding *(selesai 21 Okt 2026)*
+
+**Latar belakang:** Saran dosen (21 Okt 2026) — bandingkan embedding IndoBERT/MiniLM yang besar dengan alternatif lebih ringan. Potion (`minishlab/potion-multilingual-128M`) dipilih karena multilingual, CPU-only, dan jauh lebih kecil (~128 MB).
+
+**Tujuan:** Jalankan 27 kombinasi A4 × B1–B3 × C1–C3 × D1–D3 dan bandingkan NMI/ARI/Purity/Noise vs A1–A3 pada ground truth yang sama.
+
+**Hasil Eksekusi:**
+- 27 kombinasi A4 selesai dieksekusi dan disimpan di `backend/app/ai_pipeline/experiments/results/A4_*.json` serta `summary_report.csv`.
+- Konfigurasi seimbang terbaik: **A4_B1_C2** (UMAP 10 + HDBSCAN min_cluster_size=3, min_samples=2) menghasilkan NMI = 0.1958, Purity = 0.6923, Noise = 16.1% (9 klaster).
+- Konfigurasi tanpa reduksi A4_B2_C2 mencatat NMI 0.4413 namun anomali karena 88.7% data dibuang sebagai noise (hanya 7 dokumen masuk 2 klaster).
+- **Keputusan:** A2 (TF-IDF 300 fitur, NMI = 0.3874, Noise 35.6%) tetap dipertahankan sebagai konfigurasi produksi utama. A4 didokumentasikan di `ABLATION_RESULTS.md` & `AI_PIPELINE_ABLATION_STUDY.md`.
+
+**Langkah implementasi:**
+
+1. **`app/ai_pipeline/embedding.py`** — tambah branch `method="potion"`:
+   ```python
+   if method == "potion":
+       from model2vec import StaticModel
+       model = StaticModel.from_pretrained("minishlab/potion-multilingual-128M")
+       return np.asarray(model.encode(texts), dtype=np.float32)
+   ```
+   Sisipkan sebelum `raise ValueError(...)`. Tambah fallback ke TF-IDF bila `StaticModel` tidak tersedia (konsisten dengan guard `FALLBACK_USED` di `run_ablation.py`).
+
+2. **`app/ai_pipeline/experiments/run_ablation.py`** — tambah `"potion"` ke `VARIANTS_A`:
+   ```python
+   VARIANTS_A = ["tfidf", "indobert", "minilm", "potion"]  # tambah "potion"
+   ```
+   27 kombinasi baru akan otomatis terbuat dari loop yang sudah ada.
+
+3. **Jalankan** (dari folder `backend/`):
+   ```bash
+   ./venv/bin/python app/ai_pipeline/experiments/run_ablation.py --embedding potion
+   ```
+   Atau jalankan seluruh suite bila flag `--embedding` belum ada (27 kombinasi saja yang baru).
+
+4. **`docs/backend/ABLATION_RESULTS.md`** — tambah tabel A4 di bawah tabel A1–A3 (jangan timpa — beri header baru `## Tambahan A4: Potion (21 Okt 2026)`).
+
+5. **Keputusan adopsi:**
+   - A4 NMI > A2 (0,3874) → ganti default `pipeline.py` + catat di `DECISIONS.md` (D-24+)
+   - A4 NMI ≤ A2 → tetap A2, hasil A4 tetap dilaporkan sebagai perbandingan untuk laporan/skripsi
+
+**Deliverable:**
+- `embedding.py` dengan branch `method="potion"`
+- 27 file hasil `A4_B*_C*_D*.json` di `experiments/results/`
+- Tabel A4 di `ABLATION_RESULTS.md`
+- Keputusan adopsi di `DECISIONS.md` (D-24 atau lebih)
+
+**Estimasi Waktu:** ~2–3 jam (termasuk unduhan model ~128 MB + 27 run @~5–10 detik/run)
+
+**Catatan:** Jangan jalankan seluruh 108 kombinasi sekaligus — jalankan A4 dulu (27 kombinasi), bandingkan hasilnya, baru putuskan apakah perlu iterasi lanjutan.
+
+---
+
 **Ringkasan F3.0 Sub-tasks:**
 
-| Sub-task | Tujuan | Durasi | Dependen |
-|----------|--------|--------|----------|
-| F3.0a | Manual clustering | 1 hari | - |
-| F3.0b | Framework setup | 2 hari | F3.0a |
-| F3.0c | Test suite A (embedding) | 1 hari | F3.0b |
-| F3.0d | Test suite B (baseline + MiniLM) | Paralel F3.0c | F3.0b |
-| F3.0e | Analysis & reporting | 2 hari | F3.0c + F3.0d |
-| F3.0f | Optimal config implementation | 1 hari | F3.0e |
+| Sub-task | Tujuan | Durasi | Dependen | Status |
+|----------|--------|--------|----------|--------|
+| F3.0a | Manual clustering | 1 hari | - | ✅ |
+| F3.0b | Framework setup | 2 hari | F3.0a | ✅ |
+| F3.0c | Test suite A (embedding) | 1 hari | F3.0b | ✅ |
+| F3.0d | Test suite B (baseline + MiniLM) | Paralel F3.0c | F3.0b | ✅ |
+| F3.0e | Analysis & reporting | 2 hari | F3.0c + F3.0d | ✅ |
+| F3.0f | Optimal config implementation | 1 hari | F3.0e | ✅ |
+| **F3.0g** | **Ablation A4: Potion embedding** | **~2–3 jam** | **F3.0f** | **⏳ Belum** |
 
-**Total: 1 minggu** (F3.0a → F3.0b → F3.0c/F3.0d paralel → F3.0e → F3.0f)
+**Total awal: 1 minggu** (F3.0a–F3.0f selesai). F3.0g tambahan atas saran dosen.
 
 ---
 
@@ -1484,6 +1538,330 @@ Compose) & SETUP.md §5.
 
 ---
 
+### F4.12 — Penarikan Nilai Skor KBM (Sekolah Berdata Sedikit) + Penanda Mismatch Laporan vs Dapodik (D-24)
+
+> ✅ **STATUS: SELESAI (20 Okt 2026).** Disetujui Aris (19 Okt 2026): ambang **K = 5 laporan** ·
+> sekolah **tanpa laporan tetap 0** · **prior dihitung dinamis** · penanda mismatch
+> **ditampilkan di halaman Skor KBM saja**. Verifikasi: 135 test lulus · live `prior=49,7`,
+> `k=5`, `jumlah_mismatch=5`, distribusi `22/22/18/0` · `estimate_k()` = `None` pada data dev.
+
+**Masalah.** `skor_laporan` = rata-rata biasa severity laporan, sehingga sekolah berdata sedikit
+mudah bernilai ekstrem. Pada data live: `SD NEGERI 2 SENDANGREJO` (n=3) mendapat **`skor_kbm` 76,4**
+(peringkat 1, level `kritis`) dari `skor_laporan` 66,3, sedangkan `SD MUHAMMADIYAH 1 LAMONGAN` (n=13)
+memperoleh `skor_kbm` 52,0. Artinya sampel 3 laporan diperlakukan setara sampel 13 laporan —
+sekolah paling parah justru yang paling sedikit datanya.
+
+**Keputusan (D-24):**
+
+| Aspek | Ketentuan |
+|---|---|
+| Formula laporan | `λ = n/(n+5)`; `skor_laporan = λ × rata-rata severity + (1−λ) × prior` |
+| Ambang (K) | **5 laporan** — **kebijakan, bukan estimasi data** (dasar: AIP §10.4.1); >5 laporan lebih dipercaya data sekolah, <5 lebih ke prior |
+| Sekolah tanpa laporan (n=0) | **tetap 0** (aturan cakupan D-22 dipertahankan) |
+| `prior` | **dinamis** dari data: `Σ(rata-rata_sekolah × n) / Σ n` — live = **49,7** |
+| Mismatch | `mismatch = skor_laporan ≥ 50 AND skor_dapodik == 0` — **penanda saja**, skor tidak diubah |
+| Dapodik, bobot, level | tidak berubah (`0.7/0.3`; ambang ≥70 / 50 / 40) |
+
+**Dasar K (wajib dibaca sebelum implementasi):** rumus shrinkage = *credibility theory*
+Bühlmann (`Z = n/(n+K)`, `K = EPV/VHM`); `K = 5` adalah **kebijakan** (analog IMDb
+`m = 25.000`), **bukan hasil estimasi**. Data dev tidak bisa memvalidasi K
+(`EPV = 1420,8`, `VHM = −2,5` → tak terdefinisi; validasi silang → "prior saja").
+Karena itu F4.12 wajib menyediakan `estimate_k()` (method of moments) + gate produksi:
+hitung ulang K saat laporan riil tersedia, dan bila `VHM ≤ 0` nyatakan peringkat
+per-sekolah tidak bermakna. Rincian: `AI_PIPELINE_ABLATION_STUDY.md` §10.4.1 dan `D-24`.
+
+**Dampak terukur (data live: 62 sekolah, 600 laporan):**
+
+- **8 dari 62** sekolah berpindah level; sekolah `kritis` **1 → 0** (SDN 2 SENDANGREJO: `skor_kbm` 76,4 `kritis` → 69,2 `tinggi`; `skor_laporan` 66,3 → 55,9).
+- Distribusi level: `rendah 22 · sedang 21 · tinggi 18 · kritis 1` → `rendah 22 · sedang 22 · tinggi 18 · kritis 0`.
+- Kepekaan ambang: K=3 → 6 sekolah berubah · **K=5 → 8** · K=10 → 16.
+- Mismatch: **13** sekolah `skor_dapodik = 0` (plafon skor 70, secara struktural tak mungkin `kritis`) · **5** di antaranya `mismatch` setelah shrinkage.
+- Turunan: `sekolah.penanda_masalah` berlevel `kritis` ikut menjadi 0 (F4.11/D-23 sebelumnya melaporkan 1).
+
+**Rencana implementasi:**
+
+1. **`app/ai_pipeline/scoring.py`** — `calculate_kbm_score(laporan, dapodik, prior=None, k=5)`:
+   `n=0 → 0`; `n>0` → nilai ditarik ke prior; `prior=None` → perilaku lama (kompatibel).
+   Tambah helper `compute_prior(...)` sebagai **satu sumber**, konstanta `SHRINKAGE_K = 5`
+   (dapat dioverride config), `is_mismatch(skor_laporan, skor_dapodik)`, dan
+   `estimate_k(...)` (method of moments; `None` bila `VHM ≤ 0`) untuk gate produksi.
+2. **`app/routers/laporan.py`** — `GET /laporan/skor-kbm`: hitung **prior global**, teruskan ke
+   `calculate_kbm_score`; tambah field `mismatch` per sekolah; `ringkasan` + `prior`, `k`,
+   `jumlah_mismatch`.
+3. **`app/routers/sekolah.py`** — `_penanda_isu_per_sekolah`: hitung **prior global** (bukan per
+   halaman — saat ini query dibatasi `WHERE sekolah_npsn IN (npsns)`), memakai helper yang sama
+   agar penanda vs skor tidak pernah berbeda (pelajaran DBG-007/DBG-008).
+4. **Test** — perbarui `test_skor_kbm_shape_dan_bound` & `test_skor_kbm_formula_deterministik`
+   (assert `set()` ketat + angka berubah; contoh: sekolah A/B masing-masing n=1 → prior 83 →
+   A = 60,1 `tinggi`, B = 86,1 `kritis`); cek ulang test penanda (~`test_blackbox.py:1057`);
+   tambah tes baru: n=0 tetap 0 · data sedikit tertarik ke prior · mismatch benar/salah ·
+   **konsistensi halaman** (halaman 1 vs 2 → penanda sama).
+5. **FE** — `frontend/src/lib/api/types.ts` (`SkorKbmSekolah.mismatch`,
+   `SkorKbmRingkasan.prior/k/jumlah_mismatch`); `pages/dinas/LaporanSkorKbm.tsx` badge
+   "Tidak cocok dengan Dapodik" + kartu jumlah mismatch + perbaikan copy footer.
+6. **Dokumentasi** — `DECISIONS.md` (**D-24**) · `INTERFACES.md` (field baru + catatan formula) ·
+   `AI_PIPELINE_ABLATION_STUDY.md` §10 + §10.4.1 (tandai terimplementasi; koreksi klausul
+   n=0 yang bertentangan dengan D-22; catat dasar K + gate estimasi ulang) ·
+   `DEBUGGING.md` (entri penyelesaian) · `CHANGELOG.md`.
+
+**Verifikasi yang direncanakan:** recreate `simakis_test` → pytest penuh (112 + tes baru) ·
+curl live `/laporan/skor-kbm` (prior/k/mismatch/distribusi) dan `/sekolah?page_size=100`
+(2 halaman konsisten) · Playwright: badge mismatch di `/dinas/skor-kbm`, warna pin
+`DashboardKadis`, filter penanda Direktori · jalankan `estimate_k()` dan catat hasilnya
+(harus `None` pada data dev) · `npx tsc --noEmit` + `npm run build`.
+
+**Risiko:** prior **wajib global** (dua call site + pagination) — salah lingkup = penanda berubah
+per halaman. `calculate_priority_score` (skor level klaster) **tidak** disentuh (di luar lingkup).
+
+**Ketergantungan:** melengkapi F4.8 (skor KBM) & F4.11/D-23 (penanda); FE menyentuh halaman
+`LaporanSkorKbm.tsx`.
+
+---
+
+
+> **Catatan penomoran.** F4.13–F4.16 di bawah adalah **lanjutan** dari F4.12 dan berasal dari
+> diskusi 19–20 Okt 2026 (perbaikan penentuan severity). Spesifikasi lengkap, termasuk bank
+> pertanyaan dan usulan kontrak, ada di **`docs/backend/SPEC_SEVERITY_KLASIFIKASI.md`** —
+> dokumen itu berdiri sendiri, sengaja tidak dilebur ke sini. F4.13 dapat dikerjakan
+> **sekarang** (bug murni, tidak butuh keputusan desain); F4.14–F4.16 bergantung urutan.
+
+---
+
+### F4.13 — Perbaikan Semantik `NULL` pada Skor Prioritas Klaster (BUG — SELESAI)
+
+> ✅ **STATUS: SELESAI (2026-10-20).** Ringkasan realisasi: `CHANGELOG.md` §3.28.
+
+**Masalah.** `calculate_priority_score` memetakan `kondisi_dilaporkan = NULL` ke `0` (= setara
+`baik`), sedangkan `calculate_kbm_score` **membuang** `NULL`. Dua fungsi di berkas yang sama
+memperlakukan data yang sama dengan cara berbeda. Akibatnya laporan berisi keluhan berat namun
+tanpa nilai enum ikut menurunkan skor prioritas klaster — dan laporan seperti itu tampak "aman".
+
+**Keputusan.** `NULL` (dan nilai di luar enum) berarti **"tidak ada data"**, **bukan** "kondisi
+baik" → dibuang dari rata-rata, di **kedua** fungsi. Lihat `SPEC_SEVERITY_KLASIFIKASI.md` §17.3.
+
+**Deliverable:**
+
+1. **`app/ai_pipeline/scoring.py`** — `calculate_priority_score`: `NULL` / nilai di luar enum
+   dibuang dari rata-rata, bukan dipetakan ke `0`. Perilaku kini identik dengan `calculate_kbm_score`.
+2. **`tests/test_scoring_null.py` (baru, 8 test)** — semua-`NULL` di kedua fungsi · `NULL` tidak
+   menarik rata-rata turun · nilai di luar enum · list kosong · konsistensi antar kedua fungsi.
+
+**Verifikasi (sudah dijalankan):**
+
+| Cek | Hasil |
+|---|---|
+| `pytest tests/test_scoring_null.py` | **8/8** lulus |
+| `pytest tests/` (suite penuh) | **120/120** lulus (112 lama + 8 baru) |
+| Laporan live dengan `NULL` | **0** dari 600 → tidak ada skor produksi berubah |
+| Klaster live dengan semua laporan `NULL` | **0** dari 43 |
+| Migrasi DB | tidak ada |
+
+**Catatan:** `calculate_priority_score` di luar lingkup F4.12, jadi perubahan ini berdiri sendiri
+dan tidak menghalangi F4.12.
+
+---
+
+### F4.14 — Kolom `laporan.sumber_kondisi` + Penanda Konfirmasi ✅ SELESAI
+
+> ✅ **STATUS: SELESAI (20 Okt 2026).** Migrasi `f4a14b7c9e21` (2 kolom ENUM nullable, tanpa
+> backfill) · 138 test lulus · parity fresh + live OK · dump diregen. Keputusan pemilik disetujui
+> 20 Okt 2026 (`SPEC_SEVERITY_KLASIFIKASI.md` §17.2).
+
+**Masalah.** Setelah AI mulai mengisi `kondisi_dilaporkan`, nilai hasil AI dan nilai koreksi
+manusia **tidak dapat dibedakan**. Konsekuensi: akurasi AI tidak dapat dihitung · salah nilai AI
+tidak dapat ditarik tanpa menimpa koreksi manusia · koreksi manusia dapat tertimpa cron berikutnya.
+
+**Keputusan.** Tambah kolom penanda asal nilai. **Warga TIDAK pernah mengisi kolom ini** —
+`warga` hanya muncul bila verifikator mengoreksi hasil AI.
+
+| Kolom | Tipe | Nilai |
+|---|---|---|
+| `laporan.sumber_kondisi` | ENUM NULLABLE | `ai` (cron) · `warga` (koreksi verifikator) · `NULL` (belum ada) |
+| `laporan.status_konfirmasi` | ENUM NULLABLE | `menunggu` · `terjawab` · `dilewati` · `NULL` (laporan lama) |
+
+**Rencana implementasi:**
+
+1. **Migrasi Alembic** — dua kolom ENUM NULLABLE; `downgrade()` menghapus keduanya.
+   Ikuti pola migrasi `d3cb7888ff94` (guard non-MySQL + idempoten `information_schema`).
+2. **`app/models/laporan.py`** — dua field baru + enum-nya.
+3. **`app/routers/laporan.py`** — `POST /laporan` set `status_konfirmasi = 'menunggu'`;
+   respons ekspos `sumber_kondisi` + `status_konfirmasi` (draft bentuk: `INTERFACES.md` §4.4).
+4. **`scripts/run_clustering.py`** — ⚠️ **N/A saat ini:** skrip hanya **membaca**
+   `kondisi_dilaporkan`; tidak ada assignment di `app/`/`scripts/`. Guard
+   `sumber_kondisi != 'warga'` **wajib dipasang di F4.16** saat AI mulai menulis kondisi.
+5. **Dokumentasi** — ✅ `DATABASE_SCHEMA.md` (2 kolom + `hasil_klasterisasi`) · ✅ `INTERFACES.md`
+   §4.4 (status ✅, 4 endpoint) · ✅ `database/simakis.sql` (regen, head `f4a14b7c9e21`) ·
+   ✅ `CHANGELOG.md` §3.30.
+6. **Verifikasi** — ✅ `verify_schema_parity.py` (fresh + `--db` live) · ✅ pytest **138/138** ·
+   ✅ impor ulang dump ke DB kosong · ✅ downgrade → upgrade ulang. Uji negatif cron **belum
+   dapat dijalankan** karena belum ada titik tulis (lihat item 4).
+
+**Risiko:** migrasi menyentuh tabel `laporan` (600 baris). Kolom NULLABLE → laporan lama tetap
+`NULL`, tidak ada backfill. `database/simakis.sql` wajib diregen agar fresh install konsisten
+(pelajaran F4.9).
+
+---
+
+### F4.15 — Lapis 1: Bank Pertanyaan Konfirmasi Severity ✅ BACKEND SELESAI
+
+> ✅ **STATUS: BACKEND SELESAI (20 Okt 2026).** Kontrak dikunci dengan default yang disetujui
+> (satu GET, `kode`/`nilai`, endpoint terpisah, expiry lazy 24 jam). **FE modal menunggu Dimas.**
+> Bergantung F4.14 ✅.
+
+**Masalah.** Form laporan tidak meminta warga memilih tingkat kerusakan. Ditambah dropdown =
+meminta warga memetakan pengamatan awam ke istilah teknis (`rusak_ringan/sedang/berat`) yang
+ambangnya tidak dia ketahui (Panduan Sarpras: 1–30% / 31–45% / 46–100%) → jawaban jadi ukuran
+kepribadian, bukan ukuran kerusakan.
+
+**Keputusan.** Setelah laporan tersimpan, warga diberi **maksimal 4 pertanyaan** yang dipilih AI
+dari **bank pertanyaan tetap** (manusia yang menulis). AI **hanya memilih, tidak mengarang**.
+
+**Deliverable:**
+
+1. ✅ **Bank pertanyaan** — `app/ai_pipeline/question_bank.py`: 8 komponen nama awam (§15.3) ×
+   3–4 gejala bertingkat (§15.4) + `g0`, pemicu struktural, pemetaan enum resmi.
+2. ✅ **Pemilih pertanyaan** — `pilih_pertanyaan()`: 1 `bagian` + maks. 3 `gejala_<komponen>`;
+   `gejala_struktur` hanya bila pemicu §15.5 muncul; tanpa komponen → hanya `bagian`.
+3. ✅ **Endpoint** — `GET`/`POST /laporan/{id}/konfirmasi` (owner-only), `409`/`422`, lazy expiry
+   24 jam, jawaban disimpan di `jawaban_konfirmasi`; `POST /laporan` menyertakan blok `konfirmasi`.
+   Migrasi `b7d15c4e9a02`.
+4. ⏳ **FE** — modal konfirmasi pasca-kirim; aturan "jawab satu → lewati yang lebih ringan";
+   tombol "Lewati". **Menunggu Dimas**; kontrak `INTERFACES.md` §4.1–4.3 sudah final.
+5. ✅ **Dokumentasi** — `INTERFACES.md` §4.1–4.4 · `DECISIONS.md` D-25 · `CHANGELOG.md` §3.31 ·
+   `DATABASE_SCHEMA.md`.
+
+**Batasan yang wajib dihormati:** konfirmasi **opsional, tidak memblokir apa pun**. Laporan tetap
+sah bila tidak dijawab. Bila tidak dijawab dalam 24 jam → `status_konfirmasi = 'dilewati'`.
+
+**Verifikasi:** `TestKonfirmasiF415` 12 test · total **150/150** · migrasi live
+`f4a14b7c9e21 → b7d15c4e9a02` · parity live **97 kolom**.
+
+**Sisa:** FE modal (Dimas). Dump sudah diregen (head `b7d15c4e9a02`).
+
+---
+
+### F4.16 — Lapis 2: Klasifikasi Severity dari Teks (`severity.py`) ⏳ K4 SELESAI, SISA 50 LABEL MANUAL
+
+> ⏳ **STATUS: K4 SELESAI DI GPU + EVALUASI TEST SET; PELABELAN MANUAL DITUNDA MINGGU DEPAN
+> (≥ 28 Okt 2026).**
+> Bergantung F4.14 ✅ + F4.15 ✅. Label LLM **600/600**; train 550 + test 50 (irisan 0, tidak bocor).
+> **K1–K4 (semua di test set 50):** K1 `48,00%/0,2467` · K2 `72,00%/0,5841` · K3 `74,00%/0,6100` ·
+> **K4 `70,00%/0,5722`** (eval internal 55 data: `67,27%/0,5414`, tidak sebanding) → **K3 menang**,
+> direkomendasikan untuk produksi. SVM = **LinearSVC** (linear kernel, `class_weight="balanced"`).
+> **Sebelum mengisi label manual (wajib, urut):** (A) buat `docs/backend/RUBRIK_LABEL_MANUAL.md`
+> dari `DEFINISI` `severity.py:25` — tanpa rubrik penilaian subjektif; (B) isi dalam kondisi blind
+> lewat `test_50_blind.csv` tanpa kolom `label_llm` — Aris sudah mengetahui skor ablation
+> sebelumnya (*anchoring*); (C) setelah `0/50` → `50/50`, rerun
+> `severity_ablation.py --labels manual --indobert-model app/dataset/severity/models/indobert`
+> untuk angka final. Detail & alasan penundaan: `CHANGELOG.md` §3.32 blok "Belum selesai".
+
+**Tujuan.** Mengubah `deskripsi` (+ jawaban konfirmasi bila ada) → `kondisi_dilaporkan`
+(4 kelas enum). Ini yang mengisi 70% bobot `skor_kbm` yang saat ini hangus.
+
+**Deliverable:**
+
+1. ✅ **`app/ai_pipeline/severity.py`** — K1 kata kunci + `severity_dari_jawaban` +
+   `gabung_severity` + `explain`; `classify_severity(texts)`.
+2. ✅ **`scripts/label_severity_llm.py`** — OpenAI-compatible + parser SSE, prompt
+   `severity-llm-v1`, resume JSONL, catat model. **600/600 label selesai**
+   (`am/amanai/deepseek-v4-flash`; `ringan 425 · baik 77 · berat 52 · sedang 46`).
+3. ✅ **`scripts/prepare_manual_testset.py`** — pilih 50 (seed 42) **sebelum** label LLM →
+   `test_50.csv` + `test_50_ids.json` (anti-bias). ✅ **`prepare_severity_testset.py`** memakai
+   ID tetap → train 550 + merge LLM, `label_manual` tidak tertimpa.
+   ⏳ **Menunggu Aris mengisi 50 label di `backend/app/dataset/severity/test_50.csv`.**
+4. ✅ **Integrasi** — `apply_severity()` di `scripts/run_clustering.py`; guard
+   `kondisi_dilaporkan IS NULL AND sumber_kondisi != 'warga'`; set `sumber_kondisi='ai'`;
+   `SEVERITY_ENABLED=False` default; plus `scripts/backfill_severity.py` (dry-run default) untuk
+   laporan lama yang tak lagi melewati cron. Catatan: tahap severity dipasang di skrip cron,
+   bukan `pipeline.py` (pipeline belum punya tahap tulis kondisi).
+5. ✅ **`scripts/severity_ablation.py`** — K1/K2/K3 + K4 opsional, akurasi/macro-F1/matrix.
+   ✅ **`scripts/finetune_severity_indobert.py`** — GPU-ready (`--bf16`, fp16 otomatis, class
+   weights, `accelerate`); **dijalankan Aris di laptop GPU**.
+   **Final sementara (semua varian di test 50, label LLM — ditunggu verifikasi manual):** K1
+   `48,00% / 0,2467` · K2 `72,00% / 0,5841` · K3 `74,00% / 0,6100` · **K4 `70,00% / 0,5722`**
+   (evaluasi test set 50; latih 3 epoch, 270,8 dtk, GTX 1650, fp16 — eval internal 55 data
+   `67,27% / 0,5414` tidak sebanding). Baseline tebak-mayoritas test set `72,0%` → K3 +2,0 poin,
+   K4 −2,0 poin. **K4 tidak layak produksi** (kalah dari K2/K3, model 497 MB, butuh GPU).
+   **Laporan lengkap: `docs/backend/ABLATION_SEVERITY_RESULTS.md`** — termasuk temuan bahwa
+   **165 dari 249** laporan yang menyebut bahaya/keselamatan/dampak KBM dilabeli `rusak_ringan`
+   (akibat aturan prompt `severity-llm-v1`); aturan perlu ditinjau sebelum label dipakai
+   sebagai ground truth.
+6. ⏳ **Dokumentasi final** — `CHANGELOG.md` §3.32 sudah diperbarui dengan angka provisional ·
+   `DECISIONS.md` D-26 (+ amandemen 21 Okt) · blok K di `AI_PIPELINE_ABLATION_STUDY.md`
+   menunggu angka manual (**ditunda ≥ 28 Okt 2026**, lihat poin 7).
+7. ⏳ **Pekerjaan tertunda (minggu depan, ≥ 28 Okt 2026) — JANGAN KELEWAT, urut A→B→C:**
+   - **A.** Buat `docs/backend/RUBRIK_LABEL_MANUAL.md` (salin `DEFINISI` `severity.py:25`,
+     daftar periksa keputusan, aturan ambigu "dampak KBM tanpa kerusakan fisik", penanda `ragu`).
+   - **B.** Siapkan `test_50_blind.csv` (`id, deskripsi, label_manual, catatan` — **tanpa
+     `label_llm`**) karena Aris sudah tahu skor ablation (*anchoring*); isian lama (bila ada di
+     luar repo) = `label_manual_v1`.
+   - **C.** Isi 50/50 → `severity_ablation.py --labels manual --indobert-model
+     app/dataset/severity/models/indobert` → angka FINAL → update §3.32 +
+     `ABLATION_SEVERITY_RESULTS.md` → ajukan `SEVERITY_ENABLED=true`.
+
+**Menjalankan K4 di GPU (venv proyek, Python 3.14) — SUDAH DIEKSEKUSI 21 Okt 2026.** Wheel CUDA
+`cu124`/`cu126` resmi berhenti di `cp313`; yang benar-benar terpasang via **mirror Tsinghua**:
+`torch 2.14.1+cu130` (cp314 ada di index cu130; driver CUDA 13.1 mendukung). Verifikasi:
+`cuda.is_available()=True`, `GTX 1650`, compute 7.5. Ringkasan pemasangan ada di `CHANGELOG.md`
+§3.32 blok "Torch CUDA di WSL".
+
+```bash
+cd backend
+# Windows PowerShell
+.\venv\Scripts\Activate.ps1
+pip index versions torch --index-url https://download.pytorch.org/whl/cu126
+pip download torch --index-url https://download.pytorch.org/whl/cu126 -d C:\tmp\torchwheel
+pip uninstall -y torch
+pip install C:\tmp\torchwheel\torch-2.9.1+cu126-*.whl
+python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+python scripts/finetune_severity_indobert.py --epochs 3 --batch-size 4 --grad-accum 4
+```
+
+> **Koreksi (21 Okt 2026):** perintah di atas adalah rencana awal; yang **aktual** memakai
+> mirror Tsinghua + `torch 2.14.1+cu130` (resmi `download.pytorch.org` terlalu lambat ~70 KB/s).
+> Log pemasangan riil: `CHANGELOG.md` §3.32 "Torch CUDA di WSL".
+
+GTX 1650 = Turing (tanpa bf16) → jangan pakai `--bf16`; fp16 aktif otomatis. OOM →
+`--batch-size 2 --grad-accum 8 --max-length 128`. `requirements.txt` masih mem-pin
+`torch==2.14.0` (CPU); jangan jalankan `pip install -r requirements.txt` setelah memasang
+wheel CUDA, atau torch CPU akan kembali terpasang.
+
+**Verifikasi sementara:** `tests/test_severity.py` 13 test · total **163/163**; label **600/600**
+unik; train 550 + test 50; `label_manual` masih **0/50**; smoke parsers/pelabelan/ablation lulus.
+
+**Yang dilarang:** memakai 600 label seed dev (`setup_f300.py`) sebagai data latih. Label itu
+dibuat acak/uniform (154/147/145/154) → melatih model memprediksi keacakan.
+
+**Kontribusi yang bisa diklaim:** tabel ablation K1–K4 dengan angka akurasi pada test set
+berlabel manual — bagian yang punya nilai metodologis, bukan kodenya.
+
+**Risiko:** bias pelaporan (*self-selection* — warga melapor saat ada masalah) tidak dapat
+diperbaiki oleh classifier · 50 sampel terlalu kecil untuk generalisasi ke populasi Lamongan →
+wajib ditulis sebagai keterbatasan.
+
+---
+
+### Ringkasan Status F4.12–F4.16
+
+| Task | Isi | Status | Bergantung |
+|---|---|---|---|
+| **F4.12** | Shrinkage skor KBM + flag mismatch (D-24) | ✅ SELESAI | 135 test · live prior 49,7 · mismatch 5 |
+| **F4.13** | Fix semantik `NULL` di `calculate_priority_score` | ✅ **SELESAI** | — |
+| **F4.14** | Kolom `sumber_kondisi` + `status_konfirmasi` | ✅ SELESAI | — |
+| **F4.15** | Lapis 1 — bank pertanyaan konfirmasi | ✅ BACKEND SELESAI (FE menunggu Dimas) | F4.14 ✅ |
+| **F4.16** | Lapis 2 — `severity.py` + ablation K1–K4 | ⏳ K3 menang (74,00%); K4 70,00% test set; **label manual DITUNDA minggu depan** + perlu rubrik + mode blind | F4.14 ✅, F4.15 ✅ |
+
+Urutan pengerjaan yang disetujui (`SPEC_SEVERITY_KLASIFIKASI.md` §18):
+**F4.13 ✅ → F4.12 ✅ → F4.14 ✅ → F4.15 ✅ (backend) → F4.16 ⏳**.
+
+Di luar task F4.x, sudah diselesaikan terpisah: **DBG-021 + DBG-022** (21 Okt 2026) — skor
+klaster kini dihitung langsung via `calculate_score_components` (tanpa back-calc), `vote.py`
+memakai `hitung_kondisi_dapodik` (dulu Dapodik hardcoded nol), `scripts/recompute_skor.py`
+memperbaiki klaster `5dda3ac6` (55,86 → 75,66); pytest 169/169. Detail: `DEBUGGING.md` +
+`CHANGELOG.md` §3.33.
+
+---
+
 ## Dependencies antar Task
 
 ```
@@ -1497,6 +1875,7 @@ F3.1-3.5 → F3.8-3.10 (AI pipeline harus jalan dulu)
 F3.11 → F3.12-3.14 (model vote)
 F3.16 → F3.17-3.18 (model status_log)
 F4.7 → FE (halaman fallback laporan perlu-review, Dimas)
+F4.12 → melengkapi F4.8 (skor KBM) & F4.11/D-23 (penanda); FE halaman LaporanSkorKbm.tsx
 ```
 
 ---

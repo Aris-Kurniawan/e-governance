@@ -20,6 +20,7 @@ def embed_texts(texts: List[str], method: str = "tfidf") -> np.ndarray:
       - "tfidf": TF‑IDF 300‑dimensional (A2, ablation winner)
       - "indobert": paraphrase‑multilingual‑MiniLM‑L12‑v2 (A1)
       - "minilm": all‑MiniLM‑L6‑v2 (A3)
+      - "potion": minishlab/potion-multilingual-128M (A4)
     
     Returns: (n_texts, n_features) float array.
     """
@@ -27,6 +28,15 @@ def embed_texts(texts: List[str], method: str = "tfidf") -> np.ndarray:
         from sklearn.feature_extraction.text import TfidfVectorizer
         vec = TfidfVectorizer(max_features=300, lowercase=True)
         return vec.fit_transform(texts).toarray().astype(np.float32)
+
+    if method == "potion":
+        try:
+            from model2vec import StaticModel
+            model = StaticModel.from_pretrained("minishlab/potion-multilingual-128M")
+            return np.asarray(model.encode(texts), dtype=np.float32)
+        except Exception:
+            # Fallback ke TF-IDF bila model offline / belum terunduh
+            return embed_texts(texts, method="tfidf")
     
     if method in ("indobert", "minilm"):
         if SentenceTransformer is None:

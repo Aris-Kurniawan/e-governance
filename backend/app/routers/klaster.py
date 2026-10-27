@@ -14,11 +14,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.klaster import Klaster, StatusLog
 from app.models.laporan import Laporan
-from app.models.sekolah import KondisiSarana
-from app.ai_pipeline.pipeline import default_pipeline
-from app.ai_pipeline.scoring import calculate_priority_score
-from app.ai_pipeline.pipeline import default_pipeline
-from app.ai_pipeline.scoring import calculate_priority_score
+from app.ai_pipeline.scoring import calculate_score_components, hitung_kondisi_dapodik
 
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -66,6 +62,7 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
                 lap.hasil_klasterisasi = "noise"
             continue
         
+        from app.ai_pipeline.pipeline import default_pipeline
         result = default_pipeline.run(texts)
         labels = result["labels"]
         cluster_meta = result["cluster_meta"]
@@ -91,29 +88,20 @@ def run_clustering_sync(db: Session, force_reprocess: bool = False):
             kategori = meta.get("kategori", "belum_terklasifikasi")
             
             kondisi_laporan = [
-                {"kondisi_dilaporkan": lap.kondisi_dilaporkan or "baik"}
+                {"kondisi_dilaporkan": lap.kondisi_dilaporkan}
                 for lap in laps_in_cluster
             ]
             
-            stmt_sarana = select(KondisiSarana).where(
-                KondisiSarana.sekolah_npsn == sekolah_npsn
-            )
-            sarana_list = db.execute(stmt_sarana).scalars().all()
-            
-            kondisi_dapodik = {"total": 0, "berat": 0, "sedang": 0, "ringan": 0}
-            for sarana in sarana_list:
-                kondisi_dapodik["total"] += sarana.jumlah or 0
-                kondisi_dapodik["berat"] += sarana.kondisi_rusak_berat or 0
-                kondisi_dapodik["sedang"] += sarana.kondisi_rusak_sedang or 0
-                kondisi_dapodik["ringan"] += sarana.kondisi_rusak_ringan or 0
-            
+            # DBG-021/022: agregasi Dapodik & komponen skor dari satu sumber
+            # (`scoring.py`) — tanpa hitung mundur `prioritas - votes`.
+            kondisi_dapodik = hitung_kondisi_dapodik(db, sekolah_npsn)
+
             votes_count = len(laps_in_cluster)
-            skor_prioritas = calculate_priority_score(
+            skor_keparahan, skor_prioritas = calculate_score_components(
                 kondisi_laporan=kondisi_laporan,
                 kondisi_dapodik=kondisi_dapodik,
                 votes=votes_count,
             )
-            skor_keparahan = skor_prioritas - votes_count
             
             klaster = Klaster(
                 label=label_teks if label_teks else None,

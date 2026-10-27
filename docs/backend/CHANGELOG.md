@@ -1187,12 +1187,12 @@ halaman menampilkan angka dari perlakuan yang berbeda atas data yang sama.
 
 **Catatan:**
 
-- Bug terpisah ditemukan saat verifikasi: klaster `5dda3ac6` menyimpan `skor_keparahan = 55.86`
-  padahal perhitungan langsung menghasilkan `75.86` (selisih **20**, bukan pembulatan).
-  Penyebab: `scripts/run_clustering.py:161` menghitung `skor_keparahan = skor_prioritas - votes_count`
-  (cara mundur), dan `votes_count` saat penyimpanan berbeda dengan `jumlah_vote_terhitung`
-  yang tersimpan sekarang. **Bukan** akibat perubahan `NULL` — bug sudah ada sebelumnya.
-  Belum diperbaiki; perlu dicatat di `DEBUGGING.md` sebagai entri terpisah.
+- Bug terpisah ditemukan saat verifikasi: klaster `5dda3ac6` menyimpan `skor_keparahan = 55,86`
+  padahal hitung ulang dari sumber saat ini menghasilkan `75,66` (selisih **19,8**, bukan pembulatan).
+  Setelah ditelusuri, `0,7 × 79,8 = 55,86` tepat → komponen Dapodik dihitung **0** saat klaster
+  dibuat, dan skor tidak pernah dihitung ulang setelah `kondisi_sarana` terisi. Back-calc
+  `skor_prioritas − votes` (`run_clustering.py:161`, `vote.py:49,105`, `klaster.py:116`)
+  menyamarkan sebab. Bukan akibat perubahan `NULL`. Dicatat sebagai **DBG-021** (🔴, perbaikan terpisah).
 - `docs/backend/INTERFACES.md` **sengaja tidak disentuh** — perubahan kontrak FE↔BE memerlukan
   persetujuan Dimas. Bentuk usulan ada di `SPEC_SEVERITY_KLASIFIKASI.md` §19.
 - Sisa implementasi (kolom `sumber_kondisi`, pelabelan LLM, lapis 1 & 2) tercantum sebagai
@@ -1203,6 +1203,473 @@ halaman menampilkan angka dari perlakuan yang berbeda atas data yang sama.
   keterbatasan; estimasi ulang dari data riil = syarat produksi.
 
 ---
+
+## 3.29 F4.12 — Shrinkage Skor KBM + Penanda Mismatch (D-24, 2026-10-20) ✅ SELESAI
+
+**Tujuan:** menarik `skor_laporan` sekolah berdata sedikit ke prior global agar sampel 3 laporan
+tidak setara 13 laporan, tanpa mengubah bobot `0.7/0.3` atau ambang level.
+
+**Perubahan:**
+
+1. **`app/ai_pipeline/scoring.py`** — `SHRINKAGE_K = 5`, `MISMATCH_SKOR_LAPORAN = 50`;
+   `_severities`, `compute_prior`, `is_mismatch`, `estimate_k` (Bühlmann method of moments,
+   `None` bila `VHM ≤ 0`); `calculate_kbm_score(..., prior=None, k=SHRINKAGE_K)`
+   dengan `λ = n/(n+k)`, `n=0 → skor_laporan 0` (tidak ditarik ke prior).
+2. **`app/core/config.py`** — `SHRINKAGE_K: int = 5` (parameter, bukan literal tersebar).
+3. **`app/routers/laporan.py`** — `GET /laporan/skor-kbm`: prior **global**, field `mismatch`
+   per sekolah, `ringkasan.prior/k/jumlah_mismatch`. Mismatch dihitung **setelah** shrinkage.
+4. **`app/routers/sekolah.py`** — `_penanda_isu_per_sekolah` memakai prior global yang sama
+   (query laporan tidak lagi dibatasi `WHERE sekolah_npsn IN (...)`), sehingga penanda halaman
+   1/2 dan detail identik dengan skor.
+5. **Test** — `test_blackbox.py`: shape ketat + formula baru (A 60,1 `tinggi`; B 86,1 `kritis`),
+   helper `reset_laporan()` untuk isolasi prior global, 4 test baru (prior global vs halaman,
+   mismatch setelah shrinkage true/false, n=0 → prior 0). `test_scoring_shrinkage.py` (baru, 11 test).
+6. **FE** — `types.ts`: `mismatch`, `prior`, `k`, `jumlah_mismatch`; `LaporanSkorKbm.tsx`:
+   kartu KPI "Mismatch laporan vs Dapodik", kolom MISMATCH, tooltip komponen skor, copy footer
+   formula shrinkage + `K`/prior.
+7. **Docs** — D-24 (koreksi 76,4 = `skor_kbm`), INTERFACES §4, AIP §10 (status + §10.7),
+   TASK_GUIDE F4.12, DEBUGGING (DBG-021).
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `pytest tests/` | **135/135** lulus |
+| Live `GET /laporan/skor-kbm` | `prior = 49,7` · `k = 5` · `jumlah_mismatch = 5` · `total_laporan = 600` |
+| Distribusi level | `rendah 22 · sedang 22 · tinggi 18 · kritis 0` |
+| SDN 2 SENDANGREJO | `skor_laporan` 66,3 → **55,9** · `skor_kbm` 76,4 `kritis` → **69,2 `tinggi`** |
+| Mismatch set | 5 sekolah; sama sebelum/sesudah shrinkage |
+| `/sekolah` halaman 1+2 vs detail | penanda 0 beda vs level `skor-kbm` |
+| `estimate_k()` data dev | `None` (`VHM ≤ 0`) — K=5 tetap **kebijakan** |
+| `npx tsc --noEmit` | lulus |
+
+**Catatan:**
+
+- Prior **wajib global**; bila dihitung per halaman, penanda berubah antarhalaman (risiko utama task ini).
+- `total_laporan` tetap menghitung 600 baris; `n` per sekolah hanya enum valid. Live: 0 NULL.
+- Gap terpisah (belum di task ini): `FormLaporan.tsx` tidak mengirim `kondisi_dilaporkan`,
+  sehingga laporan baru selalu NULL dan `n` tidak bertambah sampai F4.13.
+- `calculate_priority_score` (level klaster) **tidak** disentuh; skor klaster basi = DBG-021.
+
+---
+
+## 3.30 F4.14 — Provenance Kondisi + Status Konfirmasi Severity (2026-10-20) ✅ SELESAI
+
+**Tujuan:** membedakan nilai `kondisi_dilaporkan` hasil AI dan koreksi manusia, serta
+menyimpan status alur konfirmasi severity — prasyarat F4.15/F4.16 agar cron tidak menimpa
+koreksi verifikator dan akurasi AI dapat dihitung.
+
+**Perubahan:**
+
+1. **Migrasi `f4a14b7c9e21`** (`down_revision = d3cb7888ff94`) — tambah dua kolom
+   `ENUM NULLABLE` pada `laporan`: `sumber_kondisi('ai','warga')` dan
+   `status_konfirmasi('menunggu','terjawab','dilewati')`. **Tanpa `server_default`/backfill**;
+   guard `information_schema` + no-op non-MySQL, `downgrade()` menghapus keduanya.
+2. **`app/models/laporan.py`** — `SUMBER_KONDISI_ENUM`, `STATUS_KONFIRMASI_ENUM`, dua field baru.
+3. **`app/schemas/laporan.py`** — `LaporanResponse` mengekspos `sumber_kondisi`,
+   `status_konfirmasi`, dan field turunan `konfirmasi_perlu_dijawab`
+   (= `status_konfirmasi == "menunggu"`, bukan kolom).
+4. **`app/routers/laporan.py`** — `POST /laporan` set `status_konfirmasi='menunggu'`
+   (laporan lama tetap NULL); helper `_laporan_fields()` dipakai bersama oleh POST, riwayat,
+   dan detail; `GET /laporan/perlu-review` ikut mengekspos ketiga field.
+5. **`scripts/run_clustering.py` — tidak diubah.** Saat ini skrip **hanya membaca**
+   `kondisi_dilaporkan`; tidak ada assignment `kondisi_dilaporkan` di `app/` maupun `scripts/`
+   (diverifikasi `grep`). Guard "jangan timpa bila `sumber_kondisi='warga'`" belum punya titik
+   tulis untuk dijaga. **Wajib dipasang di F4.16** saat AI mulai menulis kondisi.
+6. **Test** — `TestLaporanProvenanceF414` (3 test): POST baru → `menunggu` + flag `true`;
+   detail/riwayat memantulkan `ai`/`terjawab` + baris lama `NULL`/flag `false`;
+   `perlu-review` memantulkan field yang sama.
+7. **Docs & dump** — `DATABASE_SCHEMA.md` (2 kolom + `hasil_klasterisasi`, hapus baris
+   `kategori` yang sudah tidak ada), `INTERFACES.md` §4.4 (status ✅ + 4 endpoint),
+   `TASK_GUIDE.md` F4.14, `database/simakis.sql` diregen (alembic head + kolom baru).
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `pytest tests/` | **138/138** lulus |
+| `verify_schema_parity.py --db` (live) | **PARITY OK** — 96 kolom, semua ENUM |
+| `verify_schema_parity.py` (fresh `alembic upgrade head`) | **PARITY OK** |
+| Migrasi live | `d3cb7888ff94 → f4a14b7c9e21`; 600 baris tetap `NULL/NULL` |
+| Downgrade → upgrade ulang | kolom hilang lalu kembali; 600 baris utuh |
+| Impor ulang `database/simakis.sql` ke DB kosong | parity OK · 600 laporan · 62 sekolah · head `f4a14b7c9e21` |
+
+**Catatan:**
+
+- `konfirmasi_perlu_dijawab` **tidak disimpan** — dihitung saat serialisasi, sehingga tidak ada
+  risiko kolom turunan basi.
+- `POST /laporan` masih menerima `kondisi_dilaporkan` (kompatibilitas skema), tetapi **tidak**
+  mengisi `sumber_kondisi`. FE (`FormLaporan.tsx`) belum mengirim field itu; alur konfirmasi
+  tetap menunggu F4.15.
+- Dump memuat data live terbaru (4 user termasuk pendaftar `korela@gmail.com`, 32 audit log,
+  koordinat hasil F4.11), bukan hanya perubahan skema.
+
+---
+
+## 3.31 F4.15 — Konfirmasi Severity Lapis 1: Bank Pertanyaan + Endpoint (2026-10-20) ✅ SELESAI
+
+**Tujuan:** memberi warga jalur konfirmasi terstruktur (maks. 4 pertanyaan) agar severity tidak
+hanya bergantung pada teks bebas, tanpa memblokir pelaporan. Backend final; modal FE menyusul.
+
+**Perubahan:**
+
+1. **`app/ai_pipeline/question_bank.py`** (baru) — 8 komponen nama awam (`plafon`, `atap`,
+   `dinding`, `lantai`, `pintu_jendela`, `listrik`, `air`, `drainase`), gejala bertingkat 3–4
+   baris + `g0` "tidak ada gejala"; `STRUKTUR_PEMICU`/`GEJALA_STRUKTUR` §15.5; `TINGKAT_URUT`;
+   `pertanyaan_bagian`, `deteksi_komponen`, `pemicu_struktural`, `pilih_pertanyaan`,
+   `cari_pilihan`, `severity_tertinggi`. Pemetaan resmi: Sangat Berat/Berat → `rusak_berat`,
+   Sedang → `rusak_sedang`, Ringan/Sangat Ringan → `rusak_ringan`, `g0` → `baik`.
+2. **Migrasi `b7d15c4e9a02`** (`down_revision = f4a14b7c9e21`) — `laporan.jawaban_konfirmasi
+   JSON NULLABLE`; guard `information_schema`, no-op non-MySQL, `downgrade()` menghapus kolom.
+3. **`app/models/laporan.py`** — field `jawaban_konfirmasi`; **`app/schemas/laporan.py`** —
+   `KonfirmasiRingkas`, `KonfirmasiJawaban`, `KonfirmasiRequest`, `LaporanResponse.konfirmasi`.
+4. **`app/routers/laporan.py`** — `KONFIRMASI_TTL = 24 jam`; helper `_naive_utc`,
+   `_kedaluwarsa_pada`, `_konfirmasi_ringkas`, `_expire_konfirmasi`, `_laporan_milik`.
+   `GET /laporan/{id}/konfirmasi` (owner-only; laporan lama NULL → `dilewati`, `pertanyaan: []`);
+   `POST /laporan/{id}/konfirmasi` (terjawab/dilewati, `409` bila sudah/kedaluwarsa, `422` kode
+   asing/duplikat). `POST /laporan` menyertakan blok `konfirmasi`
+   (`perlu_konfirmasi`, `jumlah_pertanyaan`, `kedaluwarsa_pada`).
+5. **Test** — `TestKonfirmasiF415` (12 test): bank/selector, GET pemilik vs bukan, laporan lama,
+   jawaban menang, `g0`, `[]`, 409, 422, expiry lazy, blok POST.
+6. **Docs** — INTERFACES §4.1–4.3 ✅ + §4.4 `konfirmasi`, D-25, DATABASE_SCHEMA
+   `jawaban_konfirmasi`, TASK_GUIDE F4.15.
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `pytest tests/` | **150/150** lulus (sebelum F4.16) |
+| Migrasi live | `f4a14b7c9e21 → b7d15c4e9a02` |
+| Downgrade → upgrade (DB kosong) | kolom hilang lalu kembali; head `b7d15c4e9a02` |
+| `verify_schema_parity.py --db` (live) | **PARITY OK** — 97 kolom |
+| Impor ulang `database/simakis.sql` ke DB kosong | parity **97 kolom OK** · 600 laporan · 62 sekolah · head `b7d15c4e9a02` |
+| Smoke `label_severity_llm.py --dry-run` | 600 laporan terbaca, model belum di-set |
+
+**Catatan:**
+
+- `jawaban_konfirmasi` menyimpan `{"jawaban": [...], "diproses_pada": "..."}` — audit + bahan lapis 2.
+- Laporan lama **tidak** ditawari konfirmasi ulang (status NULL → `dilewati`).
+- `database/simakis.sql` diregen setelah migrasi ini (**251.565 byte**, head `b7d15c4e9a02`).
+
+---
+
+## 3.32 F4.16 — Klasifikasi Severity Lapis 2: Kerangka K1–K4 + Ablation Final (2026-10-20/21) ⏳ LABEL MANUAL DITUNDA ≥28 OKT
+
+**Tujuan:** menentukan `kondisi_dilaporkan` otomatis dari deskripsi + jawaban konfirmasi,
+dengan bukti ablation; tidak menimpa koreksi manusia.
+
+**Sudah diimplementasikan:**
+
+1. **`app/ai_pipeline/severity.py`** — `LEVELS`, `DEFINISI` (4 tingkat Kemendikbud), aturan
+   kata kunci K1 + `PENGECUALI_BAIK`, `deteksi_gejala_teks`, `severity_dari_jawaban`,
+   `gabung_severity`, `explain`, `classify_severity`. Tanpa sinyal → `rusak_ringan` (bukan `baik`).
+2. **`app/core/config.py`** — `SEVERITY_ENABLED=False`, `SEVERITY_METHOD="k1"`.
+3. **`scripts/run_clustering.py`** — `apply_severity()`: guard hanya baris
+   `kondisi_dilaporkan IS NULL` dan `sumber_kondisi != 'warga'`; hanya K1; set `sumber_kondisi='ai'`.
+   `or "baik"` dihapus. `routers/vote.py` + `routers/klaster.py` juga tidak lagi memakai
+   fallback `or "baik"`.
+4. **`scripts/label_severity_llm.py`** — OpenAI-compatible, `LLM_API_KEY`/`LLM_BASE_URL`/
+   `LLM_MODEL`, resume JSONL, prompt `severity-llm-v1`, output
+   `app/dataset/severity/labels_llm.jsonl`. Parser menerima JSON biasa, ```` ```json ````,
+   dan respons `text/event-stream` berakhiran `data: [DONE]`. **600 label selesai** dengan
+   `am/amanai/deepseek-v4-flash`: `rusak_ringan 425 · baik 77 · rusak_berat 52 · rusak_sedang 46`.
+5. **`scripts/prepare_manual_testset.py`** — memilih 50 laporan (seed 42) **sebelum** label LLM
+   ada, menulis `test_50_ids.json` + `test_50.csv` (kolom `label_manual` kosong) agar penilaian
+   Aris tidak bias melihat output LLM. **`scripts/prepare_severity_testset.py`** memakai ID tetap
+   itu untuk train 550 + merge label LLM tanpa menghapus `label_manual`.
+6. **`scripts/severity_ablation.py`** — K1/K2/K3 + K4 opsional; akurasi, macro-F1, confusion
+   matrix; menolak test set yang label manualnya kosong.
+7. **`scripts/finetune_severity_indobert.py`** — K4 `indobenchmark/indobert-base-p1`,
+   90/10 split internal, class-weighted loss, `--batch-size/--grad-accum/--max-length`,
+   `--bf16` (Ampere+), fp16 otomatis bila CUDA, `ignore_mismatched_sizes=True` (classifier
+   checkpoint 2 kelas → 4 kelas), simpan model+tokenizer. Smoke-test Trainer dengan model tiny
+   lulus; target Aris GTX 1650 (Turing, tanpa bf16) → fp16, `--batch-size 4 --grad-accum 4`.
+   `accelerate>=1.1.0` ditambahkan ke `requirements.txt`.
+8. **`tests/test_severity.py`** (13 test) — K1 dasar, jawaban menang, guard cron, tanpa kandidat.
+9. **`scripts/backfill_severity.py`** — one-off untuk laporan lama yang tidak lagi melewati
+   cron (`belum_diproses`); default dry-run, tulis hanya `--commit`, guard NULL + bukan `warga`.
+10. **`.env.example`** — `SEVERITY_ENABLED`, `SEVERITY_METHOD`, `LLM_API_KEY`, `LLM_BASE_URL`,
+    `LLM_MODEL` (key kosong).
+
+**Verifikasi:**
+
+| Cek | Hasil |
+|---|---|
+| `pytest tests/` | **163/163** lulus |
+| `prepare_manual_testset.py` (live) | 50 laporan → `test_50.csv` + `test_50_ids.json` (8,0 KB) |
+| `label_severity_llm.py` (live) | **600/600** label unik; model & prompt tercatat |
+| `prepare_severity_testset.py` (live) | train **550** (`ringan 389 · baik 71 · berat 47 · sedang 43`) + test **50** (`ringan 36 · baik 6 · berat 5 · sedang 3`) |
+| `severity_ablation.py --labels llm` (provisional) | K1 **48,00% / 0,2467** · K2 **72,00% / 0,5841** · K3 **74,00% / 0,6100** · K4 **70,00% / 0,5722** |
+| `backfill_severity.py` (dry-run, live) | 0 kandidat — 600 laporan seed sudah punya `kondisi_dilaporkan` |
+| `finetune_severity_indobert.py` (live, GPU) | K4 latih 3 epoch · 270,8 dtk · fp16 · GTX 1650 · eval internal 55 data **67,27% / 0,5414** (bukan test set) |
+| `severity_ablation.py --indobert-model` (eval test 50) | K4 **70,00% / 0,5722** — sebanding K1–K3 |
+| `torch 2.14.1+cu130` (live, WSL) | `cuda.is_available()=True` · compute 7.5 · 4,29 GB VRAM · matmul GPU OK |
+| Uji kebocoran data | irisan `train_550` ∩ `test_50_ids` = **0** (tidak bocor) |
+| Distribusi label LLM | `rusak_ringan 425 · baik 77 · rusak_berat 52 · rusak_sedang 46` → **70,8% timpang** |
+
+**Ablation final (K4 dijalankan di GPU, 2026-10-21)** — laporan lengkap:
+**`docs/backend/ABLATION_SEVERITY_RESULTS.md`** (10 bagian: hasil, baseline, distribusi label,
+temuan 165 label meragukan, confusion matrix, detail latihan, lingkungan GPU, kesimpulan,
+langkah lanjut, berkas terkait):
+
+| Varian | Akurasi | Macro-F1 | Waktu | Catatan |
+|---|---|---|---|---|
+| K1 aturan kata kunci | 48,00% | 0,2467 | instan | basis aturan `severity.py` |
+| K2 TF-IDF + LogReg | 72,00% | 0,5841 | ~detik | CPU |
+| **K3 TF-IDF + SVM** | **74,00%** | **0,6100** | ~detik | **rekomendasi produksi** |
+| K4 IndoBERT fine-tune | 70,00% | 0,5722 | 270,8 dtk (GPU) latih + ~61 dtk evaluasi | kalah dari K2/K3 |
+
+K4: `indobenchmark/indobert-base-p1`, 3 epoch, `--batch-size 16 --max-length 128`, GPU
+**GTX 1650** (Turing, compute 7.5), fp16 otomatis (`bf16: True` pada header log = flag fp16 aktif —
+Turing tidak punya bf16). Model tersimpan di `app/dataset/severity/models/indobert/model.safetensors`
+(**497 MB**) — **jangan di-commit**, tambahkan ke `.gitignore`.
+
+Progres per epoch K4 — `eval_loss` naik di epoch 3 sementara akurasi naik → mulai **overfit**:
+
+| Epoch | eval_loss | Akurasi | Macro-F1 |
+|---|---|---|---|
+| 1 | 1,057 | 21,82% | 0,3682 |
+| 2 | 0,781 | 52,73% | 0,4890 |
+| 3 | 0,7925 | 67,27% | 0,5414 |
+
+**Baseline tebak-mayoritas = 70,8%** (`rusak_ringan` 425/600). K3 hanya **+3,2 poin** di atas
+baseline, K4 **−3,5 poin** di bawahnya. Penyebab utama bukan algoritma melainkan **kualitas label**:
+LLM menumpuk 70,8% ke `rusak_ringan`. Confusion matrix K3 menunjukkan `rusak_sedang` nyaris tidak
+terdeteksi (2 dari 3 benar) dan `rusak_berat` sering jatuh ke `rusak_sedang`.
+
+Temuan pendukung — contoh label meragukan: deskripsi *"Tidak ada air bersih di WC sekolah, siswa
+kesulitan. **berbahaya bagi keselamatan siswa**"* dilabeli **`rusak_ringan`**. Ini konsekuensi aturan
+prompt `severity-llm-v1` ("kekurangan fasilitas → pilih tingkat paling ringan"). Aturan perlu
+ditinjau sebelum label dipakai sebagai ground truth.
+
+**Torch CUDA di WSL (2026-10-21).** `torch 2.14.1+cu130` terpasang di `backend/venv` melalui
+**mirror Tsinghua** — `pytorch.org` hanya ~70 KB/s dari lokasi Aris, mirror 350 KB/s–2,2 MB/s, dan
+wheel `cp314` hanya tersedia di mirror. Driver Windows `CUDA Version: 13.1` mendukung `cu130`.
+Verifikasi: `cuda avail True` · `GTX 1650` · compute 7.5 · 4,29 GB VRAM · matmul GPU OK. Total
+unduhan ~3–4 GB (torch 554 MB + `nvidia-cudnn-cu13` 553 MB + `nvidia-cusparselt-cu13` 170 MB +
+paket `nvidia-*` lain). Peringatan: `pip install -r requirements.txt` menurunkan torch ke `2.14.0`
+CPU dan menghapus dukungan GPU.
+
+**Belum selesai / penghalang:**
+
+- **⚠️ PELABELAN MANUAL DITUNDA ke minggu depan (≥ 28 Okt 2026)** — keputusan Aris 21 Okt 2026.
+  Penghalang terakhir F4.16. Syarat sebelum mengisi (poin A–C wajib, jangan dilewati):
+  1. **(A) Rubrik penilaian dulu, bukan penilaian langsung.** Kriteria resmi sudah ada di
+     `severity.py:25` (`DEFINISI` 4 tingkat Kemendikbud: `baik` / `ringan` ≤30% / `sedang` 31–45% /
+     `berat` >45% + daftar kata kunci). Rubrik formal **belum dibuat** → buat
+     `docs/backend/RUBRIK_LABEL_MANUAL.md` (definisi + daftar periksa pengambil keputusan +
+     aturan ambigu "dampak KBM tanpa kerusakan fisik" + penanda `ragu`) **sebelum** Aris menilai.
+     Tanpa rubrik, penilaian subjektif dan tidak bisa dipertanggungjawabkan di skripsi.
+  2. **(B) Isi dalam kondisi BLIND** — urutan sudah terlanjur bias (Aris mengisi setelah skor
+     ablation keluar; lihat catatan bias di bawah). Mitigasi: buat `test_50_blind.csv` berkolom
+     `id, deskripsi, label_manual, catatan` **tanpa `label_llm`**, isi ulang memakai rubrik;
+     isian pertama (bila sudah ada di luar repo) disimpan sebagai `label_manual_v1` — perbedaan
+     v1 vs v2 = ukuran nyata anchoring.
+  3. **(C) Setelah 50 baris terisi:** jalankan `severity_ablation.py --labels manual
+     --indobert-model app/dataset/severity/models/indobert` → angka **FINAL** untuk skripsi;
+     update §3.32 + `ABLATION_SEVERITY_RESULTS.md` §1–§2; baru boleh diajukan
+     `SEVERITY_ENABLED=true`.
+- **Bias yang harus ditulis jujur di skripsi:** penilaian manual dilakukan **setelah** hasil
+  ablation terlihat (*anchoring*), dan **tanpa rubrik baku** saat rencana awal — dua-duanya sudah
+  dipetakan 21 Okt 2026 dan dijadikan bagian metodologi, bukan disembunyikan.
+- **50 label manual Aris** belum ada (`0/50`) → lembar di
+  `backend/app/dataset/severity/test_50.csv`; angka di atas **provisional** (label LLM).
+- ✅ **K4 sudah dilatih + dievaluasi ulang di test set 50** (GPU GTX 1650, 2026-10-21) →
+  **70,00% / 0,5722** (eval internal 55 data menunjukkan 67,27% / 0,5414 — tidak sebanding).
+  **Tidak dipakai produksi** karena di bawah K2/K3. Model 497 MB masih tersimpan — hapus atau
+  `gitignore`.
+- `SEVERITY_ENABLED` tetap `false` sampai ablation final + 50 label manual disetujui.
+- Setelah label manual terisi: rerun `severity_ablation.py --labels manual
+  --indobert-model app/dataset/severity/models/indobert`, lalu update §3.32 dengan angka final.
+  **Jangan lupa urutan A→B→C di atas** (rubrik → blind → rerun) — dijanjikan minggu depan
+  (≥ 28 Okt 2026), jangan kelewat.
+
+---
+
+## 3.33 DBG-021 + DBG-022 — Skor Klaster: Tanpa Back-Calc & Dapodik Aktif (2026-10-21) ✅ SELESAI
+
+**Dua bug backend terakhir (lihat `DEBUGGING.md` DBG-021/022), dikerjakan langsung oleh
+orchestrator karena agen `fixer` error (`fix-1`, `fix-2` — sesi mati, tidak dipakai ulang).**
+
+**DBG-022 — vote menghapus komponen Dapodik 30% (diperbaiki DULU, kerusakan aktif):**
+
+1. `routers/vote.py` — `create_vote` dan endpoint F3.14 `PUT /vote/klaster/{id}/skor`
+   sebelumnya hardcode `kondisi_dapodik = {"total": 0, ...}` → tiap vote (dan "hitung ulang"
+   yang justru merusak) menulis skor tanpa bobot 30% Dapodik. Keduanya kini memakai
+   `hitung_kondisi_dapodik(db, klaster.sekolah_npsn)`.
+2. `ai_pipeline/scoring.py` — helper baru `hitung_kondisi_dapodik()` (agregasi
+   `KondisiSarana`, satu sumber kebenaran) menggantikan duplikasi query di `klaster.py`
+   dan `run_clustering.py`.
+
+**DBG-021 — snapshot basi + back-calc menyamarkan sebab:**
+
+3. `scoring.py` — fungsi baru `calculate_score_components() -> (skor_keparahan, skor_prioritas)`
+   menghitung **kedua komponen langsung** (D-07), tanpa `skor_prioritas - votes`.
+   `calculate_priority_score` **kontrak lama dipertahankan** (return `float`, delegasi ke
+   komponen) — `tests/test_scoring_null.py` lulus tanpa perubahan.
+4. **4 call site** back-calc diganti tuple: `scripts/run_clustering.py`,
+   `routers/klaster.py`, `routers/vote.py` (create_vote + F3.14).
+5. **Skrip baru `scripts/recompute_skor.py`** — hitung ulang semua klaster dari sumber
+   saat ini (laporan + `kondisi_sarana` + votes); dry-run default, tulis `--commit`,
+   idempoten (toleransi 0,01).
+
+**Bukti verifikasi:**
+
+| Pemeriksaan | Hasil |
+|---|---|
+| `pytest tests/ -q` | **169/169** (163 base + 6 regresi baru `tests/test_recompute_skor.py`) |
+| Dry-run `recompute_skor.py` (DB live) | **43 klaster diperiksa, 1 berubah** — `5dda3ac6` 55,86/61,86 → **75,66/81,66** (selisih 19,8 = 0,3×66 sesuai prediksi `DEBUGGING.md`) |
+| `recompute_skor.py --commit` | ✅ Ditulis 1 klaster |
+| Rerun setelah commit | **0 berubah** (idempoten) |
+| Test regresi vote/F3.14 | vote & endpoint hitung ulang mempertahankan Dapodik: 0,7×100 + 0,3×50 = **85**, bukan 70 |
+| Line-ending | HEAD & working tree sama-sama LF — tidak ada noise EOL |
+
+**Catatan:** `SEVERITY_ENABLED` tetap `false` (tidak disentuh). Commit menyusul — sesuai
+aturan AGENTS.md hanya saat diminta ("commit"). Sisa backlog: 50 label manual F4.16
+(ditunda ≥28 Okt 2026), DBG-014/016 (backend), DBG-012/013/019 (lane FE), 5 keputusan ⚪.
+
+## 3.34 DBG-012 + DBG-019 — Perbaikan Frontend Auth Guard & Navigasi Warga (2026-10-21) ✅ SELESAI
+
+**Perbaikan dua bug frontend (lihat `DEBUGGING.md` DBG-012 & DBG-019):**
+
+1. **DBG-012 — Rute `/dinas/*` tanpa guard:**
+   - `frontend/src/components/auth/ProtectedRoute.tsx`:
+     - Menangani `isLoading` dengan spinner `Loader2` agar tidak terjadi flash/redirect palsu saat me-refresh halaman ber-token.
+     - Menambahkan prop `loginPath` (default `"/login"`) dengan preservasi query param `?redirect=...`.
+     - Menambahkan prop `allowedRoles?: Role[]` untuk pengecekan hak akses role.
+   - `frontend/src/App.tsx`: Seluruh rute `/dinas` dibungkus `ProtectedRoute` dengan `loginPath="/dinas/login"` dan `allowedRoles={["admin", "verifikator_dinas", "kepala_dinas"]}`.
+   - `frontend/src/pages/dinas/LogAuditPdp.tsx`: Copywriter basi ("Backend v1 belum menuliskan aksi sensitif") dirapikan menjadi deskripsi netral.
+
+2. **DBG-019 — Sinkronisasi navbar warga & tombol pintasan:**
+   - `frontend/src/layouts/WargaLayout.tsx`:
+     - Menu diselaraskan dengan navigasi publik: Dashboard, Dashboard Wilayah, Direktori Sekolah, Riwayat Laporan, dan Tentang Data.
+     - Menambahkan tombol aksi primer `"Buat Laporan"` mengarah ke `/laporan/baru`.
+
+**Bukti verifikasi:**
+- Build frontend `npm run build` (tsc + vite) sukses tanpa error.
+- Line-ending bersih (LF pada frontend, CRLF pada file docs backend).
+
+## 3.35 DBG-013 — Profil Pegawai Pemerintah Dinamis & Kolom NIP (2026-10-21) ✅ SELESAI
+
+**Perbaikan DBG-013 (Opsi A yang disetujui pengguna):**
+
+1. **Database & Backend:**
+   - Migrasi Alembic `63a2411c6508_dbg_013_users_nip.py` menambahkan kolom `users.nip` (`VARCHAR(30)`, nullable).
+   - Model `User` (`backend/app/models/user.py`) ditambahkan kolom `nip`.
+   - Endpoint `GET /auth/me` (`backend/app/routers/auth.py`) kini mengembalikan field `nip`.
+   - Script seed akun dinas (`backend/scripts/seed_dinas_accounts.py`) dan baris akun dinas DB live diperbarui dengan NIP resmi:
+     - `verifikator@simakis.id` (`verifikator_dinas`): `19840822 201001 1 007`
+     - `kepala.dinas@simakis.id` (`kepala_dinas`): `19720315 199803 1 004`
+     - `admin@simakis.id` (`admin`): `19790512 200501 1 003`
+   - Dump database `database/simakis.sql` diregenerasi pada head Alembic terbaru (`63a2411c6508`).
+
+2. **Frontend UI & Cetak Dokumen:**
+   - Interface `UserMe` (`frontend/src/lib/api/types.ts`) ditambahkan properti `nip?: string | null`.
+   - `frontend/src/layouts/DinasLayout.tsx`:
+     - Sidebar bawah (nama, inisial, role) kini membaca dinamis dari `useAuth().user`.
+     - Dropdown akun flyout & modal "Profil Pegawai" menampilkan nama, NIP, email, dan jabatan akun yang sedang login.
+     - Aksi logout dinas memanggil `logout()` dari `useAuth()`.
+   - `frontend/src/components/composite/CetakRingkasanEksekutif.tsx`:
+     - Metadata pencetak ("Dicetak pada ... Oleh: ...") dan kolom tanda tangan kini dinamis mencantumkan nama, jabatan, dan NIP akun yang sedang bertugas.
+
+**Bukti verifikasi:**
+- `verify_schema_parity.py` PARITY OK (98 kolom cocok antara model dan DB MySQL).
+- `pytest tests/ -q` → **169/169** test lulus.
+- Frontend build `npm run build` (`tsc && vite build`) sukses tanpa error tipe.
+
+## 3.36 DBG-018 & D-28 — Pembukaan Hak Vote Warga Terdaftar & Status Vote Terhitung Langsung (2026-10-22) ✅ SELESAI
+
+**Perbaikan DBG-018 & Keputusan Produk D-28:**
+
+1. **Masalah:**
+   - User baru register otomatis memperoleh `role = "warga_umum"` dan `status_verifikasi = "menunggu"`.
+   - Endpoint `POST /vote` membatasi `require_warga = RoleChecker(["warga_terverifikasi", "komite_sekolah"])`.
+   - Panel admin dinas tidak memiliki modul/halaman untuk verifikasi warga, sehingga akun warga tidak pernah bisa vote (HTTP 403 Forbidden).
+   - Vote baru di backend disimpan dengan status `"pending"`, memicu pesan frontend *"menunggu masa tunda verifikasi akun"* padahal skor prioritas langsung dihitung dan dinaikkan saat itu juga.
+
+2. **Perubahan:**
+   - `backend/app/routers/vote.py`:
+     - `require_warga` diperluas: `RoleChecker(["warga_umum", "warga_terverifikasi", "komite_sekolah"])`. Akun staf dinas (`admin`, `verifikator_dinas`, `kepala_dinas`) tetap dilarang vote (403 Forbidden).
+     - Objek vote yang dibuat langsung disimpan dengan `status_vote = "terhitung"`.
+   - `backend/tests/test_blackbox.py`:
+     - Menambahkan test regresi `test_vote_warga_umum_happy_dan_staf_forbidden_403` (warga_umum sukses vote 200 OK, staf dinas ditolak 403).
+   - `frontend/src/pages/warga/DashboardWilayah.tsx`:
+     - `ROLE_BOLEH_VOTE` ditambahkan `"warga_umum"`. Pesan error 403 diselaraskan menjadi *"Vote hanya untuk akun warga dan komite sekolah."*
+     - Tombol "Buat Aduan Baru" dipindahkan ke baris header di atas filter chips klaster.
+     - Penataan lebar kolom tabel: kolom `ISU & SEKOLAH` diperlebar (`w-auto`), padding kolom status & aksi dipersempit agar proporsional tanpa overflow.
+   - `frontend/src/pages/warga/DaftarKlaster.tsx` & `DetailKlaster.tsx`:
+     - Menghilangkan logika dan banner teks *"menunggu masa tunda verifikasi akun"*.
+     - Feedback vote langsung sukses dan tombol langsung berubah menjadi *"Sudah Vote"* (centang hijau).
+   - Dokumen:
+     - `docs/universal/DECISIONS.md`: Mencatat **D-28**.
+     - `docs/universal/INTERFACES.md`: Menyelaraskan akses role pada `POST /vote` dan `GET /vote/status/{klaster_id}`.
+     - `docs/backend/DEBUGGING.md`: Menandai **DBG-018** `✅ SELESAI`.
+
+**Bukti verifikasi:**
+- Pytest `test_blackbox.py` vote flow lulus 100% (5/5 passed).
+- Frontend `npm run build` sukses 100% (2319 modul ter-bundle hijau).
+
+## 3.39 DBG-024 — Modal Pertanyaan Konfirmasi Severity Otomatis Terbuka di Kedua Jalur Submit (2026-10-22) ✅ SELESAI
+
+**Perbaikan DBG-024:**
+- **Masalah:** Setelah submit laporan, modal `PertanyaanKonfirmasi` (lapis 1 konfirmasi severity, F4.15) tidak pernah muncul — warga hanya melihat banner pasif, sehingga pertanyaan severity mudah terlewat. Backend sudah benar menandai `konfirmasi.perlu_konfirmasi = true`.
+- **Akar (dua jalur submit):**
+  1. `pages/warga/FormLaporan.tsx` — state `konfirmasiOpen` tidak pernah diset `true` di `handleSubmit`.
+  2. `components/composite/ModalFormLaporan.tsx` (jalur "Buat Aduan Baru" dari `DetailSekolah.tsx`) — memanggil `kirimLaporan()` tetapi **membuang `res.konfirmasi`** dan tidak merender `PertanyaanKonfirmasi` sama sekali. Jalur inilah yang dipakai saat pengujian.
+- **Perbaikan:**
+  - `FormLaporan.tsx`: `if (res.konfirmasi?.perlu_konfirmasi) setKonfirmasiOpen(true)`; banner diperluas agar tetap tampil saat `status_konfirmasi = 'menunggu'`.
+  - `ModalFormLaporan.tsx`: simpan `laporanId` + `perluKonfirmasi`; auto-open `PertanyaanKonfirmasi` (nested dialog); tombol "Jawab Sekarang" sebagai jalur alternatif; penanda "terjawab"; reset state di `handleReset`.
+- **Dokumentasi:** `docs/backend/DEBUGGING.md` DBG-024 (ringkasan + detail, termasuk pelajaran "dua jalur submit") · `docs/frontend/CHANGELOG.md`.
+- **Verifikasi:** `npx tsc --noEmit` bersih · `npm run build` hijau (17,1 s) · modul Vite dev memuat `setKonfirmasiOpen(true)` + `PertanyaanKonfirmasi` · live `POST /laporan` mengembalikan `konfirmasi.perlu_konfirmasi = true` (`jumlah_pertanyaan: 2`).
+- **Catatan terbuka:** klik-uji UI di browser belum dijalankan (harness browser tidak tersedia saat perbaikan) — perlu reload manual oleh Aris untuk konfirmasi visual.
+
+---
+
+## 3.38 DBG-017 & D-30 — Pemisahan Wewenang Review Aduan: Verifikator Lapangan vs Pengawasan Kepala Dinas (2026-10-22) ✅ SELESAI
+
+**Perbaikan DBG-017 & Keputusan Produk D-30:**
+- **Latar Belakang Birokrasi:** Mengacu pada Permendagri No. 8/2023 dan pedoman SP4N-LAPOR!, verifikasi teknis/lapangan atas berkas laporan fisik adalah kewenangan Pejabat Pengelola Pengaduan (Verifikator Dinas), bukan Kepala Dinas. Membebankan verifikasi teknis aduan mandiri kepada satu orang Kepala Dinas menjadi hambatan operasional, sedangkan Kepala Dinas tetap memerlukan fungsi pengawasan (monitoring).
+- **Perubahan Backend & Kontrak:**
+  - `GET /laporan/perlu-review`: `RoleChecker(["admin", "verifikator_dinas", "kepala_dinas"])` — verifikator dan kepala dinas dapat membaca daftar laporan noise.
+  - `PUT /laporan/{id}/status`: `RoleChecker(["admin", "verifikator_dinas"])` — hanya verifikator dan admin yang dapat memvalidasi/menolak status sanggahan aduan. Kepala dinas ditolak (403).
+- **Perubahan Frontend:**
+  - `LaporanPerluReview.tsx`: Hak aksi dibatasi untuk `admin` dan `verifikator_dinas`. Akun `kepala_dinas` menerima tampilan mode pengawasan (read-only).
+- **Dokumentasi Terkait:**
+  - `docs/universal/DECISIONS.md`: Menambahkan **D-30**.
+  - `docs/universal/INTERFACES.md`: Memperbarui tabel RBAC §4.
+  - `docs/backend/DEBUGGING.md`: Menandai **DBG-017** `✅ SELESAI`.
+
+---
+
+## 3.37 DBG-023 & D-29 — Ekspos Publik Aduan Mandiri Tervalidasi Dinas (2026-10-22) ✅ SELESAI
+
+**Perbaikan DBG-023 & Keputusan Produk D-29:**
+
+1. **Masalah:**
+   - Laporan warga yang diverifikasi oleh Kepala Dinas melalui `/dinas/perlu-review` (`status_sanggahan = 'divalidasi'`) namun berstatus noise HDBSCAN (`klaster_id IS NULL`) tidak pernah muncul pada tab "Transparansi Publik" `/laporan/riwayat` karena tab tersebut hanya membaca `GET /klaster`.
+   - Contoh kasus: SMP SUNAN GIRI 1 LAMONGAN (`TRK-AUG-500-0460`).
+
+2. **Perubahan:**
+   - `backend/app/routers/laporan.py`:
+     - Menambahkan endpoint publik `GET /laporan/publik`.
+     - Menyaring laporan dengan kondisi `Laporan.status_sanggahan == "divalidasi"` dan `Laporan.klaster_id.is_(None)`.
+     - Menerapkan de-identifikasi `user_id` menjadi string kosong untuk kepatuhan privasi UU PDP di ranah publik.
+   - `backend/tests/test_blackbox.py`:
+     - Menambahkan unit test `test_laporan_publik_hanya_divalidasi_tanpa_klaster`.
+   - `frontend/src/lib/api/laporan.ts`:
+     - Menambahkan fungsi client `listLaporanPublik()`.
+   - `frontend/src/pages/warga/RiwayatLaporan.tsx`:
+     - Menambahkan sub-filter switcher: `[Klaster Isu Sarpras]` vs `[Aduan Mandiri Tervalidasi]`.
+     - Menampilkan kartu khusus aduan mandiri dengan badge `✓ Terverifikasi Dinas (Aduan Mandiri)` dan rincian sarpras sekolah.
+   - Dokumen:
+     - `docs/universal/INTERFACES.md`: Menambahkan spesifikasi `GET /laporan/publik`.
+     - `docs/universal/DECISIONS.md`: Menambahkan **D-29**.
+     - `docs/backend/DEBUGGING.md`: Menandai **DBG-023** `✅ SELESAI`.
+
+**Bukti verifikasi:**
+- Pytest `test_blackbox.py -k test_laporan_publik` lulus 100%.
+- Endpoint `GET /laporan/publik` live mengembalikan aduan `TRK-AUG-500-0460` (SMP SUNAN GIRI 1).
+- Frontend `npm run build` sukses 100% tanpa error.
 
 ## Catatan Terbuka
 

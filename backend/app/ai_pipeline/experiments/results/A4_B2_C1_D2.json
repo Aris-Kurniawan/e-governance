@@ -1,0 +1,31 @@
+{
+  "config": "A4_B2_C1_D2",
+  "variants": {
+    "embedding": "A4",
+    "reduction": "B2",
+    "clustering": "C1",
+    "labeling": "D2"
+  },
+  "embedding_fallback": false,
+  "data_fingerprint": "b2bb7951",
+  "n_docs": 62,
+  "metrics": {
+    "silhouette": -1.0,
+    "davies_bouldin": 999.0,
+    "ari": 0.0,
+    "nmi": 0.0,
+    "purity": 0.0,
+    "homogeneity": 0.0,
+    "completeness": 0.0,
+    "v_measure": 0.0,
+    "noise_ratio": 1.0
+  },
+  "n_clusters": 0,
+  "cluster_labels": {
+    "-1": [
+      "(noise)"
+    ]
+  },
+  "runtime_sec": 0.0,
+  "generated_at": "2026-10-21T20:46:12"
+}

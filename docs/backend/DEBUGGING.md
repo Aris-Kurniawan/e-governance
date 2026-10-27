@@ -33,6 +33,19 @@
 | DBG-009 | `lintang`/`bujur` NULL 62/62 padahal CSV sumber lengkap (deviasi kontrak #4) | `setup_f300.py`, `routers/ingest.py` | ✅ SELESAI | F4.11 — mapping + backfill idempoten + expose; live 62/62 |
 | DBG-010 | `ingest.py` baca `row.get("nama_sekolah")` padahal header CSV = `nama` → nama bisa "Unknown" | `routers/ingest.py` | ✅ SELESAI | F4.11 — key `nama` + fallback; test ingest CSV resmi |
 | DBG-011 | Semua `422` dipetakan jadi `REASON_REQUIRED`; `PUT /laporan/{id}/status` wajib `UNPROCESSABLE_ENTITY` (§4). *400 generik = sesuai §0.3 (diagnosis awal salah)* | `main.py` handler | ✅ SELESAI | F4.11 — `ApiError(api_code)` + baris §0.3 + tipe FE; live 422 code benar |
+| DBG-012 | Rute `/dinas/*` tanpa `ProtectedRoute` — guest melihat "Data tidak dapat dimuat" (401) seolah backend mati; `ProtectedRoute` abaikan `isLoading` + tak punya `loginPath` | `App.tsx:87-95`, `components/auth/ProtectedRoute.tsx` | ✅ SELESAI | `ProtectedRoute` menangani `isLoading`, `loginPath="/dinas/login"`, `allowedRoles`; rute `/dinas/*` dibungkus guard; copy basi `LogAuditPdp.tsx` dirapikan; build lolos |
+| DBG-013 | Profil pemerintah hardcode "Bambang H., S.T." + NIP/email/jabatan palsu — `useAuth` tidak dipakai (grep 0) | `DinasLayout.tsx:381,736,856`, `CetakRingkasanEksekutif.tsx:94,257` | ✅ SELESAI | Migrasi Alembic `63a2411c6508` tambah `users.nip`; `GET /auth/me` & `UserMe` menyertakan `nip`; akun dinas di-seed NIP; `DinasLayout` & `CetakRingkasanEksekutif` kini dinamis dari `useAuth().user` |
+| DBG-014 | Test klasterisasi hanya data sintetis — pipeline tak pernah diuji dengan laporan nyata (600) | `tests/test_ai_pipeline.py`, `tests/test_evaluation.py` | 🔴 | Rencana: test integrasi `default_pipeline` pada data real + ambang longgar |
+| DBG-015 | Uji ablasi "laporan dinamis" belum ada — ground truth `manual_clusters.json` statis (fingerprint `46ff8dc4`, 45 dokumen) | `ai_pipeline/experiments/manual_clusters.json` | ⚪ | Rencana: re-run data live (subset GT dicatat) vs anotasi GT baru vs augmentasi — keputusan makna "dinamis" |
+| DBG-016 | Embedding Potion/mxbai belum dievaluasi (grep `potion\|mxbai` = 0); mxbai English-only → bukan kandidat | `embedding.py`, `experiments/run_ablation.py` | 🔴 | Rencana: varian ablation A4 Potion multilingual vs A1/A3; keputusan adopsi → D-xx |
+| DBG-017 | "Verifikasi mismatch terkadang gagal" & beban review Kadis = RBAC `verifikator_dinas` vs `kepala_dinas` | `routers/laporan.py:253,341`, `routers/klaster.py:25`, `LaporanPerluReview.tsx` | ✅ SELESAI | D-30: Verifikasi teknis klaster & laporan mandiri diserahkan ke `verifikator_dinas` (Permendagri 8/2023); `kepala_dinas` read-only untuk pengawasan |
+| DBG-018 | Warga terdaftar tidak bisa vote (403): default `warga_umum` ditolak `require_warga`; tak ada endpoint upgrade role; `pending` langsung terhitung (D-08) | `routers/vote.py:20,40-43`, `models/user.py:28` | ✅ SELESAI | D-28: `require_warga` += `warga_umum`; FE `ROLE_BOLEH_VOTE` += `warga_umum`; tes regresi lulus |
+| DBG-019 | Navbar warga hanya 3 menu (publik 5); "Buat Laporan" (`/laporan/baru`) tanpa pintasan menu | `layouts/WargaLayout.tsx:33-35` vs `PublicLayout.tsx:33-37` | ✅ SELESAI | Menu WargaLayout diselaraskan (Dashboard Wilayah, Direktori Sekolah, Riwayat Laporan, Tentang Data) + tombol aksi "Buat Laporan" (`/laporan/baru`); build lolos |
+| DBG-020 | Verifikasi email tidak ada sama sekali — 0 kode SMTP/token; `status_verifikasi` tak pernah diubah alur apa pun | `routers/auth.py`, `requirements.txt` | ⚪ | Keputusan: mode dev (token+log) vs SMTP nyata (butuh kredensial) vs dua mode |
+| DBG-021 | Skor klaster basi: `skor_keparahan`/`skor_prioritas` tidak dihitung ulang setelah data Dapodik tersedia; back-calc `prioritas − votes` menyamarkan sebab. **Back-calc konsisten aritmetika** (`scoring.py:210-213` → `prioritas = keparahan + votes`), jadi bukan salah hitung melainkan snapshot basi | `scripts/run_clustering.py:204`, `routers/klaster.py:116`, `routers/vote.py:49,105` (**4 call site**) | ✅ SELESAI | Hitung langsung via `calculate_score_components` + skrip `recompute_skor.py`; dry-run 43 klaster → **1 berubah** (5dda3ac6: 55,86→75,66 / 61,86→81,66), commit DB live, rerun 0; pytest **169/169** |
+| DBG-022 | **Vote menghapus komponen Dapodik 30%**: `create_vote` & `PUT /vote/klaster/{id}/skor` (F3.14) hardcode `kondisi_dapodik = {"total": 0, ...}` tanpa query `KondisiSarana` → setiap vote + endpoint "hitung ulang" menulis skor keparahan dengan Dapodik = 0. Endpoint pemeliharaan justru merusak data | `routers/vote.py:46` (`create_vote`), `routers/vote.py:100` (F3.14) | ✅ SELESAI | Hardcode `total: 0` di 2 tempat; `0,3 × 66 = 19,8` = persis selisih DBG-021 → riwayat vote menjelaskan skor `5dda3ac6` |
+| DBG-023 | Laporan noise/sanggahan tervalidasi tidak tampil di Transparansi Publik (`RiwayatLaporan.tsx`) | `RiwayatLaporan.tsx`, `routers/laporan.py` | ✅ SELESAI | D-29: endpoint `GET /laporan/publik` + sub-filter Aduan Mandiri; `TRK-AUG-500-0460` terkonfirmasi tampil |
+| DBG-024 | Modal pertanyaan konfirmasi severity tidak muncul setelah submit laporan (banner pasif saja) — **dua jalur submit** | `FormLaporan.tsx:191`, `ModalFormLaporan.tsx:88` | ✅ SELESAI | Auto-open `setKonfirmasiOpen(true)` di kedua komponen; `ModalFormLaporan` sebelumnya membuang `res.konfirmasi` |
 
 ---
 
@@ -122,6 +135,194 @@
 - **Diagnosis ulang (F4.11):** hipotesis awal **salah** — `400 VALIDATION_ERROR` untuk Pydantic/query validation **sesuai** kontrak INTERFACES §0.3 (FE & test juga mengandalkan 400). Deviasi sebenarnya: `ERROR_CODES[422] = "REASON_REQUIRED"` berlaku untuk **semua** 422, sedangkan kontrak §4 mewajibkan `422 UNPROCESSABLE_ENTITY` untuk body enum invalid (`PUT /laporan/{id}/status`) — kode keliru `REASON_REQUIRED` selama ini lolos karena test hanya menAssert status.
 - **Penyelesaian (F4.11):** `app/core/exceptions.py::ApiError(status_code, code, detail)` membawa `api_code`; `http_exception_handler` memprioritaskan `getattr(exc, "api_code", None)` di atas peta status; `laporan.py` memakai `ApiError(422, "UNPROCESSABLE_ENTITY", …)`; baris kode baru di INTERFACES §0.3; union `ApiErrorCode` di `frontend/src/lib/api/errors.ts` += `UNPROCESSABLE_ENTITY`. Handler generik tetap 400 (tanpa perubahan kontrak massal).
 - **Verifikasi:** live `PUT /laporan/{id}/status` invalid → `422 {"code": "UNPROCESSABLE_ENTITY"}` (bukan `REASON_REQUIRED`); test `test_put_status_invalid_422` diperkuat assert code; generic validation tetap `400 VALIDATION_ERROR` (test lama lolos); 112/112.
+
+### DBG-012 ✅ — Rute `/dinas/*` tanpa guard: guest lihat "Data tidak dapat dimuat" (2026-10-18)
+
+- **Gejala:** membuka halaman `/dinas/*` tanpa login → tampilan normal tetapi semua panel gagal dengan "Data tidak dapat dimuat"; dilaporkan sebagai "backend tidak terhubung".
+- **Akar:** rute `/dinas/*` (`App.tsx:87-95`) tidak dibungkus `ProtectedRoute` (yang hanya terpasang di baris 68 & 76) → request dikirim tanpa token → 401. `ProtectedRoute.tsx` mengabaikan `isLoading` (redirect saat reload masih memuat) dan selalu mengarah ke `/login` (tanpa `loginPath` → user dinas salah tujuan). Copy basi `LogAuditPdp.tsx:200` ("Backend v1 belum menuliskan aksi sensitif") menambah kesan backend mati, padahal F4.10 sudah menulis audit (lihat DBG-005).
+- **Penyelesaian (2026-10-21):**
+  1. `frontend/src/components/auth/ProtectedRoute.tsx`:
+     - Tambah penanganan `isLoading` dengan spinner `Loader2` anggun agar tidak flicker/redirect saat reload sesi aktif.
+     - Tambah prop `loginPath` (default `"/login"`) dengan penanganan redirect query param yang benar.
+     - Tambah prop `allowedRoles?: Role[]` untuk autorisasi berbasis role.
+  2. `frontend/src/App.tsx`: Rute `/dinas` dibungkus `ProtectedRoute` dengan `loginPath="/dinas/login"` dan `allowedRoles={["admin", "verifikator_dinas", "kepala_dinas"]}`.
+  3. `frontend/src/pages/dinas/LogAuditPdp.tsx`: Copy basi pada empty state dirapikan menjadi *"Belum ada aksi sensitif tercatat di tabel audit_log."*
+- **Verifikasi:** Build frontend `npm run build` (tsc + vite) sukses tanpa error tipe.
+
+### DBG-013 ✅ — Profil pemerintah hardcode (nama/NIP/jabatan palsu) (2026-10-18)
+
+- **Gejala:** sidebar, header, dan dokumen cetak selalu menampilkan "Bambang H., S.T." + NIP `19820415 200801 1 009` + email `bambang.sarpras@lamongankab.go.id` + inisial "BH", apa pun akun yang login (`admin@simakis.id`, `kepala.dinas@…`, dll).
+- **Akar:** identitas ditulis hardcode saat layout/cetak dibuat; `DinasLayout.tsx` tidak memakai `useAuth` sama sekali (grep = 0). Model `User` (`models/user.py:24-34`) punya `nama/email/role/status_verifikasi` tetapi **tidak ada kolom NIP**; `/auth/me` (→ tipe `UserMe`) juga tidak mengembalikan NIP (grep `nip` di models & `types.ts` = 0).
+- **Dampak:** identitas salah pada UI harian **dan** dokumen cetak resmi (Ringkasan Eksekutif) — pelanggaran tata kelola akun.
+- **Penyelesaian (Opsi A, 2026-10-21):**
+  1. Migrasi Alembic `63a2411c6508_dbg_013_users_nip.py` menambahkan kolom `users.nip` (`VARCHAR(30)`, nullable).
+  2. Model `User` (`backend/app/models/user.py`) ditambahkan atribut `nip: Mapped[str | None]`.
+  3. Endpoint `GET /auth/me` (`backend/app/routers/auth.py`) dan tipe frontend `UserMe` (`frontend/src/lib/api/types.ts`) ditambahkan field `nip`.
+  4. Seed akun dinas (`backend/scripts/seed_dinas_accounts.py`) dan akun live diupdate dengan NIP resmi:
+     - `verifikator@simakis.id` (verifikator_dinas): `19840822 201001 1 007`
+     - `kepala.dinas@simakis.id` (kepala_dinas): `19720315 199803 1 004`
+     - `admin@simakis.id` (admin): `19790512 200501 1 003`
+  5. Dump database `database/simakis.sql` diregenerasi dan schema parity verified (98 kolom).
+  6. `frontend/src/layouts/DinasLayout.tsx`: Sidebar bawah, profile flyout dropdown, dan modal profil verifikator diubah dinamis membaca `user.nama`, `user.email`, `user.nip`, `roleLabel`, dan inisial otomatis.
+  7. `frontend/src/components/composite/CetakRingkasanEksekutif.tsx`: Metadata pencetak dan tanda tangan verifikator kini dinamis mengambil nama, jabatan/peran, dan NIP akun yang sedang mencetak dokumen.
+- **Verifikasi:** `verify_schema_parity.py` PARITY OK (98 kolom) · pytest **169/169** lulus · frontend build (`npm run build`) sukses tanpa error.
+
+### DBG-014 🔴 — Test klasterisasi hanya data sintetis (2026-10-18)
+
+- **Gejala:** `test_ai_pipeline.py` & `test_evaluation.py` memakai teks buatan pendek; tidak ada test yang menjalankan pipeline terhadap laporan nyata di DB (600 baris) → penurunan kualitas atau crash pada data riil tak tertangkap suite.
+- **Akar:** test ditulis unit-oriented (cepat & deterministik); uji data riil hanya dilakukan manual lewat skrip ablation.
+- **Rencana:**
+  1. Test integrasi baru (mis. `tests/test_cluster_real_cases.py`): seed 600 laporan → jalankan `default_pipeline.run(...)` → assert: tanpa exception; ≥2 klaster terbentuk; semua `kategori` dalam enum valid; setiap laporan berlabel `terklaster`/`noise`; rasio noise di bawah ambang longgar (mis. < 60%) agar tidak rapuh.
+  2. Tandai `@pytest.mark.integration` bila runtime > 30 s; target suite ≥ 113 test (kini 112).
+  3. Opsional: assert determinisme — run ulang pada data sama → label identik.
+- **Verifikasi:** pytest penuh (recreate `simakis_test` dulu) + bandingkan hasil dengan ablation terakhir.
+
+### DBG-015 ⚪ — Uji ablasi "laporan dinamis" belum tersedia (2026-10-18)
+
+- **Gejala:** permintaan mengevaluasi keoptimalan komponen (A1/A2/A3) terhadap laporan yang terus bertambah; kini `run_ablation.py` memang membaca DB (dinamis + fingerprint cache), **tetapi** ground truth `manual_clusters.json` statis (5 klaster / 45 dokumen berlabel + 27 tie-breaker, fingerprint `46ff8dc4`) — laporan baru tanpa label GT tidak ikut dievaluasi.
+- **Dampak:** re-run "pada data live" tetap mengukur hanya subset lama; kesimpulan keoptimalan bisa basi ketika laporan bertambah.
+- **Rencana (keputusan ⚪ — makna "dinamis"):**
+  - **Opsi A (rekomendasi):** re-run sekarang pada data live; GT lama dipakai untuk subset ber-label dan cakupannya dicatat eksplisit (mis. 45/600) di `ABLATION_RESULTS.md`.
+  - **Opsi B:** anotasi GT baru tiap batch laporan (kerja manual, akurasi tertinggi).
+  - **Opsi C:** pakai jalur augmentasi eksisting (n=45 → 1500) untuk uji robustness komponen.
+- **Verifikasi:** tabel ablation baru (NMI/ARI per konfigurasi + waktu run) dibanding hasil lama; config optimal tetap A2+B1+C2+D1 atau usulkan perubahan (butuh keputusan D-xx baru di `DECISIONS.md`).
+
+### DBG-016 🔴 — Embedding Potion/mxbai belum dievaluasi (2026-10-18)
+
+- **Gejala:** permintaan evaluasi "Potion mxbai"; grep `potion|mxbai` di seluruh repo = 0. Fakta riset (HF API): `mixedbread-ai/mxbai-embed-large-v1` = 335M param, **English-only** (tag `en`) → bukan kandidat untuk teks Indonesia; `minishlab/potion-multilingual-128M` = static embedding (model2vec) multilingual → kandidat layak. Konteks: production kini TF-IDF 300 dimensi (`pipeline.py:26`), `EMBEDDING_MODEL` (`config.py:40`) dead config, ablation A1 = `paraphrase-multilingual-MiniLM-L12-v2` (bukan IndoBERT).
+- **Rencana:**
+  1. Riset final Potion multilingual (lisensi, ukuran model, kebutuhan paket `model2vec`, ketergantungan jaringan untuk unduh) — lane riset.
+  2. `embedding.py`: `embed_texts(method="potion")` lazy-load + fallback otomatis ke TF-IDF saat model tak tersedia/offline.
+  3. Varian ablation **A4 (Potion)** vs A1 (MiniLM) & A3 (TF-IDF) pada GT yang sama → tabel NMI/ARI + waktu run.
+  4. Keputusan adopsi: menang → ganti default pipeline + catat di `DECISIONS.md` (D-xx baru); kalah/terlalu berat → tetap TF-IDF, hasil tetap didokumentasikan di `ABLATION_RESULTS.md`.
+- **Verifikasi:** hasil ablation terdokumentasi; bila diadopsi → smoke pipeline + pytest + regresi cron.
+
+### DBG-017 ✅ — Klarifikasi RBAC verifikasi teknis (Verifikator) vs pengawasan (Kepala Dinas) (2026-10-18 / Solusi 2026-10-22)
+
+- **Gejala:** 
+  1. Di Antrian Validasi, aksi "Verifikasi Mismatch" tidak bisa dilakukan oleh `kepala_dinas` (menghasilkan 403 / tombol terblokir).
+  2. Di Laporan Perlu Review, verifikasi ratusan aduan noise/mandiri dibebankan ke `kepala_dinas`, menciptakan bottleneck birokrasi dan tidak selaras dengan pembagian kerja dinas.
+- **Akar (temuan & kajian birokrasi):** Berdasarkan Permendagri No. 8/2023 dan pedoman penanganan pengaduan SP4N-LAPOR!, verifikasi bukti fisik/lapangan adalah wewenang **Pejabat Pengelola Pengaduan (Verifikator Dinas)**, sedangkan Kepala Dinas adalah **Pejabat Pembina/Pengarah** yang berfokus pada disposisi, persetujuan status penanganan akhir, dan fungsi pengawasan.
+- **Penyelesaian (2026-10-22 — D-30):**
+  1. `backend/app/routers/laporan.py`:
+     - `require_review_read = RoleChecker(["admin", "verifikator_dinas", "kepala_dinas"])` pada `GET /laporan/perlu-review` — Kepala Dinas dan Verifikator dapat melihat antrean laporan noise.
+     - `require_review_write = RoleChecker(["admin", "verifikator_dinas"])` pada `PUT /laporan/{id}/status` — aksi validasi/tolak laporan diserahkan ke staf teknis verifikator. `kepala_dinas` read-only.
+  2. `frontend/src/pages/dinas/LaporanPerluReview.tsx`:
+     - `bolehAksi = role === "admin" || role === "verifikator_dinas"`.
+     - Tampilan Kepala Dinas diberikan banner penanda mode pengawasan (read-only).
+  3. `frontend/src/pages/dinas/AntrianValidasi.tsx`:
+     - Tombol verifikasi mismatch tetap khusus `verifikator_dinas` sesuai alur penanganan teknis.
+  4. Dokumen kontrak `INTERFACES.md` §4, keputusan produk `DECISIONS.md` §D-30, dan `DEBUGGING.md` diselaraskan.
+- **Verifikasi:** Test regresi `test_blackbox.py` memvalidasi verifikator dapat review/update, kepala dinas read-only, dan warga tetap 403.
+
+---
+
+### DBG-018 ✅ — Warga terdaftar tidak bisa vote; mekanisme `pending→terhitung` tidak ada (2026-10-18 / Solusi 2026-10-22)
+
+- **Gejala:** user baru daftar → login → klik vote → 403 "Hanya warga terverifikasi atau komite sekolah yang dapat memvote."
+- **Akar:** register default `role=warga_umum`, `status_verifikasi=menunggu` (`models/user.py:28`); `require_warga = RoleChecker(["warga_terverifikasi","komite_sekolah"])` (`vote.py:20`) menolak `warga_umum`; **tidak ada endpoint manajemen user sama sekali** (grep = 0) dan tidak ada halaman verifikasi warga di admin dinas → tidak ada jalur menaikkan role → vote terblokir selamanya.
+- **Inkonsistensi D-08:** vote dibuat `status_vote="pending"` tetapi `jumlah_vote_terhitung` langsung +1 (`vote.py:40-43`); tidak ada kode/cron yang memproses `pending → terhitung` → fitur anti-buzzer D-08 setengah jadi (vote "pending" sudah ikut mengubah skor).
+- **Penyelesaian (2026-10-22 — D-28):**
+  1. `backend/app/routers/vote.py`: `require_warga = RoleChecker(["warga_umum", "warga_terverifikasi", "komite_sekolah"])` — mengizinkan seluruh warga yang terdaftar & terotentikasi untuk vote. Staf dinas (`verifikator_dinas`, `kepala_dinas`, `admin`) tetap ditolak (403) agar suara murni dari warga.
+  2. `frontend/src/pages/warga/DashboardWilayah.tsx`: `ROLE_BOLEH_VOTE = ["warga_umum", "warga_terverifikasi", "komite_sekolah"]`, pesan error diselaraskan: *"Vote hanya untuk akun warga dan komite sekolah."*
+  3. Dokumen kontrak `docs/universal/INTERFACES.md` §680 dan keputusan produk `docs/universal/DECISIONS.md` §D-28 diperbarui.
+  4. Test regresi `test_blackbox.py` memverifikasi `warga_umum` dapat vote dan staf dinas tetap 403.
+- **Verifikasi:** pytest lulus (warga_umum 200/201, staf 403) · `npm run build` frontend hijau.
+
+### DBG-019 ✅ — Navbar warga hanya 3 menu (2026-10-18)
+
+- **Gejala:** setelah login warga, navbar hanya "Dashboard · Direktori Sekolah · Riwayat Laporan" (`WargaLayout.tsx:33-35`), sedangkan navbar publik punya 5 (`PublicLayout.tsx:33-37`); pintasan "Buat Laporan" (`/laporan/baru`) tidak ada di menu mana pun.
+- **Akar:** `WargaLayout` dibuat terpisah dari `PublicLayout` dan tidak pernah disinkronkan.
+- **Penyelesaian (2026-10-21):**
+  1. `frontend/src/layouts/WargaLayout.tsx`:
+     - Menambahkan navigasi lengkap: "Dashboard", "Dashboard Wilayah" (`/laporan/wilayah`), "Direktori Sekolah" (`/sekolah`), "Riwayat Laporan" (`/laporan/riwayat`), dan "Tentang Data" (`/tentang`).
+     - Menambahkan tombol aksi primer `"Buat Laporan"` mengarah ke `/laporan/baru` di area kanan navbar warga sebelum profil/tombol keluar.
+- **Verifikasi:** Build frontend `npm run build` lulus tanpa error, styling konsisten dengan PublicLayout.
+
+### DBG-020 ⚪ — Verifikasi email tidak ada sama sekali (2026-10-18)
+
+- **Gejala:** registrasi langsung aktif tanpa bukti kepemilikan email; `status_verifikasi` tidak pernah diubah oleh alur apa pun.
+- **Akar:** tidak ada kode SMTP/token verifikasi di backend (grep `SMTP|send_mail|token verifikasi` = 0); `requirements.txt` tanpa pustaka email; tidak ada endpoint konfirmasi.
+- **Dampak:** D-08 (vote akun baru "Pending" sampai verifikasi) tanpa dasar teknis; akun massal mudah dibuat; jalur naik role warga (DBG-018) ikut mandek.
+- **Rencana (keputusan ⚪):**
+  - **Opsi A (tahap 1, rekomendasi):** mode dev — token verifikasi disimpan di DB, link dikembalikan di response / ditulis ke log **hanya saat `DEBUG`** (jangan di produksi).
+  - **Opsi B:** SMTP nyata — butuh kredensial `.env SMTP_*` dari pemilik + pustaka (`aiosmtplib`/`fastapi-mail`).
+  - **Opsi C (target akhir):** dua mode — SMTP bila terkonfigurasi, fallback token-log bila tidak.
+  - Endpoints: `POST /auth/verifikasi-email/kirim`, `POST /auth/verifikasi-email/konfirmasi`; on-success → `status_verifikasi='terverifikasi'` + (kebijakan DBG-018) role → `warga_terverifikasi`; FE: banner "email belum diverifikasi" + halaman `/verifikasi-email?token=…`.
+- **Verifikasi:** alur penuh daftar → konfirmasi → vote OK; tanpa konfirmasi → vote tetap terblokir; uji negatif token salah/kedaluwarsa.
+
+### DBG-021 ✅ — Skor klaster basi setelah data Dapodik masuk (2026-10-20)
+
+- **Gejala:** klaster `5dda3ac6-7ed9-478b-9e71-fd9835b56c58` (5 laporan: 1 sedang, 1 ringan, 3 berat) menyimpan `skor_keparahan = 55,86`, `skor_prioritas = 61,86`, `jumlah_vote_terhitung = 6`. Hitung ulang dari sumber saat ini: `skor_laporan = 79,8`, `skor_dapodik = 66,0` → `skor_keparahan = 75,66`, `skor_prioritas = 81,66`. Selisih **19,8** pada kedua field.
+- **Akar (indikasi kuat):** `0,7 × 79,8 = 55,86` tepat sama dengan nilai tersimpan → saat skor terakhir ditulis, komponen Dapodik **0**. Skor tidak pernah dihitung ulang setelah data Dapodik terisi, sehingga snapshot lama bertahan. Back-calc `skor_keparahan = skor_prioritas − votes` selalu konsisten secara aritmetika, jadi bug ini tidak terlihat sebagai "selisih perhitungan"; ia hanya menyimpan komponen severity yang sudah basi.
+- **Koreksi (21 Okt 2026, audit Hermes):** kalimat "back-calc selalu konsisten secara aritmetika" **benar** dan sudah terverifikasi — `scoring.py:210-213` memang menghitung `skor_keparahan = 0,7×laporan + 0,3×dapodik` lalu `skor_prioritas = skor_keparahan + votes`, sehingga `prioritas − votes` mengembalikan `keparahan` dengan **tepat**. Karena itu **root cause bukan pada back-calc**, melainkan pada (a) snapshot yang tidak pernah dihitung ulang **dan** (b) **DBG-022** — `vote.py` menulis ulang skor dengan Dapodik nol.
+- **Koreksi lokasi:** jumlah call site back-calc = **4**, bukan 2 — `run_clustering.py:204`, `klaster.py:116`, `vote.py:49`, `vote.py:105`. Nomor baris lama (`run_clustering.py:161`) sudah kedaluwarsa.
+- **Koreksi penting — `klaster.py:103-110` BUKAN pelaku.** Blok itu justru **query `KondisiSarana` dan mengisi** `kondisi_dapodik` dengan benar (identik dengan `run_clustering.py:189-194`). Yang cacat di `klaster.py` hanya **baris 116** (back-calc). Hanya `vote.py:46,100` yang meng-hardcode nol **tanpa query**. Menyamakan keduanya membuat perbaikan salah sasaran.
+- **Konsekuensi urutan perbaikan:** DBG-022 harus didahulukan atas back-calc — DBG-022 merusak data **secara aktif** tiap ada vote, sedangkan back-calc hanya menyimpan nilai basi.
+- **Dampak:** peringkat/level klaster bisa understated. Live: 1 dari 43 klaster terkonfirmasi; perlu audit menyeluruh sebelum menyimpulkan hanya satu.
+- **Rencana (urutan final, 21 Okt 2026):**
+  1. **DBG-022 dulu** — tambah helper `hitung_kondisi_dapodik(db, npsn)` di `scoring.py`, pakai di `vote.py:46` dan `vote.py:100`. Ini **wajib**, bukan opsional: tanpa ini recompute apa pun akan langsung dirusak vote berikutnya.
+  2. Tambah `calculate_components(kondisi_laporan, kondisi_dapodik, votes) -> tuple[float, float]` (atau ubah `calculate_priority_score` agar mengembalikan `(skor_keparahan, skor_prioritas)`); pakai langsung di **4** call site; hapus semua back-calc.
+  3. `scripts/recompute_skor.py` — hitung ulang **semua** klaster dari `laporan` + `kondisi_sarana` + votes (dry-run default); audit berapa klaster berubah, **jangan asumsikan hanya 1 dari 43**.
+  4. Test regresi: skor tersimpan == hitung ulang (toleransi 0,01) + test khusus **"vote tidak menghapus komponen Dapodik"**.
+- **Verifikasi:** jalankan recompute 43 klaster → selisih 0 · pytest regresi lulus · catat jumlah klaster yang berubah di CHANGELOG.
+
+---
+
+- **Penyelesaian (2026-10-21):**
+  1. `scoring.py` — fungsi baru `calculate_score_components(...) -> (skor_keparahan, skor_prioritas)` (hitung langsung, tanpa mundur) + `hitung_kondisi_dapodik(db, npsn)` (satu sumber agregasi Dapodik). `calculate_priority_score` **kontrak lama dipertahankan** (return float, delegasi ke komponen) — `test_scoring_null` lulus tanpa perubahan.
+  2. 4 call site back-calc diganti pemakaian tuple: `run_clustering.py`, `routers/klaster.py`, `routers/vote.py` (create_vote + F3.14). Duplikasi query `KondisiSarana` di 2 file dihapus, kini lewat helper.
+  3. **`scripts/recompute_skor.py`** — skrip sekali jalan, dry-run default, `--commit` menulis, idempoten; toleransi 0,01.
+- **Verifikasi:** pytest **169/169** (163 base + 6 test regresi baru di `tests/test_recompute_skor.py`) · dry-run live: **43 klaster diperiksa, 1 berubah** — `5dda3ac6` 55,86/61,86 → **75,66/81,66** (selisih 19,8 = 0,3×66 sesuai prediksi) · `--commit` ditulis · rerun → **0 berubah** (idempoten) · tidak ada noise line-ending (HEAD & working tree sama-sama LF).
+
+### DBG-022 ✅ — Vote menghapus komponen Dapodik 30% (2026-10-21)
+
+- **Gejala:** setiap kali warga memberi vote, `skor_keparahan` klaster **turun** jauh lebih banyak daripada yang wajar — seolah kondisi fasilitas membaik padahal tidak ada data baru. Endpoint resmi **F3.14 `PUT /vote/klaster/{id}/skor`** ("Hitung Ulang Skor Prioritas") memperparah, bukan memperbaiki: nilai yang dihasilkan lebih salah daripada sebelum dipanggil.
+- **Akar:** dua tempat mengirim `kondisi_dapodik` **hardcoded nol** tanpa membaca tabel `KondisiSarana`:
+  - `routers/vote.py:46` (`create_vote`) — `kondisi_dapodik = {"total": 0, "berat": 0, "sedang": 0, "ringan": 0}`
+  - `routers/vote.py:100` (F3.14 `PUT …/skor`) — **baris identik**
+  Karena `calculate_priority_score` menghitung `skor_keparahan = 0,7×laporan + 0,3×dapodik`, mengirim Dapodik nol **menghapus seluruh bobot 30%**. Skor keparahan hanya menyisakan komponen laporan warga.
+- **Bukti numerik:** klaster `5dda3ac6` menyimpan `skor_keparahan = 55,86`; `skor_laporan = 79,8` → `0,7 × 79,8 = 55,86` **tepat**. Padahal dengan Dapodik terisi (`skor_dapodik = 66,0`), nilai seharusnya `75,66`. Selisih **19,8 = 0,3 × 66** persis. Jadi nilai tersimpan konsisten dengan "Dapodik di-nol-kan", bukan dengan "data Dapodik belum ada".
+- **Hubungan dengan DBG-021 — bukan duplikat:** DBG-021 = snapshot basi (dihitung sekali, tidak pernah diperbarui). DBG-022 = **kerusakan aktif berulang**: tiap vote/laporan baru menulis ulang skor dengan Dapodik nol. DBG-021 menjelaskan *mengapa nilai lama* bertahan; DBG-022 menjelaskan *mengapa nilai baru* tetap salah. Memperbaiki DBG-021 saja tidak menghentikan kerusakan.
+- **Penyelesaian (2026-10-21):** helper `hitung_kondisi_dapodik(db, npsn)` di `scoring.py` dipakai kedua titik keras (`vote.py` create_vote + endpoint F3.14) — query `KondisiSarana` yang sama dengan `klaster.py`/`run_clustering.py`. Kedua endpoint kini menulis `skor_keparahan`/`skor_prioritas` dari `calculate_score_components` (tanpa back-calc).
+- **Verifikasi:** test regresi `tests/test_recompute_skor.py::TestVotePertahankanDapodik` (vote & F3.14 mempertahankan komponen Dapodik: 0,7×100 + 0,3×50 = 85, bukan 70) · pytest **169/169**.
+- **Dampak:** peringkat & level klaster **understated** setiap ada aktivitas vote. `skor_prioritas` juga ikut turun karena dibangun dari `skor_keparahan`. Pada sistem produksi, isu yang paling banyak divote justru bisa turun peringkatnya — kebalikan dari tujuan fitur vote.
+- **Catatan audit (21 Okt 2026, Hermes):** temuan ini berasal dari analisis opencode dan **tervalidasi** — pembacaan langsung `vote.py:46` dan `vote.py:100` mengonfirmasi hardcode `total: 0` di kedua tempat. Satu bagian klaim opencode **ditolak**: `klaster.py:103-110` disebut sebagai pelaku, padahal blok itu benar-benar query `KondisiSarana` dan mengisi Dapodik (sama seperti `run_clustering.py:189-194`); yang cacat di `klaster.py` hanya baris 116 (back-calc, ranah DBG-021).
+- **Rencana:**
+  1. Ekstrak helper bersama di `scoring.py` — `hitung_kondisi_dapodik(db, npsn) -> dict` — memuat query `KondisiSarana` + agregasi yang kini terduplikasi di `run_clustering.py:189-194` dan `klaster.py:102-110`.
+  2. Pakai helper tersebut di `vote.py:46` **dan** `vote.py:100`; hapus kedua literal nol.
+  3. Satukan dengan perbaikan DBG-021 langkah 2 (`calculate_components`) agar 4 call site tidak memakai back-calc.
+  4. Test regresi khusus: buat vote pada klaster bersekolah dengan `KondisiSarana` terisi → pastikan `skor_keparahan` **tidak turun** dan tetap memuat komponen Dapodik; ditambah uji negatif bahwa memanggil F3.14 **tidak** mengubah nilai bila data sumber tidak berubah.
+- **Verifikasi yang diharapkan:** setelah perbaikan + `scripts/recompute_skor.py`, `5dda3ac6` berubah dari `55,86 → 75,66` (dan `61,86 → 81,66`); jumlah klaster yang berubah dicatat di CHANGELOG §3.x; pytest lulus.
+
+### DBG-023 ✅ — Laporan noise tervalidasi tidak muncul di Transparansi Publik (2026-10-22)
+
+- **Gejala:** Laporan warga yang diverifikasi oleh Kepala Dinas melalui `/dinas/perlu-review` (contoh kasus: SMP SUNAN GIRI 1 LAMONGAN, `TRK-AUG-500-0460`, `status_sanggahan = 'divalidasi'`) tidak pernah muncul pada tab "Transparansi Publik" di halaman `/laporan/riwayat`.
+- **Akar:** Tab Transparansi Publik di `frontend/src/pages/warga/RiwayatLaporan.tsx:128-130` hanya memanggil `GET /klaster` (daftar klaster hasil agregasi AI). Laporan noise atau non-klaster (`klaster_id IS NULL`) yang divalidasi dinas tidak memiliki rekaman klaster, sehingga secara struktural terabaikan dari tampilan publik.
+- **Dampak:** Hasil verifikasi dinas atas aduan warga tidak terlihat secara transparan oleh masyarakat umum, seolah-olah aduan hilang setelah diverifikasi.
+- **Penyelesaian (2026-10-22 — D-29):**
+  1. Backend `routers/laporan.py`: Endpoint publik baru `GET /laporan/publik` (akses publik, filter `status_sanggahan == 'divalidasi'` & `klaster_id IS NULL`), de-identifikasi `user_id` menjadi string kosong demi kepatuhan UU PDP.
+  2. Frontend `api/laporan.ts`: Menambahkan fungsi `listLaporanPublik()`.
+  3. Frontend `RiwayatLaporan.tsx`: Menambahkan sub-filter pemisah `[Klaster Isu Sarpras]` vs `[Aduan Mandiri Tervalidasi]` pada tab Transparansi Publik. Aduan mandiri dirender dalam kartu khusus ber-badge hijau `✓ Terverifikasi Dinas (Aduan Mandiri)`.
+  4. Kontrak `INTERFACES.md` §4 dan keputusan `DECISIONS.md` §D-29 diperbarui.
+- **Verifikasi:** Test regresi `test_laporan_publik_hanya_divalidasi_tanpa_klaster` di `test_blackbox.py` lulus · `GET /laporan/publik` live mengembalikan 1 item (`TRK-AUG-500-0460`, SMP Sunan Giri 1) · `npm run build` frontend hijau.
+
+### DBG-024 ✅ — Modal pertanyaan konfirmasi severity tidak muncul setelah submit laporan (2026-10-22)
+
+- **Gejala:** Warga mengirim laporan baru (contoh: `LAP-20261022-80C7F626`, deskripsi plafon mau jatuh), laporan tersimpan dengan `status_konfirmasi = 'menunggu'`, tetapi **modal popup pertanyaan konfirmasi tidak pernah muncul**. Yang terlihat hanya banner biru di halaman sukses.
+- **Akar:** `frontend/src/pages/warga/FormLaporan.tsx` — state `konfirmasiOpen` diinisialisasi `false` dan **tidak pernah diset `true`** di `handleSubmit`. Saat respons `POST /laporan` berisi `konfirmasi.perlu_konfirmasi = true`, kode hanya menyetel `perluKonfirmasi` dan `konfirmasiStatus = "menunggu"` (baris 191-192), sehingga modal tetap tertutup dan hanya banner pasif yang muncul — mudah terlewat oleh warga.
+- **Bukti backend tidak bermasalah:** `pilih_pertanyaan()` untuk deskripsi kasus di atas mengembalikan **2 pertanyaan** (`bagian`, `gejala_plafon`) → `perlu_konfirmasi = len(pertanyaan) > 1` = `true`. Jadi pemicu backend benar; cacat ada di sisi FE.
+- **Penyelesaian (2026-10-22):**
+  1. `FormLaporan.tsx` — tambah `if (res.konfirmasi?.perlu_konfirmasi) setKonfirmasiOpen(true)` setelah state konfirmasi disetel, sehingga modal langsung terbuka begitu laporan berhasil dikirim.
+  2. Kondisi banner diperluas menjadi `konfirmasiStatus === null || konfirmasiStatus === "menunggu"` — bila warga menutup modal tanpa menjawab, banner "Jawab Sekarang" tetap tersedia sebagai jalur alternatif (kontrak §19.6: opsional, tidak memblokir laporan).
+- **Verifikasi:** `npm run build` frontend hijau (tsc + vite) · jalur manual dipertahankan: `PertanyaanKonfirmasi` juga dapat dibuka dari `RiwayatLaporan.tsx` selama `status_konfirmasi = 'menunggu'`.
+- **Catatan perilaku:** modal hanya terbuka bila `perlu_konfirmasi = true` (≥ 2 pertanyaan, yaitu ada `bagian` + minimal satu gejala terdeteksi). Deskripsi yang tidak memicu deteksi komponen apa pun hanya menghasilkan 1 pertanyaan → `false`, sesuai kontrak §4.1.
+- **Koreksi lanjutan (22 Okt, 21:40 WIB) — ada DUA jalur submit, jalur kedua terlewat:**
+  - Gejala berulang: setelah perbaikan pertama + hard reload, submit baru (`LAP-20261022-0D8D9813`, NPSN `70002205`) tetap tanpa pertanyaan.
+  - **Akar sebenarnya:** perbaikan pertama hanya menyentuh `pages/warga/FormLaporan.tsx`. Jalur yang dipakai warga (klik **"Buat Aduan Baru"** → dari `DetailSekolah.tsx:686`) memakai komponen berbeda: **`components/composite/ModalFormLaporan.tsx`**, yang memanggil `kirimLaporan()` tetapi **membuang `res.konfirmasi`** dan tidak pernah merender `PertanyaanKonfirmasi`. Bukti: laporan `0D8D9813` ber-NPSN `70002205` = nilai default hardcode `initialNpsn` komponen itu, dan deskripsinya tanpa prefix tipe temuan (ciri jalur modal, bukan `FormLaporan`).
+  - **Penyelesaian:** `ModalFormLaporan.tsx` — simpan `laporanId` + `perluKonfirmasi`; auto-open `PertanyaanKonfirmasi` (nested dialog) saat `perlu_konfirmasi`; tombol "Jawab Sekarang" sebagai jalur alternatif bila ditutup; penanda "terjawab" di layar sukses; reset state di `handleReset`.
+  - **Verifikasi:** `npx tsc --noEmit` bersih · `npm run build` hijau · Vite dev server mengonfirmasi modul ter-transform memuat `if (res.konfirmasi?.perlu_konfirmasi) setKonfirmasiOpen(true)` dan `PertanyaanKonfirmasi`.
+  - **Pelajaran:** jangan asumsikan satu jalur submit — di repo ini ada dua (`FormLaporan.tsx` halaman penuh dan `ModalFormLaporan.tsx` modal dari DetailSekolah); setiap perubahan perilaku pasca-submit wajib dicek di keduanya.
 
 ---
 

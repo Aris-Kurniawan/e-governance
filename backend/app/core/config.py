@@ -38,6 +38,12 @@ class Settings(BaseSettings):
 
     # AI Pipeline
     EMBEDDING_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    # D-24: kekuatan prior shrinkage skor laporan (kebijakan, default 5).
+    SHRINKAGE_K: int = 5
+    # F4.16: tulis severity otomatis di cron. Default OFF sampai ablation
+    # K1–K4 selesai — jangan menimpa 600 laporan dengan baseline mentah.
+    SEVERITY_ENABLED: bool = False
+    SEVERITY_METHOD: str = "k1"  # k1 | k2 | k3 | k4 (artefak terlatih)
 
     # CORS — hanya relevan untuk pengembangan lokal, ketika frontend Vite
     # (:5173) memanggil API ini (:8000) langsung dari browser.

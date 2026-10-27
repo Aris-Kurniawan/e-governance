@@ -1,4 +1,5 @@
 import { useMemo } from "react"
+import { useAuth } from "@/context/AuthContext"
 import { useFetch } from "@/hooks/useFetch"
 import { listKlaster } from "@/lib/api/klaster"
 import { listSekolah } from "@/lib/api/sekolah"
@@ -12,6 +13,11 @@ const thClass =
 const tdClass = "border border-slate-400 px-2 py-1.5 text-[11px]"
 
 export const CetakRingkasanEksekutif = ({ semester }: CetakRingkasanEksekutifProps) => {
+  const { user, roleLabel } = useAuth()
+  const namaPetugas = user?.nama || "Petugas Dinas"
+  const nipPetugas = user?.nip || "—"
+  const jabatanPetugas = roleLabel || "Verifikator Sarpras"
+
   const tanggalCetak = new Date().toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
@@ -91,7 +97,7 @@ export const CetakRingkasanEksekutif = ({ semester }: CetakRingkasanEksekutifPro
           Periode: <strong>{semester}</strong>
         </p>
         <p className="text-[10px] text-slate-700 mt-0.5">
-          Dicetak pada {tanggalCetak} · Oleh: Bambang H., S.T. (Verifikator Sarpras)
+          Dicetak pada {tanggalCetak} · Oleh: {namaPetugas} ({jabatanPetugas})
         </p>
       </div>
 
@@ -252,10 +258,10 @@ export const CetakRingkasanEksekutif = ({ semester }: CetakRingkasanEksekutifPro
         </div>
         <div className="text-center">
           <p>Lamongan, {tanggalCetak}</p>
-          <p>Verifikator Sarpras</p>
+          <p>{jabatanPetugas}</p>
           <div className="h-16" />
-          <p className="border-t border-black pt-1 font-bold">Bambang H., S.T.</p>
-          <p className="text-[10px] font-mono">NIP. 19820415 200801 1 009</p>
+          <p className="border-t border-black pt-1 font-bold">{namaPetugas}</p>
+          <p className="text-[10px] font-mono">NIP. {nipPetugas}</p>
         </div>
       </div>
     </div>

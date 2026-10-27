@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext"
 
 export default function WargaLayout() {
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { user, roleLabel, logout } = useAuth()
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -29,17 +29,31 @@ export default function WargaLayout() {
               </div>
             </Link>
 
-            <nav className="hidden items-center gap-1 md:flex">
+            <nav className="hidden items-center gap-1.5 md:flex">
               <Nav active={location.pathname === "/dashboard"} to="/dashboard" label="Dashboard" />
+              <Nav active={location.pathname === "/laporan/wilayah"} to="/laporan/wilayah" label="Dashboard Wilayah" />
               <Nav active={location.pathname.startsWith("/klaster")} to="/klaster" label="Klaster Isu" />
               <Nav active={location.pathname.startsWith("/sekolah")} to="/sekolah" label="Direktori Sekolah" />
               <Nav active={location.pathname.startsWith("/laporan/riwayat")} to="/laporan/riwayat" label="Riwayat Laporan" />
+              <Nav active={location.pathname === "/tentang"} to="/tentang" label="Tentang Data" />
             </nav>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="hidden text-body-sm text-ink-secondary md:block">{user?.nama || "Siti Aminah"}</span>
-            <Button variant="ghost" size="sm" onClick={logout} className="cursor-pointer">
+            <Button
+              asChild
+              size="sm"
+              className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-sm cursor-pointer"
+            >
+              <Link to="/laporan/baru">
+                Buat Laporan
+              </Link>
+            </Button>
+            <div className="hidden md:flex flex-col items-end leading-tight">
+              <span className="text-body-sm font-bold text-ink">{user?.nama || "Warga"}</span>
+              <span className="text-[10px] text-blue-700 font-semibold">{roleLabel || "Warga Terdaftar"}</span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={logout} className="cursor-pointer text-slate-600 hover:text-rose-600 text-xs">
               Keluar
             </Button>
           </div>

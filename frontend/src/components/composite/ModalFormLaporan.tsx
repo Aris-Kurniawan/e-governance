@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { kirimLaporan } from "@/lib/api/laporan"
+import PertanyaanKonfirmasi from "@/components/warga/PertanyaanKonfirmasi"
 import {
   CheckCircle2,
   Send,
@@ -44,6 +45,13 @@ export default function ModalFormLaporan({
   const [errorGagal, setErrorGagal] = useState<string | null>(null)
   const [fotoFile, setFotoFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  // DBG-024 — konfirmasi severity juga harus tersedia di jalur modal ini
+  // (sebelumnya hanya ada di FormLaporan.tsx, sehingga warga lewat DetailSekolah
+  // tidak pernah mendapat pertanyaan).
+  const [laporanId, setLaporanId] = useState<string | null>(null)
+  const [perluKonfirmasi, setPerluKonfirmasi] = useState(false)
+  const [konfirmasiOpen, setKonfirmasiOpen] = useState(false)
+  const [konfirmasiSelesai, setKonfirmasiSelesai] = useState(false)
 
   const displayName = namaSekolah || "SMAN 1 Sukodadi"
   const displayNpsn = initialNpsn || "70002205"
@@ -57,6 +65,10 @@ export default function ModalFormLaporan({
     setTrackingId(null)
     setErrorGagal(null)
     setLoading(false)
+    setLaporanId(null)
+    setPerluKonfirmasi(false)
+    setKonfirmasiOpen(false)
+    setKonfirmasiSelesai(false)
   }
 
   const handleClose = () => {
@@ -92,6 +104,10 @@ export default function ModalFormLaporan({
       })
       setTrackingId(res.tracking_id)
       setErrorGagal(null)
+      // DBG-024 — tandai & buka modal pertanyaan konfirmasi severity.
+      setLaporanId(res.id)
+      setPerluKonfirmasi(res.konfirmasi?.perlu_konfirmasi === true)
+      if (res.konfirmasi?.perlu_konfirmasi) setKonfirmasiOpen(true)
     } catch (err) {
       setErrorGagal(err instanceof Error ? err.message : "Gagal mengirim laporan.")
     } finally {
@@ -117,6 +133,29 @@ export default function ModalFormLaporan({
                 Tracking ID: <strong className="font-mono text-slate-900">{trackingId}</strong>
               </div>
             </div>
+
+            {/* DBG-024 — jalur alternatif bila modal pertanyaan ditutup */}
+            {perluKonfirmasi && !konfirmasiSelesai && !konfirmasiOpen && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3.5 text-left space-y-2.5">
+                <p className="text-xs text-blue-950 leading-relaxed">
+                  <strong>AI menemukan pola pada deskripsimu</strong> — jawab beberapa pertanyaan
+                  singkat agar tingkat kerusakan lebih akurat. Boleh dilewati, laporanmu tetap sah.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setKonfirmasiOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 cursor-pointer"
+                >
+                  Jawab Sekarang
+                </button>
+              </div>
+            )}
+            {konfirmasiSelesai && (
+              <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Konfirmasi tingkat
+                kerusakan terjawab — terima kasih.
+              </p>
+            )}
 
             <div className="flex flex-wrap justify-center gap-3 pt-2">
               <Button asChild className="bg-[#64748b] hover:bg-[#475569] text-white font-medium rounded-xl">
@@ -398,6 +437,20 @@ export default function ModalFormLaporan({
           </div>
         )}
       </DialogContent>
+
+      {/* DBG-024 — modal pertanyaan konfirmasi severity (nested dialog). */}
+      {laporanId && (
+        <PertanyaanKonfirmasi
+          laporanId={laporanId}
+          open={konfirmasiOpen}
+          onOpenChange={setKonfirmasiOpen}
+          onSelesai={(hasil) => {
+            setKonfirmasiOpen(false)
+            setKonfirmasiSelesai(true)
+            void hasil
+          }}
+        />
+      )}
     </Dialog>
   )
 }

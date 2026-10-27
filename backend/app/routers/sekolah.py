@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.ai_pipeline.scoring import calculate_kbm_score, kbm_level
+from app.ai_pipeline.scoring import calculate_kbm_score, compute_prior, kbm_level
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.laporan import Laporan
 from app.models.sekolah import KondisiSarana, Sekolah
@@ -48,16 +49,21 @@ def _penanda_isu_per_sekolah(
 
     laps_per: dict[str, list] = defaultdict(list)
     isu_per: dict[str, int] = defaultdict(int)
+    # D-24: prior WAJIB global, bukan per halaman. Query sengaja tanpa
+    # `.where(npsn IN ...)` agar penanda di halaman 1/2 dan detail tidak
+    # berbeda (pelajaran DBG-007/DBG-008).
     for npsn, kondisi, status_sanggahan in db.execute(
         select(
             Laporan.sekolah_npsn,
             Laporan.kondisi_dilaporkan,
             Laporan.status_sanggahan,
-        ).where(Laporan.sekolah_npsn.in_(npsns))
+        )
     ).all():
         laps_per[npsn].append(kondisi)
         if status_sanggahan != "ditolak":
             isu_per[npsn] += 1
+
+    prior = compute_prior(laps_per)
 
     dapodik_per: dict[str, dict] = defaultdict(lambda: dict(_KOSONG))
     for npsn, jumlah, berat, sedang, ringan in db.execute(
@@ -78,7 +84,10 @@ def _penanda_isu_per_sekolah(
     out: dict[str, tuple[str, int]] = {}
     for npsn in npsns:
         k = calculate_kbm_score(
-            laps_per.get(npsn, []), dapodik_per.get(npsn, dict(_KOSONG))
+            laps_per.get(npsn, []),
+            dapodik_per.get(npsn, dict(_KOSONG)),
+            prior=prior,
+            k=settings.SHRINKAGE_K,
         )
         out[npsn] = (
             PENANDA_BY_LEVEL[kbm_level(k["skor_kbm"])],

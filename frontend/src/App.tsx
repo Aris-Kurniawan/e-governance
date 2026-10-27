@@ -90,7 +90,7 @@ export default function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["warga_umum", "warga_terverifikasi", "komite_sekolah"]}>
                     <DashboardWarga />
                   </ProtectedRoute>
                 }
@@ -98,7 +98,7 @@ export default function App() {
               <Route
                 path="/laporan/baru"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["warga_umum", "warga_terverifikasi", "komite_sekolah"]}>
                     <FormLaporan />
                   </ProtectedRoute>
                 }
@@ -109,7 +109,14 @@ export default function App() {
             <Route path="/dinas/login" element={<LoginDinas />} />
 
             {/* Dinas (Pemerintah) - Panel Internal & Verifikasi */}
-            <Route path="/dinas" element={<DinasLayout />}>
+            <Route
+              path="/dinas"
+              element={
+                <ProtectedRoute loginPath="/dinas/login" allowedRoles={["admin", "verifikator_dinas", "kepala_dinas"]}>
+                  <DinasLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<DashboardKadis />} />
               <Route path="dashboard" element={<DashboardKadis />} />
               <Route path="antrian" element={<AntrianValidasi />} />

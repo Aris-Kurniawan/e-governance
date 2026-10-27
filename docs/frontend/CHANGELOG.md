@@ -19,6 +19,37 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
 ## [Belum Rilis]
 
 ### Ditambahkan
+- **Modal Konfirmasi Severity Otomatis Terbuka Setelah Submit Laporan (22 Oktober 2026 — DBG-024)**:
+  - `FormLaporan.tsx` (halaman penuh): begitu `POST /laporan` mengembalikan `konfirmasi.perlu_konfirmasi = true`, modal `PertanyaanKonfirmasi` **langsung terbuka otomatis** (`setKonfirmasiOpen(true)`).
+  - `ModalFormLaporan.tsx` (modal "Buat Aduan Baru" dari Detail Sekolah): perbaikan yang sama — sebelumnya komponen ini **membuang `res.konfirmasi`** sehingga pertanyaan severity tidak pernah muncul di jalur ini. Kini menyimpan `laporanId`, auto-open `PertanyaanKonfirmasi` (nested dialog), plus tombol "Jawab Sekarang" sebagai jalur alternatif dan penanda "terjawab".
+  - Sebelumnya modal tidak pernah terpicu (`konfirmasiOpen` tetap `false`), sehingga warga hanya melihat banner pasif dan pertanyaan severity mudah terlewat.
+  - Banner "Jawab Sekarang" kini juga tampil selama `status_konfirmasi = 'menunggu'` (mis. warga menutup modal tanpa menjawab) sebagai jalur alternatif — laporan tetap sah tanpa jawaban (SPEC §19.6).
+- **Penyelarasan Isolasi Peran Sesi & Label Pengguna (22 Oktober 2026)**:
+  - Rute `/dashboard` dan `/laporan/baru` di `App.tsx` diproteksi dengan `allowedRoles={["warga_umum", "warga_terverifikasi", "komite_sekolah"]}` sehingga akun dinas/kadis yang membuka dashboard warga otomatis dialihkan ke ruang kerja yang sesuai (`/dinas/dashboard`).
+  - Label hardcode "Warga Terverifikasi" di header navbar publik (`PublicLayout.tsx`) diganti dengan `roleLabel` dinamis dari profil autentikasi, serta tombol profil mengarah ke portal dinas jika user yang login adalah aparatur pemerintah.
+  - Header `WargaLayout.tsx` dan hero banner `Landing.tsx` kini menampilkan nama dan label peran dinamis pengguna secara akurat.
+
+- **Penyelarasan RBAC Halaman Perlu Review (22 Oktober 2026 — DBG-017 / D-30)**:
+  - Halaman `LaporanPerluReview.tsx` membatasi tombol aksi validasi/tolak hanya untuk `admin` dan `verifikator_dinas`.
+  - Akun `kepala_dinas` menerima tampilan informatif mode pengawasan (read-only) sesuai regulasi Permendagri No. 8/2023.
+- **Transparansi Publik untuk Aduan Mandiri Tervalidasi Dinas (22 Oktober 2026 — DBG-023 / D-29)**:
+  - Toggle utama pada `RiwayatLaporan.tsx` diubah menjadi tombol beralih prominent antara **"Riwayat Laporan Publik"** dan **"Laporan Pribadi"**, dengan default selalu membuka mode Publik.
+  - Tampilan publik menyatukan seluruh laporan terverifikasi (klaster AI + aduan mandiri dinas) secara default (`Semua Laporan Publik`), dengan sub-filter `Klaster Isu Sarpras` dan `Aduan Mandiri Tervalidasi`. Laporan tervalidasi seperti `TRK-AUG-500-0481` (SD Negeri 2 Sidoharjo) langsung muncul di urutan atas dan dapat dicari secara instan.
+  - Halaman `DetailSekolah.tsx` kini menampilkan aduan mandiri terverifikasi dinas pada kartu **"ISU & KLASTER WARGA"**, sehingga sekolah non-klaster yang memiliki aduan tervalidasi tidak lagi menampilkan status keliru *"Belum ada isu terdeteksi"*.
+  - Kartu aduan mandiri menampilkan tracking ID, tanggal, nama sekolah, sarpras terkait, rincian keluhan, dan badge hijau resmi `✓ Terverifikasi Dinas (Aduan Mandiri)`.
+
+- **Pembukaan Hak Vote untuk Seluruh Akun Warga Terdaftar & Status Terhitung Langsung (22 Oktober 2026 — D-28)**:
+  - `ROLE_BOLEH_VOTE` di `DashboardWilayah.tsx` diperluas dengan role `warga_umum`, sehingga semua warga yang telah mendaftar dan login dapat langsung memberikan vote dukungan tanpa terblokir pesan 403.
+  - Pesan error 403 diselaraskan: *"Vote hanya untuk akun warga dan komite sekolah."*
+  - Pemindahan tombol *"Buat Aduan Baru"* ke baris header di atas filter chips klaster, serta penataan lebar kolom tabel isu agar leluasa tanpa meluber dari kontainer.
+  - Menghapus feedback/status semu *"menunggu masa tunda verifikasi akun"* di `DaftarKlaster.tsx` dan `DetailKlaster.tsx`. Status vote di backend langsung disimpan sebagai `"terhitung"` dan tombol di antarmuka langsung berubah menjadi *"Sudah Vote"* dengan notifikasi sukses.
+  - Kontrak `INTERFACES.md` §6 diselaraskan dengan backend `routers/vote.py`.
+
+- **Pengambilalihan & Penyederhanaan Dashboard Wilayah Warga (22 Oktober 2026 — D-27)**:
+  - Komponen tabel **"Matriks Integritas Sarana Sekolah"** (tabel direktori 62 sekolah) dihapus dari `DashboardWilayah.tsx`.
+  - Tabel **"Daftar Klaster Isu Terkini"** dinaikkan menjadi tabel utama di Dashboard Wilayah Warga, memprioritaskan isu nyata sarpras terklaster, status verifikasi, tingkat urgensi, serta tombol partisipasi aktif warga (Vote & Detail).
+  - State dan helper yang tidak terpakai dibersihkan (`filterJenjang`, `OPSI_JENJANG`, export CSV matriks sekolah).
+
 - **Fase 3 (F3.1–F3.4) + F4.13 + F4.3 (lazy-load) — integrasi FE↔BE penuh (20–21 Oktober 2026)**:
   - **F3.1 Klaster Isu (✅)**: komponen baru `src/components/composite/InstitutionalStepper.tsx` (4 tahap Meninjau → Antrian Prioritas → Dalam Proses → Selesai; ekspor `tahapDariStatus`) + halaman baru `src/pages/warga/DaftarKlaster.tsx` (rute `/klaster`, filter kategori server-side + `NumberedPagination`, join nama sekolah dari `listSekolah`). Nav "Klaster Isu" ditambahkan ke `PublicLayout` (atas + footer) dan `WargaLayout`.
   - **F3.2 Voting (✅)**: UI vote di `DetailKlaster.tsx` — `statusVote` saat mount (guest → null), dialog konfirmasi → `voteKlaster()`, hasil `pending` → badge **Menunggu Masa Tunda**, terhitung → **Sudah Vote**, `401` → `/login?redirect=…`, `409 ALREADY_VOTED` → tombol **Sudah Vote** (disabled); tautan "Lihat status tindak lanjut" ke rute F3.3.

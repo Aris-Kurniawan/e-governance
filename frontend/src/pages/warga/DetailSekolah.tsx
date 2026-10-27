@@ -8,6 +8,7 @@ import { useMemo } from "react"
 import { useFetch } from "@/hooks/useFetch"
 import { detailSekolah } from "@/lib/api/sekolah"
 import { listKlaster } from "@/lib/api/klaster"
+import { listLaporanPublik } from "@/lib/api/laporan"
 import type { SekolahDetail } from "@/lib/api/types"
 
 /**
@@ -137,6 +138,11 @@ export default function DetailSekolah() {
     () => listKlaster({ sekolah_npsn: npsn ?? "", page_size: 50 }),
     [npsn],
   )
+  const { state: mandiriState } = useFetch(
+    () => listLaporanPublik({ sekolah_npsn: npsn ?? "", page_size: 50 }),
+    [npsn],
+  )
+  const mandiriSekolah = mandiriState.status === "success" ? mandiriState.data.data : []
 
   const baseline: BaselineView | null = useMemo(() => {
     if (sekolahState.status !== "success") return null
@@ -451,7 +457,7 @@ export default function DetailSekolah() {
                 <AlertTriangle className="h-5 w-5 text-slate-400" />
               </div>
 
-              {klasterSekolah.length === 0 ? (
+              {klasterSekolah.length === 0 && mandiriSekolah.length === 0 ? (
                 <div className="mt-1 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center space-y-1.5">
                   <ShieldCheck className="h-6 w-6 text-emerald-500 mx-auto" />
                   <p className="text-sm font-bold text-slate-700">Belum ada isu terdeteksi</p>
@@ -461,6 +467,7 @@ export default function DetailSekolah() {
                 </div>
               ) : (
                 <ul className="mt-1 space-y-2">
+                  {/* Klaster Isu */}
                   {klasterSekolah.map((k) => (
                     <li key={k.klaster_id}>
                       <Link
@@ -483,13 +490,34 @@ export default function DetailSekolah() {
                       </Link>
                     </li>
                   ))}
+
+                  {/* Aduan Mandiri Tervalidasi Dinas */}
+                  {mandiriSekolah.map((m) => (
+                    <li key={m.id}>
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-[11px] font-bold text-slate-700">{m.tracking_id}</span>
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-300">
+                            ✓ Terverifikasi Dinas
+                          </span>
+                        </div>
+                        <p className="font-bold text-slate-900 leading-snug">
+                          {m.fasilitas_terkait ?? "Fasilitas"} &middot;{" "}
+                          <span className="font-normal text-slate-600 capitalize">
+                            {m.kondisi_dilaporkan?.replace(/_/g, " ") ?? "Kondisi dilaporkan"}
+                          </span>
+                        </p>
+                        <p className="text-slate-600 text-[11px] line-clamp-2">{m.deskripsi}</p>
+                      </div>
+                    </li>
+                  ))}
                 </ul>
               )}
             </div>
 
             <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-              {klasterSekolah.length > 0
-                ? "Klik klaster untuk melihat detail laporan & status penanganan."
+              {klasterSekolah.length > 0 || mandiriSekolah.length > 0
+                ? "Seluruh isu dan aduan terverifikasi ditampilkan secara transparan."
                 : "Isu akan muncul di sini setelah laporan warga terverifikasi."}
             </div>
           </div>

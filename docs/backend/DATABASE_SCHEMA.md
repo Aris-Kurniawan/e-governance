@@ -114,13 +114,24 @@ warga, `PRD.md` §6.1) dicatat di deskripsi `laporan`, bukan di sini.
 | `tracking_id` | VARCHAR(50) UNIQUE | ditampilkan ke warga setelah kirim |
 | `user_id` | CHAR(36) FK → `users.id` | |
 | `sekolah_npsn` | VARCHAR(20) FK → `sekolah.npsn` | |
-| `kategori` | ENUM | `infrastruktur_sarana`, `ketersediaan_tenaga_pengajar`, `lainnya` |
 | `fasilitas_terkait` | VARCHAR(255) NULLABLE | wajib jika kategori = `infrastruktur_sarana` (validasi level aplikasi). Nilai = `nama_ruang` yang disanggah, mis. `"Ruang Kelas"` |
-| `kondisi_dilaporkan` | ENUM NULLABLE | `baik`, `rusak_ringan`, `rusak_sedang`, `rusak_berat` — kondisi aktual menurut warga, dipakai untuk deteksi mismatch vs Dapodik |
+| `kondisi_dilaporkan` | ENUM NULLABLE | `baik`, `rusak_ringan`, `rusak_sedang`, `rusak_berat` — kondisi aktual menurut warga, dipakai untuk deteksi mismatch vs Dapodik. `NULL` = tidak ada info kondisi (di-drop dari skor, F4.13) |
+| `sumber_kondisi` | ENUM NULLABLE | `ai`, `warga` — asal nilai `kondisi_dilaporkan`. `warga` hanya untuk koreksi manusia saat verifikasi dan tidak boleh ditimpa cron AI. `NULL` = laporan lama / belum ada sumber (F4.14) |
+| `status_konfirmasi` | ENUM NULLABLE | `menunggu`, `terjawab`, `dilewati` — status alur konfirmasi severity (F4.14). `NULL` = laporan lama (tidak di-backfill); laporan baru = `menunggu` |
+| `jawaban_konfirmasi` | JSON NULLABLE | Jawaban lapis 1 + waktu proses: `{"jawaban":[{"kode","nilai"}],"diproses_pada":"ISO8601"}` (F4.15). `NULL` = belum dijawab |
 | `deskripsi` | TEXT | |
 | `klaster_id` | CHAR(36) NULLABLE, FK → `klaster.id` | diisi setelah AI pipeline jalan, null sebelum diproses |
 | `status_sanggahan` | ENUM DEFAULT `menunggu` | `menunggu`, `divalidasi`, `ditolak` — dipakai badge "Ada sanggahan" di detail sekolah (`PAGE_STATES.md`) |
+| `hasil_klasterisasi` | ENUM DEFAULT `belum_diproses` | `belum_diproses`, `terklaster`, `noise` — penanda anti-loop cron (F4.7, D-21). **Bukan** kondisi bangunan |
 | `created_at` | DATETIME | |
+
+> **Provenance & konfirmasi (F4.14/F4.15):** kolom **nullable tanpa server_default** —
+> migrasi `f4a14b7c9e21` (provenance/status) dan `b7d15c4e9a02` (jawaban) tidak
+> men-backfill 600 laporan lama. `konfirmasi_perlu_dijawab` **tidak disimpan**;
+> diturunkan dari `status_konfirmasi = 'menunggu'` di respons `POST /laporan`,
+> `GET /laporan/riwayat`, `GET /laporan/{id}`, dan `GET /laporan/perlu-review`.
+> Kedaluwarsa 24 jam bersifat **lazy** (diubah saat endpoint konfirmasi diakses),
+> bukan oleh cron.
 
 > **Mismatch detection:** jika `kondisi_dilaporkan` berbeda dari
 > `kondisi_sarana.kondisi_*` (sumber `dapodik`) untuk `nama_ruang` yang
