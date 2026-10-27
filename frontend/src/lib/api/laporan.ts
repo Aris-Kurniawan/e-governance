@@ -34,6 +34,17 @@ export function riwayatLaporan(
   });
 }
 
+/** `GET /laporan/publik` — aduan mandiri tervalidasi publik (DBG-023, D-29). */
+export function listLaporanPublik(
+  params: { page?: number; page_size?: number; sekolah_npsn?: string } = {},
+): Promise<Page<RiwayatLaporanItem>> {
+  return getPage<RiwayatLaporanItem>("/laporan/publik", {
+    page: params.page ?? 1,
+    page_size: params.page_size ?? 20,
+    ...(params.sekolah_npsn ? { sekolah_npsn: params.sekolah_npsn } : {}),
+  });
+}
+
 /** `GET /laporan/{id}` — pemilik laporan atau petugas dinas. */
 export function detailLaporan(id: string): Promise<LaporanDetail> {
   return getData<LaporanDetail>(`/laporan/${encodeURIComponent(id)}`);

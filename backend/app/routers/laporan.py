@@ -197,11 +197,62 @@ def riwayat_laporan(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# F4.7 (D-21) — Fallback laporan tanpa klaster → verifikasi manual
-# admin/kepala_dinas (pengganti klaster "Belum Terklasifikasi")
+# DBG-023 (D-29) — Aduan Mandiri Tervalidasi Publik
 # ─────────────────────────────────────────────────────────────────────────────
 
-require_review = RoleChecker(["admin", "kepala_dinas"])
+@router.get("/publik", response_model=LaporanListResponse)
+def list_laporan_publik(
+    page: int = Query(1, ge=1, description="Halaman"),
+    page_size: int = Query(20, ge=1, le=100, description="Jumlah per halaman"),
+    sekolah_npsn: str | None = Query(None, description="Filter NPSN sekolah"),
+    db: Session = Depends(get_db),
+):
+    """DBG-023 (D-29) — Daftar aduan mandiri tervalidasi untuk transparansi publik.
+
+    Menampilkan laporan yang divalidasi dinas (status_sanggahan = 'divalidasi')
+    dan tidak masuk klaster AI (klaster_id IS NULL). Terbuka untuk umum (publik).
+    """
+    stmt = select(Laporan).where(
+        Laporan.status_sanggahan == "divalidasi",
+        Laporan.klaster_id.is_(None),
+    )
+    if sekolah_npsn:
+        stmt = stmt.where(Laporan.sekolah_npsn == sekolah_npsn)
+
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total_items = db.scalar(count_stmt) or 0
+    total_pages = ceil(total_items / page_size) if total_items else 1
+
+    offset = (page - 1) * page_size
+    query = stmt.offset(offset).limit(page_size).order_by(Laporan.created_at.desc())
+    laporans = db.scalars(query).all()
+
+    # De-identifikasi user_id demi kepatuhan PDP di ranah publik
+    data_list: list[LaporanResponse] = []
+    for l in laporans:
+        fields = _laporan_fields(l)
+        fields["user_id"] = ""
+        data_list.append(LaporanResponse(**fields))
+
+    return LaporanListResponse(
+        data=data_list,
+        meta={
+            "page": page,
+            "page_size": page_size,
+            "total_items": total_items,
+            "total_pages": total_pages,
+        },
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# F4.7 (D-21) / D-30 — Fallback laporan tanpa klaster → verifikasi manual
+# GET: admin/verifikator_dinas/kepala_dinas (pengawasan)
+# PUT: admin/verifikator_dinas (eksekusi verifikasi teknis)
+# ─────────────────────────────────────────────────────────────────────────────
+
+require_review_read = RoleChecker(["admin", "verifikator_dinas", "kepala_dinas"])
+require_review_write = RoleChecker(["admin", "verifikator_dinas"])
 
 
 class LaporanStatusUpdateRequest(BaseModel):
@@ -219,7 +270,7 @@ def laporan_perlu_review(
     page: int = Query(1, ge=1, description="Halaman"),
     page_size: int = Query(20, ge=1, le=100, description="Jumlah per halaman"),
     db: Session = Depends(get_db),
-    _: User = Depends(require_review),
+    _: User = Depends(require_review_read),
 ):
     """F4.7 (D-21) — Daftar laporan yang perlu verifikasi manual.
 
@@ -289,9 +340,9 @@ def update_laporan_status(
     laporan_id: str,
     payload: LaporanStatusUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_review),
+    current_user: User = Depends(require_review_write),
 ):
-    """F4.7 (D-21) — Verifikasi manual per laporan oleh admin/kepala_dinas.
+    """F4.7 (D-21) / D-30 — Verifikasi manual per laporan oleh admin/verifikator_dinas.
 
     Update kolom `status_sanggahan` (menunggu | divalidasi | ditolak).
     Nilai di luar enum ditolak 422 (divalidasi manual, bukan Pydantic —

@@ -95,7 +95,8 @@ export default function LaporanPerluReview() {
   >(null)
 
   const { user } = useAuth()
-  const bolehAksi = user?.role === "admin" || user?.role === "kepala_dinas"
+  const bolehAksi = user?.role === "admin" || user?.role === "verifikator_dinas"
+  const isKadis = user?.role === "kepala_dinas"
 
   const { state, refetch } = useFetch(
     () => perluReviewLaporan({ page, page_size: PAGE_SIZE }),
@@ -209,12 +210,14 @@ export default function LaporanPerluReview() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-2">
           <p className="text-xs font-semibold text-slate-500">Aksi Verifikasi</p>
           <div className="text-sm font-extrabold text-slate-900">
-            {bolehAksi ? "Diizinkan" : "Tidak diizinkan"}
+            {bolehAksi ? "Diizinkan" : isKadis ? "Mode Pengawasan" : "Tidak diizinkan"}
           </div>
           <p className="text-[11px] text-slate-400">
             {bolehAksi
               ? "role Anda dapat memvalidasi / menolak"
-              : "hanya admin & kepala dinas"}
+              : isKadis
+              ? "read-only (verifikasi oleh Verifikator Dinas)"
+              : "hanya admin & verifikator dinas"}
           </p>
         </div>
       </div>

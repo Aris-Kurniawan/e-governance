@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
 import { useFetch } from "@/hooks/useFetch"
 import PertanyaanKonfirmasi from "@/components/warga/PertanyaanKonfirmasi"
-import { riwayatLaporan } from "@/lib/api/laporan"
+import { riwayatLaporan, listLaporanPublik } from "@/lib/api/laporan"
 import { listSekolah } from "@/lib/api/sekolah"
 import { listKlaster } from "@/lib/api/klaster"
 import { isLoggedIn } from "@/lib/api/auth"
@@ -90,15 +90,12 @@ function formatTanggal(iso: string): string {
 }
 
 export default function RiwayatLaporan() {
-  const location = useLocation()
   const { isAuthenticated, user } = useAuth()
   const loggedIn = isLoggedIn()
 
-  // Default mode: jika path /laporan/publik atau belum login → buka publik duluan
-  const isPublicUrl = location.pathname.includes("publik")
-  const [viewMode, setViewMode] = useState<"publik" | "pribadi">(
-    isPublicUrl || !loggedIn ? "publik" : "pribadi"
-  )
+  // Mode utama: "publik" (Riwayat Laporan Publik) vs "pribadi" (Laporan Pribadi)
+  // Default selalu "publik" agar aduan tervalidasi dinas & klaster publik langsung terlihat
+  const [viewMode, setViewMode] = useState<"publik" | "pribadi">("publik")
 
   // State tab pribadi
   const [tabPribadi, setTabPribadi] = useState<TabPribadi>("semua")
@@ -109,6 +106,7 @@ export default function RiwayatLaporan() {
 
   // State pencarian & filter publik
   const [searchPublik, setSearchPublik] = useState("")
+  const [subModePublik, setSubModePublik] = useState<"semua" | "klaster" | "mandiri">("semua")
   const [filterPublikStatus, setFilterPublikStatus] = useState<FilterPublik>("semua")
   const [filterPublikJenjang, setFilterPublikJenjang] = useState("Semua")
   const [pagePublik, setPagePublik] = useState(1)
@@ -127,6 +125,11 @@ export default function RiwayatLaporan() {
   // 3. Data klaster / registri publik
   const { state: klasterState, refetch: refetchKlaster } = useFetch(
     () => listKlaster({ page_size: 100 })
+  )
+
+  // 4. Data aduan mandiri tervalidasi publik (DBG-023, D-29)
+  const { state: mandiriState, refetch: refetchMandiri } = useFetch(
+    () => listLaporanPublik({ page_size: 100 })
   )
 
   const profilSekolah = useMemo(() => {
@@ -194,9 +197,58 @@ export default function RiwayatLaporan() {
     })
   }, [itemsPublikRaw, profilSekolah, searchPublik, filterPublikStatus, filterPublikJenjang])
 
+  // Laporan aduan mandiri tervalidasi publik (DBG-023, D-29)
+  const itemsMandiriRaw: RiwayatLaporanItem[] =
+    mandiriState.status === "success" ? mandiriState.data.data : []
+
+  const itemsMandiriFiltered = useMemo(() => {
+    const q = searchPublik.trim().toLowerCase()
+    return itemsMandiriRaw.filter((m) => {
+      const profil = profilSekolah.get(m.sekolah_npsn)
+      const namaSekolah = profil?.nama ?? ""
+      const jenjang = profil?.jenjang ?? ""
+
+      const matchSearch =
+        !q ||
+        m.tracking_id.toLowerCase().includes(q) ||
+        m.sekolah_npsn.includes(q) ||
+        namaSekolah.toLowerCase().includes(q) ||
+        (m.fasilitas_terkait ?? "").toLowerCase().includes(q) ||
+        m.deskripsi.toLowerCase().includes(q)
+
+      const matchJenjang = filterPublikJenjang === "Semua" || jenjang === filterPublikJenjang
+
+      return matchSearch && matchJenjang
+    })
+  }, [itemsMandiriRaw, profilSekolah, searchPublik, filterPublikJenjang])
+
+  type ItemPublikGabungan =
+    | { tipe: "klaster"; id: string; data: KlasterListItem }
+    | { tipe: "mandiri"; id: string; data: RiwayatLaporanItem }
+
+  const itemsGabunganFiltered: ItemPublikGabungan[] = useMemo(() => {
+    const klasterList: ItemPublikGabungan[] = itemsPublikFiltered.map((k) => ({
+      tipe: "klaster",
+      id: `klaster-${k.klaster_id}`,
+      data: k,
+    }))
+    const mandiriList: ItemPublikGabungan[] = itemsMandiriFiltered.map((m) => ({
+      tipe: "mandiri",
+      id: `mandiri-${m.id}`,
+      data: m,
+    }))
+
+    if (subModePublik === "klaster") return klasterList
+    if (subModePublik === "mandiri") return mandiriList
+    // "semua": tampilkan aduan mandiri tervalidasi dinas & klaster secara harmonis
+    return [...mandiriList, ...klasterList]
+  }, [itemsPublikFiltered, itemsMandiriFiltered, subModePublik])
+
   const ITEMS_PER_PAGE_PUBLIK = 8
-  const totalPagesPublik = Math.max(Math.ceil(itemsPublikFiltered.length / ITEMS_PER_PAGE_PUBLIK), 1)
-  const paginatedPublik = itemsPublikFiltered.slice(
+  const currentTotalPublik = itemsGabunganFiltered.length
+  const totalPagesPublik = Math.max(Math.ceil(currentTotalPublik / ITEMS_PER_PAGE_PUBLIK), 1)
+
+  const paginatedGabungan = itemsGabunganFiltered.slice(
     (pagePublik - 1) * ITEMS_PER_PAGE_PUBLIK,
     pagePublik * ITEMS_PER_PAGE_PUBLIK
   )
@@ -267,38 +319,68 @@ export default function RiwayatLaporan() {
             </div>
           </div>
 
-          {/* Mode Switcher Buttons: Transparansi Publik vs Laporan Saya */}
+          {/* Mode Switcher Buttons: Riwayat Laporan Publik vs Laporan Pribadi */}
           <div className="flex items-center justify-between border-t border-slate-100 pt-5 flex-wrap gap-4">
-            <div className="flex items-center gap-2 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70">
+            <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80 shadow-inner">
               <button
                 type="button"
-                onClick={() => setViewMode("publik")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                onClick={() => {
+                  setViewMode("publik")
+                  setPagePublik(1)
+                }}
+                className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   viewMode === "publik"
-                    ? "bg-white text-[#0B3052] shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#0B3052] text-white shadow-md"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                 }`}
               >
-                <Globe2 className="h-3.5 w-3.5" />
-                <span>Transparansi Publik ({itemsPublikRaw.length} Isu)</span>
+                <Globe2 className="h-4 w-4" />
+                <span>Riwayat Laporan Publik</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
+                    viewMode === "publik"
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  {itemsPublikRaw.length + itemsMandiriRaw.length}
+                </span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setViewMode("pribadi")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                onClick={() => {
+                  setViewMode("pribadi")
+                  setPagePribadi(1)
+                }}
+                className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   viewMode === "pribadi"
-                    ? "bg-white text-[#0B3052] shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#0B3052] text-white shadow-md"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                 }`}
               >
-                <UserCheck className="h-3.5 w-3.5" />
-                <span>Laporan Saya {loggedIn ? `(${itemsPribadi.length})` : ""}</span>
+                <UserCheck className="h-4 w-4" />
+                <span>Laporan Pribadi</span>
+                {loggedIn ? (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
+                      viewMode === "pribadi"
+                        ? "bg-white/20 text-white"
+                        : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {itemsPribadi.length}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-normal">(Login)</span>
+                )}
               </button>
             </div>
 
             <span className="text-xs text-slate-500 font-medium">
-              Data terenkripsi kependudukan &middot; 1 NIK = 1 Suara Sah
+              {viewMode === "publik"
+                ? "Seluruh aduan & klaster isu terverifikasi di wilayah kerja"
+                : "Aduan resmi yang diajukan melalui akun Anda"}
             </span>
           </div>
         </div>
@@ -307,6 +389,34 @@ export default function RiwayatLaporan() {
         {viewMode === "publik" && (
           <div className="grid gap-6 lg:grid-cols-12 items-start">
             <div className="lg:col-span-8 space-y-6">
+              {/* Sub-filter Switcher: Semua vs Klaster vs Mandiri */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/70 w-fit flex-wrap">
+                {[
+                  {
+                    id: "semua",
+                    label: `Semua Laporan Publik (${itemsPublikRaw.length + itemsMandiriRaw.length})`,
+                  },
+                  { id: "klaster", label: `Klaster Isu Sarpras (${itemsPublikRaw.length})` },
+                  { id: "mandiri", label: `Aduan Mandiri Tervalidasi (${itemsMandiriRaw.length})` },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setSubModePublik(tab.id as "semua" | "klaster" | "mandiri")
+                      setPagePublik(1)
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      subModePublik === tab.id
+                        ? "bg-white text-[#0B3052] shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Search & Filter Bar Publik */}
               <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm space-y-3">
                 <div className="relative">
@@ -318,36 +428,45 @@ export default function RiwayatLaporan() {
                       setSearchPublik(e.target.value)
                       setPagePublik(1)
                     }}
-                    placeholder="Lacak ID Klaster, ketik nama sekolah, NPSN, atau kata kunci isu..."
+                    placeholder="Lacak No. Tracking, ID Klaster, ketik nama sekolah, NPSN, atau kata kunci isu..."
                     className="w-full h-10 pl-10 pr-4 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0B3052] focus:bg-white transition-all"
                   />
                 </div>
 
                 <div className="flex items-center justify-between gap-3 flex-wrap text-xs">
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-                    {[
-                      { id: "semua", label: "Semua" },
-                      { id: "menunggu_verifikasi", label: "Menunggu Verifikasi" },
-                      { id: "terverifikasi", label: "Terverifikasi" },
-                      { id: "dalam_proses", label: "Dalam Pengerjaan" },
-                      { id: "selesai", label: "Tuntas Selesai" },
-                    ].map((st) => (
-                      <button
-                        key={st.id}
-                        onClick={() => {
-                          setFilterPublikStatus(st.id as FilterPublik)
-                          setPagePublik(1)
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                          filterPublikStatus === st.id
-                            ? "bg-[#0B3052] text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        {st.label}
-                      </button>
-                    ))}
-                  </div>
+                  {subModePublik !== "mandiri" ? (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                      {[
+                        { id: "semua", label: "Semua" },
+                        { id: "menunggu_verifikasi", label: "Menunggu Verifikasi" },
+                        { id: "terverifikasi", label: "Terverifikasi" },
+                        { id: "dalam_proses", label: "Dalam Pengerjaan" },
+                        { id: "selesai", label: "Tuntas Selesai" },
+                      ].map((st) => (
+                        <button
+                          key={st.id}
+                          onClick={() => {
+                            setFilterPublikStatus(st.id as FilterPublik)
+                            setPagePublik(1)
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                            filterPublikStatus === st.id
+                              ? "bg-[#0B3052] text-white"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 text-[11px]">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                        Seluruh aduan telah diverifikasi &amp; divalidasi sah oleh Dinas (D-21)
+                      </span>
+                    </div>
+                  )}
 
                   <div className="relative">
                     <select
@@ -368,14 +487,14 @@ export default function RiwayatLaporan() {
               </div>
 
               {/* State Loading / Error Publik */}
-              {klasterState.status === "loading" && (
+              {(klasterState.status === "loading" || mandiriState.status === "loading") && (
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-12 text-center text-sm text-slate-500">
                   <RotateCw className="h-5 w-5 animate-spin mx-auto mb-2 text-[#0B3052]" />
                   Memuat aduan publik…
                 </div>
               )}
 
-              {klasterState.status === "error" && (
+              {klasterState.status === "error" && mandiriState.status === "error" && (
                 <div className="rounded-2xl border border-rose-200/80 bg-rose-50/40 p-8 text-center space-y-3">
                   <AlertTriangle className="mx-auto h-6 w-6 text-rose-600" />
                   <p className="text-sm font-bold text-slate-900">Gagal memuat registri publik</p>
@@ -383,7 +502,10 @@ export default function RiwayatLaporan() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={refetchKlaster}
+                    onClick={() => {
+                      refetchKlaster()
+                      refetchMandiri()
+                    }}
                     className="h-8 text-xs font-semibold text-slate-700 border-slate-200"
                   >
                     <RotateCw className="h-3.5 w-3.5 mr-1" /> Coba Lagi
@@ -391,19 +513,23 @@ export default function RiwayatLaporan() {
                 </div>
               )}
 
-              {/* List Klaster Isu Publik */}
-              {klasterState.status === "success" && paginatedPublik.length === 0 && (
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-12 text-center space-y-2">
-                  <XCircle className="mx-auto h-8 w-8 text-slate-300" />
-                  <p className="text-sm font-bold text-slate-900">Tidak ada aduan yang sesuai</p>
-                  <p className="text-xs text-slate-500">
-                    Coba sesuaikan kata kunci pencarian atau filter status.
-                  </p>
-                </div>
-              )}
-
+              {/* Empty State */}
               {klasterState.status === "success" &&
-                paginatedPublik.map((k) => {
+                mandiriState.status === "success" &&
+                itemsGabunganFiltered.length === 0 && (
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-12 text-center space-y-2">
+                    <XCircle className="mx-auto h-8 w-8 text-slate-300" />
+                    <p className="text-sm font-bold text-slate-900">Tidak ada aduan publik yang sesuai</p>
+                    <p className="text-xs text-slate-500">
+                      Coba sesuaikan kata kunci pencarian atau filter jenjang sekolah.
+                    </p>
+                  </div>
+                )}
+
+              {/* List Gabungan Isu Publik & Aduan Mandiri */}
+              {paginatedGabungan.map((item) => {
+                if (item.tipe === "klaster") {
+                  const k = item.data
                   const profil = profilSekolah.get(k.sekolah_npsn)
                   const stVerif = STATUS_STYLE[k.status_verifikasi] ?? {
                     box: "bg-slate-100 text-slate-700 border-slate-200",
@@ -412,7 +538,7 @@ export default function RiwayatLaporan() {
 
                   return (
                     <div
-                      key={k.klaster_id}
+                      key={item.id}
                       className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-md transition-all space-y-4"
                     >
                       {/* Top Header Card */}
@@ -492,13 +618,86 @@ export default function RiwayatLaporan() {
                       </div>
                     </div>
                   )
-                })}
+                }
+
+                // item.tipe === "mandiri"
+                const m = item.data
+                const profil = profilSekolah.get(m.sekolah_npsn)
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-md transition-all space-y-4"
+                  >
+                    {/* Top Header Card */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-slate-900 text-sm">
+                          {m.tracking_id}
+                        </span>
+                        <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1 bg-emerald-50 text-emerald-800 border-emerald-200">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          Terverifikasi Dinas (Aduan Mandiri)
+                        </span>
+                      </div>
+
+                      <span className="text-xs text-slate-400">
+                        {new Date(m.created_at).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+
+                    {/* Info Sekolah & Fasilitas */}
+                    <div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mb-1">
+                        <Building2 className="h-3.5 w-3.5 text-[#0B3052]" />
+                        <span>NPSN: {m.sekolah_npsn}</span>
+                        <span>&middot;</span>
+                        <span className="rounded bg-slate-100 px-1.5 py-0.2 font-bold text-slate-700">
+                          {profil?.jenjang ?? "Sekolah"}
+                        </span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                        {profil?.nama ?? "Sekolah"} &mdash; {m.fasilitas_terkait ?? "Fasilitas Sarpras"}
+                      </h3>
+                      {m.kondisi_dilaporkan && (
+                        <div className="mt-1">
+                          <span className="text-[11px] font-medium text-slate-500">
+                            Kondisi dilaporkan:{" "}
+                            <span className="capitalize font-bold text-slate-700">
+                              {m.kondisi_dilaporkan.replace(/_/g, " ")}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Deskripsi Aduan */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                      <p className="line-clamp-4 text-slate-700">{m.deskripsi}</p>
+                    </div>
+
+                    {/* Footer Info Transparansi */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100/60">
+                      <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                        Divalidasi keabsahannya oleh Dinas Pendidikan (D-21)
+                      </span>
+                      <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-500">
+                        Non-Klaster
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
 
               {/* Pagination Publik */}
-              {klasterState.status === "success" && totalPagesPublik > 1 && (
+              {totalPagesPublik > 1 && (
                 <div className="flex items-center justify-between pt-4 border-t border-slate-200 text-xs text-slate-500">
                   <span>
-                    Halaman {pagePublik} dari {totalPagesPublik} ({itemsPublikFiltered.length} klaster)
+                    Halaman {pagePublik} dari {totalPagesPublik} ({currentTotalPublik} item publik)
                   </span>
                   <div className="flex items-center gap-1.5">
                     <button
