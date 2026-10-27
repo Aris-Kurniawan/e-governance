@@ -94,7 +94,6 @@ export default function DetailKlaster() {
 
   const vote = voteState.status === "success" ? voteState.data : null
   const sudahVote = vote?.has_voted ?? false
-  const votePending = vote?.status_vote === "pending"
   const voteLoading = voteState.status === "loading"
 
   const keLogin = () => {
@@ -107,16 +106,11 @@ export default function DetailKlaster() {
     setSubmittingVote(true)
     setVoteFeedback(null)
     try {
-      const res = await voteKlaster(klasterId)
-      setVoteFeedback(
-        res.status_vote === "pending"
-          ? {
-              pesan:
-                "Vote tercatat — menunggu masa tunda verifikasi akun (belum dihitung ke skor).",
-              tipe: "info",
-            }
-          : { pesan: "Vote tercatat — dukunganmu menaikkan skor prioritas isu ini.", tipe: "sukses" },
-      )
+      await voteKlaster(klasterId)
+      setVoteFeedback({
+        pesan: "Vote tercatat — dukunganmu menaikkan skor prioritas isu ini.",
+        tipe: "sukses",
+      })
       setKonfirmasiOpen(false)
       refetchVote()
     } catch (err) {
@@ -275,9 +269,7 @@ export default function DetailKlaster() {
               </div>
               <p className="text-sm text-slate-600 leading-relaxed">
                 {sudahVote
-                  ? votePending
-                    ? "Vote Anda sudah tercatat dan sedang menunggu masa tunda verifikasi akun."
-                    : "Vote Anda sudah tercatat dan terhitung dalam skor prioritas isu ini."
+                  ? "Vote Anda sudah tercatat dan terhitung dalam skor prioritas isu ini."
                   : "Berikan dukungan (vote) agar skor prioritas isu ini naik dan lebih cepat ditangani Dinas. Satu akun satu suara."}
               </p>
               <Link
@@ -303,10 +295,6 @@ export default function DetailKlaster() {
                 >
                   <LogIn className="h-4 w-4 mr-1.5" /> Vote
                 </Button>
-              ) : sudahVote && votePending ? (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-warning-light text-warning-text border border-warning-border px-4 py-2.5 text-xs font-bold">
-                  <Clock3 className="h-4 w-4" /> Menunggu Masa Tunda
-                </span>
               ) : sudahVote ? (
                 <Button
                   disabled

@@ -20,7 +20,7 @@ from app.ai_pipeline.scoring import (
 
 router = APIRouter(prefix="/vote", tags=["vote"])
 
-require_warga = RoleChecker(["warga_terverifikasi", "komite_sekolah"])
+require_warga = RoleChecker(["warga_umum", "warga_terverifikasi", "komite_sekolah"])
 
 
 @router.post("")
@@ -40,7 +40,7 @@ async def create_vote(
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Sudah vote di klaster ini")
 
-    vote = Vote(klaster_id=klaster_id, user_id=current_user.id, status_vote="pending")
+    vote = Vote(klaster_id=klaster_id, user_id=current_user.id, status_vote="terhitung")
     db.add(vote)
 
     klaster.jumlah_vote_terhitung = (klaster.jumlah_vote_terhitung or 0) + 1

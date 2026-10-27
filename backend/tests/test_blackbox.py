@@ -269,6 +269,43 @@ class TestLaporanFlow:
         r = test_client.get(f"/laporan/{uuid.uuid4()}", headers=auth(token))
         assert r.status_code == 404
 
+    def test_laporan_publik_hanya_divalidasi_tanpa_klaster(self, test_client, db_session):
+        """DBG-023 (D-29): GET /laporan/publik terbuka tanpa auth, hanya tampilkan yang divalidasi & klaster_id NULL."""
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+
+        # 1. Laporan noise tervalidasi (harus muncul)
+        lap_valid = make_laporan(db_session, user, sekolah)
+        lap_valid.status_sanggahan = "divalidasi"
+        lap_valid.klaster_id = None
+
+        # 2. Laporan menunggu (tidak boleh muncul)
+        lap_menunggu = make_laporan(db_session, user, sekolah)
+        lap_menunggu.status_sanggahan = "menunggu"
+        lap_menunggu.klaster_id = None
+
+        # 3. Laporan divalidasi tetapi sudah berklaster (tidak boleh muncul di mandiri)
+        klaster = make_klaster(db_session, sekolah)
+        lap_klaster = make_laporan(db_session, user, sekolah)
+        lap_klaster.status_sanggahan = "divalidasi"
+        lap_klaster.klaster_id = klaster.id
+
+        db_session.commit()
+
+        # Panggil endpoint publik tanpa header token auth
+        r = test_client.get("/laporan/publik")
+        assert r.status_code == 200
+        body = r.json()
+        assert "data" in body and "meta" in body
+        tracking_ids = [item["tracking_id"] for item in body["data"]]
+        assert lap_valid.tracking_id in tracking_ids
+        assert lap_menunggu.tracking_id not in tracking_ids
+        assert lap_klaster.tracking_id not in tracking_ids
+
+        # Verifikasi de-identifikasi user_id
+        valid_item = next(item for item in body["data"] if item["tracking_id"] == lap_valid.tracking_id)
+        assert valid_item["user_id"] == ""
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. Klaster — endpoint publik baru (F4.5)
@@ -326,6 +363,25 @@ class TestVoteFlow:
         token = login(test_client, user.email)
         r = test_client.post("/vote", params={"klaster_id": str(uuid.uuid4())}, headers=auth(token))
         assert r.status_code == 404
+
+    def test_vote_warga_umum_happy_dan_staf_forbidden_403(self, test_client, db_session):
+        """D-28: warga_umum (default register) boleh vote, staf dinas tetap 403."""
+        warga = make_user(db_session, role="warga_umum")
+        dinas = make_user(db_session, role="verifikator_dinas")
+        sekolah = make_sekolah(db_session)
+        klaster = make_klaster(db_session, sekolah)
+
+        token_warga = login(test_client, warga.email)
+        token_dinas = login(test_client, dinas.email)
+
+        # Staf dinas dilarang vote
+        r_dinas = test_client.post("/vote", params={"klaster_id": klaster.id}, headers=auth(token_dinas))
+        assert r_dinas.status_code == 403
+
+        # Warga umum berhasil vote
+        r_warga = test_client.post("/vote", params={"klaster_id": klaster.id}, headers=auth(token_warga))
+        assert r_warga.status_code == 200, r_warga.text
+        assert r_warga.json()["data"]["vote_id"]
 
     def test_vote_happy_dan_duplikat_409(self, test_client, db_session):
         user = make_user(db_session)
@@ -613,6 +669,7 @@ class TestFallbackReviewF47:
         # Anonim → 401
         assert test_client.get("/laporan/perlu-review").status_code == 401
 
+        # Warga → 403
         warga = make_user(db_session, role="warga_terverifikasi")
         token = login(test_client, warga.email)
         assert (
@@ -620,13 +677,23 @@ class TestFallbackReviewF47:
             == 403
         )
 
+        # Verifikator dinas → 200 (D-30: staf teknis verifikasi)
         veri = make_user(db_session, role="verifikator_dinas")
         token = login(test_client, veri.email)
         assert (
             test_client.get("/laporan/perlu-review", headers=auth(token)).status_code
-            == 403
+            == 200
         )
 
+        # Kepala dinas → 200 (D-30: mode pengawasan / read-only)
+        kepala = make_user(db_session, role="kepala_dinas")
+        token = login(test_client, kepala.email)
+        assert (
+            test_client.get("/laporan/perlu-review", headers=auth(token)).status_code
+            == 200
+        )
+
+        # Admin → 200
         admin = make_user(db_session, role="admin")
         token = login(test_client, admin.email)
         r = test_client.get("/laporan/perlu-review", headers=auth(token))
@@ -704,9 +771,9 @@ class TestFallbackReviewF47:
         )
         assert r.status_code == 403
 
-        # Admin → 200 & nilai berubah
-        admin = make_user(db_session, role="admin")
-        token = login(test_client, admin.email)
+        # Verifikator dinas berhak update status (D-30) → 200 & nilai berubah
+        veri = make_user(db_session, role="verifikator_dinas")
+        token = login(test_client, veri.email)
         r = test_client.put(
             f"/laporan/{lap.id}/status",
             json={"status": "divalidasi"},
@@ -718,9 +785,9 @@ class TestFallbackReviewF47:
         assert body["data"]["status_sanggahan"] == "divalidasi"
         assert lap.status_sanggahan == "divalidasi"
 
-        # Kepala dinas juga berhak → 200
-        kepala = make_user(db_session, role="kepala_dinas")
-        token = login(test_client, kepala.email)
+        # Admin juga berhak → 200
+        admin = make_user(db_session, role="admin")
+        token = login(test_client, admin.email)
         r = test_client.put(
             f"/laporan/{lap.id}/status",
             json={"status": "ditolak"},
@@ -728,6 +795,16 @@ class TestFallbackReviewF47:
         )
         assert r.status_code == 200
         assert r.json()["data"]["status_sanggahan"] == "ditolak"
+
+        # Kepala dinas DITOLAK (D-30: read-only, verifikasi teknis oleh verifikator) → 403
+        kepala = make_user(db_session, role="kepala_dinas")
+        token = login(test_client, kepala.email)
+        r = test_client.put(
+            f"/laporan/{lap.id}/status",
+            json={"status": "divalidasi"},
+            headers=auth(token),
+        )
+        assert r.status_code == 403
 
     def test_put_status_invalid_422(self, test_client, db_session):
         owner = make_user(db_session)

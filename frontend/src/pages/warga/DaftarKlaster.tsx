@@ -153,15 +153,10 @@ export default function DaftarKlaster() {
     const targetId = klasterDipilih.klaster_id
     try {
       const res = await voteKlaster(targetId)
-      setVoteFeedback(
-        res.status_vote === "pending"
-          ? {
-              pesan:
-                "Vote tercatat — menunggu masa tunda verifikasi akun (belum dihitung ke skor).",
-              tipe: "info",
-            }
-          : { pesan: "Vote tercatat — dukunganmu menaikkan skor prioritas isu ini.", tipe: "sukses" },
-      )
+      setVoteFeedback({
+        pesan: "Vote tercatat — dukunganmu menaikkan skor prioritas isu ini.",
+        tipe: "sukses",
+      })
       setVoteStatuses((prev) => ({
         ...prev,
         [targetId]: { has_voted: true, status_vote: res.status_vote },
@@ -351,11 +346,6 @@ export default function DaftarKlaster() {
                         >
                           <LogIn className="h-3.5 w-3.5 mr-1.5" /> Vote
                         </Button>
-                      ) : voteStatuses[k.klaster_id]?.has_voted &&
-                        voteStatuses[k.klaster_id]?.status_vote === "pending" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 text-xs font-bold">
-                          <Clock3 className="h-3.5 w-3.5" /> Menunggu Masa Tunda
-                        </span>
                       ) : voteStatuses[k.klaster_id]?.has_voted ? (
                         <Button
                           size="sm"

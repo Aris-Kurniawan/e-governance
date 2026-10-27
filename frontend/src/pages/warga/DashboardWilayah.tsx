@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { useAuth } from "@/context/AuthContext"
 import { useFetch } from "@/hooks/useFetch"
 import { listSekolah } from "@/lib/api/sekolah"
@@ -18,8 +17,6 @@ import {
   Building2,
   AlertTriangle,
   CheckCircle2,
-  Download,
-  Filter,
   Shield,
   Clock,
   Plus,
@@ -47,19 +44,10 @@ import {
 const PAGE_SIZE = 100;
 const ITEMS_PER_PAGE = 10;
 
-/** Role yang boleh memberi vote (POST /vote). */
-const ROLE_BOLEH_VOTE = ["warga_terverifikasi", "komite_sekolah"];
+/** Role yang boleh memberi vote (POST /vote per D-28). */
+const ROLE_BOLEH_VOTE = ["warga_umum", "warga_terverifikasi", "komite_sekolah"];
 
-const OPSI_JENJANG = ["Semua", "SD", "SMP", "SMA", "SMK"] as const;
-
-type StatusIntegritas = "Sesuai" | "Selisih Minor" | "Mismatch Kritis";
 type FilterKlaster = "semua" | "belum" | "terverifikasi";
-
-const STATUS_SEL: Record<StatusIntegritas, string> = {
-  Sesuai: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  "Selisih Minor": "bg-amber-50 text-amber-800 border-amber-200",
-  "Mismatch Kritis": "bg-rose-50 text-rose-800 border-rose-200",
-};
 
 const STATUS_VERIFIKASI_STYLE: Record<string, string> = {
   terverifikasi: "bg-emerald-50 text-emerald-800 border-emerald-200",
@@ -76,22 +64,6 @@ const STATUS_VERIFIKASI_LABEL: Record<string, string> = {
   belum_terklasifikasi: "Belum Terklasifikasi",
 };
 
-/**
- * Status integritas diturunkan dari klaster milik sekolah:
- * ada klaster `tidak_terverifikasi` → kritis; klaster masih menunggu/info →
- * selisih minor; semua terverifikasi (atau tidak ada klaster) → sesuai.
- */
-function deriveStatusIntegritas(klasters: KlasterListItem[]): StatusIntegritas {
-  if (klasters.some((k) => k.status_verifikasi === "tidak_terverifikasi")) return "Mismatch Kritis";
-  if (
-    klasters.some(
-      (k) => k.status_verifikasi === "menunggu_verifikasi" || k.status_verifikasi === "perlu_info_tambahan",
-    )
-  )
-    return "Selisih Minor";
-  return "Sesuai";
-}
-
 function labelUrgensi(skor: number): { label: string; kelas: string } {
   if (skor >= 70) return { label: "Kritis / Mendesak", kelas: "bg-rose-50 text-rose-800 border-rose-200" };
   if (skor >= 40) return { label: "Perhatian Sedang", kelas: "bg-amber-50 text-amber-800 border-amber-200" };
@@ -107,9 +79,7 @@ function kelasSkor(skor: number): string {
 export default function DashboardWilayah() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const [filterJenjang, setFilterJenjang] = useState<string>("Semua");
   const [filterKlaster, setFilterKlaster] = useState<FilterKlaster>("semua");
-  const [pageMatriks, setPageMatriks] = useState<number>(1);
   const [pageKlaster, setPageKlaster] = useState<number>(1);
 
   // Vote (F3.2) — status per klaster + umpan balik.
@@ -133,7 +103,7 @@ export default function DashboardWilayah() {
   const klastersPrioritas: DashboardPrioritasItem[] =
     prioritasState.status === "success" ? prioritasState.data : [];
 
-  /** Kelompokkan klaster per NPSN sekolah untuk matriks integritas. */
+  /** Kelompokkan klaster per NPSN sekolah untuk peta. */
   const klastersPerSekolah = useMemo(() => {
     const map = new Map<string, KlasterListItem[]>();
     for (const k of daftarKlaster) {
@@ -144,31 +114,7 @@ export default function DashboardWilayah() {
     return map;
   }, [daftarKlaster]);
 
-  const barisMatriks = useMemo(
-    () =>
-      daftarSekolah.map((s) => {
-        const klasters = klastersPerSekolah.get(s.npsn) ?? [];
-        const belumTerverifikasi = klasters.filter((k) => k.status_verifikasi !== "terverifikasi").length;
-        return {
-          sekolah: s,
-          totalKlaster: klasters.length,
-          belumTerverifikasi,
-          skorTertinggi: klasters.reduce((maks, k) => Math.max(maks, k.skor_prioritas ?? 0), 0),
-          status: deriveStatusIntegritas(klasters),
-        };
-      }),
-    [daftarSekolah, klastersPerSekolah],
-  );
-
-  const filteredRows = useMemo(
-    () =>
-      filterJenjang === "Semua"
-        ? barisMatriks
-        : barisMatriks.filter((r) => r.sekolah.jenjang === filterJenjang),
-    [barisMatriks, filterJenjang],
-  );
-
-  /** Distribusi klaster per kategori — menggantikan peta mock. */
+  /** Distribusi klaster per kategori. */
   const sebaranKategori = useMemo(() => {
     const tally = new Map<string, number>();
     for (const k of daftarKlaster) tally.set(k.kategori, (tally.get(k.kategori) ?? 0) + 1);
@@ -184,22 +130,10 @@ export default function DashboardWilayah() {
     return klastersPrioritas;
   }, [klastersPrioritas, filterKlaster]);
 
-  const handleFilterJenjang = (val: string) => {
-    setFilterJenjang(val);
-    setPageMatriks(1);
-  };
-
   const handleFilterKlaster = (val: FilterKlaster) => {
     setFilterKlaster(val);
     setPageKlaster(1);
   };
-
-  const totalPagesMatriks = Math.max(1, Math.ceil(filteredRows.length / ITEMS_PER_PAGE));
-  const currentPageMatriks = Math.min(Math.max(1, pageMatriks), totalPagesMatriks);
-  const paginatedMatriksRows = useMemo(() => {
-    const start = (currentPageMatriks - 1) * ITEMS_PER_PAGE;
-    return filteredRows.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredRows, currentPageMatriks]);
 
   const totalPagesKlaster = Math.max(1, Math.ceil(klasterTerfilter.length / ITEMS_PER_PAGE));
   const currentPageKlaster = Math.min(Math.max(1, pageKlaster), totalPagesKlaster);
@@ -301,7 +235,7 @@ export default function DashboardWilayah() {
       return;
     }
     if (!roleBolehVote) {
-      setVoteError("Hanya warga terverifikasi atau komite sekolah yang dapat memvote.");
+      setVoteError("Vote hanya untuk akun warga dan komite sekolah.");
       return;
     }
     if (pendingVoteId === klasterId || votedKlaster[klasterId]) return;
@@ -321,7 +255,7 @@ export default function DashboardWilayah() {
         setIsVoteAuthOpen(true);
       } else if (apiErr?.status === 403) {
         setVotedKlaster((prev) => ({ ...prev, [klasterId]: false }));
-        setVoteError("Hanya warga terverifikasi atau komite sekolah yang dapat memvote.");
+        setVoteError("Vote hanya untuk akun warga dan komite sekolah.");
       } else {
         setVotedKlaster((prev) => ({ ...prev, [klasterId]: false }));
         setVoteError("Gagal mengirim vote. Coba lagi.");
@@ -339,34 +273,6 @@ export default function DashboardWilayah() {
     () => daftarKlaster.filter((k) => k.status_verifikasi === "terverifikasi").length,
     [daftarKlaster],
   );
-
-  const handleUnduhCsv = () => {
-    const headers = ["NPSN", "Nama Sekolah", "Jenjang", "Jumlah Klaster", "Belum Terverifikasi", "Skor Tertinggi", "Status Integritas"];
-    const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const rows = filteredRows.map((r) =>
-      [
-        r.sekolah.npsn,
-        r.sekolah.nama,
-        r.sekolah.jenjang,
-        r.totalKlaster,
-        r.belumTerverifikasi,
-        r.skorTertinggi,
-        r.status,
-      ]
-        .map(escape)
-        .join(","),
-    );
-    const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    const saringan = filterJenjang !== "Semua" ? `${filterJenjang.toLowerCase()}_` : "";
-    link.download = `matriks_integritas_sarpras_${saringan}${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
 
   const handleReportClick = (school?: { npsn: string; nama: string }) => {
     if (!isAuthenticated) {
@@ -562,161 +468,185 @@ export default function DashboardWilayah() {
 
         {!memuat && !gagal && (
           <>
-            {/* ── Matriks Integritas + Widgets ── */}
+            {/* ── Daftar Klaster Isu Terkini & Widgets (D-27) ── */}
             <div className="grid gap-8 lg:grid-cols-12 items-start">
               <div className="lg:col-span-8 space-y-6">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-                    <div>
-                      <h2 className="text-lg font-bold text-slate-900 tracking-tight">Matriks Integritas Sarana Sekolah</h2>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Status integritas diturunkan dari klaster isu hasil processing AI pipeline per sekolah.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Button
-                        onClick={() => handleReportClick()}
-                        className="h-8 text-xs font-semibold text-white bg-[#0B3052] hover:bg-[#07213A] rounded-lg shadow-sm cursor-pointer"
-                      >
-                        <Plus className="h-3.5 w-3.5 mr-1" /> Laporkan Temuan
-                      </Button>
-                      <Select value={filterJenjang} onValueChange={handleFilterJenjang}>
-                        <SelectTrigger
-                          aria-label="Filter jenjang sekolah"
-                          className={`h-8 w-auto gap-2 rounded-lg border-slate-200 bg-white px-3 text-xs font-medium shadow-sm whitespace-nowrap inline-flex items-center ${
-                            filterJenjang !== "Semua" ? "border-blue-300 bg-blue-50 text-[#0B3052]" : "text-slate-700"
-                          }`}
-                        >
-                          <Filter className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                          <span className="whitespace-nowrap">
-                            {filterJenjang === "Semua" ? "Filter Jenjang" : `Jenjang: ${filterJenjang}`}
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {OPSI_JENJANG.map((j) => (
-                            <SelectItem key={j} value={j} className="text-xs">
-                              {j}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleUnduhCsv}
-                        disabled={filteredRows.length === 0}
-                        className="h-8 text-xs font-medium text-slate-700 border-slate-200 cursor-pointer disabled:opacity-50"
-                      >
-                        <Download className="h-3.5 w-3.5 mr-1" /> Unduh CSV
-                      </Button>
-                    </div>
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 tracking-tight">Daftar Klaster Isu Terkini</h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Klaster isu sarpras dengan skor prioritas tertinggi di wilayah kerja.
+                    </p>
                   </div>
-
-<div className="overflow-x-auto mt-4">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                      <th className="py-3 px-2">NAMA SEKOLAH</th>
-                      <th className="py-3 px-2 text-center">KLASTER</th>
-                      <th className="py-3 px-2 text-center">BELUM VERIFIKASI</th>
-                      <th className="py-3 px-2 text-center">SKOR MAX</th>
-                      <th className="py-3 px-2 text-right">STATUS</th>
-                      <th className="py-3 px-2 text-right">AKSI</th>
-                    </tr>
-                  </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-700">
-                        {filteredRows.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
-                              {totalSekolah === 0
-                                ? "Belum ada sekolah di backend. Jalankan ingest CSV Dapodik lebih dahulu."
-                                : `Tidak ada sekolah dengan jenjang ${filterJenjang}.`}
-                            </td>
-                          </tr>
-                        ) : (
-                          paginatedMatriksRows.map((row) => (
-                            <tr key={row.sekolah.npsn} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="py-3.5 px-2">
-                                <Link to={`/sekolah/${row.sekolah.npsn}`} className="font-bold text-slate-900 hover:text-[#0B3052] block">
-                                  {row.sekolah.nama}
-                                </Link>
-                                <span className="text-[11px] text-slate-400 font-mono">
-                                  NPSN: {row.sekolah.npsn} · {row.sekolah.jenjang}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-2 text-center tabular-nums">{row.totalKlaster}</td>
-                              <td className="py-3.5 px-2 text-center tabular-nums">
-                                {row.belumTerverifikasi === 0 ? (
-                                  <span className="text-slate-400">0</span>
-                                ) : (
-                                  <span className="inline-block rounded px-2 py-0.5 text-sm bg-amber-50 font-bold text-amber-800 border border-amber-200/60">
-                                    {row.belumTerverifikasi}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3.5 px-2 text-center">
-                                {row.totalKlaster === 0 ? (
-                                  <span className="text-slate-400">—</span>
-                                ) : (
-                                  <span className={`inline-block rounded px-2 py-0.5 text-sm tabular-nums ${kelasSkor(row.skorTertinggi)}`}>
-                                    {row.skorTertinggi}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3.5 px-2 text-right">
-                                <span className={`inline-block rounded-full border px-2.5 py-1 text-[11px] font-bold ${STATUS_SEL[row.status]}`}>
-                                  {row.status}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-2 text-right">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleReportClick({ npsn: row.sekolah.npsn, nama: row.sekolah.nama })}
-                                  className="h-7 px-2.5 text-[11px] font-bold text-[#0B3052] border-slate-200 hover:bg-blue-50 cursor-pointer"
-                                >
-                                  Lapor
-                                </Button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 text-[11px] text-slate-500">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span>Keterangan:</span>
-                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Sesuai</span>
-                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> Selisih Minor</span>
-                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Mismatch Kritis</span>
-                      </div>
-                      <div className="tabular-nums">
-                        {filteredRows.length === 0 ? (
-                          "0 sekolah"
-                        ) : (
-                          <>
-                            Menampilkan{" "}
-                            <strong className="text-slate-700">
-                              {(currentPageMatriks - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPageMatriks * ITEMS_PER_PAGE, filteredRows.length)}
-                            </strong>{" "}
-                            dari <strong className="text-slate-700">{filteredRows.length}</strong> sekolah
-                            {filterJenjang !== "Semua" ? ` (difilter jenjang ${filterJenjang})` : ""}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    {totalPagesMatriks > 1 && (
-                      <NumberedPagination
-                        currentPage={currentPageMatriks}
-                        totalPages={totalPagesMatriks}
-                        onPageChange={setPageMatriks}
-                      />
-                    )}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => handleReportClick()}
+                      className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-8 px-3 rounded-lg shadow-sm cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Buat Aduan Baru
+                    </Button>
                   </div>
                 </div>
+
+                {/* Filter Chips Bar */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {([
+                      { id: "semua", label: `Semua Klaster (${totalKlaster})` },
+                      { id: "belum", label: "Belum Terverifikasi" },
+                      { id: "terverifikasi", label: "Terverifikasi" },
+                    ] as { id: FilterKlaster; label: string }[]).map((chip) => (
+                      <button
+                        key={chip.id}
+                        onClick={() => handleFilterKlaster(chip.id)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                          filterKlaster === chip.id
+                            ? "bg-[#0B3052] text-white font-semibold"
+                            : "bg-slate-100 hover:bg-slate-200/70 text-slate-600"
+                        }`}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+  
+                {voteError && (
+                  <div className="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                    <span>{voteError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setVoteError(null)}
+                      aria-label="Tutup pesan"
+                      className="shrink-0 font-bold text-rose-500 hover:text-rose-700 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+  
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-sans">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                        <th className="py-3 pl-3 pr-2 w-auto">ISU &amp; SEKOLAH</th>
+                        <th className="py-3 px-1.5 text-center w-28 whitespace-nowrap">KLASTER ISU</th>
+                        <th className="py-3 px-1.5 text-center w-32 whitespace-nowrap">STATUS VERIFIKASI</th>
+                        <th className="py-3 px-1.5 text-center w-36 whitespace-nowrap">TINGKAT URGENSI</th>
+                        <th className="py-3 pl-1.5 pr-3 text-center w-32 whitespace-nowrap">AKSI</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700">
+                      {klasterTerfilter.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-xs text-slate-400">
+                            {totalKlaster === 0
+                              ? "Belum ada klaster isu. Jalankan POST /ai/cluster untuk memproses laporan."
+                              : "Tidak ada klaster pada filter ini."}
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedKlasterRows.map((k) => {
+                          const urgensi = labelUrgensi(k.skor_prioritas);
+                          const sudahVote = !!votedKlaster[k.klaster_id];
+                          const jumlahVote =
+                            (voteCountById[k.klaster_id] ?? 0) + (voteBoost[k.klaster_id] ?? 0);
+                          return (
+                            <tr key={k.klaster_id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3.5 pl-3 pr-2">
+                                <span className="font-bold text-slate-900 text-sm block leading-snug">{k.label ?? k.kategori}</span>
+                                <span className="text-[11px] text-slate-400">{k.sekolah_nama}</span>
+                              </td>
+                              <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
+                                <span className="inline-block rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-800 border border-blue-200/60 font-sans">
+                                  {k.kategori}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
+                                <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-bold font-sans ${STATUS_VERIFIKASI_STYLE[k.status_verifikasi] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                                  {STATUS_VERIFIKASI_LABEL[k.status_verifikasi] ?? k.status_verifikasi}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
+                                <div className="inline-flex flex-col items-center justify-center">
+                                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold border font-sans ${urgensi.kelas}`}>
+                                    <span className="h-1.5 w-1.5 rounded-full bg-current" /> {urgensi.label}
+                                  </span>
+                                  <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400 tabular-nums font-sans mt-0.5">
+                                    <span>skor {k.skor_prioritas}</span>
+                                    <span>·</span>
+                                    <span>{jumlahVote} vote</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3.5 pl-1.5 pr-3 text-center whitespace-nowrap">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleVote(k.klaster_id)}
+                                    disabled={sudahVote || pendingVoteId === k.klaster_id}
+                                    title={sudahVote ? "Kamu sudah memvote klaster ini" : "Beri vote dukungan untuk isu ini"}
+                                    className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-colors font-sans ${
+                                      sudahVote
+                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                                        : "border-slate-200 bg-white text-[#0B3052] hover:bg-blue-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                    }`}
+                                  >
+                                    {pendingVoteId === k.klaster_id ? (
+                                      "…"
+                                    ) : sudahVote ? (
+                                      <>
+                                        <CheckCircle2 className="h-3.5 w-3.5" /> Voted
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ThumbsUp className="h-3.5 w-3.5" /> Vote
+                                      </>
+                                    )}
+                                  </button>
+                                  <Link
+                                    to={`/klaster/${k.klaster_id}`}
+                                    className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3052] hover:underline font-sans"
+                                  >
+                                    Tinjau Isu
+                                  </Link>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+  
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
+                  <span className="tabular-nums">
+                    {klasterTerfilter.length === 0 ? (
+                      "0 klaster"
+                    ) : (
+                      <>
+                        Menampilkan{" "}
+                        <strong className="text-slate-700">
+                          {(currentPageKlaster - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPageKlaster * ITEMS_PER_PAGE, klasterTerfilter.length)}
+                        </strong>{" "}
+                        dari <strong className="text-slate-700">{klasterTerfilter.length}</strong> klaster
+                      </>
+                    )}
+                  </span>
+                  {totalPagesKlaster > 1 && (
+                    <NumberedPagination
+                      currentPage={currentPageKlaster}
+                      totalPages={totalPagesKlaster}
+                      onPageChange={setPageKlaster}
+                    />
+                  )}
+                  <Link to="/laporan/riwayat" className="text-xs font-bold text-[#0B3052] hover:underline">
+                    Lihat riwayat laporan
+                  </Link>
+                </div>
+              </div>
               </div>
 
               {/* Widgets */}
@@ -942,172 +872,6 @@ export default function DashboardWilayah() {
               </div>
             </div>
 
-            {/* ── Klaster Terkini ── */}
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 tracking-tight">Daftar Klaster Isu Terkini</h2>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Klaster isu sarpras dengan skor prioritas tertinggi di wilayah kerja.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {([
-                    { id: "semua", label: `Semua Klaster (${totalKlaster})` },
-                    { id: "belum", label: "Belum Terverifikasi" },
-                    { id: "terverifikasi", label: "Terverifikasi" },
-                  ] as { id: FilterKlaster; label: string }[]).map((chip) => (
-                    <button
-                      key={chip.id}
-                      onClick={() => handleFilterKlaster(chip.id)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                        filterKlaster === chip.id
-                          ? "bg-[#0B3052] text-white font-semibold"
-                          : "bg-slate-100 hover:bg-slate-200/70 text-slate-600"
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                  <Button
-                    onClick={() => handleReportClick()}
-                    className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-8 px-3 rounded-lg shadow-sm cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Buat Aduan Baru
-                  </Button>
-                </div>
-              </div>
-
-              {voteError && (
-                <div className="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-                  <span>{voteError}</span>
-                  <button
-                    type="button"
-                    onClick={() => setVoteError(null)}
-                    aria-label="Tutup pesan"
-                    className="shrink-0 font-bold text-rose-500 hover:text-rose-700 cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                      <th className="py-3 px-3">ISU &amp; SEKOLAH</th>
-                      <th className="py-3 px-3">KLASTER ISU</th>
-                      <th className="py-3 px-3">STATUS VERIFIKASI</th>
-                      <th className="py-3 px-3">TINGKAT URGENSI</th>
-                      <th className="py-3 px-3 text-right">AKSI</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {klasterTerfilter.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="py-8 text-center text-xs text-slate-400">
-                          {totalKlaster === 0
-                            ? "Belum ada klaster isu. Jalankan POST /ai/cluster untuk memproses laporan."
-                            : "Tidak ada klaster pada filter ini."}
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedKlasterRows.map((k) => {
-                        const urgensi = labelUrgensi(k.skor_prioritas);
-                        const sudahVote = !!votedKlaster[k.klaster_id];
-                        const jumlahVote =
-                          (voteCountById[k.klaster_id] ?? 0) + (voteBoost[k.klaster_id] ?? 0);
-                        return (
-                          <tr key={k.klaster_id} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="py-4 px-3">
-                              <span className="font-bold text-slate-900 text-sm block">{k.label ?? k.kategori}</span>
-                              <span className="text-[11px] text-slate-400">{k.sekolah_nama}</span>
-                            </td>
-                            <td className="py-4 px-3">
-                              <span className="inline-block rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800 border border-blue-200/60 font-mono">
-                                {k.kategori}
-                              </span>
-                            </td>
-                            <td className="py-4 px-3">
-                              <span className={`inline-block rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_VERIFIKASI_STYLE[k.status_verifikasi] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
-                                {STATUS_VERIFIKASI_LABEL[k.status_verifikasi] ?? k.status_verifikasi}
-                              </span>
-                            </td>
-                            <td className="py-4 px-3">
-                              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${urgensi.kelas}`}>
-                                <span className="h-1.5 w-1.5 rounded-full bg-current" /> {urgensi.label}
-                              </span>
-                              <span className="ml-2 text-[11px] text-slate-400 tabular-nums">skor {k.skor_prioritas}</span>
-                              <span className="ml-2 text-[11px] text-slate-400 tabular-nums">· {jumlahVote} vote</span>
-                            </td>
-                            <td className="py-4 px-3 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleVote(k.klaster_id)}
-                                  disabled={sudahVote || pendingVoteId === k.klaster_id}
-                                  title={sudahVote ? "Kamu sudah memvote klaster ini" : "Beri vote dukungan untuk isu ini"}
-                                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors ${
-                                    sudahVote
-                                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
-                                      : "border-slate-200 bg-white text-[#0B3052] hover:bg-blue-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                  }`}
-                                >
-                                  {pendingVoteId === k.klaster_id ? (
-                                    "…"
-                                  ) : sudahVote ? (
-                                    <>
-                                      <CheckCircle2 className="h-3.5 w-3.5" /> Voted
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ThumbsUp className="h-3.5 w-3.5" /> Vote
-                                    </>
-                                  )}
-                                </button>
-                                <Link
-                                  to={`/klaster/${k.klaster_id}`}
-                                  className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3052] hover:underline"
-                                >
-                                  Tinjau Isu
-                                </Link>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
-                <span className="tabular-nums">
-                  {klasterTerfilter.length === 0 ? (
-                    "0 klaster"
-                  ) : (
-                    <>
-                      Menampilkan{" "}
-                      <strong className="text-slate-700">
-                        {(currentPageKlaster - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPageKlaster * ITEMS_PER_PAGE, klasterTerfilter.length)}
-                      </strong>{" "}
-                      dari <strong className="text-slate-700">{klasterTerfilter.length}</strong> klaster
-                    </>
-                  )}
-                </span>
-                {totalPagesKlaster > 1 && (
-                  <NumberedPagination
-                    currentPage={currentPageKlaster}
-                    totalPages={totalPagesKlaster}
-                    onPageChange={setPageKlaster}
-                  />
-                )}
-                <Link to="/laporan/riwayat" className="text-xs font-bold text-[#0B3052] hover:underline">
-                  Lihat riwayat laporan
-                </Link>
-              </div>
-            </div>
           </>
         )}
       </div>
