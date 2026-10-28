@@ -45,12 +45,6 @@ const STATUS_META: Record<string, MetaStatus> = {
     badgeCls: "bg-surface-alt text-ink-secondary border border-border",
     negatif: false,
   },
-  perlu_info_tambahan: {
-    label: "Perlu Info Tambahan",
-    teks: "Dinas membutuhkan informasi tambahan sebelum memutuskan status isu ini.",
-    badgeCls: "bg-primary-light text-primary border border-primary-border",
-    negatif: false,
-  },
   terverifikasi: {
     label: "Terverifikasi",
     teks: "Isu terverifikasi dan masuk dalam perhitungan skor prioritas.",

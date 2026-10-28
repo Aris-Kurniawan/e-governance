@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import {
   CheckCircle2,
-  Bell,
   XCircle,
   Building2,
   Users,
@@ -110,7 +109,7 @@ export default function AntrianValidasi() {
     { pesan: string; tipe: "sukses" | "gagal" } | null
   >(null)
   /** Aksi yang sedang menunggu alasan dari petugas (null = tidak ada). */
-  const [aksiMenungguAlasan, setAksiMenungguAlasan] = useState<"baru" | "tolak" | null>(null)
+  const [aksiMenungguAlasan, setAksiMenungguAlasan] = useState<"tolak" | null>(null)
   const [alasanPreset, setAlasanPreset] = useState<string>("")
   const [alasanCatatan, setAlasanCatatan] = useState<string>("")
   const [previewImage, setPreviewImage] = useState<{ url: string; caption: string } | null>(null)
@@ -231,7 +230,6 @@ export default function AntrianValidasi() {
       // Tab filter — memakai status_verifikasi yang benar-benar dikirim backend.
       if (activeTab === "belum_ditinjau" && k.statusVerifikasi !== "menunggu_verifikasi") return false
       if (activeTab === "mismatch" && k.statusVerifikasi !== "terverifikasi") return false
-      if (activeTab === "kejadian_baru" && k.statusVerifikasi !== "perlu_info_tambahan") return false
       if (activeTab === "ditolak" && k.statusVerifikasi !== "tidak_terverifikasi") return false
 
       // School filter
@@ -293,14 +291,13 @@ export default function AntrianValidasi() {
    * kalimat otomatis, supaya jejak audit benar-benar menjelaskan keputusan.
    */
   const handleDecision = async (
-    type: "mismatch" | "baru" | "tolak",
+    type: "mismatch" | "tolak",
     alasan?: string,
   ) => {
     if (!bolehVerifikasi) return
     if (!selectedKlasterId) return
     const peta = {
       mismatch: { status: "terverifikasi" },
-      baru: { status: "perlu_info_tambahan" },
       tolak: { status: "tidak_terverifikasi" },
     } as const
     const { status } = peta[type]
@@ -345,7 +342,6 @@ export default function AntrianValidasi() {
     return {
       belum_ditinjau: hitung("menunggu_verifikasi"),
       mismatch: hitung("terverifikasi"),
-      kejadian_baru: hitung("perlu_info_tambahan"),
       ditolak: hitung("tidak_terverifikasi"),
     }
   }, [daftarKlasterDinas])
@@ -405,7 +401,6 @@ export default function AntrianValidasi() {
             {[
               { id: "belum_ditinjau", label: "Menunggu Verifikasi", count: tabCounts.belum_ditinjau, badgeClass: "bg-rose-100 text-rose-700" },
               { id: "mismatch", label: "Terverifikasi", count: tabCounts.mismatch, badgeClass: "bg-slate-100 text-slate-700" },
-              { id: "kejadian_baru", label: "Perlu Info Tambahan", count: tabCounts.kejadian_baru, badgeClass: "bg-blue-100 text-blue-700" },
               { id: "ditolak", label: "Tidak Terverifikasi", count: tabCounts.ditolak, badgeClass: "bg-slate-100 text-slate-700" },
             ].map((t) => (
               <button
@@ -872,25 +867,13 @@ export default function AntrianValidasi() {
                     siapa saja; hanya petugas yang dapat mengubah status klaster.
                   </div>
                 ) : (
-                  <div className="grid gap-2.5 sm:grid-cols-3">
+                  <div className="grid gap-2.5 sm:grid-cols-2">
                     <Button
                       onClick={() => handleDecision("mismatch")}
                       className="h-11 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all"
                     >
                       <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                       <span>Verifikasi Mismatch</span>
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setAksiMenungguAlasan("baru")
-                        setAlasanPreset("")
-                        setAlasanCatatan("")
-                      }}
-                      variant="outline"
-                      className="h-11 bg-blue-50/70 hover:bg-blue-100 text-blue-900 border-blue-200 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                    >
-                      <Bell className="h-4 w-4 text-blue-600" />
-                      <span>Tandai Kejadian Baru</span>
                     </Button>
                     <Button
                       onClick={() => {
@@ -914,9 +897,7 @@ export default function AntrianValidasi() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-xs font-bold text-slate-800">
-                          {aksiMenungguAlasan === "tolak"
-                            ? "Alasan penolakan klaster"
-                            : "Alasan permintaan info tambahan"}
+                          Alasan penolakan klaster
                         </p>
                         <p className="text-[11px] text-slate-500 mt-0.5">
                           Alasan tersimpan di riwayat klaster sebagai jejak audit — pilih alasan utama,
@@ -973,7 +954,7 @@ export default function AntrianValidasi() {
                         disabled={!alasanPreset}
                         className="text-[11px] h-8 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold disabled:opacity-40"
                       >
-                        {aksiMenungguAlasan === "tolak" ? "Tolak & Simpan Alasan" : "Simpan & Minta Info"}
+                        Tolak & Simpan Alasan
                       </Button>
                     </div>
                   </div>

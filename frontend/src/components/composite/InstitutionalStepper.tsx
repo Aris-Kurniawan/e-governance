@@ -24,7 +24,6 @@ export const TAHAP_STEPPER = [
 export function tahapDariStatus(status: string | null): number | null {
   switch (status) {
     case "menunggu_verifikasi":
-    case "perlu_info_tambahan":
       return 1
     case "terverifikasi":
     case "dalam_antrian_prioritas":

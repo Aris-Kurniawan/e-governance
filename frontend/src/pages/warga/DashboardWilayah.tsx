@@ -52,14 +52,12 @@ type FilterKlaster = "semua" | "belum" | "terverifikasi";
 const STATUS_VERIFIKASI_STYLE: Record<string, string> = {
   terverifikasi: "bg-emerald-50 text-emerald-800 border-emerald-200",
   menunggu_verifikasi: "bg-amber-50 text-amber-800 border-amber-200",
-  perlu_info_tambahan: "bg-blue-50 text-blue-800 border-blue-200",
   tidak_terverifikasi: "bg-rose-50 text-rose-800 border-rose-200",
 };
 
 const STATUS_VERIFIKASI_LABEL: Record<string, string> = {
   terverifikasi: "Terverifikasi",
   menunggu_verifikasi: "Menunggu Verifikasi",
-  perlu_info_tambahan: "Perlu Info Tambahan",
   tidak_terverifikasi: "Tidak Terverifikasi",
   belum_terklasifikasi: "Belum Terklasifikasi",
 };

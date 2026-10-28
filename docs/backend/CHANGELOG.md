@@ -1671,6 +1671,33 @@ aturan AGENTS.md hanya saat diminta ("commit"). Sisa backlog: 50 label manual F4
 - Endpoint `GET /laporan/publik` live mengembalikan aduan `TRK-AUG-500-0460` (SMP SUNAN GIRI 1).
 - Frontend `npm run build` sukses 100% tanpa error.
 
+## 3.40 DBG-025 — Penghapusan Total Status `perlu_info_tambahan` (2026-10-28) ✅ SELESAI
+
+**Perbaikan DBG-025:**
+
+1. **Masalah:**
+   - Tombol "Tandai Kejadian Baru" di Antrian Validasi membingungkan petugas — tidak jelas fungsinya dalam alur verifikasi.
+   - Status `perlu_info_tambahan` tidak dipakai dalam alur bisnis; 0 klaster pernah memakai status ini di DB live.
+
+2. **Perubahan:**
+   - **Migrasi** `a1b2c3d4e5f6` — ALTER ENUM `klaster.status_verifikasi` (4→3 nilai) + `status_log.status` (8→7 nilai), guard non-MySQL.
+   - **Backend:**
+     - `models/klaster.py`: hapus dari `STATUS_KLASTER_ENUM` & `STATUS_LOG_ENUM`.
+     - `routers/klaster.py`: hapus dari `valid_status` (`PUT /klaster/{id}/verifikasi` + `POST /klaster/{id}/status`) + kondisi `status_verifikasi`.
+     - `verify_schema_parity.py`: update komentar.
+   - **Frontend:**
+     - `AntrianValidasi.tsx`: hapus tombol "Tandai Kejadian Baru", tab "Perlu Info Tambahan", state `"baru"`, `handleDecision` type `"baru"`, import `Bell`.
+     - `types.ts`: hapus dari `StatusKlaster` & `StatusPenanganan`.
+     - `TabelVerifikasi.tsx`, `DashboardWilayah.tsx`, `RiwayatLaporan.tsx`, `StatusTindakLanjutWarga.tsx`, `InstitutionalStepper.tsx`: hapus dari label/badge/stepper/filter.
+   - **Docs:**
+     - `INTERFACES.md` §5 & §7: hapus dari daftar status.
+     - `DEBUGGING.md`: tambah **DBG-025** `✅ SELESAI`.
+
+**Bukti verifikasi:**
+- pytest **158/158** lulus.
+- `npm run build` hijau (26.71s).
+- Grep `perlu_info_tambahan` di `frontend/src` = 0 hasil.
+
 ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.

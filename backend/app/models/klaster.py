@@ -9,13 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, gen_uuid
 from app.models.laporan import KATEGORI_ENUM
 
-# `perlu_info_tambahan` wajib ada di sini: `PUT /klaster/{id}/verifikasi`
-# menerimanya (INTERFACES.md §5, tombol "Tandai Kejadian Baru" di FE), tapi
-# dulu nilai ini hanya ada di endpoint & status_log — enum kolom `klaster`
-# kehilangannya sehingga MySQL menolak UPDATE (error 1265 Data truncated → 500).
 STATUS_KLASTER_ENUM = (
     "menunggu_verifikasi",
-    "perlu_info_tambahan",
     "tidak_terverifikasi",
     "terverifikasi",
 )
@@ -28,7 +23,6 @@ STATUS_PENANGANAN_ENUM = (
 STATUS_VOTE_ENUM = ("pending", "terhitung")
 STATUS_LOG_ENUM = (
     "menunggu_verifikasi",
-    "perlu_info_tambahan",
     "tidak_terverifikasi",
     "terverifikasi",
     "dalam_antrian_prioritas",

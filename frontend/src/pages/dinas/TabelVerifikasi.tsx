@@ -44,9 +44,9 @@ import type { KlasterListItem, StatusKlaster, KlasterDetail } from "@/lib/api/ty
  * "Kondisi Dapodik vs Lapangan" (tidak ada endpoint pembanding),
  * "Verifikator" + tanggal verifikasi (tidak dikirim `GET /klaster`),
  * nomor tiket `KLS-2026-xxxx` (format rekaan; diganti ID klaster asli),
- * serta status "Mismatch / Kejadian Baru / Menunggu / Ditolak" yang bukan
+ * serta status "Mismatch / Menunggu / Ditolak" yang bukan
  * nilai enum backend. Enum sebenarnya: `menunggu_verifikasi`,
- * `perlu_info_tambahan`, `tidak_terverifikasi`, `terverifikasi`.
+ * `tidak_terverifikasi`, `terverifikasi`.
  */
 
 /** `page_size` maksimal 100 (backend `GET /klaster` clamp). */
@@ -64,13 +64,6 @@ const STATUS_META: Record<FilterStatus, { label: string; bg: string; text: strin
     text: "text-amber-800",
     border: "border-amber-200",
     dot: "bg-amber-500",
-  },
-  perlu_info_tambahan: {
-    label: "Perlu Info Tambahan",
-    bg: "bg-blue-50",
-    text: "text-blue-800",
-    border: "border-blue-200",
-    dot: "bg-blue-600",
   },
   tidak_terverifikasi: {
     label: "Tidak Terverifikasi",
@@ -91,7 +84,6 @@ const STATUS_META: Record<FilterStatus, { label: string; bg: string; text: strin
 const OPSI_STATUS: FilterStatus[] = [
   "Semua",
   "menunggu_verifikasi",
-  "perlu_info_tambahan",
   "tidak_terverifikasi",
   "terverifikasi",
 ];
@@ -230,7 +222,6 @@ export default function TabelVerifikasi() {
     const counts: Record<FilterStatus, number> = {
       Semua: baris.length,
       menunggu_verifikasi: 0,
-      perlu_info_tambahan: 0,
       tidak_terverifikasi: 0,
       terverifikasi: 0,
     };
@@ -630,7 +621,7 @@ export default function TabelVerifikasi() {
               { label: "Terverifikasi", value: statusCounts.terverifikasi, color: "text-emerald-700", bg: "bg-emerald-50" },
               {
                 label: "Belum Terverifikasi",
-                value: statusCounts.menunggu_verifikasi + statusCounts.perlu_info_tambahan + statusCounts.tidak_terverifikasi,
+                value: statusCounts.menunggu_verifikasi + statusCounts.tidak_terverifikasi,
                 color: "text-rose-700",
                 bg: "bg-rose-50",
               },

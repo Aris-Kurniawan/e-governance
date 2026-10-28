@@ -663,7 +663,7 @@ dibaca lewat `GET /laporan/perlu-review` (§4).
 Klaster tidak ada → `404 NOT_FOUND`.
 
 **`PUT /klaster/{id}/verifikasi`** — param **query** (bukan body JSON):
-`?status=terverifikasi|tidak_terverifikasi|perlu_info_tambahan&alasan=string`
+`?status=terverifikasi|tidak_terverifikasi&alasan=string`
 
 - `status` tidak valid → `400 VALIDATION_ERROR`
 - `status != terverifikasi` tanpa `alasan` → `400 VALIDATION_ERROR`
@@ -746,7 +746,7 @@ response `200`:
 ```
 
 **`POST /klaster/{id}/status`** — param **query**:
-- `status` (wajib): `menunggu_verifikasi | perlu_info_tambahan | tidak_terverifikasi | terverifikasi | dalam_antrian_prioritas | dalam_proses | selesai | tidak_dapat_ditindaklanjuti`
+- `status` (wajib): `menunggu_verifikasi | tidak_terverifikasi | terverifikasi | dalam_antrian_prioritas | dalam_proses | selesai | tidak_dapat_ditindaklanjuti`
 - `alasan` (opsional — **wajib** jika `status` = `tidak_terverifikasi` atau `tidak_dapat_ditindaklanjuti`)
 
 Status tidak valid → `400 VALIDATION_ERROR`; `alasan` kosong untuk status

@@ -46,6 +46,7 @@
 | DBG-022 | **Vote menghapus komponen Dapodik 30%**: `create_vote` & `PUT /vote/klaster/{id}/skor` (F3.14) hardcode `kondisi_dapodik = {"total": 0, ...}` tanpa query `KondisiSarana` → setiap vote + endpoint "hitung ulang" menulis skor keparahan dengan Dapodik = 0. Endpoint pemeliharaan justru merusak data | `routers/vote.py:46` (`create_vote`), `routers/vote.py:100` (F3.14) | ✅ SELESAI | Hardcode `total: 0` di 2 tempat; `0,3 × 66 = 19,8` = persis selisih DBG-021 → riwayat vote menjelaskan skor `5dda3ac6` |
 | DBG-023 | Laporan noise/sanggahan tervalidasi tidak tampil di Transparansi Publik (`RiwayatLaporan.tsx`) | `RiwayatLaporan.tsx`, `routers/laporan.py` | ✅ SELESAI | D-29: endpoint `GET /laporan/publik` + sub-filter Aduan Mandiri; `TRK-AUG-500-0460` terkonfirmasi tampil |
 | DBG-024 | Modal pertanyaan konfirmasi severity tidak muncul setelah submit laporan (banner pasif saja) — **dua jalur submit** | `FormLaporan.tsx:191`, `ModalFormLaporan.tsx:88` | ✅ SELESAI | Auto-open `setKonfirmasiOpen(true)` di kedua komponen; `ModalFormLaporan` sebelumnya membuang `res.konfirmasi` |
+| DBG-025 | Status `perlu_info_tambahan` (tombol "Tandai Kejadian Baru") membingungkan petugas & tidak dipakai dalam alur bisnis — dihapus total dari FE & BE | `AntrianValidasi.tsx`, `models/klaster.py`, `routers/klaster.py` | ✅ SELESAI | Hapus dari 2 ENUM + 2 endpoint + 7 file FE + types; migrasi `a1b2c3d4e5f6`; pytest 158/158; build hijau |
 
 ---
 
@@ -323,6 +324,19 @@
   - **Penyelesaian:** `ModalFormLaporan.tsx` — simpan `laporanId` + `perluKonfirmasi`; auto-open `PertanyaanKonfirmasi` (nested dialog) saat `perlu_konfirmasi`; tombol "Jawab Sekarang" sebagai jalur alternatif bila ditutup; penanda "terjawab" di layar sukses; reset state di `handleReset`.
   - **Verifikasi:** `npx tsc --noEmit` bersih · `npm run build` hijau · Vite dev server mengonfirmasi modul ter-transform memuat `if (res.konfirmasi?.perlu_konfirmasi) setKonfirmasiOpen(true)` dan `PertanyaanKonfirmasi`.
   - **Pelajaran:** jangan asumsikan satu jalur submit — di repo ini ada dua (`FormLaporan.tsx` halaman penuh dan `ModalFormLaporan.tsx` modal dari DetailSekolah); setiap perubahan perilaku pasca-submit wajib dicek di keduanya.
+
+---
+
+### DBG-025 ✅ — Status `perlu_info_tambahan` dihapus total (2026-10-28)
+
+- **Gejala:** Tombol "Tandai Kejadian Baru" di Antrian Validasi tidak berfungsi seperti yang diharapkan petugas — membingungkan karena tidak jelas fungsinya dalam alur verifikasi.
+- **Analisis:** Tombol sebenarnya berfungsi (set status `perlu_info_tambahan` via `PUT /klaster/{id}/verifikasi`), tetapi status ini tidak dipakai dalam alur bisnis dan membingungkan petugas. Tidak ada klaster yang pernah memakai status ini (0 baris di DB live).
+- **Penyelesaian (2026-10-28):** Hapus total dari FE & BE:
+  1. **Migrasi** `a1b2c3d4e5f6` — ALTER ENUM `klaster.status_verifikasi` (4→3 nilai) + `status_log.status` (8→7 nilai), guard non-MySQL + update baris lama jika ada.
+  2. **Backend** — `models/klaster.py`: hapus dari `STATUS_KLASTER_ENUM` & `STATUS_LOG_ENUM`; `routers/klaster.py`: hapus dari `valid_status` (2 endpoint) + kondisi `status_verifikasi`; `verify_schema_parity.py`: update komentar.
+  3. **Frontend** — `AntrianValidasi.tsx`: hapus tombol, tab, state `"baru"`, `handleDecision` type; `types.ts`: hapus dari `StatusKlaster` & `StatusPenanganan`; `TabelVerifikasi.tsx`, `DashboardWilayah.tsx`, `RiwayatLaporan.tsx`, `StatusTindakLanjutWarga.tsx`, `InstitutionalStepper.tsx`: hapus dari label/badge/stepper.
+  4. **Docs** — `INTERFACES.md` §5 & §7: hapus dari daftar status.
+- **Verifikasi:** pytest **158/158** · `npm run build` hijau · grep `perlu_info_tambahan` di `frontend/src` = 0.
 
 ---
 

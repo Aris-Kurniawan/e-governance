@@ -308,10 +308,10 @@ async def verify_klaster(
     """
     F3.10 — Verifikasi klaster oleh verifikator_dinas.
     
-    Status: "terverifikasi" | "tidak_terverifikasi" | "perlu_info_tambahan"
+    Status: "terverifikasi" | "tidak_terverifikasi"
     Alasan wajib jika status != "terverifikasi"
     """
-    valid_status = ["terverifikasi", "tidak_terverifikasi", "perlu_info_tambahan"]
+    valid_status = ["terverifikasi", "tidak_terverifikasi"]
     if status not in valid_status:
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of {valid_status}")
     
@@ -362,7 +362,7 @@ async def update_status(
 ):
     """F3.17 — Update Status."""
     valid_status = [
-        "menunggu_verifikasi", "perlu_info_tambahan", "tidak_terverifikasi",
+        "menunggu_verifikasi", "tidak_terverifikasi",
         "terverifikasi", "dalam_antrian_prioritas", "dalam_proses",
         "selesai", "tidak_dapat_ditindaklanjuti",
     ]
@@ -380,7 +380,7 @@ async def update_status(
     # tersimpan di dua kolom berbeda. Dulu semua nilai ditulis ke
     # `status_penanganan` — status verifikasi membuat MySQL menolaknya
     # (error 1265 Data truncated → 500) karena bukan bagian enum kolom itu.
-    if status in ("menunggu_verifikasi", "perlu_info_tambahan", "tidak_terverifikasi", "terverifikasi"):
+    if status in ("menunggu_verifikasi", "tidak_terverifikasi", "terverifikasi"):
         klaster.status_verifikasi = status
     else:
         klaster.status_penanganan = status

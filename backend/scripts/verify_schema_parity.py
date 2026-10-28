@@ -4,7 +4,7 @@ Menangkap dua kelas masalah yang pernah terjadi di proyek ini:
 1. ENUM drift — model punya nilai yang tidak ada di migrasi/DB
    (kasus F4.9: `klaster.kategori` 5 vs 6 nilai -> fresh install gagal).
 2. Kolom hilang — DB ketinggalan migrasi (kasus lama: `Unknown column
-   'hasil_klasterisasi'` / `'perlu_info_tambahan'`).
+   'hasil_klasterisasi'`).
 
 Pemakaian:
   # mode default: uji jalur PRODUKSI sesungguhnya (fresh DB -> alembic upgrade head)

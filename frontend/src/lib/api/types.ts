@@ -317,7 +317,6 @@ export type KategoriKlaster =
 
 export type StatusKlaster =
   | "menunggu_verifikasi"
-  | "perlu_info_tambahan"
   | "tidak_terverifikasi"
   | "terverifikasi";
 
@@ -365,7 +364,6 @@ export interface VoteStatus {
 
 export type StatusPenanganan =
   | "menunggu_verifikasi"
-  | "perlu_info_tambahan"
   | "tidak_terverifikasi"
   | "terverifikasi"
   | "dalam_antrian_prioritas"
@@ -375,7 +373,6 @@ export type StatusPenanganan =
 
 export const STATUS_PENANGANAN: StatusPenanganan[] = [
   "menunggu_verifikasi",
-  "perlu_info_tambahan",
   "tidak_terverifikasi",
   "terverifikasi",
   "dalam_antrian_prioritas",

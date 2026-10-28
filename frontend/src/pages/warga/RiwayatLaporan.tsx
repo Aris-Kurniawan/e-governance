@@ -58,10 +58,6 @@ const STATUS_STYLE: Record<string, { box: string; label: string }> = {
     box: "bg-emerald-50 text-emerald-800 border-emerald-200",
     label: "Terverifikasi Lapangan",
   },
-  perlu_info_tambahan: {
-    box: "bg-blue-50 text-blue-800 border-blue-200",
-    label: "Perlu Info Tambahan",
-  },
   tidak_terverifikasi: {
     box: "bg-rose-50 text-rose-800 border-rose-200",
     label: "Tidak Terverifikasi",
