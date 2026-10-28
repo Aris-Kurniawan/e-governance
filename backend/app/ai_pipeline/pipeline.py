@@ -14,7 +14,7 @@ import numpy as np
 
 from app.ai_pipeline.embedding import embed_texts
 from app.ai_pipeline.reduction import reduce_dimensions
-from app.ai_pipeline.clustering import cluster_texts
+from app.ai_pipeline.clustering import cluster_texts, cluster_texts_adaptive
 from app.ai_pipeline.labeling import label_clusters
 
 
@@ -84,8 +84,8 @@ class AIPipeline:
         else:
             reduced = embeddings
 
-        # 3. Clustering
-        labels = cluster_texts(
+        # 3. Clustering (Adaptive F3.3 + DBG-026 / D-31)
+        labels = cluster_texts_adaptive(
             reduced,
             min_cluster_size=self.hdbscan_min_cluster_size,
             min_samples=self.hdbscan_min_samples,

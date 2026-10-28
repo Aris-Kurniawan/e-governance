@@ -513,4 +513,25 @@ Pada implementasi awal F4.7 (D-21), verifikasi laporan non-klaster / noise di `/
    - Pengecekan izin aksi di antarmuka diselaraskan: `bolehAksi = role === "admin" || role === "verifikator_dinas"`.
    - Untuk pengguna dengan peran `kepala_dinas`, tombol aksi "Validasi" dan "Tolak" disembunyikan/dinonaktifkan dan diganti indikator status *"Mode Pengawasan (Hanya Verifikator Dinas yang berwenang memvalidasi)"*.
 
+---
+
+### D-31: Klasterisasi Adaptif Laporan Sekolah — Fallback Agglomerative Cosine untuk Laporan Mikro (DBG-026)
+
+**Status:** ✅ Disetujui (28 Okt 2026 — keputusan Aris)
+
+**Konteks & Masalah:**
+Pada F3.0f, konfigurasi klasterisasi ditetapkan menggunakan HDBSCAN (`min_cluster_size=3, min_samples=2`) hasil ablation. Namun pada implementasi backend `run_clustering_sync`, pengelompokan laporan dilakukan per-sekolah (`sekolah_npsn`). Saat sekolah memiliki sedikit laporan aduan ($n < 10$), reduksi dimensi UMAP dilewati dan HDBSCAN dijalankan langsung pada matriks TF-IDF mentah berdimensi tinggi. Karena ruang vektor TF-IDF pada kalimat pendek bersifat renggang (*sparse*), HDBSCAN menganggap seluruh data tidak memenuhi ambang kepadatan (*density*) dan menandai seluruh laporan sebagai noise (`labels = [-1]`). Akibatnya, pada pengujian E2E di mana terdapat 5 laporan kerusakan plafon/atap pada SD ALAM CITRA INSANI dan 2 laporan toilet di SD NEGERI 1 MADE, tidak ada satupun laporan yang berhasil masuk ke tabel `klaster` (semua terlempar ke noise).
+
+**Keputusan:**
+1. **Mempertahankan Prinsip 1 Klaster = 1 Sekolah**:
+   - Tetap mengelompokkan laporan per `sekolah_npsn` sebelum proses inferensi AI dijalankan, guna mencegah percampuran isu sarpras antar-sekolah berbeda dan menjaga integritas audit Dapodik per sekolah.
+2. **Mekanisme Klasterisasi Adaptif (`cluster_texts_adaptive`)**:
+   - **Jika $n \ge 10$ per sekolah**: Jalankan pipeline standar **HDBSCAN** (`min_cluster_size=3, min_samples=2`) karena densitas data mencukupi.
+   - **Jika $2 \le n < 10$ per sekolah**: Gunakan fallback **Agglomerative Clustering** berbasis *cosine distance* (`metric="cosine"`, `linkage="average"`, `distance_threshold=0.88`, `n_clusters=None`).
+   - Laporan yang tergabung dalam kelompok beranggotakan $\ge 2$ laporan dibentuk menjadi klaster resmi. Laporan tunggal (*singleton*) tanpa pasangan kemiripan otomatis ditandai sebagai noise (`-1`) untuk masuk ke antrean `perlu-review`.
+   - **Jika $n = 1$**: Langsung ditandai sebagai `belum_terklasifikasi` / *noise* tanpa klaster.
+3. **Penyelarasan Pipeline & Logging**:
+   - Memperbarui `app/ai_pipeline/clustering.py` dan `app/ai_pipeline/pipeline.py` agar mengembalikan metadata klaster yang sesuai dengan format ekspektasi router klaster.
+
+
 

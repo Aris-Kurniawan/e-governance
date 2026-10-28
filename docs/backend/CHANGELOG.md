@@ -1697,8 +1697,34 @@ aturan AGENTS.md hanya saat diminta ("commit"). Sisa backlog: 50 label manual F4
 - pytest **158/158** lulus.
 - `npm run build` hijau (26.71s).
 - Grep `perlu_info_tambahan` di `frontend/src` = 0 hasil.
-
-## Catatan Terbuka
++
++## 3.41 DBG-026 & D-31 — Klasterisasi Adaptif: Fallback Agglomerative Cosine untuk Laporan Mikro (2026-10-28) ✅ SELESAI
++
++**Perbaikan DBG-026 & Keputusan Produk D-31:**
++
++1. **Masalah:**
++   - Klasterisasi dijalankan terisolasi per sekolah (`sekolah_npsn`). Saat sekolah memiliki sampel aduan mikro ($n < 10$), UMAP dilewati dan HDBSCAN dijalankan langsung pada matriks TF-IDF mentah 62 fitur.
++   - Karena ruang vektor TF-IDF pada kalimat pendek bersifat renggang (*sparse*), HDBSCAN menganggap seluruh data tidak memenuhi ambang kepadatan (*density*) dan menandai seluruh laporan sebagai noise (`labels = [-1]`).
++   - Akibatnya, pada pengujian E2E di mana terdapat 5 laporan kerusakan plafon/atap pada SD ALAM CITRA INSANI dan 2 laporan toilet di SD NEGERI 1 MADE, tidak ada satupun laporan yang berhasil masuk ke tabel `klaster` (semua terlempar ke noise).
++
++2. **Perubahan:**
++   - **`backend/app/ai_pipeline/clustering.py`:**
++     - Tambahkan fungsi klasterisasi adaptif: bila $2 \le n < 10$, jalankan `AgglomerativeClustering(metric="cosine", linkage="average", distance_threshold=0.88, n_clusters=None)`.
++     - Kelompok dengan anggota $\ge 2$ diberi ID klaster valid ($0, 1, ...$). Laporan tunggal (*singleton*) otomatis ditandai sebagai `-1` (*noise / perlu-review*).
++     - Bila $n \ge 10$, tetap gunakan **HDBSCAN** (`min_cluster_size=3, min_samples=2`) sesuai hasil optimal ablation.
++   - **`backend/app/ai_pipeline/pipeline.py`:**
++     - Integrasikan metode adaptif ke dalam `AIPipeline.run()`.
++   - **Dokumentasi:**
++     - `docs/universal/DECISIONS.md`: Tambah **D-31**.
++     - `docs/backend/DEBUGGING.md`: Tambah entri **DBG-026** `✅ SELESAI`.
++     - `docs/backend/CHANGELOG.md`: Catat di §3.41.
++
++**Bukti verifikasi:**
++- 5 laporan SD Alam Citra Insani: 4 laporan menyatu menjadi 1 klaster atap/plafon valid (`ruang_belajar`).
++- 2 laporan toilet SD Negeri 1 Made: keduanya menyatu menjadi 1 klaster toilet valid (`toilet`).
++- Laporan anomali kucing liar di SD Negeri 1 Kramat tetap terisolasi ke noise / *perlu-review*.
+ 
+ ## Catatan Terbuka
 
 - [ ] **F3.23 Fine-tuning Neural** — jika ingin meningkatkan performa neural di atas NMI 0.47–0.58, perlu fine-tuning IndoBERT/MiniLM dengan domain data.
       `n = 45 → 150 → 500 → 1.500` (desain sudah ada di TASK_GUIDE/AIP §9).
