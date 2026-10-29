@@ -16,7 +16,6 @@ import Landing from "@/pages/warga/Landing"
 const Login = lazy(() => import("@/pages/warga/Login"))
 const Registrasi = lazy(() => import("@/pages/warga/Registrasi"))
 const DashboardWilayah = lazy(() => import("@/pages/warga/DashboardWilayah"))
-const DashboardWarga = lazy(() => import("@/pages/warga/Dashboard"))
 const Direktori = lazy(() => import("@/pages/warga/Direktori"))
 const DetailSekolah = lazy(() => import("@/pages/warga/DetailSekolah"))
 const DetailKlaster = lazy(() => import("@/pages/warga/DetailKlaster"))
@@ -65,74 +64,74 @@ export default function App() {
         <ErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
-            {/* Public (Warga) */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<Landing />} />
-              <Route path="/tentang" element={<TentangData />} />
-              <Route path="/laporan/wilayah" element={<DashboardWilayah />} />
-              <Route path="/sekolah" element={<Direktori />} />
-              <Route path="/sekolah/:npsn" element={<DetailSekolah />} />
-              <Route path="/klaster" element={<DaftarKlaster />} />
-              <Route path="/klaster/:klasterId" element={<DetailKlaster />} />
-              <Route path="/klaster/:klasterId/status" element={<StatusTindakLanjutWarga />} />
-              <Route path="/laporan/riwayat" element={<RiwayatLaporan />} />
-              <Route path="/laporan/publik" element={<RiwayatLaporan />} />
-            </Route>
+              {/* Public (Warga) */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<Landing />} />
+                <Route path="/tentang" element={<TentangData />} />
+                <Route path="/laporan/wilayah" element={<DashboardWilayah />} />
+                <Route path="/sekolah" element={<Direktori />} />
+                <Route path="/sekolah/:npsn" element={<DetailSekolah />} />
+                <Route path="/klaster" element={<DaftarKlaster />} />
+                <Route path="/klaster/:klasterId" element={<DetailKlaster />} />
+                <Route path="/klaster/:klasterId/status" element={<StatusTindakLanjutWarga />} />
+                <Route path="/laporan/riwayat" element={<RiwayatLaporan />} />
+                <Route path="/laporan/publik" element={<RiwayatLaporan />} />
+              </Route>
 
-            {/* Auth Warga (Login / Registrasi) — shell split-dark */}
-            <Route element={<AuthLayout />}>
-              <Route path="/login" element={<Login />} />
-              <Route path="/registrasi" element={<Registrasi />} />
-            </Route>
+              {/* Auth Warga (Login / Registrasi) — shell split-dark */}
+              <Route element={<AuthLayout />}>
+                <Route path="/login" element={<Login />} />
+                <Route path="/registrasi" element={<Registrasi />} />
+              </Route>
 
-            {/* Warga (terotentikasi & dilindungi) */}
-            <Route element={<WargaLayout />}>
+              {/* Warga (terotentikasi & dilindungi) */}
+              <Route element={<WargaLayout />}>
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardWilayah />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/laporan/baru"
+                  element={
+                    <ProtectedRoute allowedRoles={["warga_umum", "warga_terverifikasi", "komite_sekolah"]}>
+                      <FormLaporan />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
+
+              {/* Dinas (Pemerintah) - Login */}
+              <Route path="/dinas/login" element={<LoginDinas />} />
+
+              {/* Dinas (Pemerintah) - Panel Internal & Verifikasi */}
               <Route
-                path="/dashboard"
+                path="/dinas"
                 element={
-                  <ProtectedRoute allowedRoles={["warga_umum", "warga_terverifikasi", "komite_sekolah"]}>
-                    <DashboardWarga />
+                  <ProtectedRoute loginPath="/dinas/login" allowedRoles={["admin", "verifikator_dinas", "kepala_dinas"]}>
+                    <DinasLayout />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/laporan/baru"
-                element={
-                  <ProtectedRoute allowedRoles={["warga_umum", "warga_terverifikasi", "komite_sekolah"]}>
-                    <FormLaporan />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
+              >
+                <Route index element={<DashboardKadis />} />
+                <Route path="dashboard" element={<DashboardKadis />} />
+                <Route path="antrian" element={<AntrianValidasi />} />
+                <Route path="perlu-review" element={<LaporanPerluReview />} />
+                <Route path="ingest" element={<IngestDataCsv />} />
+                <Route path="peta" element={<PetaSebaranDinas />} />
+                <Route path="tabel" element={<TabelVerifikasi />} />
+                <Route path="status" element={<StatusTindakLanjut />} />
+                <Route path="tindak-lanjut" element={<StatusTindakLanjut />} />
+                <Route path="skor-kbm" element={<LaporanSkorKbm />} />
+                <Route path="log-audit" element={<LogAuditPdp />} />
+              </Route>
 
-            {/* Dinas (Pemerintah) - Login */}
-            <Route path="/dinas/login" element={<LoginDinas />} />
-
-            {/* Dinas (Pemerintah) - Panel Internal & Verifikasi */}
-            <Route
-              path="/dinas"
-              element={
-                <ProtectedRoute loginPath="/dinas/login" allowedRoles={["admin", "verifikator_dinas", "kepala_dinas"]}>
-                  <DinasLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<DashboardKadis />} />
-              <Route path="dashboard" element={<DashboardKadis />} />
-              <Route path="antrian" element={<AntrianValidasi />} />
-              <Route path="perlu-review" element={<LaporanPerluReview />} />
-              <Route path="ingest" element={<IngestDataCsv />} />
-              <Route path="peta" element={<PetaSebaranDinas />} />
-              <Route path="tabel" element={<TabelVerifikasi />} />
-              <Route path="status" element={<StatusTindakLanjut />} />
-              <Route path="tindak-lanjut" element={<StatusTindakLanjut />} />
-              <Route path="skor-kbm" element={<LaporanSkorKbm />} />
-              <Route path="log-audit" element={<LogAuditPdp />} />
-            </Route>
-
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </Suspense>
         </ErrorBoundary>
       </AuthProvider>
