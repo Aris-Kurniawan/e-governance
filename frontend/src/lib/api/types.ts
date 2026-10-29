@@ -280,6 +280,9 @@ export interface RiwayatLaporanItem {
   sumber_kondisi?: SumberKondisi | null;
   /** true bila laporan masih boleh dijawab (< 24 jam). */
   konfirmasi_perlu_dijawab?: boolean;
+  /** Status pengerjaan fisik / tindak lanjut dinas. */
+  status_penanganan?: string | null;
+  klaster_id?: string | null;
 }
 
 export interface LaporanDetail extends LaporanResponse {
