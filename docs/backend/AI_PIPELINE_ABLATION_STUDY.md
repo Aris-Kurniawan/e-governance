@@ -1002,6 +1002,67 @@ peran ablation.
 > **Status:** rencana — sebagian infrastruktur sudah ada (§9), tetapi belum ada
 > alur "data live → evaluasi ulang".
 
+---
+
+## 13. Klasterisasi Adaptif Laporan Mikro (D-31 / DBG-026)
+
+> **Status:** ✅ Selesai diimplementasikan & terverifikasi (28 Oktober 2026).  
+> **Dasar Keputusan:** `docs/universal/DECISIONS.md` (D-31) & `docs/backend/DEBUGGING.md` (DBG-026).  
+> **Komponen yang Ditambahkan:** Fallback `AgglomerativeClustering` berbasis *cosine distance* untuk ukuran sampel per sekolah $2 \le n < 10$.
+
+### 13.1 Latar Belakang & Akar Masalah
+Konfigurasi optimal hasil studi ablasi F3.0f (`A2 + B1 + C2 + D1`: TF-IDF 300 fitur + UMAP 10 dimensi + HDBSCAN `min_cluster_size=3, min_samples=2`) terbukti unggul pada data gabungan. Namun, dalam arsitektur produksi sistem SIMAKIS, pengelompokan laporan dijalankan secara terisolasi per sekolah (`sekolah_npsn`) guna mencegah percampuran isu sarpras antar-sekolah (aturan 1 Klaster = 1 Sekolah).
+
+Pada kondisi operasional riil di tingkat sekolah, jumlah laporan aduan yang masuk sering kali berupa sampel mikro ($n < 10$). Pada skala ini, timbul dua kegagalan struktural:
+1. **Bypass UMAP:** Karena `n_samples < 10`, reduksi dimensi UMAP otomatis dilewati untuk menghindari kegagalan dekomposisi manifold (`embeddings.shape[0] <= n_components`).
+2. **Kerapuhan Densitas HDBSCAN pada Ruang TF-IDF Renggang (*Sparse*):** HDBSCAN dijalankan langsung pada matriks TF-IDF mentah berdimensi 62–300 fitur. Jarak Euclidean antar-vektor kalimat laporan pendek berada pada rentang yang sangat renggang ($1,12 - 1,38$). Akibatnya, kondisi kepadatan (*mutual reachability distance*) gagal terpenuhi, dan HDBSCAN menandai **100% laporan sebagai noise / outlier (`labels = [-1]`)**.
+
+Kasus nyata teramati pada pengujian E2E Playwright di mana 5 laporan kerusakan plafon/atap pada SD ALAM CITRA INSANI dan 2 laporan toilet di SD NEGERI 1 MADE semuanya dilabeli `-1`, sehingga sistem menghasilkan 0 klaster.
+
+### 13.2 Mekanisme Solusi: Algoritma Adaptif (`cluster_texts_adaptive`)
+
+Untuk mempertahankan akurasi klaster tanpa merusak aturan isolasi per sekolah, pipeline ditingkatkan dengan mekanisme bercabang berdasarkan ukuran sampel $n$:
+
+```
+                       Jumlah Laporan per Sekolah (n)
+                                     │
+            ┌────────────────────────┼────────────────────────┐
+            ▼                        ▼                        ▼
+         n = 1                  2 ≤ n < 10                 n ≥ 10
+    (Aduan Tunggal)          (Sampel Mikro)           (Sampel Cukup)
+            │                        │                        │
+     Tandai sebagai       Agglomerative Clustering        HDBSCAN (C2)
+      Noise / Outlier      (Metric: Cosine, th: 0.88)   (min_cluster=3, ms=2)
+     (Meja Review Kadis)             │                        │
+                            Filter: Klaster ≥ 2           Klaster Valid
+                         (Singleton → Noise/Review)     (Noise -1 → Review)
+```
+
+1. **Kasus $n \ge 10$:** Tetap menjalankan pipeline standar **HDBSCAN** (`min_cluster_size=3, min_samples=2`) karena densitas data telah mencukupi untuk membentuk inti kepadatan (*cluster cores*).
+2. **Kasus $2 \le n < 10$:** Sistem beralih ke **Agglomerative Hierarchical Clustering**:
+   * **Metrik Jarak:** *Cosine Distance* (mengukur sudut kemiripan semantik istilah TF-IDF, kebal terhadap variasi panjang kalimat).
+   * **Metode Penghubung (*Linkage*):** `average` linkage (menghindari efek *chaining* dari *single linkage*).
+   * **Ambang Batas Pemotongan Pohon (*Distance Threshold*):** Disetel optimal pada `threshold = 0.88` dengan `n_clusters = None`.
+   * **Aturan Pembentukan Klaster:** Hanya kelompok yang beranggotakan $\ge 2$ laporan yang ditetapkan sebagai klaster resmi (`label = 0, 1, ...`). Laporan yang berdiri sendiri (*singleton*) tanpa pasangan kemiripan otomatis ditandai sebagai `-1` (*noise / perlu-review*).
+3. **Kasus $n = 1$:** Langsung diberi label `-1` (*noise / belum_terklasifikasi*) tanpa menjalankan clustering.
+
+### 13.3 Perbandingan Kinerja HDBSCAN vs Agglomerative pada Sampel Mikro
+
+Uji validasi empiris pada korpus aduan nyata SD Alam Citra Insani (5 laporan atap/plafon) dan SD Negeri 1 Made (2 laporan sanitasi):
+
+| Kasus Uji | Metode Lama (HDBSCAN Murni) | Metode Baru (Adaptif D-31) | Hasil Verifikasi Status |
+|---|:---:|:---:|---|
+| **5 Laporan Plafon** (SD Alam Citra Insani) | `[-1, -1, -1, -1, -1]`<br/>(Semua Noise / 0 Klaster) | `[0, -1, 0, 0, 0]`<br/>(4 Plafon Terklaster, 1 Rayap Outlier) | ✅ **1 Klaster Resmi Terbentuk** (`ruang_belajar`) + 1 Laporan Outlier ke Perlu Review |
+| **2 Laporan Toilet** (SD Negeri 1 Made) | `[-1, -1]`<br/>(Semua Noise / 0 Klaster) | `[0, 0]`<br/>(Keduanya Terklaster) | ✅ **1 Klaster Resmi Terbentuk** (`sanitasi_air`) |
+| **2 Laporan Paving** (SD Muhammadiyah 1) | `[-1, -1]`<br/>(Semua Noise / 0 Klaster) | `[0, 0]`<br/>(Keduanya Terklaster) | ✅ **1 Klaster Resmi Terbentuk** (`penunjang`) |
+| **1 Laporan Kucing** (SD Negeri 1 Kramat) | `[-1]`<br/>(Noise) | `[-1]`<br/>(Noise / Anomali) | ✅ Terisolasi rapi ke **/dinas/perlu-review** |
+
+### 13.4 Dampak pada Arsitektur & Antarmuka
+* **Tidak Ada Perubahan Skema Basis Data:** Kolom tabel `klaster` dan `laporan` tetap identik.
+* **Integritas Penilaian Dinas:** Klaster yang terbentuk menyajikan data kerusakan yang valid ke halaman `/dinas/antrian`, sementara laporan sporadis tetap aman di `/dinas/perlu-review` tanpa ada hak aduan warga yang hilang (*zero-loss complaint flow*).
+
+---
+
 **Situasi sekarang.**
 
 | Aspek | Kondisi |
