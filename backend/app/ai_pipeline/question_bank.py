@@ -92,6 +92,23 @@ KOMPONEN: dict[str, dict] = {
             "limbah",
         ],
     },
+    # Ekstensi lokal (di luar tabel Kemendikbud §15.3): perabot bukan
+    # komponen gedung, tetapi "meja & kursi rusak" adalah isu paling umum
+    # pada dataset — tanpa ini deskripsi perabot tidak pernah memicu
+    # pertanyaan gejala (perlu_konfirmasi selalu false).
+    "perabot": {
+        "label": "Meja / kursi / perabot",
+        "teknis": ["meja", "kursi", "perabot kelas", "furnitur"],
+        "kata_kunci": [
+            "meja",
+            "kursi",
+            "bangku",
+            "lemari",
+            "papan tulis",
+            "perabot",
+            "meja praktik",
+        ],
+    },
 }
 
 # Gejala disusun dari yang paling parah. `tingkat` memakai enum resmi;
@@ -330,6 +347,37 @@ GEJALA: dict[str, list[dict]] = {
             "tingkat_resmi": "Rusak Sangat Ringan",
             "tingkat": "rusak_ringan",
             "rujukan": "Sebagian pipa cabang pecah/rusak/tersumbat",
+        },
+    ],
+    # Ekstensi lokal — lihat catatan pada KOMPONEN["perabot"].
+    "perabot": [
+        {
+            "kode": "g4",
+            "teks": "Apakah ada meja atau kursi yang patah atau roboh sehingga tidak bisa dipakai?",
+            "tingkat_resmi": "Rusak Sangat Berat",
+            "tingkat": "rusak_berat",
+            "rujukan": "Ekstensi lokal — di luar tabel Kemendikbud §15.3",
+        },
+        {
+            "kode": "g3",
+            "teks": "Apakah banyak meja atau kursi yang miring, longgar, atau permukaannya terkelupas?",
+            "tingkat_resmi": "Rusak Berat",
+            "tingkat": "rusak_berat",
+            "rujukan": "Ekstensi lokal — di luar tabel Kemendikbud §15.3",
+        },
+        {
+            "kode": "g2",
+            "teks": "Apakah ada meja atau kursi yang goyang atau permukaannya tergores?",
+            "tingkat_resmi": "Rusak Sedang",
+            "tingkat": "rusak_sedang",
+            "rujukan": "Ekstensi lokal — di luar tabel Kemendikbud §15.3",
+        },
+        {
+            "kode": "g1",
+            "teks": "Apakah permukaan meja atau kursi banyak tergores atau catnya memudar?",
+            "tingkat_resmi": "Rusak Ringan",
+            "tingkat": "rusak_ringan",
+            "rujukan": "Ekstensi lokal — di luar tabel Kemendikbud §15.3",
         },
     ],
 }

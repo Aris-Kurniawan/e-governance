@@ -24,9 +24,11 @@ import {
   UserCheck,
   ThumbsUp,
   Building2,
+  Check,
   ChevronDown,
   XCircle,
   HelpCircle,
+  Activity,
 } from "lucide-react"
 
 const PAGE_SIZE = 50
@@ -83,6 +85,190 @@ function formatTanggal(iso: string): string {
     month: "short",
     year: "numeric",
   })
+}
+
+export interface InfoStatusPengerjaan {
+  status: "menunggu_verifikasi" | "sudah_diproses" | "dalam_pengerjaan" | "sudah_selesai" | "tidak_ditindaklanjuti"
+  label: string
+  ringkas: string
+  badgeStyle: string
+  dotStyle: string
+  tahapIndex: number // 1: Telaah, 2: Sudah Diproses, 3: Dalam Pengerjaan, 4: Sudah Selesai, 0: Ditolak
+}
+
+export function getStatusPengerjaan(
+  statusPenanganan?: string | null,
+  statusSanggahan?: string | null,
+  statusVerifikasi?: string | null
+): InfoStatusPengerjaan {
+  // 1. Cek nilai eksplisit dari status_penanganan
+  if (statusPenanganan === "selesai") {
+    return {
+      status: "sudah_selesai",
+      label: "Sudah Selesai",
+      ringkas: "Perbaikan sarpras telah tuntas dikerjakan di lapangan.",
+      badgeStyle: "bg-emerald-50 text-emerald-800 border-emerald-300",
+      dotStyle: "bg-emerald-500",
+      tahapIndex: 4,
+    }
+  }
+
+  if (statusPenanganan === "dalam_proses") {
+    return {
+      status: "dalam_pengerjaan",
+      label: "Dalam Pengerjaan",
+      ringkas: "Pekerjaan fisik sarpras sedang berlangsung di sekolah.",
+      badgeStyle: "bg-amber-50 text-amber-900 border-amber-300",
+      dotStyle: "bg-amber-500 animate-pulse",
+      tahapIndex: 3,
+    }
+  }
+
+  if (statusPenanganan === "dalam_antrian_prioritas") {
+    return {
+      status: "sudah_diproses",
+      label: "Sudah Diproses",
+      ringkas: "Laporan telah diverifikasi & masuk antrean penanganan dinas.",
+      badgeStyle: "bg-sky-50 text-sky-800 border-sky-300",
+      dotStyle: "bg-sky-500",
+      tahapIndex: 2,
+    }
+  }
+
+  if (statusPenanganan === "tidak_dapat_ditindaklanjuti") {
+    return {
+      status: "tidak_ditindaklanjuti",
+      label: "Tidak Ditindaklanjuti",
+      ringkas: "Laporan di luar wewenang atau ditutup oleh dinas.",
+      badgeStyle: "bg-rose-50 text-rose-800 border-rose-300",
+      dotStyle: "bg-rose-500",
+      tahapIndex: 0,
+    }
+  }
+
+  // 2. Fallback berdasarkan status_sanggahan / status_verifikasi
+  if (statusSanggahan === "divalidasi" || statusVerifikasi === "terverifikasi") {
+    return {
+      status: "sudah_diproses",
+      label: "Sudah Diproses",
+      ringkas: "Laporan tervalidasi dinas & masuk rencana penanganan.",
+      badgeStyle: "bg-sky-50 text-sky-800 border-sky-300",
+      dotStyle: "bg-sky-500",
+      tahapIndex: 2,
+    }
+  }
+
+  if (statusSanggahan === "ditolak" || statusVerifikasi === "tidak_terverifikasi") {
+    return {
+      status: "tidak_ditindaklanjuti",
+      label: "Tidak Ditindaklanjuti",
+      ringkas: "Laporan ditolak atau tidak memenuhi syarat verifikasi.",
+      badgeStyle: "bg-rose-50 text-rose-800 border-rose-300",
+      dotStyle: "bg-rose-500",
+      tahapIndex: 0,
+    }
+  }
+
+  // 3. Default: baru diajukan, menunggu telaah
+  return {
+    status: "menunggu_verifikasi",
+    label: "Menunggu Telaah",
+    ringkas: "Menunggu verifikasi dan telaah berkas oleh dinas.",
+    badgeStyle: "bg-slate-100 text-slate-700 border-slate-300",
+    dotStyle: "bg-slate-400",
+    tahapIndex: 1,
+  }
+}
+
+function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan }) {
+  if (pengerjaan.tahapIndex === 0) {
+    return (
+      <div className="rounded-xl bg-rose-50/70 border border-rose-200/80 p-3.5 text-xs text-rose-800 flex items-center gap-2">
+        <XCircle className="h-4 w-4 shrink-0 text-rose-600" />
+        <span>Status penanganan dihentikan atau tidak dapat ditindaklanjuti oleh dinas.</span>
+      </div>
+    )
+  }
+
+  const steps = [
+    { no: 1, title: "Laporan Masuk" },
+    { no: 2, title: "Sudah Diproses" },
+    { no: 3, title: "Dalam Pengerjaan" },
+    { no: 4, title: "Sudah Selesai" },
+  ]
+
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+      {/* Header Info Alur */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+        <span className="flex items-center gap-1.5 font-bold text-slate-800">
+          <Activity className="h-4 w-4 text-[#3B82F6]" />
+          Alur Pengerjaan Laporan
+        </span>
+        <span className="text-slate-500 font-medium text-[11px] sm:text-xs">
+          {pengerjaan.ringkas}
+        </span>
+      </div>
+
+      {/* Stepper Bulat Horizontal persis seperti gambar */}
+      <div className="pt-2 pb-1">
+        <div className="flex items-start justify-between w-full">
+          {steps.map((st, idx) => {
+            const isDone = st.no < pengerjaan.tahapIndex || pengerjaan.status === "sudah_selesai"
+            const isCurrent = st.no === pengerjaan.tahapIndex && pengerjaan.status !== "sudah_selesai"
+            const isLast = idx === steps.length - 1
+
+            return (
+              <div key={st.no} className="flex-1 flex flex-col items-center relative">
+                {/* Garis Penghubung antar bulatan */}
+                {!isLast && (
+                  <div
+                    className={`absolute top-5 sm:top-[22px] left-[50%] right-[-50%] h-[3px] -translate-y-1/2 z-0 ${
+                      st.no < pengerjaan.tahapIndex || pengerjaan.status === "sudah_selesai"
+                        ? "bg-[#3B82F6]"
+                        : "bg-slate-200"
+                    }`}
+                  />
+                )}
+
+                {/* Lingkaran Step */}
+                <div className="relative z-10 flex items-center justify-center">
+                  {isDone ? (
+                    <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-[#3B82F6] text-white flex items-center justify-center shadow-xs">
+                      <Check className="h-5 w-5 stroke-[3]" />
+                    </div>
+                  ) : isCurrent ? (
+                    <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-white border-[3.5px] border-[#3B82F6] text-[#3B82F6] font-bold text-sm sm:text-base flex items-center justify-center shadow-xs">
+                      {st.no}
+                    </div>
+                  ) : (
+                    <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-white border-[3.5px] border-[#3B82F6] text-[#3B82F6] font-bold text-sm sm:text-base flex items-center justify-center shadow-xs">
+                      {st.no}
+                    </div>
+                  )}
+                </div>
+
+                {/* Label teks di bawah lingkaran */}
+                <div className="mt-2.5 text-center px-1">
+                  <span
+                    className={`text-xs sm:text-sm block leading-tight ${
+                      isCurrent
+                        ? "font-bold text-slate-900"
+                        : isDone
+                          ? "font-medium text-slate-400"
+                          : "font-semibold text-slate-700"
+                    }`}
+                  >
+                    {st.title}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function RiwayatLaporan() {
@@ -214,9 +400,21 @@ export default function RiwayatLaporan() {
 
       const matchJenjang = filterPublikJenjang === "Semua" || jenjang === filterPublikJenjang
 
-      return matchSearch && matchJenjang
+      let matchStatus = true
+      const pen = getStatusPengerjaan(m.status_penanganan, m.status_sanggahan)
+      if (filterPublikStatus === "menunggu_verifikasi") {
+        matchStatus = pen.status === "menunggu_verifikasi"
+      } else if (filterPublikStatus === "terverifikasi") {
+        matchStatus = pen.status === "sudah_diproses"
+      } else if (filterPublikStatus === "dalam_proses") {
+        matchStatus = pen.status === "dalam_pengerjaan"
+      } else if (filterPublikStatus === "selesai") {
+        matchStatus = pen.status === "sudah_selesai"
+      }
+
+      return matchSearch && matchJenjang && matchStatus
     })
-  }, [itemsMandiriRaw, profilSekolah, searchPublik, filterPublikJenjang])
+  }, [itemsMandiriRaw, profilSekolah, searchPublik, filterPublikStatus, filterPublikJenjang])
 
   type ItemPublikGabungan =
     | { tipe: "klaster"; id: string; data: KlasterListItem }
@@ -430,39 +628,30 @@ export default function RiwayatLaporan() {
                 </div>
 
                 <div className="flex items-center justify-between gap-3 flex-wrap text-xs">
-                  {subModePublik !== "mandiri" ? (
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-                      {[
-                        { id: "semua", label: "Semua" },
-                        { id: "menunggu_verifikasi", label: "Menunggu Verifikasi" },
-                        { id: "terverifikasi", label: "Terverifikasi" },
-                        { id: "dalam_proses", label: "Dalam Pengerjaan" },
-                        { id: "selesai", label: "Tuntas Selesai" },
-                      ].map((st) => (
-                        <button
-                          key={st.id}
-                          onClick={() => {
-                            setFilterPublikStatus(st.id as FilterPublik)
-                            setPagePublik(1)
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                            filterPublikStatus === st.id
-                              ? "bg-[#0B3052] text-white"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
-                        >
-                          {st.label}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 text-[11px]">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        Seluruh aduan telah diverifikasi &amp; divalidasi sah oleh Dinas (D-21)
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                    {[
+                      { id: "semua", label: "Semua" },
+                      { id: "menunggu_verifikasi", label: "Menunggu Telaah" },
+                      { id: "terverifikasi", label: "Sudah Diproses" },
+                      { id: "dalam_proses", label: "Dalam Pengerjaan" },
+                      { id: "selesai", label: "Sudah Selesai" },
+                    ].map((st) => (
+                      <button
+                        key={st.id}
+                        onClick={() => {
+                          setFilterPublikStatus(st.id as FilterPublik)
+                          setPagePublik(1)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                          filterPublikStatus === st.id
+                            ? "bg-[#0B3052] text-white"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                  </div>
 
                   <div className="relative">
                     <select
@@ -531,6 +720,7 @@ export default function RiwayatLaporan() {
                     box: "bg-slate-100 text-slate-700 border-slate-200",
                     label: k.status_verifikasi,
                   }
+                  const pengerjaan = getStatusPengerjaan(k.status_penanganan, null, k.status_verifikasi)
 
                   return (
                     <div
@@ -549,11 +739,10 @@ export default function RiwayatLaporan() {
                             <span className="h-1.5 w-1.5 rounded-full bg-current" />
                             {stVerif.label}
                           </span>
-                          {k.status_penanganan && (
-                            <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                              {k.status_penanganan.replace(/_/g, " ")}
-                            </span>
-                          )}
+                          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${pengerjaan.dotStyle}`} />
+                            Status Pengerjaan: {pengerjaan.label}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-2 text-xs">
@@ -600,6 +789,9 @@ export default function RiwayatLaporan() {
                         </div>
                       </div>
 
+                      {/* Tracker Alur Pengerjaan */}
+                      <PengerjaanTracker pengerjaan={pengerjaan} />
+
                       {/* Footer Actions */}
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
                         <span className="text-slate-400 text-[11px]">
@@ -619,6 +811,7 @@ export default function RiwayatLaporan() {
                 // item.tipe === "mandiri"
                 const m = item.data
                 const profil = profilSekolah.get(m.sekolah_npsn)
+                const pengerjaan = getStatusPengerjaan(m.status_penanganan, m.status_sanggahan)
                 return (
                   <div
                     key={item.id}
@@ -633,6 +826,10 @@ export default function RiwayatLaporan() {
                         <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1 bg-emerald-50 text-emerald-800 border-emerald-200">
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                           Terverifikasi Dinas (Aduan Mandiri)
+                        </span>
+                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${pengerjaan.dotStyle}`} />
+                          Status Pengerjaan: {pengerjaan.label}
                         </span>
                       </div>
 
@@ -674,6 +871,9 @@ export default function RiwayatLaporan() {
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
                       <p className="line-clamp-4 text-slate-700">{m.deskripsi}</p>
                     </div>
+
+                    {/* Tracker Alur Pengerjaan */}
+                    <PengerjaanTracker pengerjaan={pengerjaan} />
 
                     {/* Footer Info Transparansi */}
                     <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100/60">
@@ -862,6 +1062,7 @@ export default function RiwayatLaporan() {
                         label: item.status_sanggahan,
                       }
                       const sekolah = profilSekolah.get(item.sekolah_npsn)?.nama
+                      const pengerjaan = getStatusPengerjaan(item.status_penanganan, item.status_sanggahan)
 
                       return (
                         <div
@@ -882,6 +1083,10 @@ export default function RiwayatLaporan() {
                                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                                 )}
                                 {status.label}
+                              </span>
+                              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${pengerjaan.dotStyle}`} />
+                                Status Pengerjaan: {pengerjaan.label}
                               </span>
                               {/* F4.13 T4 — penanda konfirmasi severity (§4.4) */}
                               {item.konfirmasi_perlu_dijawab && (
@@ -938,6 +1143,9 @@ export default function RiwayatLaporan() {
                               {item.deskripsi}
                             </p>
                           </div>
+
+                          {/* Tracker Alur Pengerjaan */}
+                          <PengerjaanTracker pengerjaan={pengerjaan} />
 
                           <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400 font-mono">
                             <span>ID: {item.id}</span>

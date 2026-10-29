@@ -55,6 +55,8 @@ class LaporanResponse(BaseModel):
     created_at: datetime
     # F4.15: hanya diisi pada respons POST /laporan.
     konfirmasi: Optional[KonfirmasiRingkas] = None
+    klaster_id: Optional[str] = None
+    status_penanganan: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

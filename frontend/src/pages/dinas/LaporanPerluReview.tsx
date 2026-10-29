@@ -63,23 +63,22 @@ function statusKeEnum(s: string): StatusSanggahan {
   return s === "divalidasi" || s === "ditolak" ? s : "menunggu"
 }
 
-/** Badge asal klaster: noise (null) vs label-fallback `belum_terklasifikasi`. */
+/** Badge asal klaster:  (null) vs label-fallback `belum_terklasifikasi`. */
 function KlasterBadge({ klaster }: { klaster: LaporanPerluReview["klaster"] }) {
   if (!klaster) {
     return (
       <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 border border-slate-200">
-        Tanpa klaster (noise)
+        Tanpa klaster
       </span>
     )
   }
   const fallback = klaster.kategori === "belum_terklasifikasi"
   return (
     <span
-      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold border ${
-        fallback
-          ? "bg-orange-50 text-orange-700 border-orange-200"
-          : "bg-blue-50 text-blue-700 border-blue-200"
-      }`}
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold border ${fallback
+        ? "bg-orange-50 text-orange-700 border-orange-200"
+        : "bg-blue-50 text-blue-700 border-blue-200"
+        }`}
       title={klaster.label ?? klaster.kategori}
     >
       {klaster.label ?? klaster.kategori}
@@ -216,8 +215,8 @@ export default function LaporanPerluReview() {
             {bolehAksi
               ? "role Anda dapat memvalidasi / menolak"
               : isKadis
-              ? "read-only (verifikasi oleh Verifikator Dinas)"
-              : "hanya admin & verifikator dinas"}
+                ? "read-only (verifikasi oleh Verifikator Dinas)"
+                : "hanya admin & verifikator dinas"}
           </p>
         </div>
       </div>
@@ -226,11 +225,10 @@ export default function LaporanPerluReview() {
       {feedback && (
         <div
           role="alert"
-          className={`rounded-xl border p-4 text-xs font-semibold shadow-sm flex items-center justify-between ${
-            feedback.tipe === "gagal"
-              ? "border-rose-300 bg-rose-50 text-rose-900"
-              : "border-emerald-300 bg-emerald-50 text-emerald-900"
-          }`}
+          className={`rounded-xl border p-4 text-xs font-semibold shadow-sm flex items-center justify-between ${feedback.tipe === "gagal"
+            ? "border-rose-300 bg-rose-50 text-rose-900"
+            : "border-emerald-300 bg-emerald-50 text-emerald-900"
+            }`}
         >
           <div className="flex items-center gap-2">
             {feedback.tipe === "gagal" ? (
@@ -276,7 +274,7 @@ export default function LaporanPerluReview() {
                 <tr className="border-b border-slate-100 bg-slate-50/60 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   <th className="py-3 px-4">Tracking</th>
                   <th className="py-3 px-4">Sekolah</th>
-                  <th className="py-3 px-4">Temuan</th>
+                  <th className="py-3 px-4">Keterangan</th>
                   <th className="py-3 px-4">Klaster</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Tanggal</th>

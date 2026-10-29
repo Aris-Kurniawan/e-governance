@@ -1623,6 +1623,36 @@ aturan AGENTS.md hanya saat diminta ("commit"). Sisa backlog: 50 label manual F4
 - **Verifikasi:** `npx tsc --noEmit` bersih · `npm run build` hijau (17,1 s) · modul Vite dev memuat `setKonfirmasiOpen(true)` + `PertanyaanKonfirmasi` · live `POST /laporan` mengembalikan `konfirmasi.perlu_konfirmasi = true` (`jumlah_pertanyaan: 2`).
 - **Catatan terbuka:** klik-uji UI di browser belum dijalankan (harness browser tidak tersedia saat perbaikan) — perlu reload manual oleh Aris untuk konfirmasi visual.
 
+## 3.40 Perbaikan: Komponen Perabot di Bank Pertanyaan Konfirmasi (2026-10-27) ✅ SELESAI
+
+**Akar Masalah:**
+- Setelah merge dari server (18 commit, F4.14–F4.15 konfirmasi severity + DBG-024 auto-open modal), deskripsi perabot ("meja dan kursi ada yang rusak…") tetap tidak menampilkan form pertanyaan meski modal seharusnya auto-open.
+- **Penyebab:** Backend compute `perlu_konfirmasi = len(pilih_pertanyaan(deskripsi)) > 1`. Threshold ini memerlukan ≥2 pertanyaan (1 bagian + ≥1 gejala). Untuk deskripsi perabot, `deteksi_komponen()` mengembalikan `[]` karena `KOMPONEN` hanya memiliki 8 komponen gedung (plafon, atap, dinding, lantai, pintu/jendela, listrik, air, drainase) — **tidak ada kategori perabot**. Hasilnya: hanya 1 pertanyaan "Bagian mana yang rusak?" → `perlu_konfirmasi = false` → modal tidak pernah auto-open.
+- Simulasi: `pilih_pertanyaan("beberapa meja dan kursi ada yang rusak…")` → `len(q) == 1`, `deteksi_komponen = []`, `perlu_konfirmasi = false`.
+
+**Perbaikan:**
+1. **`backend/app/ai_pipeline/question_bank.py`:**
+   - Tambah `KOMPONEN["perabot"]`: label "Meja / kursi / perabot", teknis ["meja", "kursi", "perabot kelas", "furnitur"], kata_kunci ["meja", "kursi", "bangku", "lemari", "papan tulis", "perabot", "meja praktik"].
+   - Tambah `GEJALA["perabot"]` (4 baris g4..g1) dengan tingkat_resmi Rusak Sangat Berat…Ringan; rujukan ditandai "Ekstensi lokal — di luar tabel Kemendikbud §15.3" (transparansi: komponen bukan bagian dokumen resmi, tetapi isu paling umum dataset SIMAKIS).
+
+2. **`backend/tests/test_blackbox.py`:**
+   - Ubah `test_bank_lengkap_8_komponen` → `test_bank_lengkap_9_komponen`: assert `len(KOMPONEN) == 9`.
+   - Tambah test unit: `test_pemilih_deskripsi_perabot()` — assert `pilih_pertanyaan("beberapa meja dan kursi…")` → `len(q) >= 2`, ada `gejala_perabot`.
+   - Tambah test endpoint: `test_post_laporan_deskripsi_perabot_dapat_konfirmasi()` — POST `/laporan` dengan deskripsi perabot → `konfirmasi.perlu_konfirmasi = true`, `jumlah_pertanyaan == 2`.
+
+3. **`docs/backend/SPEC_SEVERITY_KLASIFIKASI.md`:**
+   - §15.3: Catatan ekstensi lokal perabot — alasan (isu paling umum, transparansi sidang).
+   - §15.4: Tabel gejala perabot setelah "Saluran air kotor" dengan rujukan "Ekstensi lokal".
+
+**Verifikasi:**
+- Pytest: `test_bank_lengkap_9_komponen` + `test_pemilih_deskripsi_perabot` + `test_post_laporan_deskripsi_perabot_dapat_konfirmasi` lulus.
+- Simulasi: `pilih_pertanyaan("beberapa meja dan kursi ada yang rusak…")` → `len(q) == 2`, ada gejala perabot → `perlu_konfirmasi = true`.
+- Backend `--reload` otomatis; user test submit deskripsi perabot di UI → modal pertanyaan muncul ✓.
+
+**Catatan:**
+- Perabot bukan komponen gedung pada tabel Kemendikbud resmi; ditambahkan karena isu paling umum dataset. Rujukan "Ekstensi lokal" agar dapat dipertanggungjawabkan di sidang.
+- Kontrak `INTERFACES.md` §4.1 tidak berubah — hanya perluasan deteksi komponen.
+
 ---
 
 ## 3.38 DBG-017 & D-30 — Pemisahan Wewenang Review Aduan: Verifikator Lapangan vs Pengawasan Kepala Dinas (2026-10-22) ✅ SELESAI

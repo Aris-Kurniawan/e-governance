@@ -49,8 +49,20 @@ def generate_tracking_id() -> str:
     return f"LAP-{datetime.now().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
 
 
-def _laporan_fields(laporan: Laporan) -> dict:
+def _laporan_fields(laporan: Laporan, klaster: Klaster | None = None) -> dict:
     """Field respons laporan yang dipakai POST, riwayat, dan detail (F4.14)."""
+    status_pen = None
+    if klaster and klaster.status_penanganan:
+        status_pen = klaster.status_penanganan
+    elif getattr(laporan, "status_penanganan", None):
+        status_pen = laporan.status_penanganan
+    elif laporan.status_sanggahan == "divalidasi":
+        status_pen = "dalam_antrian_prioritas"
+    elif laporan.status_sanggahan == "ditolak":
+        status_pen = "tidak_dapat_ditindaklanjuti"
+    elif laporan.status_sanggahan == "menunggu":
+        status_pen = "menunggu_verifikasi"
+
     return {
         "id": laporan.id,
         "tracking_id": laporan.tracking_id,
@@ -64,6 +76,8 @@ def _laporan_fields(laporan: Laporan) -> dict:
         "deskripsi": laporan.deskripsi,
         "status_sanggahan": laporan.status_sanggahan,
         "created_at": laporan.created_at,
+        "klaster_id": laporan.klaster_id,
+        "status_penanganan": status_pen,
     }
 
 
@@ -184,9 +198,14 @@ def riwayat_laporan(
     query = query.offset(offset).limit(page_size).order_by(Laporan.created_at.desc())
 
     laporans = db.scalars(query).all()
+    klaster_ids = [l.klaster_id for l in laporans if l.klaster_id]
+    klaster_map = {}
+    if klaster_ids:
+        klasters = db.scalars(select(Klaster).where(Klaster.id.in_(klaster_ids))).all()
+        klaster_map = {k.id: k for k in klasters}
 
     return LaporanListResponse(
-        data=[LaporanResponse(**_laporan_fields(l)) for l in laporans],
+        data=[LaporanResponse(**_laporan_fields(l, klaster_map.get(l.klaster_id))) for l in laporans],
         meta={
             "page": page,
             "page_size": page_size,
@@ -658,8 +677,11 @@ def detail_laporan(
         for f in foto_list
     ]
 
+    # Ambil klaster bila terasosiasi
+    klaster = db.scalar(select(Klaster).where(Klaster.id == laporan.klaster_id)) if laporan.klaster_id else None
+
     return {"data": LaporanDetailResponse(
-        **_laporan_fields(laporan),
+        **_laporan_fields(laporan, klaster),
         sekolah=sekolah_data,
         foto=foto_data,
     )}
