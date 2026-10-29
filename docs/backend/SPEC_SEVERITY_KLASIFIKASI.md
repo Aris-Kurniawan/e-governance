@@ -349,6 +349,12 @@ karena alasan berbeda:
   tidak berguna sebagai pilihan mandiri
 - pondasi/kolom/balok tertutup dinding dan tidak dapat diamati warga → lihat §15.5
 
+**Ekstensi lokal — Meja / kursi / perabot** (komponen ke-9, ditambahkan 27 Okt 2026): perabot bukan
+komponen gedung pada tabel Kemendikbud, tetapi "meja & kursi rusak" adalah isu paling umum pada
+dataset clustering SIMAKIS. Tanpa komponen ini, deskripsi perabot tidak pernah terdeteksi sehingga
+`perlu_konfirmasi` selalu `false` dan warga tidak pernah melihat pertanyaan konfirmasi. Label
+awam: **Meja / kursi / perabot**; pemetaan teknis: `meja`, `kursi`, `perabot kelas`, `furnitur`.
+
 ### 15.4 Bank pertanyaan gejala
 
 Setiap baris diturunkan dari tabel "Kriteria Penentuan Tingkat Kerusakan" di
@@ -430,6 +436,19 @@ dokumen, sehingga setiap pertanyaan dapat dipertanggungjawabkan saat sidang.
 | Apakah saluran air kotor tersumbat total atau pipa pecah? | Rusak Sangat Berat | "Pipa riser patah atau pecah… sump pump rusak…" |
 | Apakah saluran air kotor tersumbat dan menggenang? | Rusak Sedang | "Pipa cabang… patah atau pecah… tersumbat" |
 | Apakah ada pipa saluran yang pecah atau tersumbat? | Rusak Sangat Ringan | "Sebagian pipa cabang pecah atau rusak atau tersumbat" |
+
+**Meja / kursi / perabot** (ekstensi lokal, ditambahkan 27 Okt 2026)
+
+> Komponen ini bukan bagian dari tabel Kemendikbud; ditambahkan karena "meja & kursi rusak"
+> adalah isu paling umum pada dataset SIMAKIS. Rujukan ditandai sebagai "ekstensi lokal" untuk
+> transparansi dalam sidang verifikasi.
+
+| Gejala | Tingkat resmi | Rujukan |
+|---|---|---|
+| Apakah ada meja atau kursi yang patah atau roboh sehingga tidak bisa dipakai? | Rusak Sangat Berat | Ekstensi lokal — di luar tabel Kemendikbud §15.3 |
+| Apakah banyak meja atau kursi yang miring, longgar, atau permukaannya terkelupas? | Rusak Berat | Ekstensi lokal — di luar tabel Kemendikbud §15.3 |
+| Apakah ada meja atau kursi yang goyang atau permukaannya tergores? | Rusak Sedang | Ekstensi lokal — di luar tabel Kemendikbud §15.3 |
+| Apakah permukaan meja atau kursi banyak tergores atau catnya memudar? | Rusak Ringan | Ekstensi lokal — di luar tabel Kemendikbud §15.3 |
 
 ### 15.5 Pilihan 2 = B — Pertanyaan struktural berbasis pemicu
 

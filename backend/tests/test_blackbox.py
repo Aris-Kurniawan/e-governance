@@ -1408,10 +1408,10 @@ class TestLaporanProvenanceF414:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestKonfirmasiF415:
-    def test_bank_lengkap_8_komponen(self):
+    def test_bank_lengkap_9_komponen(self):
         from app.ai_pipeline.question_bank import GEJALA, KOMPONEN, TIDAK_ADA_GEJALA
 
-        assert len(KOMPONEN) == 8
+        assert len(KOMPONEN) == 9
         for kode, data in KOMPONEN.items():
             assert data["label"]
             assert data["teknis"]
@@ -1440,6 +1440,15 @@ class TestKonfirmasiF415:
         assert len(q) == 1
         assert q[0]["kode"] == "bagian"
 
+    def test_pemilih_deskripsi_perabot(self):
+        from app.ai_pipeline.question_bank import pilih_pertanyaan
+
+        q = pilih_pertanyaan(
+            "beberapa meja dan kursi ada yang rusak sehingga mengganggu proses pembelajaran"
+        )
+        assert len(q) >= 2
+        assert any(item["kode"] == "gejala_perabot" for item in q)
+
     def test_pemicu_struktural(self):
         from app.ai_pipeline.question_bank import pilih_pertanyaan
 
@@ -1465,6 +1474,25 @@ class TestKonfirmasiF415:
         assert konfirmasi["perlu_konfirmasi"] is True
         assert konfirmasi["jumlah_pertanyaan"] == 3  # bagian + atap + plafon
         assert konfirmasi["kedaluwarsa_pada"]
+
+    def test_post_laporan_deskripsi_perabot_dapat_konfirmasi(self, test_client, db_session):
+        # Regresi: deskripsi perabot (meja/kursi) dulu tidak terdeteksi sama
+        # sekali → perlu_konfirmasi false → form pertanyaan tidak pernah muncul.
+        user = make_user(db_session)
+        sekolah = make_sekolah(db_session)
+        token = login(test_client, user.email)
+        r = test_client.post(
+            "/laporan",
+            headers=auth(token),
+            json={
+                "sekolah_npsn": sekolah.npsn,
+                "deskripsi": "beberapa meja dan kursi ada yang rusak sehingga mengganggu proses pembelajaran",
+            },
+        )
+        assert r.status_code == 201, r.text
+        konfirmasi = r.json()["data"]["konfirmasi"]
+        assert konfirmasi["perlu_konfirmasi"] is True
+        assert konfirmasi["jumlah_pertanyaan"] == 2  # bagian + gejala_perabot
 
     def test_get_konfirmasi_owner_dan_rbac(self, test_client, db_session):
         owner = make_user(db_session)
