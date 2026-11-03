@@ -48,6 +48,7 @@
 | DBG-024 | Modal pertanyaan konfirmasi severity tidak muncul setelah submit laporan (banner pasif saja) — **dua jalur submit** | `FormLaporan.tsx:191`, `ModalFormLaporan.tsx:88` | ✅ SELESAI | Auto-open `setKonfirmasiOpen(true)` di kedua komponen; `ModalFormLaporan` sebelumnya membuang `res.konfirmasi` |
 | DBG-025 | Status `perlu_info_tambahan` (tombol "Tandai Kejadian Baru") membingungkan petugas & tidak dipakai dalam alur bisnis — dihapus total dari FE & BE | `AntrianValidasi.tsx`, `models/klaster.py`, `routers/klaster.py` | ✅ SELESAI | Hapus dari 2 ENUM + 2 endpoint + 7 file FE + types; migrasi `a1b2c3d4e5f6`; pytest 158/158; build hijau |
 | DBG-026 | Kegagalan klasterisasi mikro per sekolah ($n < 10$): HDBSCAN menandai semua laporan sebagai noise akibat matriks TF-IDF renggang | `app/ai_pipeline/clustering.py`, `pipeline.py` | ✅ SELESAI | D-31: Klasterisasi adaptif via fallback Agglomerative Clustering (cosine distance_threshold=0.88); klaster size >= 2 terbentuk, singleton jadi noise |
+| DBG-027 | Ketiadaan jalur tindak lanjut laporan non-klaster/aduan mandiri (status penanganan fisik terputus dan tidak dapat diupdate) | `models/laporan.py`, `routers/laporan.py`, `alembic/` | ✅ SELESAI | D-32: Dual-track workflow; kolom status_penanganan & tabel laporan_status_log append-only khusus laporan non-klaster tanpa membuat klaster semu |
 
 
 ---
@@ -349,6 +350,17 @@
 +  2. Filter klaster anggota $\ge 2$ sebagai klaster valid; klaster tunggal (*singleton*) otomatis ditandai `-1` (*noise / perlu-review*).
 +  3. Jika $n \ge 10$, tetap gunakan HDBSCAN standar (C2).
 +- **Verifikasi:** Uji 5 laporan plafon SD Alam Citra Insani menghasilkan 1 klaster atap/plafon valid (4 laporan menyatu, 1 laporan terpisah). Uji 2 laporan toilet SD Made menghasilkan 1 klaster toilet valid.
++
++### DBG-027 ✅ — Ketiadaan Jalur Tindak Lanjut Laporan Non-Klaster / Aduan Mandiri (2026-11-03)
++
++- **Gejala:** Laporan di antrean Perlu Review yang telah divalidasi dinas (`status_sanggahan = 'divalidasi'`) tidak memiliki mekanisme untuk diperbarui status penanganan fisiknya (misal: "Dalam Proses Pengerjaan" atau "Selesai") dan tidak muncul di alur tindak lanjut dinas.
++- **Akar:** Entitas tindak lanjut dan tabel `status_log` terikat secara ketat pada `klaster_id NOT NULL`. Laporan mandiri/noise (`klaster_id IS NULL`) tidak memiliki kolom status penanganan sendiri dan tidak memiliki tabel jejak audit tindak lanjut.
++- **Penyelesaian (D-32):**
++  1. Tambahkan kolom `status_penanganan` (`status_penanganan_laporan`) pada model `Laporan`.
++  2. Buat tabel append-only `laporan_status_log` beserta migrasi Alembic `e5f6a7b8c9d0`.
++  3. Tambahkan endpoint `POST /laporan/{id}/tindak-lanjut` dan `GET /laporan/{id}/riwayat-tindak-lanjut` dengan otorisasi dinas (`verifikator_dinas`, `kepala_dinas`).
++  4. Pertahankan pemisahan tegas: laporan terklaster tetap wajib diproses lewat router klaster; laporan non-klaster diproses lewat router laporan tanpa membuat klaster semu ($n=1$).
++- **Verifikasi:** Test suite `test_laporan_tindak_lanjut.py` lulus 2/2 test (update status repetitif, jejak log append-only, penolakan akses admin/warga, validasi alasan wajib).
 +
 +---
 
