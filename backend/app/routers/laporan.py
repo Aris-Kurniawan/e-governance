@@ -7,6 +7,7 @@ from math import ceil
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import status as status_module
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -29,7 +30,13 @@ from app.core.audit import log_audit
 from app.core.exceptions import ApiError
 from app.core.database import get_db
 from app.models.klaster import Klaster
-from app.models.laporan import Laporan, LaporanFoto, STATUS_SANGGHAN_ENUM
+from app.models.laporan import (
+    Laporan,
+    LaporanFoto,
+    LaporanStatusLog,
+    STATUS_LAPORAN_PENANGANAN_ENUM,
+    STATUS_SANGGHAN_ENUM,
+)
 from app.models.sekolah import Sekolah, KondisiSarana
 from app.models.user import User
 from app.schemas.laporan import (
@@ -272,6 +279,7 @@ def list_laporan_publik(
 
 require_review_read = RoleChecker(["admin", "verifikator_dinas", "kepala_dinas"])
 require_review_write = RoleChecker(["admin", "verifikator_dinas"])
+require_laporan_tindak_lanjut_write = RoleChecker(["verifikator_dinas", "kepala_dinas"])
 
 
 class LaporanStatusUpdateRequest(BaseModel):
@@ -336,6 +344,7 @@ def laporan_perlu_review(
                 "konfirmasi_perlu_dijawab": lap.status_konfirmasi == "menunggu",
                 "deskripsi": lap.deskripsi,
                 "status_sanggahan": lap.status_sanggahan,
+                "status_penanganan": lap.status_penanganan,
                 "created_at": lap.created_at.isoformat() if lap.created_at else None,
                 "klaster": (
                     {"id": kl.id, "label": kl.label, "kategori": kl.kategori}
@@ -396,6 +405,101 @@ def update_laporan_status(
             "tracking_id": laporan.tracking_id,
             "status_sanggahan": laporan.status_sanggahan,
         }
+    }
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tindak lanjut laporan noise/non-klaster — tanpa membuat record Klaster.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@router.post("/{laporan_id}/tindak-lanjut")
+def update_tindak_lanjut_laporan(
+    laporan_id: str,
+    status: str,
+    alasan: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_laporan_tindak_lanjut_write),
+):
+    """Perbarui tindak lanjut aduan mandiri yang tidak memiliki klaster."""
+    if status not in STATUS_LAPORAN_PENANGANAN_ENUM:
+        raise HTTPException(
+            status_code=status_module.HTTP_400_BAD_REQUEST,
+            detail=f"status harus salah satu dari {list(STATUS_LAPORAN_PENANGANAN_ENUM)}",
+        )
+    if status == "tidak_dapat_ditindaklanjuti" and not (alasan or "").strip():
+        raise ApiError(422, "REASON_REQUIRED", "alasan wajib untuk status ini")
+
+    laporan = db.scalar(select(Laporan).where(Laporan.id == laporan_id))
+    if not laporan:
+        raise HTTPException(
+            status_code=status_module.HTTP_404_NOT_FOUND,
+            detail=f"Laporan dengan ID {laporan_id} tidak ditemukan",
+        )
+    if laporan.klaster_id is not None:
+        raise ApiError(
+            400,
+            "VALIDATION_ERROR",
+            "Tindak lanjut laporan terklaster harus diperbarui melalui endpoint klaster",
+        )
+
+    laporan.status_penanganan = status
+    db.add(laporan)
+    db.add(
+        LaporanStatusLog(
+            laporan_id=laporan.id,
+            status=status,
+            alasan=(alasan or "").strip() or None,
+            actor_user_id=current_user.id,
+        )
+    )
+    log_audit(db, current_user.id, "update_tindak_lanjut_laporan", target=laporan.id)
+    db.commit()
+    db.refresh(laporan)
+    return {
+        "data": {
+            "laporan_id": laporan.id,
+            "status": laporan.status_penanganan,
+            "message": f"Status tindak lanjut diperbarui menjadi {laporan.status_penanganan}",
+        }
+    }
+
+
+@router.get("/{laporan_id}/riwayat-tindak-lanjut")
+def riwayat_tindak_lanjut_laporan(
+    laporan_id: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_review_read),
+):
+    """Riwayat append-only tindak lanjut laporan non-klaster untuk dinas."""
+    laporan = db.scalar(select(Laporan).where(Laporan.id == laporan_id))
+    if not laporan:
+        raise HTTPException(
+            status_code=status_module.HTTP_404_NOT_FOUND,
+            detail=f"Laporan dengan ID {laporan_id} tidak ditemukan",
+        )
+    if laporan.klaster_id is not None:
+        raise ApiError(
+            400,
+            "VALIDATION_ERROR",
+            "Riwayat tindak lanjut laporan terklaster tersedia melalui riwayat klaster",
+        )
+
+    logs = db.scalars(
+        select(LaporanStatusLog)
+        .where(LaporanStatusLog.laporan_id == laporan.id)
+        .order_by(LaporanStatusLog.created_at.asc())
+    ).all()
+    return {
+        "data": [
+            {
+                "status": log.status,
+                "alasan": log.alasan,
+                "timestamp": log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ]
     }
 
 

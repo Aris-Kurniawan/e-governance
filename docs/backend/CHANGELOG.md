@@ -1753,6 +1753,29 @@ aturan AGENTS.md hanya saat diminta ("commit"). Sisa backlog: 50 label manual F4
 +- 5 laporan SD Alam Citra Insani: 4 laporan menyatu menjadi 1 klaster atap/plafon valid (`ruang_belajar`).
 +- 2 laporan toilet SD Negeri 1 Made: keduanya menyatu menjadi 1 klaster toilet valid (`toilet`).
 +- Laporan anomali kucing liar di SD Negeri 1 Kramat tetap terisolasi ke noise / *perlu-review*.
++
++## 3.42 DBG-027 & D-32 — Tindak Lanjut Laporan Non-Klaster & Aduan Mandiri (2026-11-03) ✅ SELESAI
++
++**Perbaikan DBG-027 & Keputusan Produk D-32:**
++
++1. **Masalah:**
++   - Laporan non-klaster/noise yang divalidasi dinas di `/dinas/perlu-review` terhenti pada status sanggahan `divalidasi` dan tidak dapat diperbarui perkembangan penanganan fisiknya karena halaman tindak lanjut dan tabel `status_log` terikat mutlak pada entitas `klaster_id`.
++
++2. **Perubahan:**
++   - **Model & Database:**
++     - Model `Laporan` (`app/models/laporan.py`): tambahkan kolom `status_penanganan` bertipe ENUM (`dalam_antrian_prioritas`, `dalam_proses`, `selesai`, `tidak_dapat_ditindaklanjuti`).
++     - Model baru `LaporanStatusLog`: tabel append-only untuk jejak riwayat tindak lanjut laporan individu non-klaster.
++     - Migrasi Alembic `e5f6a7b8c9d0_laporan_tindak_lanjut.py`.
++   - **Backend API:**
++     - `routers/laporan.py`: tambahkan endpoint `POST /laporan/{id}/tindak-lanjut` (akses `verifikator_dinas`, `kepala_dinas`) dan `GET /laporan/{id}/riwayat-tindak-lanjut`.
++     - Proteksi integritas: jika laporan memiliki `klaster_id`, wajib diarahkan ke endpoint klaster untuk mencegah dual-state.
++   - **Dokumentasi:**
++     - `docs/universal/INTERFACES.md`: Tambahkan spesifikasi §4.5.
++     - `docs/backend/DEBUGGING.md`: Tambahkan tiket **DBG-027** `✅ SELESAI`.
++     - `docs/backend/CHANGELOG.md`: Catat di §3.42.
++
++**Bukti verifikasi:**
++- Pytest `test_laporan_tindak_lanjut.py`: 2/2 test passed (update berulang `dalam_proses`, pencatatan riwayat log, proteksi role & alasan).
  
  ## Catatan Terbuka
 

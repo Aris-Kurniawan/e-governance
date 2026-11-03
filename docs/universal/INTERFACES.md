@@ -432,6 +432,17 @@ Keterbatasan v1: **belum ada field alasan** (`status_log` terikat FK klaster —
 - `PUT /laporan/{id}/status`: hanya dapat dieksekusi oleh `admin` dan `verifikator_dinas`. Role `kepala_dinas` atau warga menghasilkan `403 FORBIDDEN`.
 
 
+### 4.5 Tindak Lanjut Laporan Non-Klaster
+
+Untuk laporan noise tanpa `klaster_id`, status tindakan fisik tidak memakai endpoint klaster dan tidak membuat klaster baru.
+
+| Method | Endpoint | Akses | Deskripsi |
+|---|---|---|---|
+| POST | `/laporan/{id}/tindak-lanjut?status=&alasan=` | `verifikator_dinas`, `kepala_dinas` | Pembaruan append-only tindak lanjut laporan non-klaster |
+| GET | `/laporan/{id}/riwayat-tindak-lanjut` | `admin`, `verifikator_dinas`, `kepala_dinas` | Riwayat internal tindak lanjut |
+
+Status valid: `dalam_antrian_prioritas` · `dalam_proses` · `selesai` · `tidak_dapat_ditindaklanjuti`. Endpoint dapat dipanggil berulang untuk `dalam_proses`; `alasan` wajib untuk `tidak_dapat_ditindaklanjuti`. Laporan yang sudah memiliki `klaster_id` harus memakai `/klaster/{id}/status`.
+
 ### 4.1 Konfirmasi Severity — Ringkasan ✅ **(F4.15)**
 
 > ✅ **Disetujui 20 Okt 2026** (Aris & Dimas, §11.1) — §4.1–§4.4 sah sebagai dasar implementasi.

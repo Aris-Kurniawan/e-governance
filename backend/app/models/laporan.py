@@ -17,6 +17,12 @@ KATEGORI_ENUM = (
 )
 KONDISI_ENUM = ("baik", "rusak_ringan", "rusak_sedang", "rusak_berat")
 STATUS_SANGGHAN_ENUM = ("menunggu", "divalidasi", "ditolak")
+STATUS_LAPORAN_PENANGANAN_ENUM = (
+    "dalam_antrian_prioritas",
+    "dalam_proses",
+    "selesai",
+    "tidak_dapat_ditindaklanjuti",
+)
 
 # F4.14 (D-24 lanjutan, SPEC §17.2): asal nilai `kondisi_dilaporkan`.
 # `warga` BUKAN input dropdown warga — hanya koreksi manusia (verifikator)
@@ -57,6 +63,11 @@ class Laporan(Base, TimestampMixin):
     status_sanggahan: Mapped[str] = mapped_column(
         Enum(*STATUS_SANGGHAN_ENUM, name="status_sanggahan"), default="menunggu"
     )
+    # Tindak lanjut khusus aduan mandiri/noise; tidak membuat klaster buatan.
+    status_penanganan: Mapped[str | None] = mapped_column(
+        Enum(*STATUS_LAPORAN_PENANGANAN_ENUM, name="status_penanganan_laporan"),
+        nullable=True,
+    )
 
     # F4.7 (D-21): penanda anti-loop — laporan noise HDBSCAN tidak lagi jadi
     # record Klaster; cron 02:00 memilih laporan dari kolom ini, bukan
@@ -69,6 +80,7 @@ class Laporan(Base, TimestampMixin):
     )
 
     foto: Mapped[list["LaporanFoto"]] = relationship(back_populates="laporan")
+    status_logs: Mapped[list["LaporanStatusLog"]] = relationship(back_populates="laporan")
 
 
 class LaporanFoto(Base, TimestampMixin):
@@ -79,3 +91,18 @@ class LaporanFoto(Base, TimestampMixin):
     storage_key: Mapped[str] = mapped_column(String(500))  # path di MinIO/S3
 
     laporan: Mapped[Laporan] = relationship(back_populates="foto")
+
+class LaporanStatusLog(Base, TimestampMixin):
+    """Jejak append-only tindak lanjut untuk laporan non-klaster."""
+
+    __tablename__ = "laporan_status_log"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
+    laporan_id: Mapped[str] = mapped_column(String(36), ForeignKey("laporan.id"))
+    status: Mapped[str] = mapped_column(
+        Enum(*STATUS_LAPORAN_PENANGANAN_ENUM, name="laporan_status_log_status")
+    )
+    alasan: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actor_user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
+
+    laporan: Mapped["Laporan"] = relationship(back_populates="status_logs")
