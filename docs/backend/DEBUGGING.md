@@ -49,6 +49,7 @@
 | DBG-025 | Status `perlu_info_tambahan` (tombol "Tandai Kejadian Baru") membingungkan petugas & tidak dipakai dalam alur bisnis — dihapus total dari FE & BE | `AntrianValidasi.tsx`, `models/klaster.py`, `routers/klaster.py` | ✅ SELESAI | Hapus dari 2 ENUM + 2 endpoint + 7 file FE + types; migrasi `a1b2c3d4e5f6`; pytest 158/158; build hijau |
 | DBG-026 | Kegagalan klasterisasi mikro per sekolah ($n < 10$): HDBSCAN menandai semua laporan sebagai noise akibat matriks TF-IDF renggang | `app/ai_pipeline/clustering.py`, `pipeline.py` | ✅ SELESAI | D-31: Klasterisasi adaptif via fallback Agglomerative Clustering (cosine distance_threshold=0.88); klaster size >= 2 terbentuk, singleton jadi noise |
 | DBG-027 | Ketiadaan jalur tindak lanjut laporan non-klaster/aduan mandiri (status penanganan fisik terputus dan tidak dapat diupdate) | `models/laporan.py`, `routers/laporan.py`, `alembic/` | ✅ SELESAI | D-32: Dual-track workflow; kolom status_penanganan & tabel laporan_status_log append-only khusus laporan non-klaster tanpa membuat klaster semu |
+| DBG-028 | Migrasi `e5f6a7b8c9d0` (kolom `laporan.status_penanganan` + tabel `laporan_status_log`) tak pernah teraplikasi ke DB live — Alembic punya **2 head paralel** dari `b7d15c4e9a02`; query ORM 500 `Unknown column 'laporan.status_penanganan'` → halaman Perlu Review FE "Data tidak dapat dimuat" | `alembic/versions/e5f6a7b8c9d0_*.py`, `alembic/versions/63a2411c6508_*.py`, `models/laporan.py` | ✅ SELESAI | Merge migration `ba82717fb517` (`down_revision=("a1b2c3d4e5f6","e5f6a7b8c9d0")`); `alembic upgrade head` → 1 head; kolom+tabel ada; `GET /laporan/perlu-review` 200; pytest **175/175** |
 
 
 ---
@@ -340,29 +341,40 @@
   3. **Frontend** — `AntrianValidasi.tsx`: hapus tombol, tab, state `"baru"`, `handleDecision` type; `types.ts`: hapus dari `StatusKlaster` & `StatusPenanganan`; `TabelVerifikasi.tsx`, `DashboardWilayah.tsx`, `RiwayatLaporan.tsx`, `StatusTindakLanjutWarga.tsx`, `InstitutionalStepper.tsx`: hapus dari label/badge/stepper.
   4. **Docs** — `INTERFACES.md` §5 & §7: hapus dari daftar status.
 - **Verifikasi:** pytest **158/158** · `npm run build` hijau · grep `perlu_info_tambahan` di `frontend/src` = 0.
-+
-+### DBG-026 ✅ — Kegagalan klasterisasi mikro per sekolah (2026-10-28)
-+
-+- **Gejala:** Pengujian E2E pengiriman 5 laporan kerusakan plafon/atap di SD ALAM CITRA INSANI dan 2 laporan toilet di SD NEGERI 1 MADE menghasilkan `labels = [-1]` (semua dianggap noise/outlier) sehingga 0 klaster terbentuk.
-+- **Akar:** Klasterisasi dijalankan terisolasi per sekolah (`sekolah_npsn`). Saat $n < 10$, UMAP dilewati dan HDBSCAN dijalankan langsung pada matriks TF-IDF mentah 62 fitur. Vektor TF-IDF antar-kalimat pendek berjarak Euclidean renggang ($1,12 - 1,38$), tidak memenuhi densitas mutual reachability HDBSCAN (`min_cluster_size=3`), sehingga seluruh sampel diberi label `-1`.
-+- **Penyelesaian (D-31):**
-+  1. Tambahkan fungsi adaptif di `clustering.py`: jika $n < 10$ dan $n \ge 2$, gunakan `AgglomerativeClustering(metric="cosine", linkage="average", distance_threshold=0.88, n_clusters=None)`.
-+  2. Filter klaster anggota $\ge 2$ sebagai klaster valid; klaster tunggal (*singleton*) otomatis ditandai `-1` (*noise / perlu-review*).
-+  3. Jika $n \ge 10$, tetap gunakan HDBSCAN standar (C2).
-+- **Verifikasi:** Uji 5 laporan plafon SD Alam Citra Insani menghasilkan 1 klaster atap/plafon valid (4 laporan menyatu, 1 laporan terpisah). Uji 2 laporan toilet SD Made menghasilkan 1 klaster toilet valid.
-+
-+### DBG-027 ✅ — Ketiadaan Jalur Tindak Lanjut Laporan Non-Klaster / Aduan Mandiri (2026-11-03)
-+
-+- **Gejala:** Laporan di antrean Perlu Review yang telah divalidasi dinas (`status_sanggahan = 'divalidasi'`) tidak memiliki mekanisme untuk diperbarui status penanganan fisiknya (misal: "Dalam Proses Pengerjaan" atau "Selesai") dan tidak muncul di alur tindak lanjut dinas.
-+- **Akar:** Entitas tindak lanjut dan tabel `status_log` terikat secara ketat pada `klaster_id NOT NULL`. Laporan mandiri/noise (`klaster_id IS NULL`) tidak memiliki kolom status penanganan sendiri dan tidak memiliki tabel jejak audit tindak lanjut.
-+- **Penyelesaian (D-32):**
-+  1. Tambahkan kolom `status_penanganan` (`status_penanganan_laporan`) pada model `Laporan`.
-+  2. Buat tabel append-only `laporan_status_log` beserta migrasi Alembic `e5f6a7b8c9d0`.
-+  3. Tambahkan endpoint `POST /laporan/{id}/tindak-lanjut` dan `GET /laporan/{id}/riwayat-tindak-lanjut` dengan otorisasi dinas (`verifikator_dinas`, `kepala_dinas`).
-+  4. Pertahankan pemisahan tegas: laporan terklaster tetap wajib diproses lewat router klaster; laporan non-klaster diproses lewat router laporan tanpa membuat klaster semu ($n=1$).
-+- **Verifikasi:** Test suite `test_laporan_tindak_lanjut.py` lulus 2/2 test (update status repetitif, jejak log append-only, penolakan akses admin/warga, validasi alasan wajib).
-+
-+---
+
+### DBG-026 ✅ — Kegagalan klasterisasi mikro per sekolah (2026-10-28)
+
+- **Gejala:** Pengujian E2E pengiriman 5 laporan kerusakan plafon/atap di SD ALAM CITRA INSANI dan 2 laporan toilet di SD NEGERI 1 MADE menghasilkan `labels = [-1]` (semua dianggap noise/outlier) sehingga 0 klaster terbentuk.
+- **Akar:** Klasterisasi dijalankan terisolasi per sekolah (`sekolah_npsn`). Saat $n < 10$, UMAP dilewati dan HDBSCAN dijalankan langsung pada matriks TF-IDF mentah 62 fitur. Vektor TF-IDF antar-kalimat pendek berjarak Euclidean renggang ($1,12 - 1,38$), tidak memenuhi densitas mutual reachability HDBSCAN (`min_cluster_size=3`), sehingga seluruh sampel diberi label `-1`.
+- **Penyelesaian (D-31):**
+  1. Tambahkan fungsi adaptif di `clustering.py`: jika $n < 10$ dan $n \ge 2$, gunakan `AgglomerativeClustering(metric="cosine", linkage="average", distance_threshold=0.88, n_clusters=None)`.
+  2. Filter klaster anggota $\ge 2$ sebagai klaster valid; klaster tunggal (*singleton*) otomatis ditandai `-1` (*noise / perlu-review*).
+  3. Jika $n \ge 10$, tetap gunakan HDBSCAN standar (C2).
+- **Verifikasi:** Uji 5 laporan plafon SD Alam Citra Insani menghasilkan 1 klaster atap/plafon valid (4 laporan menyatu, 1 laporan terpisah). Uji 2 laporan toilet SD Made menghasilkan 1 klaster toilet valid.
+
+### DBG-027 ✅ — Ketiadaan Jalur Tindak Lanjut Laporan Non-Klaster / Aduan Mandiri (2026-11-03)
+
+- **Gejala:** Laporan di antrean Perlu Review yang telah divalidasi dinas (`status_sanggahan = 'divalidasi'`) tidak memiliki mekanisme untuk diperbarui status penanganan fisiknya (misal: "Dalam Proses Pengerjaan" atau "Selesai") dan tidak muncul di alur tindak lanjut dinas.
+- **Akar:** Entitas tindak lanjut dan tabel `status_log` terikat secara ketat pada `klaster_id NOT NULL`. Laporan mandiri/noise (`klaster_id IS NULL`) tidak memiliki kolom status penanganan sendiri dan tidak memiliki tabel jejak audit tindak lanjut.
+- **Penyelesaian (D-32):**
+  1. Tambahkan kolom `status_penanganan` (`status_penanganan_laporan`) pada model `Laporan`.
+  2. Buat tabel append-only `laporan_status_log` beserta migrasi Alembic `e5f6a7b8c9d0`.
+  3. Tambahkan endpoint `POST /laporan/{id}/tindak-lanjut` dan `GET /laporan/{id}/riwayat-tindak-lanjut` dengan otorisasi dinas (`verifikator_dinas`, `kepala_dinas`).
+  4. Pertahankan pemisahan tegas: laporan terklaster tetap wajib diproses lewat router klaster; laporan non-klaster diproses lewat router laporan tanpa membuat klaster semu ($n=1$).
+- **Verifikasi:** Test suite `test_laporan_tindak_lanjut.py` lulus 2/2 test (update status repetitif, jejak log append-only, penolakan akses admin/warga, validasi alasan wajib).
+
+### DBG-028 ✅ — Migrasi tindak lanjut laporan tidak teraplikasi (2026-11-04)
+
+- **Gejala:** Halaman `/dinas/perlu-review` menampilkan “Data tidak dapat dimuat — Tidak dapat terhubung ke server http://localhost:8000”, padahal `GET /health` = 200.
+- **Akar:** `alembic heads` menunjukkan **dua head paralel** dari `b7d15c4e9a02`: `63a2411c6508` (users.nip, DBG-013) dan `e5f6a7b8c9d0` (tindak lanjut, D-32). DB live berada di `63a2411c6508`, sedangkan `e5f6a7b8c9d0` tidak pernah dijalankan. Model `Laporan` sudah punya `status_penanganan`, sehingga query `GET /laporan/perlu-review` memilih kolom yang tidak ada di MySQL → `1054 Unknown column 'laporan.status_penanganan'` → HTTP 500. Test suite tidak menangkap karena DB test dibuat via `create_all` (selalu sesuai model).
+- **Penyelesaian (2026-11-04):**
+  1. Buat merge migration `ba82717fb517` dengan `down_revision = ("a1b2c3d4e5f6", "e5f6a7b8c9d0")` (upgrade/downgrade kosong — traversal Alembic menjalankan `e5f6a7b8c9d0` lalu `a1b2c3d4e5f6`).
+  2. `alembic upgrade head` → menjalankan `e5f6a7b8c9d0` (ADD COLUMN + CREATE TABLE), `a1b2c3d4e5f6` (hapus enum `perlu_info_tambahan`), lalu merge.
+  3. `alembic heads` kini **1 head** (`ba82717fb517`).
+- **Verifikasi:** `SHOW COLUMNS laporan` punya `status_penanganan`; `SHOW TABLES` punya `laporan_status_log`; `GET /laporan/perlu-review` → **200** (502 item); pytest **175/175**.
+- **Pencegahan:** jalankan `alembic heads` setelah membuat migrasi baru — jika >1 head, segera `alembic merge`.
+
+---
 
 ## Catatan Proses (bukan bug produksi)
 
