@@ -15,7 +15,6 @@ import {
   Building2,
   FileCheck,
   Gauge,
-  ChevronRight,
   Bot,
   LineChart,
   Megaphone,
@@ -26,7 +25,7 @@ import {
 } from "lucide-react"
 
 export default function Landing() {
-  const { isAuthenticated, user, roleLabel } = useAuth()
+  const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
   // Gerbang autentikasi pelaporan:
@@ -46,7 +45,7 @@ export default function Landing() {
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 pt-12 md:pt-20 pb-10 md:pb-14">
           <div className="grid gap-10 lg:grid-cols-12 items-center">
             {/* Left Content Column */}
-            <div className="lg:col-span-7 max-w-2xl">
+            <div className="lg:col-span-7">
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-xs">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
                 Platform Transparansi Sarpras Sekolah Kab. Lamongan
@@ -80,17 +79,36 @@ export default function Landing() {
               </div>
 
               {/* Indikator Status Autentikasi Pelapor */}
-              {isAuthenticated ? (
-                <div className="mt-5 flex items-center gap-2 text-xs text-emerald-700 font-medium bg-emerald-50/80 border border-emerald-200/60 rounded-lg px-3 py-1.5 w-fit">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                  <span>Masuk sebagai <strong>{user?.nama}</strong> ({roleLabel ?? "Akun Terdaftar"} — Siap Melaporkan)</span>
-                </div>
-              ) : (
-                <div className="mt-5 flex items-center gap-2 text-xs text-slate-600 font-medium bg-white/70 backdrop-blur-sm border border-slate-200/70 rounded-lg px-3 py-1.5 w-fit">
+              {!isAuthenticated && (
+                <div className="mt-4 flex items-center gap-2 text-xs text-slate-600 font-medium bg-white/70 backdrop-blur-sm border border-slate-200/70 rounded-lg px-3 py-1.5 w-fit">
                   <Lock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                   <span>Pelaporan membutuhkan akun warga terverifikasi (Wajib Masuk / Daftar)</span>
                 </div>
               )}
+
+              {/* Kategori Populer */}
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-extrabold tracking-wider text-slate-400 uppercase shrink-0 whitespace-nowrap">
+                  Kategori Populer:
+                </span>
+                {[
+                  { label: "Ruang Kelas", icon: Building2 },
+                  { label: "Sanitasi & Toilet", icon: ShieldCheck },
+                  { label: "Perpustakaan", icon: FileCheck },
+                  { label: "Laboratorium", icon: Gauge },
+                ].map((kat) => {
+                  const Icon = kat.icon
+                  return (
+                    <span
+                      key={kat.label}
+                      className="group inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-xs cursor-pointer select-none whitespace-nowrap transition-all duration-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md hover:-translate-y-0.5 active:scale-95 active:translate-y-0"
+                    >
+                      <Icon className="h-3.5 w-3.5 text-blue-600 transition-colors group-hover:text-blue-700" />
+                      {kat.label}
+                    </span>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Right Floating Preview Cards – disembunyikan di mobile */}
@@ -184,29 +202,7 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Kategori Populer */}
-          <div className="mt-10 md:mt-14 flex flex-wrap items-center gap-3">
-            <span className="text-[11px] font-extrabold tracking-wider text-slate-400 uppercase">
-              Kategori Populer:
-            </span>
-            {[
-              { label: "Ruang Kelas", icon: Building2 },
-              { label: "Sanitasi & Toilet", icon: ShieldCheck },
-              { label: "Perpustakaan", icon: FileCheck },
-              { label: "Laboratorium", icon: Gauge },
-            ].map((kat) => {
-              const Icon = kat.icon
-              return (
-                <span
-                  key={kat.label}
-                  className="group inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 shadow-xs cursor-pointer select-none transition-all duration-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md hover:-translate-y-0.5 active:scale-95 active:translate-y-0"
-                >
-                  <Icon className="h-3.5 w-3.5 text-blue-600 transition-colors group-hover:text-blue-700" />
-                  {kat.label}
-                </span>
-              )
-            })}
-          </div>
+
         </div>
       </section>
 
@@ -306,7 +302,7 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Cosine Distance Matching</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+
               </div>
             </div>
 
@@ -324,7 +320,7 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Konsensus Warga Transparan</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+
               </div>
             </div>
 
@@ -342,7 +338,7 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Status Ledger D-32 Terbuka</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+
               </div>
             </div>
           </div>

@@ -294,220 +294,188 @@ export default function Direktori() {
             >
               <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
             </Button>
+
+            {/* Ekspor CSV */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              className="h-9 px-3 text-xs text-slate-700 border-slate-200 hover:bg-slate-50 rounded-lg cursor-pointer ml-auto"
+            >
+              <Download className="h-3.5 w-3.5 mr-1.5" /> Ekspor Rekap (.CSV)
+            </Button>
           </div>
         </div>
 
-        {/* ── Main Layout (Grid Cards + Sidebar) ── */}
-        <div className="grid gap-6 lg:grid-cols-12 items-start">
-          {/* Left Cards Grid (8 cols) */}
-          <div className="lg:col-span-8">
-            {paginatedSekolah.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-2">
-                {paginatedSekolah.map((school) => (
-                  <div
-                    key={school.npsn}
-                    className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-medium text-slate-400">NPSN: {school.npsn}</span>
-                        {school.status === "Selisih Kritis" && (
-                          <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-800 border border-rose-200 flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-rose-600" /> {school.statusBadge}
-                          </span>
-                        )}
-                        {school.status === "Selisih Minor" && (
-                          <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200 flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> {school.statusBadge}
-                          </span>
-                        )}
-                        {school.status === "Data Sesuai" && (
-                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 border border-slate-200 flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {school.statusBadge}
-                          </span>
-                        )}
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900 leading-snug">{school.nama}</h3>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-700">{school.jenjang}</span>
-                          <span className="truncate">{school.alamat}</span>
-                        </div>
-                      </div>
-
-                      <div className={`grid ${school.stats.length === 3 ? "grid-cols-3" : "grid-cols-2"} gap-2 rounded-xl bg-slate-50 p-3 text-xs border border-slate-100`}>
-                        {school.stats.map((st, i) => (
-                          <div key={i}>
-                            <span className="text-slate-400 block text-[10px]">{st.label}</span>
-                            <span className={`font-bold ${st.valueClass || "text-slate-800"}`}>{st.val}</span>
-                            <span className={`text-[10px] block ${st.descClass || "text-slate-400"}`}>{st.desc}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className={`rounded-xl p-3 border text-xs ${
-                        school.temuan.tipe === "kritis"
-                          ? "bg-rose-50/70 border-rose-100"
-                          : school.temuan.tipe === "minor"
-                          ? "bg-blue-50/70 border-blue-100"
-                          : "bg-emerald-50/70 border-emerald-100"
-                      }`}>
-                        <span className={`font-bold flex items-center gap-1 mb-1 ${
-                          school.temuan.tipe === "kritis"
-                            ? "text-rose-900"
-                            : school.temuan.tipe === "minor"
-                            ? "text-blue-900"
-                            : "text-emerald-900"
-                        }`}>
-                          {school.temuan.tipe === "kritis" && <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />}
-                          {school.temuan.tipe === "minor" && <Info className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
-                          {school.temuan.tipe === "sesuai" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
-                          {school.temuan.judul}:
-                        </span>
-                        <p className={`text-[11px] leading-relaxed ${
-                          school.temuan.tipe === "kritis"
-                            ? "text-[#641E1E]"
-                            : school.temuan.tipe === "minor"
-                            ? "text-blue-950"
-                            : "text-emerald-950"
-                        }`}>
-                          {school.temuan.deskripsi}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-                      <span className="text-slate-400">Audit: {school.audit}</span>
-                      <Link to={`/sekolah/${school.npsn}`}>
-                        <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-8 px-3 rounded-lg shadow-sm cursor-pointer">
-                          Lihat Data Baseline <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              /* Empty State */
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 text-slate-400 mb-4">
-                  <Search className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900">Tidak Ada Sekolah Ditemukan</h3>
-                <p className="mt-1.5 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                  Tidak ditemukan data sekolah dengan kata kunci &quot;<span className="font-semibold text-slate-800">{search}</span>&quot;
-                  {jenjang !== "Semua" ? ` pada jenjang ${jenjang}` : ""}
-                  {statusIntegritas !== "Semua Status" ? ` dengan status ${statusIntegritas}` : ""}.
-                </p>
-                <Button
-                  onClick={handleReset}
-                  variant="outline"
-                  size="sm"
-                  className="mt-5 rounded-lg text-xs font-semibold text-slate-700 border-slate-300 hover:bg-slate-50 cursor-pointer"
+        {/* ── Main Layout (3 Kartu Sekolah Per Baris) ── */}
+        <div className="space-y-6">
+          {paginatedSekolah.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {paginatedSekolah.map((school) => (
+                <div
+                  key={school.npsn}
+                  className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow"
                 >
-                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Bersihkan Filter
-                </Button>
-              </div>
-            )}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-medium text-slate-400">NPSN: {school.npsn}</span>
+                      {school.status === "Selisih Kritis" && (
+                        <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-800 border border-rose-200 flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-rose-600" /> {school.statusBadge}
+                        </span>
+                      )}
+                      {school.status === "Selisih Minor" && (
+                        <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200 flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> {school.statusBadge}
+                        </span>
+                      )}
+                      {school.status === "Data Sesuai" && (
+                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 border border-slate-200 flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {school.statusBadge}
+                        </span>
+                      )}
+                    </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
-                <div className="text-xs text-slate-500">
-                  Menampilkan <span className="font-semibold text-slate-700">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-slate-700">{Math.min(currentPage * pageSize, totalItems)}</span> dari <span className="font-semibold text-slate-700">{totalItems}</span> sekolah
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 disabled:opacity-40 rounded-lg cursor-pointer"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Prev
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setCurrentPage(p)}
-                        className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                          currentPage === p
-                            ? "bg-[#0B3052] text-white shadow-sm"
-                            : "text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 leading-snug">{school.nama}</h3>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-700">{school.jenjang}</span>
+                        <span className="truncate">{school.alamat}</span>
+                      </div>
+                    </div>
+
+                    <div className={`grid ${school.stats.length === 3 ? "grid-cols-3" : "grid-cols-2"} gap-2 rounded-xl bg-slate-50 p-3 text-xs border border-slate-100`}>
+                      {school.stats.map((st, i) => (
+                        <div key={i}>
+                          <span className="text-slate-400 block text-[10px]">{st.label}</span>
+                          <span className={`font-bold ${st.valueClass || "text-slate-800"}`}>{st.val}</span>
+                          <span className={`text-[10px] block ${st.descClass || "text-slate-400"}`}>{st.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className={`rounded-xl p-3 border text-xs ${
+                      school.temuan.tipe === "kritis"
+                        ? "bg-rose-50/70 border-rose-100"
+                        : school.temuan.tipe === "minor"
+                        ? "bg-blue-50/70 border-blue-100"
+                        : "bg-emerald-50/70 border-emerald-100"
+                    }`}>
+                      <span className={`font-bold flex items-center gap-1 mb-1 ${
+                        school.temuan.tipe === "kritis"
+                          ? "text-rose-900"
+                          : school.temuan.tipe === "minor"
+                          ? "text-blue-900"
+                          : "text-emerald-900"
+                      }`}>
+                        {school.temuan.tipe === "kritis" && <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />}
+                        {school.temuan.tipe === "minor" && <Info className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                        {school.temuan.tipe === "sesuai" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                        {school.temuan.judul}:
+                      </span>
+                      <p className={`text-[11px] leading-relaxed ${
+                        school.temuan.tipe === "kritis"
+                          ? "text-[#641E1E]"
+                          : school.temuan.tipe === "minor"
+                          ? "text-blue-950"
+                          : "text-emerald-950"
+                      }`}>
+                        {school.temuan.deskripsi}
+                      </p>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 disabled:opacity-40 rounded-lg cursor-pointer"
-                  >
-                    Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Right Sidebar Widgets (4 cols) */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Widget 1: Kepatuhan Audit Sarpras */}
-            <div className="rounded-2xl border border-blue-200/80 bg-blue-50/30 p-6 shadow-sm space-y-5">
-              <div className="flex items-center gap-2 border-b border-blue-100 pb-3">
-                <ShieldCheck className="h-5 w-5 text-[#0B3052]" />
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Kepatuhan Audit Sarpras</h3>
-                  <span className="text-[11px] text-slate-500">Standar Kemendikdasmen</span>
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                    <span className="text-slate-400">Audit: {school.audit}</span>
+                    <Link to={`/sekolah/${school.npsn}`}>
+                      <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-8 px-3 rounded-lg shadow-sm cursor-pointer">
+                        Lihat Data Baseline <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            /* Empty State */
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 text-slate-400 mb-4">
+                <Search className="h-6 w-6" />
               </div>
-
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Direktori ini mengompilasi keselarasan antara laporan berkala operator Dapodik dengan hasil pantauan komite sekolah serta warga kecamatan terverifikasi NIK.
+              <h3 className="text-base font-bold text-slate-900">Tidak Ada Sekolah Ditemukan</h3>
+              <p className="mt-1.5 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                Tidak ditemukan data sekolah dengan kata kunci &quot;<span className="font-semibold text-slate-800">{search}</span>&quot;
+                {jenjang !== "Semua" ? ` pada jenjang ${jenjang}` : ""}
+                {statusIntegritas !== "Semua Status" ? ` dengan status ${statusIntegritas}` : ""}.
               </p>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold text-slate-800 mb-1.5">
-                  <span>Tingkat Kepatuhan Wilayah</span>
-                  <span className="font-bold text-[#0B3052]">87.5%</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-blue-100 overflow-hidden">
-                  <div className="h-full rounded-full bg-[#0B3052]" style={{ width: "87.5%" }} />
-                </div>
-                <span className="text-[11px] text-slate-500 mt-2 block">
-                  21 dari 24 sekolah memiliki data sarana dan prasarana terverifikasi tanpa anomali.
-                </span>
-              </div>
-
-              <div className="rounded-xl bg-white p-3 border border-slate-200/70 text-[11px] text-slate-600 space-y-1">
-                <span className="font-bold text-slate-800 block">DASAR REGULASI:</span>
-                <p>Permendikbud No. 24/2007 (Standar Sarpras) &amp; UU PDP No. 27/2022.</p>
-              </div>
-
               <Button
-                onClick={handleExportCsv}
-                className="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 font-semibold text-xs h-9 rounded-lg shadow-sm cursor-pointer"
+                onClick={handleReset}
+                variant="outline"
+                size="sm"
+                className="mt-5 rounded-lg text-xs font-semibold text-slate-700 border-slate-300 hover:bg-slate-50 cursor-pointer"
               >
-                <Download className="h-3.5 w-3.5 mr-1.5" /> Ekspor Rekap Wilayah (.CSV)
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Bersihkan Filter
               </Button>
             </div>
+          )}
 
-            {/* Widget 2: Ingin Mengajukan Verifikasi? */}
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-3">
-              <div className="flex items-center gap-2">
-                <HelpCircle className="h-4 w-4 text-[#0B3052]" />
-                <h3 className="font-bold text-slate-900 text-sm">Ingin Mengajukan Verifikasi?</h3>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
+              <div className="text-xs text-slate-500">
+                Menampilkan <span className="font-semibold text-slate-700">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-slate-700">{Math.min(currentPage * pageSize, totalItems)}</span> dari <span className="font-semibold text-slate-700">{totalItems}</span> sekolah
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Warga terdaftar dapat mengunggah bukti pembanding foto kondisi fasilitas sekolah melalui modul Riwayat Laporan.
-              </p>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 disabled:opacity-40 rounded-lg cursor-pointer"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Prev
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                        currentPage === p
+                          ? "bg-[#0B3052] text-white shadow-sm"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="h-8 px-2.5 text-xs text-slate-600 border-slate-200 disabled:opacity-40 rounded-lg cursor-pointer"
+                >
+                  Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </div>
             </div>
+          )}
+
+          {/* Info Bantuan Verifikasi */}
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <HelpCircle className="h-4 w-4 text-[#0B3052] shrink-0" />
+              <span className="text-slate-600">
+                Warga terdaftar dapat mengunggah bukti pembanding foto kondisi fasilitas sekolah melalui modul <strong>Riwayat Laporan</strong>.
+              </span>
+            </div>
+            <Link to="/riwayat" className="shrink-0">
+              <Button variant="outline" size="sm" className="h-8 text-xs font-semibold rounded-lg border-slate-200 hover:bg-slate-50 cursor-pointer">
+                Buka Riwayat Laporan
+              </Button>
+            </Link>
           </div>
         </div>
 

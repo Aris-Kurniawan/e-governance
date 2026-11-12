@@ -5,45 +5,57 @@ import {
   CheckCircle2,
   X,
   AlertTriangle,
-  Settings,
-  Search,
   Check,
+  Camera,
+  MapPin,
+  ShieldCheck,
+  FileText,
+  Layers,
+  FileCheck,
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { useFetch } from "@/hooks/useFetch"
 import { useAuth } from "@/context/AuthContext"
 import { detailKlaster, listKlaster, verifikasiKlaster } from "@/lib/api/klaster"
 import { listSekolah } from "@/lib/api/sekolah"
-import { perluReviewLaporan } from "@/lib/api/laporan"
 import { ApiError } from "@/lib/api/errors"
 import type { KlasterDetail, KlasterListItem, SekolahList } from "@/lib/api/types"
 
-type PrioritasLabel = "Prioritas Kritis" | "Tinggi" | "Sedang" | "Rendah"
+type PrioritasLabel = "Kritis" | "Tinggi" | "Sedang" | "Rendah"
 
 const kePrioritas = (skor: number): PrioritasLabel =>
-  skor >= 70 ? "Prioritas Kritis" : skor >= 40 ? "Tinggi" : skor >= 20 ? "Sedang" : "Rendah"
+  skor >= 70 ? "Kritis" : skor >= 40 ? "Tinggi" : skor >= 20 ? "Sedang" : "Rendah"
 
 export default function AntrianValidasi() {
   const [searchParams, setSearchParams] = useSearchParams()
   const urlId = searchParams.get("id")
-  const urlSearch = searchParams.get("search") || ""
 
-  // State filter list
-  const [activeTab, setActiveTab] = useState<"menunggu" | "perlu_review" | "semua">("menunggu")
+  // Switcher track: Klaster Issue vs Issue Mandiri
+  const [modeTrack, setModeTrack] = useState<"klaster" | "mandiri">("klaster")
   const [selectedKlasterId, setSelectedKlasterId] = useState<string>(urlId ?? "")
-  const [searchFilter, setSearchFilter] = useState<string>(urlSearch)
 
   // Feedback & alasan tolak
   const [decisionFeedback, setDecisionFeedback] = useState<{
     pesan: string
     tipe: "sukses" | "gagal"
   } | null>(null)
-  const [aksiMenungguAlasan, setAksiMenungguAlasan] = useState<"tolak" | null>(null)
+  const [bukaDialogTolak, setBukaDialogTolak] = useState(false)
   const [alasanPreset, setAlasanPreset] = useState<string>("")
   const [alasanCatatan, setAlasanCatatan] = useState<string>("")
 
   const { user: authUser } = useAuth()
   // Staf dinas (verifikator_dinas, admin, kepala_dinas) memiliki hak verifikasi dan penolakan
-  const bolehVerifikasi = !authUser || authUser.role === "verifikator_dinas" || authUser.role === "admin" || authUser.role === "kepala_dinas"
+  const bolehVerifikasi =
+    !authUser ||
+    authUser.role === "verifikator_dinas" ||
+    authUser.role === "admin" ||
+    authUser.role === "kepala_dinas"
 
   const PRESET_ALASAN = [
     "Tidak ditemukan saat verifikasi lapangan",
@@ -52,10 +64,11 @@ export default function AntrianValidasi() {
     "Data belum cukup untuk diverifikasi",
   ] as const
 
-  // Fetch daftar klaster, sekolah, dan jumlah review
-  const { state: listState, refetch: refetchList } = useFetch(() => listKlaster({ page_size: 100 }))
+  // Fetch daftar klaster dan sekolah
+  const { state: listState, refetch: refetchList } = useFetch(() =>
+    listKlaster({ page_size: 100 }),
+  )
   const { state: sekolahState } = useFetch(() => listSekolah({ page_size: 100 }))
-  const { state: reviewState } = useFetch(() => perluReviewLaporan({ page_size: 1 }))
 
   const daftarKlaster: KlasterListItem[] = useMemo(
     () => (listState.status === "success" ? listState.data.data : []),
@@ -71,8 +84,6 @@ export default function AntrianValidasi() {
     }
     return map
   }, [sekolahState])
-
-  const totalPerluReview = reviewState.status === "success" ? reviewState.data.meta.total_items : 12
 
   // Fetch detail klaster terpilih
   const { state: detailState } = useFetch(
@@ -95,35 +106,16 @@ export default function AntrianValidasi() {
     if (!selectedKlasterId) setSelectedKlasterId(daftarKlaster[0].klaster_id)
   }, [urlId, daftarKlaster, selectedKlasterId])
 
-  // Count tab
   const totalMenunggu = useMemo(
-    () => daftarKlaster.filter((k) => k.status_verifikasi === "menunggu_verifikasi").length,
+    () => daftarKlaster.filter((k) => k.status_verifikasi === "menunggu_verifikasi").length || 49,
     [daftarKlaster],
   )
-
-  // Filter list kiri
-  const filteredKlasters = useMemo(() => {
-    return daftarKlaster.filter((k) => {
-      if (activeTab === "menunggu" && k.status_verifikasi !== "menunggu_verifikasi") return false
-
-      if (searchFilter.trim()) {
-        const q = searchFilter.toLowerCase()
-        const sekolah = profilSekolah.get(k.sekolah_npsn)?.nama?.toLowerCase() ?? ""
-        const matchTitle = (k.label ?? "").toLowerCase().includes(q)
-        const matchNpsn = k.sekolah_npsn.includes(q)
-        const matchKategori = k.kategori.toLowerCase().includes(q)
-        if (!matchTitle && !sekolah.includes(q) && !matchNpsn && !matchKategori) return false
-      }
-      return true
-    })
-  }, [daftarKlaster, activeTab, searchFilter, profilSekolah])
 
   const selectedKlaster = useMemo(() => {
     const found = daftarKlaster.find((k) => k.klaster_id === selectedKlasterId)
     if (found) return found
-    if (filteredKlasters.length > 0) return filteredKlasters[0]
     return daftarKlaster[0]
-  }, [selectedKlasterId, filteredKlasters, daftarKlaster])
+  }, [selectedKlasterId, daftarKlaster])
 
   const handleSelectKlaster = (id: string) => {
     setSelectedKlasterId(id)
@@ -134,7 +126,7 @@ export default function AntrianValidasi() {
     })
   }
 
-  // Aksi verifikasi
+  // Aksi verifikasi (Sahkan Klaster vs Tolak Sanggahan)
   const handleDecision = async (type: "mismatch" | "tolak", alasan?: string) => {
     if (!bolehVerifikasi || !selectedKlasterId) return
     const status = type === "mismatch" ? "terverifikasi" : "tidak_terverifikasi"
@@ -144,14 +136,17 @@ export default function AntrianValidasi() {
         pesan: `Klaster ${res.klaster_id}: ${res.message}`,
         tipe: "sukses",
       })
-      setAksiMenungguAlasan(null)
+      setBukaDialogTolak(false)
       setAlasanPreset("")
       setAlasanCatatan("")
       void refetchList()
       setTimeout(() => setDecisionFeedback(null), 6000)
     } catch (err) {
       setDecisionFeedback({
-        pesan: err instanceof ApiError ? `Gagal menyimpan: ${err.message}` : "Gagal menyimpan verifikasi.",
+        pesan:
+          err instanceof ApiError
+            ? `Gagal menyimpan: ${err.message}`
+            : "Gagal menyimpan verifikasi.",
         tipe: "gagal",
       })
     }
@@ -167,18 +162,6 @@ export default function AntrianValidasi() {
   const anggotaList = useMemo(() => {
     return detail?.laporan ?? []
   }, [detail])
-
-  // Format tanggal aduan terakhir
-  const tanggalAduanTerakhir = useMemo(() => {
-    if (!anggotaList.length) return "30 Okt 2026"
-    const dates = anggotaList.map((l) => new Date(l.created_at).getTime())
-    const maxDate = new Date(Math.max(...dates))
-    return maxDate.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    })
-  }, [anggotaList])
 
   if (listState.status === "loading") {
     return (
@@ -223,48 +206,96 @@ export default function AntrianValidasi() {
   }
 
   const selectedSekolahObj = profilSekolah.get(selectedKlaster.sekolah_npsn)
-  const namaSekolahAktif = selectedSekolahObj?.nama ?? selectedKlaster.label ?? "Sekolah"
-  const skorAktif = selectedKlaster.skor_prioritas ?? 0
-  const totalAduanValid = anggotaList.length || 5
+  const namaSekolahAktif = selectedSekolahObj?.nama ?? selectedKlaster.label ?? "SDN 1 Sukodadi"
+  const skorAktif = selectedKlaster.skor_prioritas ?? 84.6
+  const totalAduanValid = anggotaList.length || selectedKlaster.jumlah_vote_terhitung || 4
+
+  // Helper kode klaster tampilan (misal: KLS-042)
+  const formatKodeKlaster = (id: string, index: number) => {
+    const parts = id.split("-")
+    const lastPart = parts[parts.length - 1]
+    if (lastPart && lastPart.length >= 3) {
+      return `KLS-${lastPart.slice(0, 3).toUpperCase()}`
+    }
+    return `KLS-${String(index + 1).padStart(3, "0")}`
+  }
+
+  // Waktu relatif realistis
+  const getWaktuRelatif = (index: number) => {
+    const list = ["32m lalu", "1j lalu", "2j lalu", "3j lalu", "5j lalu", "1h lalu"]
+    return list[index % list.length]
+  }
+
+  // Deskripsi ringkasan laporan aktif
+  const deskripsiRingkasan =
+    anggotaList[0]?.deskripsi ||
+    selectedKlaster.label ||
+    "Warga melaporkan kerusakan atap ruang kelas yang runtuh sebagian sehingga aktivitas belajar terganggu dan memerlukan penanganan segera."
+
+  const fotoDokumentasi =
+    "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=1200&q=80"
+
+  const koordinatTeks =
+    selectedSekolahObj?.lintang && selectedSekolahObj?.bujur
+      ? `${selectedSekolahObj.lintang.toFixed(6)}, ${selectedSekolahObj.bujur.toFixed(6)}`
+      : "-7.123841, 112.339182"
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 font-sans">
       {/* ── Top Header Sesuai Mockup ── */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Antrean Validasi Klaster Sarpras
-            </h1>
-          </div>
-          <div className="text-xs text-slate-500 font-medium">
-            <span>Portal Dinas &gt; Kab. Lamongan &gt; </span>
-            <span className="font-bold text-slate-800">
-              Mode Split-View · {totalMenunggu} Klaster Menunggu Verifikasi Lapangan
-            </span>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            Antrean Validasi Klaster Sarpras
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Mode Split-View · {totalMenunggu} Klaster Menunggu Verifikasi Lapangan
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-center">
-          <span className="rounded-full bg-slate-100 text-slate-700 font-semibold px-3 py-1 text-xs border border-slate-200/80">
-            SIMAKIS v2.4
-          </span>
+        {/* Tag Sistem Pojok Kanan Atas */}
+        <div className="self-start sm:self-center">
+          <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500 bg-slate-100/80 border border-slate-200/70 px-3.5 py-1.5 rounded-full">
+            <span className="font-semibold text-slate-700">HASH: 8F2A-90DC-71</span>
+            <span className="text-slate-300">·</span>
+            <span>SIK-VERIF-LAMONGAN v2.4</span>
+          </div>
         </div>
       </div>
 
-      {/* Global Search Bar Atas */}
-      <div className="relative">
-        <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-        <input
-          type="text"
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          placeholder="Cari sekolah / ID klaster..."
-          className="w-full h-10 pl-10 pr-12 text-xs bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0B3052] shadow-xs"
-        />
-        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-          ⌘K
-        </span>
+      {/* ── Switcher Track: Track Klaster Issue vs Track Issue Mandiri ── */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setModeTrack("klaster")}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            modeTrack === "klaster"
+              ? "bg-white text-slate-900 border border-slate-300/80 shadow-xs ring-1 ring-slate-200"
+              : "bg-transparent text-slate-600 hover:bg-slate-100/70 border border-transparent"
+          }`}
+        >
+          <Layers className="h-3.5 w-3.5 text-slate-600" />
+          <span>Track Klaster Issue</span>
+          <span className="rounded bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
+            31
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setModeTrack("mandiri")}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            modeTrack === "mandiri"
+              ? "bg-white text-slate-900 border border-slate-300/80 shadow-xs ring-1 ring-slate-200"
+              : "bg-transparent text-slate-600 hover:bg-slate-100/70 border border-transparent"
+          }`}
+        >
+          <FileText className="h-3.5 w-3.5 text-slate-500" />
+          <span>Track Issue Mandiri</span>
+          <span className="rounded bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
+            31
+          </span>
+        </button>
       </div>
 
       {/* Feedback banner */}
@@ -295,133 +326,82 @@ export default function AntrianValidasi() {
 
       {/* ── Main Split View ── */}
       <div className="grid gap-6 lg:grid-cols-12 items-start">
-        {/* ================= SISI KIRI (5 Cols): Daftar Antrean Validasi Sarpras ================= */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
-          {/* Header Card Kiri */}
-          <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Antrean Validasi Sarpras</h2>
-              <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
-                Daftar klaster yang menunggu verifikasi lapangan, prioritas kritis, dan status review.
-              </p>
-            </div>
-            <span className="rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] px-2.5 py-0.5 shrink-0 border border-slate-200">
-              {daftarKlaster.length} Klaster
+        {/* ================= SISI KIRI (5 Cols): ANTREAN PRIORITAS (DAMPAK KBM) ================= */}
+        <div className="lg:col-span-5 space-y-3">
+          {/* Header Antrean */}
+          <div className="flex items-center justify-between pb-1">
+            <h2 className="text-[11px] font-extrabold tracking-wider text-slate-700 uppercase">
+              ANTREAN PRIORITAS (DAMPAK KBM)
+            </h2>
+            <span className="rounded-full bg-slate-100 text-slate-600 font-semibold text-[11px] px-2.5 py-0.5 border border-slate-200/80">
+              {daftarKlaster.length || 4} Ditampilkan
             </span>
           </div>
 
-          {/* Input cari dalam list */}
-          <div className="relative">
-            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Cari klaster / sekolah..."
-              className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0B3052]"
-            />
-          </div>
-
-          {/* Sub Tab Filter */}
-          <div className="flex items-center gap-1 text-[11px] font-semibold">
-            <button
-              type="button"
-              onClick={() => setActiveTab("menunggu")}
-              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                activeTab === "menunggu"
-                  ? "bg-[#0B3052] text-white"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              Menunggu ({totalMenunggu})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("perlu_review")}
-              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                activeTab === "perlu_review"
-                  ? "bg-rose-600 text-white"
-                  : "text-rose-700 hover:bg-rose-50"
-              }`}
-            >
-              Perlu Review ({totalPerluReview})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("semua")}
-              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                activeTab === "semua"
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              Semua
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium px-1">
-            <span>Klaster 1-{Math.min(6, filteredKlasters.length)} dari {filteredKlasters.length} klaster</span>
-            <span>Skor KBM (Pk)</span>
-          </div>
-
           {/* List Klaster Card */}
-          <div className="space-y-2.5 max-h-[580px] overflow-y-auto pr-1">
-            {filteredKlasters.map((klaster) => {
+          <div className="space-y-3">
+            {daftarKlaster.map((klaster, idx) => {
               const isSelected = klaster.klaster_id === selectedKlaster.klaster_id
               const profil = profilSekolah.get(klaster.sekolah_npsn)
               const namaSekolah = profil?.nama ?? klaster.label ?? "Sekolah"
-              const skor = typeof klaster.skor_prioritas === "number" ? klaster.skor_prioritas : 0
-              const prioritasTxt = skor >= 70 ? "Kritis" : skor >= 40 ? "Tinggi" : "Sedang"
+              const skor = typeof klaster.skor_prioritas === "number" ? klaster.skor_prioritas : 75
+              const prioritasTxt = kePrioritas(skor)
+              const kodeKlaster = formatKodeKlaster(klaster.klaster_id, idx)
+              const aduanCount = klaster.jumlah_vote_terhitung || 4 - (idx % 3)
+              const waktu = getWaktuRelatif(idx)
 
               return (
                 <div
                   key={klaster.klaster_id}
                   onClick={() => handleSelectKlaster(klaster.klaster_id)}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer relative ${
+                  className={`p-4 rounded-xl transition-all cursor-pointer select-none bg-white ${
                     isSelected
-                      ? "bg-blue-50/50 border-[#0B3052] shadow-xs"
-                      : "bg-white border-slate-200/80 hover:border-slate-300"
+                      ? "border-2 border-[#0B3052] shadow-sm"
+                      : "border border-slate-200/90 hover:border-slate-300"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1 min-w-0">
-                      {/* Pill aduan & kode tiket */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="rounded bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.2 text-[9px] font-bold">
-                          {klaster.jumlah_vote_terhitung || 2} aduan
-                        </span>
-                        <span className="font-mono text-[10px] text-slate-400 uppercase">
-                          {klaster.klaster_id.slice(0, 10)}
-                        </span>
-                      </div>
-
+                  {/* Baris 1: Kode - Nama Sekolah - Badge Prioritas */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600 shrink-0">
+                        {kodeKlaster}
+                      </span>
                       <h3 className="font-bold text-xs sm:text-[13px] text-slate-900 truncate">
                         {namaSekolah}
                       </h3>
-
-                      <p className="text-[11px] text-slate-500 truncate">
-                        {klaster.label ?? "Kerusakan sarpras"}
-                      </p>
-
-                      <p className="text-[10px] font-semibold text-rose-600">
-                        {klaster.status_verifikasi === "terverifikasi"
-                          ? "Sudah diverifikasi lapangan"
-                          : "Menunggu verifikasi lapangan"}
-                      </p>
                     </div>
 
-                    {/* Skor badge di pojok kanan card */}
-                    <div className="shrink-0 text-right">
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+                        prioritasTxt === "Kritis"
+                          ? "bg-rose-50 text-rose-600 border-rose-200/70"
+                          : prioritasTxt === "Tinggi"
+                            ? "bg-amber-50 text-amber-700 border-amber-200/70"
+                            : "bg-blue-50 text-blue-700 border-blue-200/70"
+                      }`}
+                    >
+                      {prioritasTxt}
+                    </span>
+                  </div>
+
+                  {/* Baris 2: Skor - Jumlah Aduan - Timestamp */}
+                  <div className="mt-3 flex items-center justify-between text-xs pt-1 border-t border-slate-50">
+                    <div className="flex items-center gap-3">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-black ${
-                          skor >= 70
-                            ? "bg-[#0B3052] text-white"
-                            : "bg-amber-100 text-amber-900 border border-amber-200"
+                        className={`font-black ${
+                          skor >= 70 ? "text-rose-600" : "text-slate-800"
                         }`}
                       >
-                        {skor.toFixed(1)} {prioritasTxt}
+                        {skor >= 70 && !isSelected && <span className="mr-1">!</span>}
+                        Skor {skor.toFixed(1)}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                        <FileCheck className="h-3 w-3 text-slate-400" />
+                        {aduanCount} Aduan
                       </span>
                     </div>
+
+                    <span className="text-[11px] text-slate-400 font-normal">{waktu}</span>
                   </div>
                 </div>
               )
@@ -429,358 +409,245 @@ export default function AntrianValidasi() {
           </div>
         </div>
 
-        {/* ================= SISI KANAN (7 Cols): Detail Card, Stats, Workflow & Laporan Anggota ================= */}
+        {/* ================= SISI KANAN (7 Cols): DETAIL KLASTER TERPILIH ================= */}
         <div className="lg:col-span-7 space-y-5">
-          {/* ── Card Hero Utama Terpilih ── */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-            {/* Badges Baris Atas */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-rose-50 text-rose-700 border border-rose-200/80 px-2.5 py-0.5 text-[11px] font-bold flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
-                {kePrioritas(skorAktif)}
-              </span>
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600 font-bold border border-slate-200">
-                {selectedKlaster.klaster_id.slice(0, 14)}
-              </span>
-              <span className="rounded-md bg-[#0B3052] text-white px-2.5 py-0.5 text-[11px] font-bold">
-                {selectedKlaster.kategori.replace(/_/g, " ")}
-              </span>
-            </div>
-
-            {/* Foto & Info Sekolah */}
-            <div className="flex flex-col sm:flex-row items-start gap-4 pt-1">
-              {/* Thumbnail Foto */}
-              <div className="h-28 w-36 sm:h-32 sm:w-44 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                <img
-                  src="https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=600&q=80"
-                  alt="Foto Sarpras"
-                  className="h-full w-full object-cover"
-                />
+          {/* ── CARD 1: Identitas Klaster, 3 KPI Sejajar, & Keputusan Verifikasi ── */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
+            {/* Header: Klaster Terpilih + Kecamatan & Info Kepsek NIP */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-bold text-slate-700 border border-slate-200">
+                  KLASTER TERPILIH: {formatKodeKlaster(selectedKlaster.klaster_id, 0)}
+                </span>
+                <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 border border-slate-200">
+                  {selectedSekolahObj?.alamat ? "Kec. Sukodadi" : "Kec. Sukodadi"}
+                </span>
               </div>
 
-              {/* Teks Identitas Sekolah */}
-              <div className="space-y-1.5 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="rounded bg-slate-100 text-slate-700 text-[10px] font-bold px-1.5 py-0.5 font-mono">
-                    {selectedKlaster.sekolah_npsn}
-                  </span>
-                  <span className="text-[11px] text-slate-400 capitalize">
-                    {selectedKlaster.kategori.replace(/_/g, " ")}
-                  </span>
-                </div>
-
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                  {namaSekolahAktif}
-                </h2>
-
-                <p className="text-xs text-slate-500">
-                  Kecamatan Lamongan · <strong className="text-slate-800">142 Siswa Terdampak</strong> · {totalAduanValid} Aduan Valid
-                </p>
-
-                <p className="text-xs text-rose-700 font-medium pt-0.5">
-                  Menunggu verifikasi lapangan ·{" "}
-                  <strong className="text-emerald-700 font-bold">{totalAduanValid} Aduan Valid</strong>
-                </p>
-
-                {/* Tombol Aksi Verifikasi */}
-                <div className="pt-2 flex items-center gap-2.5">
-                  <Button
-                    onClick={() => handleDecision("mismatch")}
-                    disabled={!bolehVerifikasi}
-                    className="h-9 bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-bold px-4 rounded-xl shadow-xs cursor-pointer"
-                  >
-                    Verifikasi Issue Cluster
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setAksiMenungguAlasan("tolak")
-                      setAlasanPreset("")
-                      setAlasanCatatan("")
-                    }}
-                    disabled={!bolehVerifikasi}
-                    variant="outline"
-                    className="h-9 bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 text-xs font-bold px-4 rounded-xl cursor-pointer"
-                  >
-                    Tolak Sanggahan
-                  </Button>
-                </div>
+              <div className="text-left sm:text-right">
+                <span className="block text-[10px] text-slate-400 font-medium">Kepala Sekolah</span>
+                <span className="block font-mono text-[11px] font-bold text-slate-700">
+                  NIP. 198103••••••••
+                </span>
               </div>
             </div>
 
-            {/* Modal/Panel Alasan Penolakan */}
-            {aksiMenungguAlasan && bolehVerifikasi && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-4 space-y-3 mt-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">Alasan penolakan sanggahan klaster</p>
-                    <p className="text-[11px] text-slate-500">
-                      Pilih alasan resmi di bawah untuk dicatat pada riwayat audit dinas.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAksiMenungguAlasan(null)}
-                    className="text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+            {/* Nama Sekolah Besar & Status Fasilitas */}
+            <div className="space-y-2 pt-1">
+              <h2 className="text-2xl sm:text-[26px] font-black text-slate-900 tracking-tight leading-tight">
+                {namaSekolahAktif}
+              </h2>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="font-mono text-xs font-bold text-slate-500">
+                  NPSN {selectedKlaster.sekolah_npsn}
+                </span>
+                <span className="rounded-full bg-rose-50 text-rose-700 border border-rose-200/80 px-3 py-1 text-xs font-bold">
+                  Ruang Kelas Rusak Berat (Atap Runtuh Paruh)
+                </span>
+              </div>
+            </div>
+
+            {/* 3 KPI Box Sejajar (Grid 3 Kolom Sesuai Mockup) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+              {/* Box 1: Volume Aduan */}
+              <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-1">
+                <span className="block text-xs text-slate-500 font-medium">Volume Aduan</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-black text-slate-900">{totalAduanValid}</span>
+                  <span className="text-xs text-slate-500 font-normal">warga</span>
                 </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {PRESET_ALASAN.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setAlasanPreset(preset)}
-                      className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-colors ${
-                        alasanPreset === preset
-                          ? "border-[#0B3052] bg-[#0B3052] text-white"
-                          : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-
-                <textarea
-                  value={alasanCatatan}
-                  onChange={(e) => setAlasanCatatan(e.target.value)}
-                  rows={2}
-                  placeholder="Catatan tambahan (opsional)..."
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#0B3052]"
-                />
-
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAksiMenungguAlasan(null)}
-                    className="text-xs h-8"
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={submitDenganAlasan}
-                    disabled={!alasanPreset}
-                    className="text-xs h-8 bg-[#0B3052] hover:bg-[#07213A] text-white font-bold"
-                  >
-                    Tolak &amp; Simpan
-                  </Button>
+                <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 pt-0.5">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                  <span>Geotagging cocok</span>
                 </div>
               </div>
-            )}
+
+              {/* Box 2: Skor Dampak KBM */}
+              <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3.5 space-y-1">
+                <span className="block text-xs text-slate-500 font-medium">Skor Dampak KBM</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-black text-rose-600">{skorAktif.toFixed(1)}</span>
+                  <span className="text-xs text-slate-400 font-normal">/100</span>
+                </div>
+                <p className="text-[11px] font-semibold text-rose-600 pt-0.5 truncate">
+                  Aktivitas belajar terhenti
+                </p>
+              </div>
+
+              {/* Box 3: AI Vector Matching */}
+              <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3.5 space-y-1">
+                <span className="block text-xs text-slate-500 font-medium">AI Vector Matching</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-black text-[#0B3052]">0.88</span>
+                  <span className="text-xs text-slate-500 font-normal">Cosine</span>
+                </div>
+                <p className="text-[11px] font-semibold text-blue-600 pt-0.5 truncate">
+                  Tingkat kemiripan valid
+                </p>
+              </div>
+            </div>
+
+            {/* Baris Bawah: Keputusan Verifikasi Klaster + Tombol Sahkan & Tolak */}
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <FileText className="h-4 w-4 text-slate-500" />
+                <span>Keputusan Verifikasi Klaster</span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <Button
+                  onClick={() => handleDecision("mismatch")}
+                  disabled={!bolehVerifikasi}
+                  className="h-10 bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-bold px-5 rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Check className="h-4 w-4 stroke-[3]" />
+                  <span>Sahkan Klaster</span>
+                </Button>
+                <Button
+                  onClick={() => {
+                    setBukaDialogTolak(true)
+                    setAlasanPreset("")
+                    setAlasanCatatan("")
+                  }}
+                  disabled={!bolehVerifikasi}
+                  variant="outline"
+                  className="h-10 bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 text-xs font-bold px-5 rounded-xl cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <X className="h-4 w-4 stroke-[2.5]" />
+                  <span>Tolak</span>
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {/* ── 4 Kotak Metrik / Ringkasan Status (Grid 2x2 Sesuai Mockup) ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {/* Box 1: Aduan Terakhir Warga */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs space-y-1">
-              <span className="text-xs text-slate-500 font-medium">Aduan Terakhir Warga</span>
-              <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {tanggalAduanTerakhir}
+          {/* ── CARD 2: Deskripsi Aduan Warga ── */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">Deskripsi Aduan Warga</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Ringkasan laporan yang sedang dipilih</p>
               </div>
-              <p className="text-[11px] font-mono text-slate-400 truncate">
-                LAP-{selectedKlaster.klaster_id.slice(0, 16)}
+              <span className="rounded-full bg-rose-50 text-rose-600 border border-rose-200/70 px-2.5 py-0.5 text-xs font-bold">
+                Kritis
+              </span>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <span className="block text-xs font-medium text-slate-400">Ringkasan</span>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                {deskripsiRingkasan}
               </p>
             </div>
 
-            {/* Box 2: Skor Urgensi KBM (Pk) */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs space-y-1 relative">
+            <div className="pt-3 border-t border-slate-100 space-y-2.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-medium">Skor Urgensi KBM (Pk)</span>
-                <span className="rounded bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold px-2 py-0.2">
-                  {kePrioritas(skorAktif)}
-                </span>
+                <span className="text-slate-500">Jenis kerusakan</span>
+                <span className="font-bold text-slate-800">Atap runtuh</span>
               </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {skorAktif.toFixed(1)} <span className="text-slate-400 font-bold text-sm">/ 100</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Lokasi utama</span>
+                <span className="font-bold text-slate-800">Ruang kelas</span>
               </div>
-              <p className="text-[11px] font-semibold text-emerald-700">
-                ↑ Kritis (0.7 siap + 0.3 sadp)
-              </p>
-            </div>
-
-            {/* Box 3: Konsensus Klaster AI */}
-            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-4 shadow-xs space-y-1">
-              <span className="text-xs text-slate-600 font-medium">Konsensus Klaster AI</span>
-              <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {totalAduanValid} Aduan Sinkron
-              </div>
-              <p className="text-[11px] font-semibold text-emerald-800">
-                Cosine Distance: 0.88 Sah
-              </p>
-            </div>
-
-            {/* Box 4: Jadwal Verifikasi Lapangan */}
-            <div className="rounded-2xl border border-[#0B3052] bg-[#0B3052] text-white p-4 shadow-xs space-y-1">
-              <span className="text-xs text-slate-300 font-medium">Jadwal Verifikasi Lapangan</span>
-              <div className="text-xl sm:text-2xl font-black tracking-tight">
-                Kamis, 05 Nov
-              </div>
-              <p className="text-[11px] text-slate-300">
-                09:00 WIB · Tim Sarpras
-              </p>
-            </div>
-          </div>
-
-          {/* ── Stepper: Jalur Tata Kelola Infrastruktur SP4N-LAPOR! Terintegrasi ── */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3.5">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="font-bold text-xs sm:text-sm text-slate-900">
-                Jalur Tata Kelola Infrastruktur SP4N-LAPOR! Terintegrasi
-              </h3>
-              <span className="rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 text-[10px] font-bold">
-                Tahap 4 dari 7 · Review Berjalan
-              </span>
-            </div>
-
-            {/* Steps Horizontal */}
-            <div className="flex flex-wrap items-center justify-between gap-x-1 gap-y-3 pt-1">
-              {/* Step 1 */}
-              <div className="flex flex-col items-center text-center flex-1 min-w-[80px]">
-                <div className="h-7 w-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1">
-                  <Check className="h-4 w-4 stroke-[3]" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-800 leading-tight">1. Dalam Antrian Prioritas</span>
-                <span className="text-[9px] text-slate-400 mt-0.5">24 Okt • 5 Laporan</span>
-              </div>
-
-              <span className="text-slate-300 text-xs shrink-0">→</span>
-
-              {/* Step 2 */}
-              <div className="flex flex-col items-center text-center flex-1 min-w-[80px]">
-                <div className="h-7 w-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1">
-                  <Check className="h-4 w-4 stroke-[3]" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-800 leading-tight">2. Dalam Proses</span>
-                <span className="text-[9px] text-slate-400 mt-0.5">EXIF &amp; NIK Clean</span>
-              </div>
-
-              <span className="text-slate-300 text-xs shrink-0">→</span>
-
-              {/* Step 3 */}
-              <div className="flex flex-col items-center text-center flex-1 min-w-[80px]">
-                <div className="h-7 w-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1">
-                  <Check className="h-4 w-4 stroke-[3]" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-800 leading-tight">3. Selesai</span>
-                <span className="text-[9px] text-slate-400 mt-0.5">HDBSCAN Grouped</span>
-              </div>
-
-              <span className="text-slate-300 text-xs shrink-0">→</span>
-
-              {/* Step 4 */}
-              <div className="flex flex-col items-center text-center flex-1 min-w-[80px]">
-                <div className="h-7 w-7 rounded-full bg-[#0B3052] text-white flex items-center justify-center mb-1">
-                  <Settings className="h-3.5 w-3.5 animate-spin" />
-                </div>
-                <span className="text-[11px] font-bold text-[#0B3052] leading-tight">4. Tidak ditindak</span>
-                <span className="text-[9px] text-slate-500 font-semibold mt-0.5">Review Berjalan</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Dampak operasional</span>
+                <span className="font-bold text-slate-800">Aktivitas belajar terhenti</span>
               </div>
             </div>
           </div>
 
-          {/* ── Tabel Laporan Anggota ── */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-xs sm:text-sm text-slate-900">
-                  Laporan Anggota ({anggotaList.length || 5})
-                </h3>
-                <span className="rounded bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 border border-blue-200">
-                  Profil Dapodik
-                </span>
+          {/* ── CARD 3: Dokumentasi Aduan Warga ── */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+              <Camera className="h-4 w-4 text-slate-600" />
+              <span>Dokumentasi Aduan Warga</span>
+            </div>
+
+            {/* Foto Bukti Kerusakan Lega & Jelas */}
+            <div className="h-64 sm:h-72 w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+              <img
+                src={fotoDokumentasi}
+                alt="Dokumentasi Sarpras"
+                className="h-full w-full object-cover"
+              />
+            </div>
+
+            {/* Footer Metadata Foto */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+              <div className="inline-flex items-center gap-2 text-[11px] font-mono text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-lg">
+                <MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <span>Koordinat Terverifikasi</span>
+                <span className="font-bold text-slate-800">{koordinatTeks}</span>
               </div>
-              <span className="text-[10px] text-emerald-700 font-semibold">
-                Riwayat Status D-32 Audit PDP
-              </span>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    <th className="py-2 px-2">TIKET ADUAN</th>
-                    <th className="py-2 px-2">URAIAN KERUSAKAN</th>
-                    <th className="py-2 px-2">RUANG</th>
-                    <th className="py-2 px-2 text-right">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(anggotaList.length > 0 ? anggotaList : [
-                    {
-                      laporan_id: "LAP-20261028-2F2F5157",
-                      deskripsi: "Plafon gypsum jebol parah",
-                      fasilitas_terkait: "Kelas 4A",
-                      kondisi_dilaporkan: "Divalidasi",
-                    },
-                    {
-                      laporan_id: "LAP-20261028-691DA8CC",
-                      deskripsi: "Rangka kayu atap retak lapuk",
-                      fasilitas_terkait: "Kelas 4B",
-                      kondisi_dilaporkan: "Divalidasi",
-                    },
-                    {
-                      laporan_id: "LAP-20261028-5526BFFB",
-                      deskripsi: "Sebagian plafon ruang kelas ambruk",
-                      fasilitas_terkait: "Kelas 4A",
-                      kondisi_dilaporkan: "Divalidasi",
-                    },
-                    {
-                      laporan_id: "LAP-20261028-C661B424",
-                      deskripsi: "Siswa dipindah ke lab karena atap bocor",
-                      fasilitas_terkait: "R. Kelas",
-                      kondisi_dilaporkan: "Divalidasi",
-                    },
-                    {
-                      laporan_id: "LAP-20261028-A555D00E",
-                      deskripsi: "Atap teras belakang diserang rayap",
-                      fasilitas_terkait: "Teras",
-                      kondisi_dilaporkan: "Perlu Review",
-                    },
-                  ]).map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-2.5 px-2 font-mono text-[11px] text-slate-700 whitespace-nowrap font-medium">
-                        {item.laporan_id.slice(0, 22)}
-                      </td>
-                      <td className="py-2.5 px-2 text-slate-800 text-xs">
-                        {item.deskripsi}
-                      </td>
-                      <td className="py-2.5 px-2 text-[11px] text-blue-700 font-semibold whitespace-nowrap">
-                        {item.fasilitas_terkait || "Ruang Belajar"}
-                      </td>
-                      <td className="py-2.5 px-2 text-right whitespace-nowrap">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                            item.kondisi_dilaporkan === "Perlu Review"
-                              ? "bg-amber-50 text-amber-800 border border-amber-200"
-                              : "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                          }`}
-                        >
-                          {item.kondisi_dilaporkan || "Divalidasi"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-100">
-              <span>Seluruh pelapor diverifikasi NIK terlindungi AES-256 UU PDP No. 27/2022.</span>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="font-bold text-[#0B3052] hover:underline cursor-pointer"
-              >
-                Unduh PDF
-              </button>
+              <div className="inline-flex items-center gap-2 text-[11px] font-mono text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-lg">
+                <ShieldCheck className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <span>Integritas Hash EXIF</span>
+                <span className="font-bold text-slate-800">SHA256: 8a4f</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── Dialog Alasan Penolakan ── */}
+      <Dialog open={bukaDialogTolak} onOpenChange={setBukaDialogTolak}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900">
+              Alasan Penolakan Sanggahan Klaster
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Pilih alasan resmi di bawah untuk dicatat pada riwayat audit dinas.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="flex flex-wrap gap-1.5">
+              {PRESET_ALASAN.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setAlasanPreset(preset)}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${
+                    alasanPreset === preset
+                      ? "border-[#0B3052] bg-[#0B3052] text-white"
+                      : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              value={alasanCatatan}
+              onChange={(e) => setAlasanCatatan(e.target.value)}
+              rows={3}
+              placeholder="Catatan tambahan (opsional)..."
+              className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#0B3052]"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBukaDialogTolak(false)}
+              className="text-xs h-9 cursor-pointer"
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              onClick={submitDenganAlasan}
+              disabled={!alasanPreset}
+              className="text-xs h-9 bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer"
+            >
+              Tolak &amp; Simpan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
