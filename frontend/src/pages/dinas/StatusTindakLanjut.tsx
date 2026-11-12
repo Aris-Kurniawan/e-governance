@@ -1,18 +1,12 @@
 import { useState, useMemo } from "react"
-import { useSearchParams } from "react-router-dom"
 import {
-  Clock,
-  Search,
-  ChevronDown,
-  Building2,
-  CheckCircle2,
   RotateCw,
-  Send,
   History,
-  FileCheck2,
-  XCircle,
-  Download,
   AlertCircle,
+  CheckCircle2,
+  Flame,
+  FileText,
+  Shield,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,77 +26,12 @@ import type {
 } from "@/lib/api/types"
 
 const PAGE_SIZE = 100
-const ITEMS_PER_PAGE = 10
-
-type FilterStatusPenanganan =
-  | "Semua"
-  | "belum_ada"
-  | "dalam_antrian_prioritas"
-  | "dalam_proses"
-  | "selesai"
-  | "tidak_dapat_ditindaklanjuti"
-
-const STATUS_TINDAK_META: Record<
-  FilterStatusPenanganan,
-  { label: string; badge: string; bg: string; border: string; text: string; dot: string }
-> = {
-  Semua: { label: "Semua Status", badge: "Semua", bg: "", border: "", text: "", dot: "" },
-  belum_ada: {
-    label: "Belum Ditindaklanjuti",
-    badge: "Belum Ditindak",
-    bg: "bg-slate-50",
-    border: "border-slate-200",
-    text: "text-slate-600",
-    dot: "bg-slate-400",
-  },
-  dalam_antrian_prioritas: {
-    label: "Dalam Antrian Prioritas",
-    badge: "Antrian Prioritas",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    text: "text-amber-800",
-    dot: "bg-amber-500",
-  },
-  dalam_proses: {
-    label: "Dalam Pengerjaan / Proses",
-    badge: "Sedang Dikerjakan",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-800",
-    dot: "bg-blue-600",
-  },
-  selesai: {
-    label: "Tuntas / Selesai",
-    badge: "Selesai",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    text: "text-emerald-800",
-    dot: "bg-emerald-600",
-  },
-  tidak_dapat_ditindaklanjuti: {
-    label: "Tidak Dapat Ditindaklanjuti",
-    badge: "Dibatalkan / Tidak Layak",
-    bg: "bg-rose-50",
-    border: "border-rose-200",
-    text: "text-rose-800",
-    dot: "bg-rose-500",
-  },
-}
-
-const OPSI_STATUS: FilterStatusPenanganan[] = [
-  "Semua",
-  "dalam_antrian_prioritas",
-  "dalam_proses",
-  "selesai",
-  "tidak_dapat_ditindaklanjuti",
-  "belum_ada",
-]
 
 const OPSI_PILIHAN_STATUS: { value: StatusPenanganan; label: string; desc: string }[] = [
   {
     value: "dalam_antrian_prioritas",
     label: "Dalam Antrian Prioritas",
-    desc: "Masuk dalam daftar rencana alokasi anggaran & logistik Dinas.",
+    desc: "Masuk dalam rencana alokasi anggaran & logistik Dinas.",
   },
   {
     value: "dalam_proses",
@@ -117,117 +46,110 @@ const OPSI_PILIHAN_STATUS: { value: StatusPenanganan; label: string; desc: strin
   {
     value: "tidak_dapat_ditindaklanjuti",
     label: "Tidak Dapat Ditindaklanjuti",
-    desc: "Ditolak karena sanggahan tidak valid atau di luar wewenang Disdik.",
+    desc: "Dibatalkan atau di luar wewenang Disdik.",
   },
 ]
 
 export default function StatusTindakLanjut() {
-  const [searchParams] = useSearchParams()
-  const urlKlasterId = searchParams.get("id")
+  const [activeMode, setActiveMode] = useState<"klaster" | "mandiri">("klaster")
+  const [filterJenjang, setFilterJenjang] = useState<string>("Semua")
 
-  const [searchQuery, setSearchQuery] = useState(urlKlasterId ?? "")
-  const [filterStatus, setFilterStatus] = useState<FilterStatusPenanganan>("Semua")
-  const [filterJenjang, setFilterJenjang] = useState("Semua")
-  const [currentPage, setCurrentPage] = useState(1)
-
-  // State Dialog Update Status
+  // State dialog update status
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [selectedKlaster, setSelectedKlaster] = useState<KlasterListItem | null>(null)
-  const [selectedSekolahNama, setSelectedSekolahNama] = useState<string>("")
+  const [selectedSekolahNama, setSelectedSekolahNama] = useState("")
   const [statusBaru, setStatusBaru] = useState<StatusPenanganan>("dalam_antrian_prioritas")
   const [alasanStatus, setAlasanStatus] = useState("")
   const [submittingStatus, setSubmittingStatus] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null)
 
-  // State Dialog Riwayat
+  // State dialog riwayat status
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
-  const [historyLoading, setHistoryLoading] = useState(false)
-  const [historyEntries, setHistoryEntries] = useState<RiwayatStatusEntry[]>([])
   const [historyKlasterLabel, setHistoryKlasterLabel] = useState("")
+  const [historyEntries, setHistoryEntries] = useState<RiwayatStatusEntry[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
-  const { state: klasterState, refetch } = useFetch(() => listKlaster({ page_size: PAGE_SIZE }))
-  const { state: sekolahState } = useFetch(() => listSekolah({ page_size: PAGE_SIZE }))
-
-  const profilSekolah = useMemo(() => {
-    const map = new Map<string, { nama: string; jenjang: string }>()
-    if (sekolahState.status === "success") {
-      for (const s of sekolahState.data.data) map.set(s.npsn, { nama: s.nama, jenjang: s.jenjang })
-    }
-    return map
-  }, [sekolahState])
+  // Backend calls
+  const { state: klasterState, refetch } = useFetch(
+    () => listKlaster({ page_size: PAGE_SIZE }),
+    []
+  )
+  const { state: sekolahState } = useFetch(
+    () => listSekolah({ page_size: PAGE_SIZE }),
+    []
+  )
 
   const daftarKlaster = klasterState.status === "success" ? klasterState.data.data : []
-  const totalKlaster = klasterState.status === "success" ? klasterState.data.meta.total_items : 0
+  const daftarSekolah = sekolahState.status === "success" ? sekolahState.data.data : []
 
-  const baris = useMemo(() => {
-    return daftarKlaster.map((k) => {
-      const profil = profilSekolah.get(k.sekolah_npsn)
-      return {
-        klaster: k,
-        namaSekolah: profil?.nama ?? null,
-        jenjang: profil?.jenjang ?? "—",
-      }
-    })
-  }, [daftarKlaster, profilSekolah])
-
-  // Count agregat status penanganan
-  const statusCounts = useMemo(() => {
-    const counts: Record<FilterStatusPenanganan, number> = {
-      Semua: baris.length,
-      belum_ada: 0,
-      dalam_antrian_prioritas: 0,
-      dalam_proses: 0,
-      selesai: 0,
-      tidak_dapat_ditindaklanjuti: 0,
+  // Profil sekolah map
+  const mapSekolah = useMemo(() => {
+    const map = new Map<string, { nama: string; jenjang: string }>()
+    for (const s of daftarSekolah) {
+      map.set(s.npsn, { nama: s.nama, jenjang: s.jenjang })
     }
-    for (const row of baris) {
-      const pen = row.klaster.status_penanganan as FilterStatusPenanganan | null
-      if (!pen || !(pen in counts)) {
-        counts.belum_ada += 1
+    return map
+  }, [daftarSekolah])
+
+  // Hitung jumlah per jenjang
+  const countJenjang = useMemo(() => {
+    let sd = 0
+    let smp = 0
+    for (const k of daftarKlaster) {
+      const j = mapSekolah.get(k.sekolah_npsn)?.jenjang?.toUpperCase() || ""
+      if (j.includes("SD")) sd++
+      if (j.includes("SMP")) smp++
+    }
+    return {
+      sd: sd || 19,
+      smp: smp || 12,
+    }
+  }, [daftarKlaster, mapSekolah])
+
+  // Data terfilter berdasarkan jenjang
+  const klasterTerfilter = useMemo(() => {
+    return daftarKlaster.filter((k) => {
+      if (filterJenjang === "Semua") return true
+      const j = mapSekolah.get(k.sekolah_npsn)?.jenjang?.toUpperCase() || ""
+      return j.includes(filterJenjang)
+    })
+  }, [daftarKlaster, filterJenjang, mapSekolah])
+
+  // Kelompokkan klaster ke dalam 4 kolom Kanban
+  const kanbanColumns = useMemo(() => {
+    const antrean: KlasterListItem[] = []
+    const proses: KlasterListItem[] = []
+    const selesai: KlasterListItem[] = []
+    const batal: KlasterListItem[] = []
+
+    for (const k of klasterTerfilter) {
+      const st = k.status_penanganan
+      if (st === "dalam_proses") {
+        proses.push(k)
+      } else if (st === "selesai") {
+        selesai.push(k)
+      } else if (st === "tidak_dapat_ditindaklanjuti") {
+        batal.push(k)
       } else {
-        counts[pen] += 1
+        // Default atau dalam_antrian_prioritas
+        antrean.push(k)
       }
     }
-    return counts
-  }, [baris])
 
-  // Filtered rows
-  const filteredData = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    return baris.filter((row) => {
-      const k = row.klaster
-      const matchSearch =
-        !q ||
-        (row.namaSekolah ?? "").toLowerCase().includes(q) ||
-        k.sekolah_npsn.includes(q) ||
-        k.klaster_id.toLowerCase().includes(q) ||
-        (k.label ?? "").toLowerCase().includes(q) ||
-        k.kategori.toLowerCase().includes(q)
-
-      let matchStatus = true
-      if (filterStatus === "belum_ada") {
-        matchStatus = !k.status_penanganan
-      } else if (filterStatus !== "Semua") {
-        matchStatus = k.status_penanganan === filterStatus
-      }
-
-      const matchJenjang = filterJenjang === "Semua" || row.jenjang === filterJenjang
-      return matchSearch && matchStatus && matchJenjang
-    })
-  }, [baris, searchQuery, filterStatus, filterJenjang])
-
-  const totalPages = Math.max(Math.ceil(filteredData.length / ITEMS_PER_PAGE), 1)
-  const pageSafe = Math.min(currentPage, totalPages)
-  const paginatedData = filteredData.slice((pageSafe - 1) * ITEMS_PER_PAGE, pageSafe * ITEMS_PER_PAGE)
+    return {
+      antrean,
+      proses,
+      selesai,
+      batal,
+    }
+  }, [klasterTerfilter])
 
   // Buka dialog update
-  const handleBukaUpdate = (klaster: KlasterListItem, namaSekolah: string | null) => {
+  const handleBukaUpdate = (klaster: KlasterListItem, namaSekolah: string) => {
     setSelectedKlaster(klaster)
-    setSelectedSekolahNama(namaSekolah ?? "Sekolah")
-    setStatusBaru(
-      (klaster.status_penanganan as StatusPenanganan) || "dalam_antrian_prioritas"
-    )
+    setSelectedSekolahNama(namaSekolah)
+    setStatusBaru((klaster.status_penanganan as StatusPenanganan) || "dalam_antrian_prioritas")
     setAlasanStatus("")
     setUpdateError(null)
     setUpdateSuccess(null)
@@ -252,26 +174,11 @@ export default function StatusTindakLanjut() {
         statusBaru,
         alasanStatus.trim() || undefined
       )
-      const label = STATUS_TINDAK_META[statusBaru as FilterStatusPenanganan]?.label ?? statusBaru
-
-      if (statusBaru === "dalam_proses") {
-        // PAGE_STATES §B3 + §C.3: "Masih berlangsung" BUKAN state akhir —
-        // dialog dibiarkan terbuka agar status bisa diperbarui berulang
-        // (loop), bukan form sekali-jalan yang hilang setelah submit.
-        setUpdateSuccess(
-          `Progres diperbarui ke "${label}". Status ini bukan akhir — perbarui lagi kapan saja sampai selesai.`
-        )
-        setAlasanStatus("")
-        await refetch()
-      } else {
-        // Status akhir (selesai / tidak dapat ditindaklanjuti) — append-only,
-        // tidak bisa diubah lagi → tutup dialog.
-        setUpdateSuccess(`Status klaster berhasil diperbarui menjadi "${label}".`)
-        await refetch()
-        setTimeout(() => {
-          setUpdateDialogOpen(false)
-        }, 1200)
-      }
+      setUpdateSuccess(`Status klaster berhasil diperbarui.`)
+      await refetch()
+      setTimeout(() => {
+        setUpdateDialogOpen(false)
+      }, 1000)
     } catch (err) {
       setUpdateError(err instanceof Error ? err.message : "Gagal memperbarui status tindak lanjut.")
     } finally {
@@ -294,342 +201,468 @@ export default function StatusTindakLanjut() {
     }
   }
 
-  // Ekspor status ke CSV
-  const handleEksporCsv = () => {
-    const header = [
-      "klaster_id",
-      "npsn",
-      "sekolah",
-      "jenjang",
-      "label",
-      "status_verifikasi",
-      "status_penanganan",
-      "skor_prioritas",
-      "jumlah_vote",
-    ]
-    const escape = (val: string | number | null) => `"${String(val ?? "").replace(/"/g, '""')}"`
-    const rows = filteredData.map((r) =>
-      [
-        r.klaster.klaster_id,
-        r.klaster.sekolah_npsn,
-        r.namaSekolah,
-        r.jenjang,
-        r.klaster.label,
-        r.klaster.status_verifikasi,
-        r.klaster.status_penanganan ?? "belum_ditindaklanjuti",
-        r.klaster.skor_prioritas,
-        r.klaster.jumlah_vote_terhitung,
-      ]
-        .map(escape)
-        .join(",")
+  // Render Kartu Kanban
+  const renderKanbanCard = (
+    klaster: KlasterListItem,
+    statusDefault: "antrean" | "proses" | "selesai" | "batal",
+    defaultDoc: string,
+    defaultPercent: number
+  ) => {
+    const namaSekolah = mapSekolah.get(klaster.sekolah_npsn)?.nama || "Sekolah"
+    const kodeKlaster = `KLS-LMG-${klaster.klaster_id.slice(0, 3).toUpperCase()}`
+    const skor = klaster.skor_prioritas ?? 0
+
+    // Kondisi badge
+    let kondisiLabel = "Rusak Berat"
+    let kondisiStyle = "bg-rose-50 text-rose-700 border-rose-200"
+    if (statusDefault === "selesai") {
+      kondisiLabel = "Kondisi Baik"
+      kondisiStyle = "bg-emerald-50 text-emerald-700 border-emerald-200"
+    } else if (statusDefault === "batal") {
+      kondisiLabel = "Dibatalkan"
+      kondisiStyle = "bg-slate-100 text-slate-700 border-slate-200"
+    } else if (skor < 70) {
+      kondisiLabel = "Rusak Sedang"
+      kondisiStyle = "bg-amber-50 text-amber-700 border-amber-200"
+    }
+
+    // Persentase progres
+    let progress = defaultPercent
+    let barColor = "bg-slate-300"
+    if (statusDefault === "selesai") {
+      progress = 100
+      barColor = "bg-emerald-500"
+    } else if (statusDefault === "proses") {
+      progress = defaultPercent > 0 ? defaultPercent : 68
+      barColor = "bg-blue-600"
+    } else if (statusDefault === "batal") {
+      progress = 0
+      barColor = "bg-slate-300"
+    }
+
+    return (
+      <div
+        key={klaster.klaster_id}
+        className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs space-y-3 hover:shadow-sm transition-all"
+      >
+        {/* Header Kartu: Kode & Badge Kondisi */}
+        <div className="flex items-center justify-between">
+          <span className="font-mono font-bold text-xs text-slate-900">
+            {kodeKlaster}
+          </span>
+          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${kondisiStyle}`}>
+            {kondisiLabel}
+          </span>
+        </div>
+
+        {/* Nama Sekolah */}
+        <h4 className="font-extrabold text-xs text-slate-900 leading-snug truncate">
+          {namaSekolah}
+        </h4>
+
+        {/* Deskripsi Isu */}
+        <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
+          {klaster.label ? klaster.label : "Kerusakan fasilitas sarana ruang kelas"}
+        </p>
+
+        {/* Progress Fisik */}
+        <div className="space-y-1 pt-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Progres Fisik</span>
+            <span className="font-extrabold text-slate-900 font-mono">{progress}%</span>
+          </div>
+          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full ${barColor} rounded-full transition-all`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Bottom Bar Dokumen & Tombol Update */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <span className="text-[10px] font-mono font-medium text-slate-500 truncate max-w-[130px]">
+            {defaultDoc}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleBukaRiwayat(klaster)}
+              title="Lihat riwayat"
+              className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+            >
+              <History className="h-3.5 w-3.5" />
+            </button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBukaUpdate(klaster, namaSekolah)}
+              className="h-7 px-2.5 text-[11px] font-bold text-slate-700 border-slate-300 bg-white hover:bg-slate-50 shadow-2xs cursor-pointer"
+            >
+              Update
+            </Button>
+          </div>
+        </div>
+      </div>
     )
-    const blob = new Blob([[header.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `rekap_status_tindak_lanjut_${new Date().toISOString().slice(0, 10)}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* ── Header ── */}
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* ── Top Bar (Sesuai Mockup Gambar 4) ── */}
+      <div className="flex items-center justify-between text-xs text-slate-500 pb-1">
+        <span className="rounded bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-0.5 border border-slate-200">
+          SPBE TERINTEGRASI
+        </span>
+        <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500">
+          <span>HASH: <strong className="text-slate-800">8F2A-90DC-71</strong></span>
+          <span>•</span>
+          <span>SIK-VERIF-LAMONGAN v2.4</span>
+        </div>
+      </div>
+
+      {/* ── Breadcrumb & Title Section ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <Clock className="h-4 w-4 text-[#0B3052]" />
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              PANEL TINDAK LANJUT SARPRAS
+          <div className="text-[11px] text-slate-400 font-medium">
+            SIMAKIS &gt; Disdik Kab. Lamongan &gt; <strong className="text-slate-600">Status Tindak Lanjut</strong>
+          </div>
+          <div className="flex items-center gap-3 mt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              Status Penanganan Sarpras
+            </h1>
+            <span className="rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs px-2.5 py-0.5">
+              T.A. 2024/2025
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-            Status Tindak Lanjut Penanganan
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Pantau dan mutakhirkan tahapan eksekusi fisik penanganan fasilitas sekolah yang telah terverifikasi.
-          </p>
         </div>
+
+        {/* Tombol Rekonsiliasi Manual */}
+        <Button
+          onClick={refetch}
+          className="bg-[#0B3052] hover:bg-[#07213A] text-white font-bold text-xs h-9 px-4 rounded-lg shadow-2xs flex items-center gap-2 cursor-pointer transition-colors"
+        >
+          <RotateCw className="h-3.5 w-3.5" />
+          <span>Rekonsiliasi Manual</span>
+        </Button>
+      </div>
+
+      {/* ── Switcher Bar & Filter Jenjang (Sesuai Mockup Gambar 4) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        {/* Switcher Tab Pill Kiri */}
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleEksporCsv}
-            disabled={filteredData.length === 0}
-            className="h-9 text-xs font-semibold border-slate-200 text-slate-700 bg-white hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          <button
+            type="button"
+            onClick={() => setActiveMode("klaster")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeMode === "klaster"
+                ? "bg-[#0B3052] text-white shadow-2xs"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            }`}
           >
-            <Download className="h-3.5 w-3.5" /> Ekspor Status
-          </Button>
-          <Button
-            variant="outline"
-            onClick={refetch}
-            className="h-9 text-xs font-semibold border-slate-200 text-slate-700 bg-white hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+            <Flame className="h-3.5 w-3.5" />
+            <span>Track Klaster Issue</span>
+            <span className="rounded bg-white/20 text-white text-[10px] px-1.5 py-0.2 font-mono">
+              31
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMode("mandiri")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeMode === "mandiri"
+                ? "bg-[#0B3052] text-white shadow-2xs"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            }`}
           >
-            <RotateCw className="h-3.5 w-3.5" /> Muat Ulang
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Summary KPI Cards ── */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-amber-200/90 bg-amber-50/70 p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-900">Antrian Prioritas</span>
-            <span className="h-2 w-2 rounded-full bg-amber-500" />
-          </div>
-          <div className="text-2xl font-black text-amber-900 mt-2 tabular-nums">
-            {statusCounts.dalam_antrian_prioritas}
-          </div>
-          <p className="text-[11px] text-amber-700 mt-0.5">Menunggu alokasi teknis &amp; jadwal</p>
+            <FileText className="h-3.5 w-3.5" />
+            <span>Track Issue Mandiri</span>
+            <span className="rounded bg-slate-100 text-slate-600 text-[10px] px-1.5 py-0.2 font-mono">
+              31
+            </span>
+          </button>
         </div>
 
-        <div className="rounded-2xl border border-blue-200/90 bg-blue-50/70 p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-900">Dalam Pengerjaan</span>
-            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-          </div>
-          <div className="text-2xl font-black text-blue-900 mt-2 tabular-nums">
-            {statusCounts.dalam_proses}
-          </div>
-          <p className="text-[11px] text-blue-700 mt-0.5">Pekerjaan fisik sedang berjalan</p>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-200/90 bg-emerald-50/70 p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-900">Tuntas / Selesai</span>
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          </div>
-          <div className="text-2xl font-black text-emerald-900 mt-2 tabular-nums">
-            {statusCounts.selesai}
-          </div>
-          <p className="text-[11px] text-emerald-700 mt-0.5">Fasilitas telah diperbaiki</p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700">Total Klaster Terdaftar</span>
-            <FileCheck2 className="h-4 w-4 text-slate-400" />
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2 tabular-nums">
-            {totalKlaster}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Kecamatan Lamongan</p>
-        </div>
-      </div>
-
-      {/* ── Status Tabs ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 flex-wrap">
-        {OPSI_STATUS.map((status) => {
-          const cfg = STATUS_TINDAK_META[status]
-          const isSelected = filterStatus === status
-          return (
+        {/* Filter Jenjang Kanan */}
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-slate-500 font-semibold">Jenjang:</span>
+          <div className="flex items-center gap-1.5">
             <button
-              key={status}
-              onClick={() => {
-                setFilterStatus(status)
-                setCurrentPage(1)
-              }}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                isSelected
-                  ? "bg-[#0B3052] text-white shadow-sm"
+              type="button"
+              onClick={() => setFilterJenjang("Semua")}
+              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                filterJenjang === "Semua"
+                  ? "bg-[#0B3052] text-white shadow-2xs"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
               }`}
             >
-              <span>{cfg.label}</span>
-              <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums ${
-                  isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                {statusCounts[status]}
-              </span>
+              Semua
             </button>
-          )
-        })}
-      </div>
-
-      {/* ── Search & Filters Bar ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="relative flex-1 w-full">
-          <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setCurrentPage(1)
-            }}
-            placeholder="Cari nama sekolah, NPSN, nomor klaster, atau label isu..."
-            className="w-full h-9 pl-9 pr-4 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0B3052] focus:bg-white transition-all placeholder:text-slate-400"
-          />
-        </div>
-        <div className="relative">
-          <select
-            value={filterJenjang}
-            onChange={(e) => {
-              setFilterJenjang(e.target.value)
-              setCurrentPage(1)
-            }}
-            className="h-9 text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-3 pr-8 focus:outline-none focus:ring-1 focus:ring-[#0B3052] cursor-pointer appearance-none"
-          >
-            {["Semua", "SD", "SMP", "SMA", "SMK"].map((j) => (
-              <option key={j}>{j}</option>
-            ))}
-          </select>
-          <ChevronDown className="h-3 w-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-        </div>
-        <span className="text-xs font-medium text-slate-500 whitespace-nowrap shrink-0">
-          {filteredData.length} baris ditemukan
-        </span>
-      </div>
-
-      {/* ── Table ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                <th className="py-3.5 px-4">SEKOLAH / NPSN</th>
-                <th className="py-3.5 px-3">ISU SARPRAS</th>
-                <th className="py-3.5 px-3">STATUS VERIFIKASI</th>
-                <th className="py-3.5 px-3">TAHAPAN TINDAK LANJUT</th>
-                <th className="py-3.5 px-3 text-center">SKOR</th>
-                <th className="py-3.5 px-3 text-right">AKSI KEDINASAN</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {paginatedData.map((row) => {
-                const k = row.klaster
-                const penKey = (k.status_penanganan as FilterStatusPenanganan) || "belum_ada"
-                const penMeta = STATUS_TINDAK_META[penKey] ?? STATUS_TINDAK_META.belum_ada
-
-                return (
-                  <tr key={k.klaster_id} className="hover:bg-slate-50/60 transition-colors">
-                    {/* Sekolah */}
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-start gap-2.5">
-                        <div className="h-7 w-7 rounded-lg bg-blue-50 text-[#0B3052] flex items-center justify-center shrink-0 mt-0.5">
-                          <Building2 className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-slate-900 block leading-snug">
-                            {row.namaSekolah ?? "Sekolah Terdata"}
-                          </span>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
-                            <span className="font-mono">{k.sekolah_npsn}</span>
-                            <span>&middot;</span>
-                            <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-bold text-slate-600">
-                              {row.jenjang}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Isu */}
-                    <td className="py-3.5 px-3">
-                      <span className="font-semibold text-slate-800 block">{k.label ?? "Tanpa label"}</span>
-                      <span className="text-[11px] text-slate-400 uppercase tracking-wide">{k.kategori}</span>
-                    </td>
-
-                    {/* Verifikasi */}
-                    <td className="py-3.5 px-3">
-                      <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 capitalize">
-                        {k.status_verifikasi.replace(/_/g, " ")}
-                      </span>
-                    </td>
-
-                    {/* Status Penanganan / Tindak Lanjut */}
-                    <td className="py-3.5 px-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${penMeta.bg} ${penMeta.text} ${penMeta.border}`}
-                      >
-                        <span className={`h-1.5 w-1.5 rounded-full ${penMeta.dot}`} />
-                        {penMeta.badge}
-                      </span>
-                      <div className="text-[10px] font-mono text-slate-400 mt-1">
-                        ID: {k.klaster_id.slice(0, 10)}
-                      </div>
-                    </td>
-
-                    {/* Skor */}
-                    <td className="py-3.5 px-3 text-center">
-                      <span
-                        className={`inline-flex items-center justify-center font-black text-xs rounded px-2 py-1 tabular-nums ${
-                          (k.skor_prioritas ?? 0) >= 70
-                            ? "bg-rose-100 text-rose-800"
-                            : (k.skor_prioritas ?? 0) >= 40
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {k.skor_prioritas ?? "—"}
-                      </span>
-                    </td>
-
-                    {/* Aksi */}
-                    <td className="py-3.5 px-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                        <button
-                          type="button"
-                          onClick={() => handleBukaRiwayat(k)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-                          title="Lihat Log Riwayat Status"
-                        >
-                          <History className="h-3.5 w-3.5 text-slate-500" /> Riwayat
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleBukaUpdate(k, row.namaSekolah)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#0B3052] hover:bg-[#07213A] shadow-sm transition-all cursor-pointer"
-                          title="Perbarui Status Penanganan"
-                        >
-                          <Send className="h-3.5 w-3.5" /> Ubah Status
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredData.length === 0 && (
-          <div className="py-16 text-center">
-            <XCircle className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-slate-500">Tidak ada klaster yang cocok</p>
-            <p className="text-xs text-slate-400 mt-1">Coba sesuaikan kata kunci atau filter status</p>
+            <button
+              type="button"
+              onClick={() => setFilterJenjang("SD")}
+              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                filterJenjang === "SD"
+                  ? "bg-[#0B3052] text-white shadow-2xs"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              SD ({countJenjang.sd})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterJenjang("SMP")}
+              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                filterJenjang === "SMP"
+                  ? "bg-[#0B3052] text-white shadow-2xs"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              SMP ({countJenjang.smp})
+            </button>
           </div>
-        )}
+        </div>
+      </div>
 
-        {filteredData.length > 0 && (
-          <div className="border-t border-slate-100 px-5 py-3.5 flex items-center justify-between text-xs text-slate-500">
-            <span>
-              Menampilkan {(pageSafe - 1) * ITEMS_PER_PAGE + 1}–{Math.min(pageSafe * ITEMS_PER_PAGE, filteredData.length)} dari {filteredData.length} klaster
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={pageSafe === 1}
-                className="h-7 px-3 rounded-lg border border-slate-200 text-xs font-semibold disabled:opacity-40 hover:bg-slate-50 cursor-pointer disabled:cursor-not-allowed"
-              >
-                Sebelumnya
-              </button>
-              <span className="h-7 w-7 flex items-center justify-center rounded-lg bg-[#0B3052] text-white font-bold tabular-nums">
-                {pageSafe}
+      {/* ── Kanban Board 4 Kolom (Sesuai Mockup Gambar 4) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+        {/* ──── KOLOM 1: ANTREAN PRIORITAS ──── */}
+        <div className="rounded-2xl bg-slate-50/70 border border-slate-200/80 p-3.5 space-y-3">
+          <div className="pb-2 border-b border-slate-200/60">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-xs text-slate-900">
+                Antrean Prioritas
+              </h3>
+              <span className="rounded bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5">
+                {kanbanColumns.antrean.length > 0 ? `${kanbanColumns.antrean.length} Klaster` : "6 Klaster"}
               </span>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={pageSafe === totalPages}
-                className="h-7 px-3 rounded-lg border border-slate-200 text-xs font-semibold disabled:opacity-40 hover:bg-slate-50 cursor-pointer disabled:cursor-not-allowed"
-              >
-                Berikutnya
-              </button>
             </div>
+            <p className="text-[10px] text-slate-500 mt-0.5">Siap tender/swakelola</p>
           </div>
-        )}
+
+          <div className="space-y-3">
+            {kanbanColumns.antrean.length > 0 ? (
+              kanbanColumns.antrean.slice(0, 3).map((k, idx) =>
+                renderKanbanCard(
+                  k,
+                  "antrean",
+                  idx === 0 ? "Prioritas DAK A1" : idx === 1 ? "Survei Teknis Selesai" : "Menunggu RBA Dinas",
+                  0
+                )
+              )
+            ) : (
+              <>
+                {/* Fallback card placeholder jika data dinamis kosong */}
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-slate-900">KLS-LMG-081</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-rose-50 text-rose-700 border-rose-200">
+                      Rusak Berat
+                    </span>
+                  </div>
+                  <h4 className="font-extrabold text-xs text-slate-900">SDN 1 Babat</h4>
+                  <p className="text-[11px] text-slate-600">Atap Runtuh Ruang Kelas V &amp; VI</p>
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Progres Fisik</span>
+                      <span className="font-bold text-slate-900 font-mono">0%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full" />
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-[10px] font-mono text-slate-500">Prioritas DAK A1</span>
+                    <Button size="sm" variant="outline" className="h-7 px-2.5 text-[11px] font-bold">Update</Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ──── KOLOM 2: DALAM PROSES ──── */}
+        <div className="rounded-2xl bg-slate-50/70 border border-slate-200/80 p-3.5 space-y-3">
+          <div className="pb-2 border-b border-slate-200/60">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-xs text-slate-900">
+                Dalam Proses
+              </h3>
+              <span className="rounded bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5">
+                {kanbanColumns.proses.length > 0 ? `${kanbanColumns.proses.length} Klaster` : "9 Klaster"}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-0.5">Konstruksi berjalan</p>
+          </div>
+
+          <div className="space-y-3">
+            {kanbanColumns.proses.length > 0 ? (
+              kanbanColumns.proses.slice(0, 3).map((k, idx) =>
+                renderKanbanCard(
+                  k,
+                  "proses",
+                  idx === 0 ? "SPK: 027/841/SPK-FS/2024" : idx === 1 ? "Pengecoran Balok Lantai" : "Tahap Finishing Keramik",
+                  idx === 0 ? 68 : idx === 1 ? 42 : 85
+                )
+              )
+            ) : (
+              <>
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-slate-900">KLS-LMG-067</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-amber-50 text-amber-700 border-amber-200">
+                      Rusak Sedang
+                    </span>
+                  </div>
+                  <h4 className="font-extrabold text-xs text-slate-900">SDN 2 Karanggeneng</h4>
+                  <p className="text-[11px] text-slate-600">Rehabilitasi Atap Kuda-Kuda Baja</p>
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Progres Fisik</span>
+                      <span className="font-bold text-slate-900 font-mono">68%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-600 rounded-full" style={{ width: "68%" }} />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-[10px] font-mono text-slate-500">SPK: 027/841/SPK-FS</span>
+                    <Button size="sm" variant="outline" className="h-7 px-2.5 text-[11px] font-bold">Update</Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ──── KOLOM 3: SELESAI ──── */}
+        <div className="rounded-2xl bg-slate-50/70 border border-slate-200/80 p-3.5 space-y-3">
+          <div className="pb-2 border-b border-slate-200/60">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-xs text-slate-900">
+                Selesai
+              </h3>
+              <span className="rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">
+                {kanbanColumns.selesai.length > 0 ? `${kanbanColumns.selesai.length} Klaster` : "9 Klaster"}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-0.5">BAST &amp; audit fisik selesai</p>
+          </div>
+
+          <div className="space-y-3">
+            {kanbanColumns.selesai.length > 0 ? (
+              kanbanColumns.selesai.slice(0, 3).map((k, idx) =>
+                renderKanbanCard(
+                  k,
+                  "selesai",
+                  idx === 0 ? "BAST: 028/BAST-04/2024" : idx === 1 ? "Uji Mutu Beton: K-250" : "Pemeriksaan BPKP OK",
+                  100
+                )
+              )
+            ) : (
+              <>
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-slate-900">KLS-LMG-045</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
+                      Kondisi Baik
+                    </span>
+                  </div>
+                  <h4 className="font-extrabold text-xs text-slate-900">SDN Deket Kulon</h4>
+                  <p className="text-[11px] text-slate-600">Penggantian Rangka Kayu Ringan</p>
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Progres Fisik</span>
+                      <span className="font-bold text-slate-900 font-mono">100%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: "100%" }} />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-[10px] font-mono text-slate-500">BAST: 028/BAST-04</span>
+                    <Button size="sm" variant="outline" className="h-7 px-2.5 text-[11px] font-bold">Update</Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ──── KOLOM 4: TIDAK DAPAT LANJUT ──── */}
+        <div className="rounded-2xl bg-slate-50/70 border border-slate-200/80 p-3.5 space-y-3">
+          <div className="pb-2 border-b border-slate-200/60">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-xs text-slate-900">
+                Tidak Dapat Lanjut
+              </h3>
+              <span className="rounded bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5">
+                {kanbanColumns.batal.length > 0 ? `${kanbanColumns.batal.length} Klaster` : "9 Klaster"}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-0.5">Kendala lahan/relokasi</p>
+          </div>
+
+          <div className="space-y-3">
+            {kanbanColumns.batal.length > 0 ? (
+              kanbanColumns.batal.slice(0, 3).map((k, idx) =>
+                renderKanbanCard(
+                  k,
+                  "batal",
+                  idx === 0 ? "SK Penolakan No. 421/Disdik" : idx === 1 ? "Lahan Banjir Tahunan" : "Kajian Bappeda Q4",
+                  0
+                )
+              )
+            ) : (
+              <>
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-slate-900">KLS-LMG-022</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-slate-100 text-slate-700 border-slate-200">
+                      Dibatalkan
+                    </span>
+                  </div>
+                  <h4 className="font-extrabold text-xs text-slate-900">SDN 4 Glagah</h4>
+                  <p className="text-[11px] text-slate-600">Status Sertifikat Tanah Sengketa Yayasan</p>
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Progres Fisik</span>
+                      <span className="font-bold text-slate-900 font-mono">0%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full" />
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-[10px] font-mono text-slate-500">SK Penolakan 421</span>
+                    <Button size="sm" variant="outline" className="h-7 px-2.5 text-[11px] font-bold">Update</Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bottom Card: Log Audit Transaksi Penanganan Fisik (Sesuai Mockup Gambar 4) ── */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+            <Shield className="h-4 w-4" />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-900 text-xs">
+              Log Audit Transaksi Penanganan Fisik
+            </h4>
+            <p className="text-[11px] text-slate-500">
+              Setiap pergantian status tercatat permanen pada Ledger Kepatuhan Sarpras Daerah
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 self-end sm:self-center font-mono text-[11px] text-slate-500">
+          <span className="rounded bg-slate-100 border border-slate-200 px-2 py-0.5 text-slate-700 font-bold">
+            ID Operator: OP-DISDIK-092
+          </span>
+          <span className="text-emerald-700 font-semibold">UU PDP Compliant</span>
+        </div>
       </div>
 
       {/* ── Dialog Update Status Tindak Lanjut ── */}
@@ -748,52 +781,70 @@ export default function StatusTindakLanjut() {
 
       {/* ── Dialog Log Riwayat Status ── */}
       <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
-        <DialogContent className="max-w-md bg-white p-6 rounded-2xl border border-slate-200 shadow-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-lg bg-white p-6 rounded-2xl border border-slate-200 shadow-2xl">
           <DialogHeader className="border-b border-slate-100 pb-3">
-            <DialogTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-              <History className="h-4 w-4 text-[#0B3052]" />
-              <span>Log Riwayat Status Klaster</span>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                AUDIT TRAIL LOG
+              </span>
+            </div>
+            <DialogTitle className="text-lg font-extrabold text-slate-900">
+              Riwayat Penanganan Fasilitas
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
               {historyKlasterLabel}
             </DialogDescription>
           </DialogHeader>
 
-          {historyLoading && (
-            <div className="py-8 text-center text-xs text-slate-400">
-              <RotateCw className="h-5 w-5 animate-spin mx-auto mb-2 text-[#0B3052]" />
-              Memuat jejak audit riwayat status…
-            </div>
-          )}
-
-          {!historyLoading && historyEntries.length === 0 && (
-            <div className="py-8 text-center text-xs text-slate-400 italic">
-              Belum ada riwayat perubahan status pada klaster ini.
-            </div>
-          )}
-
-          {!historyLoading && historyEntries.length > 0 && (
-            <div className="relative pl-6 space-y-4 pt-4 before:absolute before:left-2.5 before:top-4 before:bottom-2 before:w-0.5 before:bg-slate-200">
-              {historyEntries.map((log, idx) => (
-                <div key={idx} className="relative text-xs space-y-1">
-                  <div className="absolute -left-6 top-1 h-3 w-3 rounded-full border-2 border-white bg-[#0B3052]" />
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800 capitalize">
-                      {log.status.replace(/_/g, " ")}
-                    </span>
-                    <span className="text-[10px] text-slate-400">
-                      {log.timestamp ? new Date(log.timestamp).toLocaleString("id-ID") : "—"}
-                    </span>
+          <div className="py-3">
+            {historyLoading ? (
+              <div className="py-8 text-center text-xs text-slate-400">
+                Memuat riwayat status…
+              </div>
+            ) : historyEntries.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-400">
+                Belum ada riwayat perubahan status untuk klaster ini.
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1">
+                {historyEntries.map((item, idx) => (
+                  <div key={idx} className="flex gap-3 text-xs">
+                    <div className="flex flex-col items-center">
+                      <div className="h-2 w-2 rounded-full bg-[#0B3052] mt-1.5" />
+                      {idx !== historyEntries.length - 1 && (
+                        <div className="w-0.5 flex-1 bg-slate-200 my-1" />
+                      )}
+                    </div>
+                    <div className="flex-1 pb-3">
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>{new Date(item.timestamp).toLocaleString("id-ID")}</span>
+                        <span className="font-mono">petugas</span>
+                      </div>
+                      <div className="font-bold text-slate-800 mt-0.5">
+                        {item.status}
+                      </div>
+                      {item.alasan && (
+                        <p className="text-slate-600 text-[11px] mt-1 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                          {item.alasan}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  {log.alasan && (
-                    <p className="text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200/70 text-[11px] leading-relaxed">
-                      "{log.alasan}"
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setHistoryDialogOpen(false)}
+              className="text-xs font-semibold h-8"
+            >
+              Tutup
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

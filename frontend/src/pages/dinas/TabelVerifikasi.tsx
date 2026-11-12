@@ -388,7 +388,7 @@ export default function TabelVerifikasi() {
       {!memuat && !gagal && (
         <>
           {/* Status Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 flex-wrap">
+          <div className="flex items-center gap-2 pb-1 flex-wrap">
             {OPSI_STATUS.map((status) => (
               <button
                 key={status}

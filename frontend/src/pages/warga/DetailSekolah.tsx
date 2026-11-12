@@ -289,7 +289,7 @@ export default function DetailSekolah() {
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
       {/* ── Breadcrumb & Sync Header ── */}
       <div className="border-b border-slate-200/80 bg-white py-3 text-xs">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 flex-wrap gap-2 text-slate-500">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 flex-wrap gap-2 text-slate-500">
           <div className="flex items-center gap-1.5 font-medium">
             <Link to="/sekolah" className="text-slate-600 hover:text-[#0B3052]">Direktori Sekolah</Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
@@ -305,9 +305,9 @@ export default function DetailSekolah() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 pt-6 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 space-y-6 w-full max-w-full overflow-x-hidden">
         {/* ── Main School Header Card ── */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm relative overflow-hidden space-y-6">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-8 shadow-sm relative overflow-hidden space-y-5 sm:space-y-6">
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
             <div className="space-y-3 max-w-3xl">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-500 tracking-wider uppercase flex-wrap">

@@ -188,7 +188,7 @@ export default function Direktori() {
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
       {/* ── Top Header Section ── */}
       <div className="border-b border-slate-200/80 bg-white py-6">
-        <div className="mx-auto max-w-7xl px-6 space-y-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 space-y-4">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500 tracking-wider uppercase">
             <span className="h-2 w-2 rounded-full bg-blue-600" />
             <span>ARSIP DATA POKOK PENDIDIKAN · WILAYAH KERJA 07.24</span>
@@ -228,7 +228,7 @@ export default function Direktori() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 pt-6 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 space-y-6 w-full max-w-full overflow-x-hidden">
         {/* ── Search & Filter Bar ── */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Search Input */}

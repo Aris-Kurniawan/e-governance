@@ -63,6 +63,12 @@
   * {
     @apply border-border;
   }
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: 'tnum';
@@ -96,6 +102,32 @@
   .flex.min-h-screen {
     display: block !important;
     background: #ffffff !important;
+  }
+}
+
+/* ── Marquee: baris logo lembaga berjalan (Trust Bar Landing) ── */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 28s linear infinite;
+  will-change: transform;
+}
+
+/* Pause saat hover supaya teks bisa dibaca */
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
   }
 }
 

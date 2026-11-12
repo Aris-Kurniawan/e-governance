@@ -273,15 +273,10 @@ export default function DashboardWilayah() {
   );
 
   const handleReportClick = (school?: { npsn: string; nama: string }) => {
-    if (!isAuthenticated) {
-      const destination = school
-        ? `/laporan/baru?sekolah=${school.npsn}`
-        : "/laporan/baru";
-      navigate(`/login?redirect=${encodeURIComponent(destination)}`);
-    } else if (school) {
-      navigate(`/laporan/baru?sekolah=${school.npsn}`);
+    if (school) {
+      navigate(`/sekolah/${school.npsn}`);
     } else {
-      navigate("/laporan/baru");
+      navigate("/sekolah");
     }
   };
 
@@ -296,7 +291,7 @@ export default function DashboardWilayah() {
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
       {/* ── Status Bar ── */}
       <div className="border-b border-slate-200/80 bg-white py-2.5 text-xs">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 flex-wrap gap-2 text-slate-500">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 flex-wrap gap-2 text-slate-500">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800 tracking-wider uppercase text-[11px]">PORTAL RESMI AUDIT DAPODIK</span>
             <span className="text-slate-300">|</span>
@@ -315,9 +310,9 @@ export default function DashboardWilayah() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 pt-8 space-y-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 sm:pt-8 space-y-6 sm:space-y-8 w-full max-w-full overflow-x-hidden">
         {/* ── Welcome Banner ── */}
-        <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-blue-50/30 p-8 shadow-sm relative overflow-hidden">
+        <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-blue-50/30 p-5 sm:p-8 shadow-sm relative overflow-hidden">
           <div className="relative z-10 max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 border border-slate-200/60 mb-4">
               <Shield className="h-3.5 w-3.5 text-[#0B3052]" />
@@ -359,7 +354,7 @@ export default function DashboardWilayah() {
         </div>
 
         {/* ── KPI Cards (angka dari backend) ── */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3">
           <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-3">
@@ -524,7 +519,7 @@ export default function DashboardWilayah() {
                   </div>
                 )}
   
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-w-full">
                   <table className="w-full text-left text-xs font-sans">
                     <thead>
                       <tr className="border-b border-slate-100 text-[11px] font-bold tracking-wider text-slate-400 uppercase">

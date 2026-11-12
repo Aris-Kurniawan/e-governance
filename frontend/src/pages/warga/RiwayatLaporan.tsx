@@ -198,7 +198,7 @@ function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan })
   ]
 
   return (
-    <div className="rounded-2xl bg-white border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+    <div className="rounded-2xl bg-white border border-slate-200/90 p-3 sm:p-5 shadow-xs space-y-3 sm:space-y-4 max-w-full overflow-hidden">
       {/* Header Info Alur */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
         <span className="flex items-center gap-1.5 font-bold text-slate-800">
@@ -223,7 +223,7 @@ function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan })
                 {/* Garis Penghubung antar bulatan */}
                 {!isLast && (
                   <div
-                    className={`absolute top-5 sm:top-[22px] left-[50%] right-[-50%] h-[3px] -translate-y-1/2 z-0 ${
+                    className={`absolute top-[18px] sm:top-[22px] left-[50%] right-[-50%] h-[2.5px] sm:h-[3px] -translate-y-1/2 z-0 ${
                       st.no < pengerjaan.tahapIndex || pengerjaan.status === "sudah_selesai"
                         ? "bg-[#3B82F6]"
                         : "bg-slate-200"
@@ -234,11 +234,11 @@ function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan })
                 {/* Lingkaran Step */}
                 <div className="relative z-10 flex items-center justify-center">
                   {isDone ? (
-                    <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-[#3B82F6] text-white flex items-center justify-center shadow-xs">
+                    <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-[#3B82F6] text-white flex items-center justify-center shadow-xs text-xs sm:text-base">
                       <Check className="h-5 w-5 stroke-[3]" />
                     </div>
                   ) : isCurrent ? (
-                    <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-white border-[3.5px] border-[#3B82F6] text-[#3B82F6] font-bold text-sm sm:text-base flex items-center justify-center shadow-xs">
+                    <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-white border-[2.5px] sm:border-[3.5px] border-[#3B82F6] text-[#3B82F6] font-bold text-xs sm:text-base flex items-center justify-center shadow-xs">
                       {st.no}
                     </div>
                   ) : (
@@ -251,7 +251,7 @@ function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan })
                 {/* Label teks di bawah lingkaran */}
                 <div className="mt-2.5 text-center px-1">
                   <span
-                    className={`text-xs sm:text-sm block leading-tight ${
+                    className={`text-[10px] sm:text-xs block leading-tight ${
                       isCurrent
                         ? "font-bold text-slate-900"
                         : isDone
@@ -272,7 +272,7 @@ function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan })
 }
 
 export default function RiwayatLaporan() {
-  const { isAuthenticated, user } = useAuth()
+  const { user } = useAuth()
   const loggedIn = isLoggedIn()
 
   // Mode utama: "publik" (Riwayat Laporan Publik) vs "pribadi" (Laporan Pribadi)
@@ -448,17 +448,15 @@ export default function RiwayatLaporan() {
   )
 
   const handleBuatLaporanClick = (e: React.MouseEvent) => {
-    if (!isAuthenticated) {
-      e.preventDefault()
-      navigate("/login?redirect=" + encodeURIComponent("/laporan/baru"))
-    }
+    e.preventDefault()
+    navigate("/sekolah")
   }
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
       {/* ── Top Header Strip ── */}
       <div className="border-b border-slate-200/80 bg-white py-2.5 text-xs">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 flex-wrap gap-2 text-slate-500">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 flex-wrap gap-2 text-slate-500">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800 tracking-wider uppercase text-[11px]">
               REGISTRI TRANSPARANSI PUBLIK SIMAKIS
@@ -486,9 +484,9 @@ export default function RiwayatLaporan() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 pt-8 space-y-6">
+      <div className="mx-auto max-w-7xl px-3.5 sm:px-6 pt-5 sm:pt-8 space-y-5 sm:space-y-6 w-full max-w-full overflow-x-hidden">
         {/* ── Main Header Card ── */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-8 shadow-sm space-y-5 sm:space-y-6 max-w-full overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-3xl">
               <div className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-900 border border-blue-200/60">
@@ -506,7 +504,7 @@ export default function RiwayatLaporan() {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
               <Button asChild className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold px-5 py-3 h-11 rounded-xl text-sm shadow-sm w-full sm:w-auto cursor-pointer">
-                <Link to="/laporan/baru" onClick={handleBuatLaporanClick}>
+                <Link to="/sekolah" onClick={handleBuatLaporanClick}>
                   <Plus className="h-4 w-4 mr-1.5" /> Buat Aduan Baru
                 </Link>
               </Button>
@@ -514,24 +512,24 @@ export default function RiwayatLaporan() {
           </div>
 
           {/* Mode Switcher Buttons: Riwayat Laporan Publik vs Laporan Pribadi */}
-          <div className="flex items-center justify-between border-t border-slate-100 pt-5 flex-wrap gap-4">
-            <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80 shadow-inner">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-100 pt-5 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 gap-1 p-1 sm:p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80 shadow-inner w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => {
                   setViewMode("publik")
                   setPagePublik(1)
                 }}
-                className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center ${
                   viewMode === "publik"
                     ? "bg-[#0B3052] text-white shadow-md"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                 }`}
               >
-                <Globe2 className="h-4 w-4" />
-                <span>Riwayat Laporan Publik</span>
+                <Globe2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Riwayat Publik</span>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
+                  className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold shrink-0 ${
                     viewMode === "publik"
                       ? "bg-white/20 text-white"
                       : "bg-slate-200 text-slate-700"
@@ -547,17 +545,17 @@ export default function RiwayatLaporan() {
                   setViewMode("pribadi")
                   setPagePribadi(1)
                 }}
-                className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center ${
                   viewMode === "pribadi"
                     ? "bg-[#0B3052] text-white shadow-md"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                 }`}
               >
-                <UserCheck className="h-4 w-4" />
-                <span>Laporan Pribadi</span>
+                <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Laporan Pribadi</span>
                 {loggedIn ? (
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
+                    className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold shrink-0 ${
                       viewMode === "pribadi"
                         ? "bg-white/20 text-white"
                         : "bg-slate-200 text-slate-700"
@@ -566,12 +564,12 @@ export default function RiwayatLaporan() {
                     {itemsPribadi.length}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-400 font-normal">(Login)</span>
+                  <span className="text-[10px] text-slate-400 font-normal shrink-0">(Login)</span>
                 )}
               </button>
             </div>
 
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-[11px] sm:text-xs text-slate-500 font-medium">
               {viewMode === "publik"
                 ? "Seluruh aduan & klaster isu terverifikasi di wilayah kerja"
                 : "Aduan resmi yang diajukan melalui akun Anda"}
@@ -584,14 +582,23 @@ export default function RiwayatLaporan() {
           <div className="grid gap-6 lg:grid-cols-12 items-start">
             <div className="lg:col-span-8 space-y-6">
               {/* Sub-filter Switcher: Semua vs Klaster vs Mandiri */}
-              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/70 w-fit flex-wrap">
+              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/70 w-full sm:w-fit flex-wrap">
                 {[
                   {
                     id: "semua",
+                    shortLabel: `Semua (${itemsPublikRaw.length + itemsMandiriRaw.length})`,
                     label: `Semua Laporan Publik (${itemsPublikRaw.length + itemsMandiriRaw.length})`,
                   },
-                  { id: "klaster", label: `Klaster Isu Sarpras (${itemsPublikRaw.length})` },
-                  { id: "mandiri", label: `Aduan Mandiri Tervalidasi (${itemsMandiriRaw.length})` },
+                  {
+                    id: "klaster",
+                    shortLabel: `Klaster (${itemsPublikRaw.length})`,
+                    label: `Klaster Isu Sarpras (${itemsPublikRaw.length})`,
+                  },
+                  {
+                    id: "mandiri",
+                    shortLabel: `Mandiri (${itemsMandiriRaw.length})`,
+                    label: `Aduan Mandiri Tervalidasi (${itemsMandiriRaw.length})`,
+                  },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -600,13 +607,14 @@ export default function RiwayatLaporan() {
                       setSubModePublik(tab.id as "semua" | "klaster" | "mandiri")
                       setPagePublik(1)
                     }}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
                       subModePublik === tab.id
                         ? "bg-white text-[#0B3052] shadow-sm"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    {tab.label}
+                    <span className="sm:hidden">{tab.shortLabel}</span>
+                    <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 ))}
               </div>
@@ -628,7 +636,7 @@ export default function RiwayatLaporan() {
                 </div>
 
                 <div className="flex items-center justify-between gap-3 flex-wrap text-xs">
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {[
                       { id: "semua", label: "Semua" },
                       { id: "menunggu_verifikasi", label: "Menunggu Telaah" },
@@ -725,7 +733,7 @@ export default function RiwayatLaporan() {
                   return (
                     <div
                       key={item.id}
-                      className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-md transition-all space-y-4"
+                      className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-all space-y-4 max-w-full overflow-hidden"
                     >
                       {/* Top Header Card */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
@@ -815,7 +823,7 @@ export default function RiwayatLaporan() {
                 return (
                   <div
                     key={item.id}
-                    className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-md transition-all space-y-4"
+                    className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-all space-y-4 max-w-full overflow-hidden"
                   >
                     {/* Top Header Card */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
@@ -920,7 +928,7 @@ export default function RiwayatLaporan() {
 
             {/* Sidebar Right Column */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4 max-w-full overflow-hidden">
                 <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
                   <Globe2 className="h-4 w-4 text-[#0B3052]" />
                   <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
@@ -1004,7 +1012,7 @@ export default function RiwayatLaporan() {
               {loggedIn && (
                 <>
                   {/* Filter Tabs Pribadi */}
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm flex items-center gap-2 overflow-x-auto">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm flex items-center gap-2 flex-wrap">
                     {TABS_PRIBADI.map((item) => (
                       <button
                         key={item.id}
@@ -1067,7 +1075,7 @@ export default function RiwayatLaporan() {
                       return (
                         <div
                           key={item.id}
-                          className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4"
+                          className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4 max-w-full overflow-hidden"
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                             <div className="flex items-center gap-2 flex-wrap">

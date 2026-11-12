@@ -195,7 +195,7 @@ export default function DaftarKlaster() {
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
       {/* Header */}
       <div className="border-b border-slate-200/80 bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-8 space-y-2">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 space-y-2">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500 tracking-wider uppercase">
             <Sparkles className="h-4 w-4 text-primary" />
             <span>Isu Sarpras Terkelompokkan</span>
@@ -210,7 +210,7 @@ export default function DaftarKlaster() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 pt-6 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Feedback vote */}
         {voteFeedback && (
           <div
