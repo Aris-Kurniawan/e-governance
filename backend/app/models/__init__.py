@@ -2,7 +2,7 @@
 
 from app.models.base import Base, TimestampMixin, gen_uuid, utcnow
 from app.models.klaster import Klaster, StatusLog, Vote
-from app.models.laporan import Laporan, LaporanFoto
+from app.models.laporan import Laporan, LaporanFoto, LaporanStatusLog
 from app.models.logs import AuditLog, IngestJob
 from app.models.sekolah import KondisiSarana, Sekolah, SekolahDataResmi
 from app.models.user import PdpVault, User
@@ -19,6 +19,7 @@ __all__ = [
     "KondisiSarana",
     "Laporan",
     "LaporanFoto",
+    "LaporanStatusLog",
     "Klaster",
     "Vote",
     "StatusLog",

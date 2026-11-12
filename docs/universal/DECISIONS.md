@@ -533,5 +533,26 @@ Pada F3.0f, konfigurasi klasterisasi ditetapkan menggunakan HDBSCAN (`min_cluste
 3. **Penyelarasan Pipeline & Logging**:
    - Memperbarui `app/ai_pipeline/clustering.py` dan `app/ai_pipeline/pipeline.py` agar mengembalikan metadata klaster yang sesuai dengan format ekspektasi router klaster.
 
+---
+
+### D-32: Tindak Lanjut Laporan Non-Klaster & Aduan Mandiri (DBG-027)
+
+**Status:** ✅ Disetujui (03 Nov 2026 — keputusan Aris)
+
+**Konteks & Masalah:**
+Laporan warga yang dikategorikan noise oleh AI atau berdiri sebagai aduan tunggal (*singleton*) tetapi telah divalidasi keabsahannya oleh dinas di `/dinas/perlu-review` (`status_sanggahan = 'divalidasi'`) sebelumnya tidak dapat diperbarui status perkembangan penanganan fisiknya. Di sisi lain, sistem tindak lanjut yang ada terikat mutlak pada entitas `klaster_id`. Jika dipaksakan membuat entitas klaster semu beranggotakan 1 laporan, hal ini akan merusak integritas metodologi klasterisasi AI dan membiaskan metrik prioritas publik.
+
+**Keputusan:**
+1. **Penerapan Dual-Track Workflow (Tanpa Klaster Semu)**:
+   - Laporan non-klaster/aduan mandiri tetap berada pada `klaster_id = NULL`. Sistem dilarang membuat record `Klaster` baru jika jumlah laporan tidak memenuhi syarat konsensus kelompok.
+2. **Kolom Penanganan & Tabel Append-Only Khusus Laporan**:
+   - Menambahkan kolom `status_penanganan` pada tabel `laporan` bertipe enum (`dalam_antrian_prioritas`, `dalam_proses`, `selesai`, `tidak_dapat_ditindaklanjuti`).
+   - Membuat tabel audit append-only `laporan_status_log` untuk mencatat setiap mutasi status penanganan laporan individual beserta alasan dan identitas aktor dinas.
+3. **Endpoint Khusus Tindak Lanjut Laporan Non-Klaster**:
+   - `POST /laporan/{id}/tindak-lanjut`: Dibatasi untuk `verifikator_dinas` dan `kepala_dinas`.
+   - `GET /laporan/{id}/riwayat-tindak-lanjut`: Terbuka untuk jajaran dinas dalam memantau jejak audit penanganan.
+   - Guard validasi: Jika laporan sudah terasosiasi dengan `klaster_id`, pembaruan wajib dialihkan ke router klaster guna mencegah tumpang tindih status.
+
+
 
 
