@@ -12,6 +12,7 @@ import {
   FileText,
   Layers,
   FileCheck,
+  Clock,
 } from "lucide-react"
 import {
   Dialog,
@@ -24,8 +25,9 @@ import { useFetch } from "@/hooks/useFetch"
 import { useAuth } from "@/context/AuthContext"
 import { detailKlaster, listKlaster, verifikasiKlaster } from "@/lib/api/klaster"
 import { listSekolah } from "@/lib/api/sekolah"
+import { perluReviewLaporan, updateStatusLaporan } from "@/lib/api/laporan"
 import { ApiError } from "@/lib/api/errors"
-import type { KlasterDetail, KlasterListItem, SekolahList } from "@/lib/api/types"
+import type { KlasterDetail, KlasterListItem, SekolahList, LaporanPerluReview } from "@/lib/api/types"
 
 type PrioritasLabel = "Kritis" | "Tinggi" | "Sedang" | "Rendah"
 
@@ -39,6 +41,7 @@ export default function AntrianValidasi() {
   // Switcher track: Klaster Issue vs Issue Mandiri
   const [modeTrack, setModeTrack] = useState<"klaster" | "mandiri">("klaster")
   const [selectedKlasterId, setSelectedKlasterId] = useState<string>(urlId ?? "")
+  const [selectedMandiriId, setSelectedMandiriId] = useState<string>("")
 
   // Feedback & alasan tolak
   const [decisionFeedback, setDecisionFeedback] = useState<{
@@ -64,15 +67,24 @@ export default function AntrianValidasi() {
     "Data belum cukup untuk diverifikasi",
   ] as const
 
-  // Fetch daftar klaster dan sekolah
+  // Fetch daftar klaster dari backend (Track Klaster Issue)
   const { state: listState, refetch: refetchList } = useFetch(() =>
     listKlaster({ page_size: 100 }),
+  )
+  // Fetch daftar aduan mandiri / perlu-review dari backend (Track Issue Mandiri)
+  const { state: mandiriState, refetch: refetchMandiri } = useFetch(() =>
+    perluReviewLaporan({ page_size: 100 }),
   )
   const { state: sekolahState } = useFetch(() => listSekolah({ page_size: 100 }))
 
   const daftarKlaster: KlasterListItem[] = useMemo(
     () => (listState.status === "success" ? listState.data.data : []),
     [listState],
+  )
+
+  const daftarMandiri: LaporanPerluReview[] = useMemo(
+    () => (mandiriState.status === "success" ? mandiriState.data.data : []),
+    [mandiriState],
   )
 
   const profilSekolah = useMemo(() => {
@@ -106,8 +118,15 @@ export default function AntrianValidasi() {
     if (!selectedKlasterId) setSelectedKlasterId(daftarKlaster[0].klaster_id)
   }, [urlId, daftarKlaster, selectedKlasterId])
 
-  const totalMenunggu = useMemo(
-    () => daftarKlaster.filter((k) => k.status_verifikasi === "menunggu_verifikasi").length || 49,
+  // Sinkronisasi pilihan aduan mandiri awal
+  useEffect(() => {
+    if (daftarMandiri.length > 0 && !selectedMandiriId) {
+      setSelectedMandiriId(daftarMandiri[0].id)
+    }
+  }, [daftarMandiri, selectedMandiriId])
+
+  const totalMenungguKlaster = useMemo(
+    () => daftarKlaster.filter((k) => k.status_verifikasi === "menunggu_verifikasi").length || daftarKlaster.length,
     [daftarKlaster],
   )
 
@@ -116,6 +135,12 @@ export default function AntrianValidasi() {
     if (found) return found
     return daftarKlaster[0]
   }, [selectedKlasterId, daftarKlaster])
+
+  const selectedMandiri = useMemo(() => {
+    const found = daftarMandiri.find((m) => m.id === selectedMandiriId)
+    if (found) return found
+    return daftarMandiri[0]
+  }, [selectedMandiriId, daftarMandiri])
 
   const handleSelectKlaster = (id: string) => {
     setSelectedKlasterId(id)
@@ -126,29 +151,61 @@ export default function AntrianValidasi() {
     })
   }
 
-  // Aksi verifikasi (Sahkan Klaster vs Tolak Sanggahan)
+  const handleSelectMandiri = (id: string) => {
+    setSelectedMandiriId(id)
+  }
+
+  // Aksi verifikasi (Sahkan Klaster / Laporan vs Tolak Sanggahan)
   const handleDecision = async (type: "mismatch" | "tolak", alasan?: string) => {
-    if (!bolehVerifikasi || !selectedKlasterId) return
-    const status = type === "mismatch" ? "terverifikasi" : "tidak_terverifikasi"
-    try {
-      const res = await verifikasiKlaster(selectedKlasterId, status, alasan)
-      setDecisionFeedback({
-        pesan: `Klaster ${res.klaster_id}: ${res.message}`,
-        tipe: "sukses",
-      })
-      setBukaDialogTolak(false)
-      setAlasanPreset("")
-      setAlasanCatatan("")
-      void refetchList()
-      setTimeout(() => setDecisionFeedback(null), 6000)
-    } catch (err) {
-      setDecisionFeedback({
-        pesan:
-          err instanceof ApiError
-            ? `Gagal menyimpan: ${err.message}`
-            : "Gagal menyimpan verifikasi.",
-        tipe: "gagal",
-      })
+    if (!bolehVerifikasi) return
+
+    if (modeTrack === "klaster") {
+      if (!selectedKlasterId) return
+      const status = type === "mismatch" ? "terverifikasi" : "tidak_terverifikasi"
+      try {
+        const res = await verifikasiKlaster(selectedKlasterId, status, alasan)
+        setDecisionFeedback({
+          pesan: `Klaster ${res.klaster_id}: ${res.message}`,
+          tipe: "sukses",
+        })
+        setBukaDialogTolak(false)
+        setAlasanPreset("")
+        setAlasanCatatan("")
+        void refetchList()
+        setTimeout(() => setDecisionFeedback(null), 6000)
+      } catch (err) {
+        setDecisionFeedback({
+          pesan:
+            err instanceof ApiError
+              ? `Gagal menyimpan: ${err.message}`
+              : "Gagal menyimpan verifikasi klaster.",
+          tipe: "gagal",
+        })
+      }
+    } else {
+      // Mode Mandiri
+      if (!selectedMandiri) return
+      const status = type === "mismatch" ? "divalidasi" : "ditolak"
+      try {
+        await updateStatusLaporan(selectedMandiri.id, status)
+        setDecisionFeedback({
+          pesan: `Aduan ${selectedMandiri.tracking_id} berhasil diubah ke status '${status}'.`,
+          tipe: "sukses",
+        })
+        setBukaDialogTolak(false)
+        setAlasanPreset("")
+        setAlasanCatatan("")
+        void refetchMandiri()
+        setTimeout(() => setDecisionFeedback(null), 6000)
+      } catch (err) {
+        setDecisionFeedback({
+          pesan:
+            err instanceof ApiError
+              ? `Gagal menyimpan: ${err.message}`
+              : "Gagal memverifikasi aduan mandiri.",
+          tipe: "gagal",
+        })
+      }
     }
   }
 
@@ -163,54 +220,18 @@ export default function AntrianValidasi() {
     return detail?.laporan ?? []
   }, [detail])
 
-  if (listState.status === "loading") {
+  if (listState.status === "loading" && mandiriState.status === "loading") {
     return (
       <div className="flex items-center justify-center py-24 text-slate-500 text-sm">
         <span className="inline-flex items-center gap-2">
           <span className="h-2 w-2 animate-pulse rounded-full bg-[#0B3052]" />
-          Memuat antrean validasi...
+          Memuat antrean validasi dari backend...
         </span>
       </div>
     )
   }
 
-  if (listState.status === "error") {
-    return (
-      <div className="flex items-center justify-center px-6 py-24 text-center">
-        <div className="space-y-3">
-          <p className="text-lg font-extrabold text-slate-900">Gagal memuat antrean klaster</p>
-          <p className="text-sm text-slate-600">{listState.message}</p>
-          <button
-            type="button"
-            onClick={refetchList}
-            className="inline-flex h-10 items-center rounded-xl bg-[#0B3052] px-5 text-xs font-bold text-white hover:bg-[#07213A] cursor-pointer"
-          >
-            Coba Lagi
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!selectedKlaster) {
-    return (
-      <div className="flex items-center justify-center px-6 py-24 text-center">
-        <div className="space-y-2">
-          <p className="text-lg font-extrabold text-slate-900">Belum ada klaster untuk divalidasi</p>
-          <p className="text-sm text-slate-600">
-            Antrean verifikasi terisi setelah laporan warga dikelompokkan oleh pipeline AI.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  const selectedSekolahObj = profilSekolah.get(selectedKlaster.sekolah_npsn)
-  const namaSekolahAktif = selectedSekolahObj?.nama ?? selectedKlaster.label ?? "SDN 1 Sukodadi"
-  const skorAktif = selectedKlaster.skor_prioritas ?? 84.6
-  const totalAduanValid = anggotaList.length || selectedKlaster.jumlah_vote_terhitung || 4
-
-  // Helper kode klaster tampilan (misal: KLS-042)
+  // Helper kode tampilan
   const formatKodeKlaster = (id: string, index: number) => {
     const parts = id.split("-")
     const lastPart = parts[parts.length - 1]
@@ -220,17 +241,45 @@ export default function AntrianValidasi() {
     return `KLS-${String(index + 1).padStart(3, "0")}`
   }
 
-  // Waktu relatif realistis
   const getWaktuRelatif = (index: number) => {
     const list = ["32m lalu", "1j lalu", "2j lalu", "3j lalu", "5j lalu", "1h lalu"]
     return list[index % list.length]
   }
 
-  // Deskripsi ringkasan laporan aktif
+  // Variabel tampilan berdasarkan mode aktif
+  const selectedSekolahObj =
+    modeTrack === "klaster" && selectedKlaster
+      ? profilSekolah.get(selectedKlaster.sekolah_npsn)
+      : selectedMandiri
+        ? profilSekolah.get(selectedMandiri.sekolah_npsn)
+        : null
+
+  const namaSekolahAktif =
+    modeTrack === "klaster"
+      ? selectedSekolahObj?.nama ?? selectedKlaster?.label ?? "Sekolah"
+      : selectedMandiri?.sekolah_nama ?? selectedSekolahObj?.nama ?? "Sekolah"
+
+  const npsnAktif =
+    modeTrack === "klaster"
+      ? selectedKlaster?.sekolah_npsn ?? "—"
+      : selectedMandiri?.sekolah_npsn ?? "—"
+
+  const skorAktif =
+    modeTrack === "klaster"
+      ? selectedKlaster?.skor_prioritas ?? 84.6
+      : 76.5
+
+  const totalAduanValid =
+    modeTrack === "klaster"
+      ? anggotaList.length || selectedKlaster?.jumlah_vote_terhitung || 4
+      : 1
+
   const deskripsiRingkasan =
-    anggotaList[0]?.deskripsi ||
-    selectedKlaster.label ||
-    "Warga melaporkan kerusakan atap ruang kelas yang runtuh sebagian sehingga aktivitas belajar terganggu dan memerlukan penanganan segera."
+    modeTrack === "klaster"
+      ? anggotaList[0]?.deskripsi ||
+        selectedKlaster?.label ||
+        "Warga melaporkan kerusakan atap ruang kelas yang runtuh sebagian sehingga aktivitas belajar terganggu dan memerlukan penanganan segera."
+      : selectedMandiri?.deskripsi || "Aduan mandiri sarpras warga menunggu verifikasi petugas dinas."
 
   const fotoDokumentasi =
     "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=1200&q=80"
@@ -249,7 +298,10 @@ export default function AntrianValidasi() {
             Antrean Validasi Klaster Sarpras
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Mode Split-View · {totalMenunggu} Klaster Menunggu Verifikasi Lapangan
+            Mode Split-View ·{" "}
+            {modeTrack === "klaster"
+              ? `${totalMenungguKlaster} Klaster Menunggu Verifikasi Lapangan`
+              : `${daftarMandiri.length} Aduan Mandiri Memerlukan Review`}
           </p>
         </div>
 
@@ -263,7 +315,7 @@ export default function AntrianValidasi() {
         </div>
       </div>
 
-      {/* ── Switcher Track: Track Klaster Issue vs Track Issue Mandiri ── */}
+      {/* ── Switcher Track Terhubung ke Backend ── */}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -277,7 +329,7 @@ export default function AntrianValidasi() {
           <Layers className="h-3.5 w-3.5 text-slate-600" />
           <span>Track Klaster Issue</span>
           <span className="rounded bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
-            31
+            {daftarKlaster.length}
           </span>
         </button>
 
@@ -293,7 +345,7 @@ export default function AntrianValidasi() {
           <FileText className="h-3.5 w-3.5 text-slate-500" />
           <span>Track Issue Mandiri</span>
           <span className="rounded bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
-            31
+            {daftarMandiri.length}
           </span>
         </button>
       </div>
@@ -326,101 +378,163 @@ export default function AntrianValidasi() {
 
       {/* ── Main Split View ── */}
       <div className="grid gap-6 lg:grid-cols-12 items-start">
-        {/* ================= SISI KIRI (5 Cols): ANTREAN PRIORITAS (DAMPAK KBM) ================= */}
+        {/* ================= SISI KIRI (5 Cols): ANTREAN PRIORITAS ================= */}
         <div className="lg:col-span-5 space-y-3">
           {/* Header Antrean */}
           <div className="flex items-center justify-between pb-1">
             <h2 className="text-[11px] font-extrabold tracking-wider text-slate-700 uppercase">
-              ANTREAN PRIORITAS (DAMPAK KBM)
+              {modeTrack === "klaster" ? "ANTREAN PRIORITAS (DAMPAK KBM)" : "ANTREAN ADUAN MANDIRI (NON-KLASTER)"}
             </h2>
             <span className="rounded-full bg-slate-100 text-slate-600 font-semibold text-[11px] px-2.5 py-0.5 border border-slate-200/80">
-              {daftarKlaster.length || 4} Ditampilkan
+              {modeTrack === "klaster" ? `${daftarKlaster.length} Ditampilkan` : `${daftarMandiri.length} Ditampilkan`}
             </span>
           </div>
 
-          {/* List Klaster Card */}
-          <div className="space-y-3">
-            {daftarKlaster.map((klaster, idx) => {
-              const isSelected = klaster.klaster_id === selectedKlaster.klaster_id
-              const profil = profilSekolah.get(klaster.sekolah_npsn)
-              const namaSekolah = profil?.nama ?? klaster.label ?? "Sekolah"
-              const skor = typeof klaster.skor_prioritas === "number" ? klaster.skor_prioritas : 75
-              const prioritasTxt = kePrioritas(skor)
-              const kodeKlaster = formatKodeKlaster(klaster.klaster_id, idx)
-              const aduanCount = klaster.jumlah_vote_terhitung || 4 - (idx % 3)
-              const waktu = getWaktuRelatif(idx)
+          {/* List Klaster Card atau List Aduan Mandiri */}
+          <div className="space-y-3 max-h-[calc(100vh-210px)] overflow-y-auto pr-2 custom-scrollbar">
+            {modeTrack === "klaster" ? (
+              daftarKlaster.map((klaster, idx) => {
+                const isSelected = klaster.klaster_id === selectedKlaster?.klaster_id
+                const profil = profilSekolah.get(klaster.sekolah_npsn)
+                const namaSekolah = profil?.nama ?? klaster.label ?? "Sekolah"
+                const skor = typeof klaster.skor_prioritas === "number" ? klaster.skor_prioritas : 75
+                const prioritasTxt = kePrioritas(skor)
+                const kodeKlaster = formatKodeKlaster(klaster.klaster_id, idx)
+                const aduanCount = klaster.jumlah_vote_terhitung || 4 - (idx % 3)
+                const waktu = getWaktuRelatif(idx)
 
-              return (
-                <div
-                  key={klaster.klaster_id}
-                  onClick={() => handleSelectKlaster(klaster.klaster_id)}
-                  className={`p-4 rounded-xl transition-all cursor-pointer select-none bg-white ${
-                    isSelected
-                      ? "border-2 border-[#0B3052] shadow-sm"
-                      : "border border-slate-200/90 hover:border-slate-300"
-                  }`}
-                >
-                  {/* Baris 1: Kode - Nama Sekolah - Badge Prioritas */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600 shrink-0">
-                        {kodeKlaster}
-                      </span>
-                      <h3 className="font-bold text-xs sm:text-[13px] text-slate-900 truncate">
-                        {namaSekolah}
-                      </h3>
-                    </div>
+                return (
+                  <div
+                    key={klaster.klaster_id}
+                    onClick={() => handleSelectKlaster(klaster.klaster_id)}
+                    className={`p-4 rounded-xl transition-all cursor-pointer select-none bg-white ${
+                      isSelected
+                        ? "border-2 border-[#0B3052] shadow-sm"
+                        : "border border-slate-200/90 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600 shrink-0">
+                          {kodeKlaster}
+                        </span>
+                        <h3 className="font-bold text-xs sm:text-[13px] text-slate-900 truncate">
+                          {namaSekolah}
+                        </h3>
+                      </div>
 
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                        prioritasTxt === "Kritis"
-                          ? "bg-rose-50 text-rose-600 border-rose-200/70"
-                          : prioritasTxt === "Tinggi"
-                            ? "bg-amber-50 text-amber-700 border-amber-200/70"
-                            : "bg-blue-50 text-blue-700 border-blue-200/70"
-                      }`}
-                    >
-                      {prioritasTxt}
-                    </span>
-                  </div>
-
-                  {/* Baris 2: Skor - Jumlah Aduan - Timestamp */}
-                  <div className="mt-3 flex items-center justify-between text-xs pt-1 border-t border-slate-50">
-                    <div className="flex items-center gap-3">
                       <span
-                        className={`font-black ${
-                          skor >= 70 ? "text-rose-600" : "text-slate-800"
+                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+                          prioritasTxt === "Kritis"
+                            ? "bg-rose-50 text-rose-600 border-rose-200/70"
+                            : prioritasTxt === "Tinggi"
+                              ? "bg-amber-50 text-amber-700 border-amber-200/70"
+                              : "bg-blue-50 text-blue-700 border-blue-200/70"
                         }`}
                       >
-                        {skor >= 70 && !isSelected && <span className="mr-1">!</span>}
-                        Skor {skor.toFixed(1)}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                        <FileCheck className="h-3 w-3 text-slate-400" />
-                        {aduanCount} Aduan
+                        {prioritasTxt}
                       </span>
                     </div>
 
-                    <span className="text-[11px] text-slate-400 font-normal">{waktu}</span>
+                    <div className="mt-3 flex items-center justify-between text-xs pt-1 border-t border-slate-50">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`font-black ${
+                            skor >= 70 ? "text-rose-600" : "text-slate-800"
+                          }`}
+                        >
+                          {skor >= 70 && !isSelected && <span className="mr-1">!</span>}
+                          Skor {skor.toFixed(1)}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                          <FileCheck className="h-3 w-3 text-slate-400" />
+                          {aduanCount} Aduan
+                        </span>
+                      </div>
+
+                      <span className="text-[11px] text-slate-400 font-normal">{waktu}</span>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })
+            ) : (
+              daftarMandiri.map((mandiri, idx) => {
+                const isSelected = mandiri.id === selectedMandiri?.id
+                const profil = profilSekolah.get(mandiri.sekolah_npsn)
+                const namaSekolah = mandiri.sekolah_nama ?? profil?.nama ?? "Sekolah"
+                const waktu = getWaktuRelatif(idx)
+
+                return (
+                  <div
+                    key={mandiri.id}
+                    onClick={() => handleSelectMandiri(mandiri.id)}
+                    className={`p-4 rounded-xl transition-all cursor-pointer select-none bg-white ${
+                      isSelected
+                        ? "border-2 border-[#0B3052] shadow-sm"
+                        : "border border-slate-200/90 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600 shrink-0">
+                          {mandiri.tracking_id.slice(0, 16)}
+                        </span>
+                        <h3 className="font-bold text-xs sm:text-[13px] text-slate-900 truncate">
+                          {namaSekolah}
+                        </h3>
+                      </div>
+
+                      <span
+                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+                          mandiri.status_sanggahan === "divalidasi"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/70"
+                            : mandiri.status_sanggahan === "ditolak"
+                              ? "bg-slate-100 text-slate-700 border-slate-200/70"
+                              : "bg-amber-50 text-amber-700 border-amber-200/70"
+                        }`}
+                      >
+                        {mandiri.status_sanggahan === "divalidasi"
+                          ? "Divalidasi"
+                          : mandiri.status_sanggahan === "ditolak"
+                            ? "Ditolak"
+                            : "Menunggu"}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 text-xs text-slate-600 line-clamp-1">
+                      {mandiri.deskripsi}
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between text-xs pt-1 border-t border-slate-50">
+                      <span className="text-[11px] font-semibold text-blue-700">
+                        {mandiri.fasilitas_terkait || "Sarpras Umum"}
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-normal flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {waktu}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
 
-        {/* ================= SISI KANAN (7 Cols): DETAIL KLASTER TERPILIH ================= */}
-        <div className="lg:col-span-7 space-y-5">
-          {/* ── CARD 1: Identitas Klaster, 3 KPI Sejajar, & Keputusan Verifikasi ── */}
+        {/* ================= SISI KANAN (7 Cols): DETAIL TERPILIH ================= */}
+        <div className="lg:col-span-7 space-y-5 max-h-[calc(100vh-210px)] overflow-y-auto pr-2 custom-scrollbar">
+          {/* ── CARD 1: Identitas, 3 KPI Sejajar, & Keputusan Verifikasi ── */}
           <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
-            {/* Header: Klaster Terpilih + Kecamatan & Info Kepsek NIP */}
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-bold text-slate-700 border border-slate-200">
-                  KLASTER TERPILIH: {formatKodeKlaster(selectedKlaster.klaster_id, 0)}
+                  {modeTrack === "klaster"
+                    ? `KLASTER TERPILIH: ${formatKodeKlaster(selectedKlaster?.klaster_id || "", 0)}`
+                    : `ADUAN MANDIRI: ${selectedMandiri?.tracking_id || "LAP-2026"}`}
                 </span>
                 <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 border border-slate-200">
-                  {selectedSekolahObj?.alamat ? "Kec. Sukodadi" : "Kec. Sukodadi"}
+                  Kec. Lamongan
                 </span>
               </div>
 
@@ -439,59 +553,77 @@ export default function AntrianValidasi() {
               </h2>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <span className="font-mono text-xs font-bold text-slate-500">
-                  NPSN {selectedKlaster.sekolah_npsn}
+                  NPSN {npsnAktif}
                 </span>
                 <span className="rounded-full bg-rose-50 text-rose-700 border border-rose-200/80 px-3 py-1 text-xs font-bold">
-                  Ruang Kelas Rusak Berat (Atap Runtuh Paruh)
+                  {modeTrack === "klaster"
+                    ? "Ruang Kelas Rusak Berat (Atap Runtuh Paruh)"
+                    : selectedMandiri?.fasilitas_terkait || "Sarpras Rusak Berat"}
                 </span>
               </div>
             </div>
 
             {/* 3 KPI Box Sejajar (Grid 3 Kolom Sesuai Mockup) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
-              {/* Box 1: Volume Aduan */}
+              {/* Box 1 */}
               <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-1">
-                <span className="block text-xs text-slate-500 font-medium">Volume Aduan</span>
+                <span className="block text-xs text-slate-500 font-medium">
+                  {modeTrack === "klaster" ? "Volume Aduan" : "Tipe Pelaporan"}
+                </span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-slate-900">{totalAduanValid}</span>
-                  <span className="text-xs text-slate-500 font-normal">warga</span>
+                  <span className="text-2xl font-black text-slate-900">
+                    {modeTrack === "klaster" ? totalAduanValid : "Mandiri"}
+                  </span>
+                  {modeTrack === "klaster" && <span className="text-xs text-slate-500 font-normal">warga</span>}
                 </div>
                 <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 pt-0.5">
                   <Check className="h-3 w-3 stroke-[3]" />
-                  <span>Geotagging cocok</span>
+                  <span>{modeTrack === "klaster" ? "Geotagging cocok" : "NIK Terenkripsi PDP"}</span>
                 </div>
               </div>
 
-              {/* Box 2: Skor Dampak KBM */}
+              {/* Box 2 */}
               <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3.5 space-y-1">
-                <span className="block text-xs text-slate-500 font-medium">Skor Dampak KBM</span>
+                <span className="block text-xs text-slate-500 font-medium">
+                  {modeTrack === "klaster" ? "Skor Dampak KBM" : "Status Sanggahan"}
+                </span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-rose-600">{skorAktif.toFixed(1)}</span>
-                  <span className="text-xs text-slate-400 font-normal">/100</span>
+                  <span className="text-2xl font-black text-rose-600">
+                    {modeTrack === "klaster" ? skorAktif.toFixed(1) : selectedMandiri?.status_sanggahan.toUpperCase() || "MENUNGGU"}
+                  </span>
+                  {modeTrack === "klaster" && <span className="text-xs text-slate-400 font-normal">/100</span>}
                 </div>
                 <p className="text-[11px] font-semibold text-rose-600 pt-0.5 truncate">
-                  Aktivitas belajar terhenti
+                  {modeTrack === "klaster" ? "Aktivitas belajar terhenti" : "Menunggu verifikasi teknis"}
                 </p>
               </div>
 
-              {/* Box 3: AI Vector Matching */}
+              {/* Box 3 */}
               <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3.5 space-y-1">
-                <span className="block text-xs text-slate-500 font-medium">AI Vector Matching</span>
+                <span className="block text-xs text-slate-500 font-medium">
+                  {modeTrack === "klaster" ? "AI Vector Matching" : "Jalur Verifikasi"}
+                </span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-[#0B3052]">0.88</span>
-                  <span className="text-xs text-slate-500 font-normal">Cosine</span>
+                  <span className="text-2xl font-black text-[#0B3052]">
+                    {modeTrack === "klaster" ? "0.88" : "Manual"}
+                  </span>
+                  <span className="text-xs text-slate-500 font-normal">
+                    {modeTrack === "klaster" ? "Cosine" : "Disdik"}
+                  </span>
                 </div>
                 <p className="text-[11px] font-semibold text-blue-600 pt-0.5 truncate">
-                  Tingkat kemiripan valid
+                  {modeTrack === "klaster" ? "Tingkat kemiripan valid" : "Audit Berita Acara"}
                 </p>
               </div>
             </div>
 
-            {/* Baris Bawah: Keputusan Verifikasi Klaster + Tombol Sahkan & Tolak */}
+            {/* Baris Bawah: Keputusan Verifikasi Klaster / Mandiri */}
             <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
                 <FileText className="h-4 w-4 text-slate-500" />
-                <span>Keputusan Verifikasi Klaster</span>
+                <span>
+                  {modeTrack === "klaster" ? "Keputusan Verifikasi Klaster" : "Keputusan Verifikasi Aduan Mandiri"}
+                </span>
               </div>
 
               <div className="flex items-center gap-2.5">
@@ -501,7 +633,7 @@ export default function AntrianValidasi() {
                   className="h-10 bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-bold px-5 rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-1.5"
                 >
                   <Check className="h-4 w-4 stroke-[3]" />
-                  <span>Sahkan Klaster</span>
+                  <span>{modeTrack === "klaster" ? "Sahkan Klaster" : "Sahkan Aduan"}</span>
                 </Button>
                 <Button
                   onClick={() => {
@@ -542,11 +674,15 @@ export default function AntrianValidasi() {
             <div className="pt-3 border-t border-slate-100 space-y-2.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Jenis kerusakan</span>
-                <span className="font-bold text-slate-800">Atap runtuh</span>
+                <span className="font-bold text-slate-800">
+                  {modeTrack === "klaster" ? "Atap runtuh" : selectedMandiri?.kondisi_dilaporkan || "Rusak Berat"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Lokasi utama</span>
-                <span className="font-bold text-slate-800">Ruang kelas</span>
+                <span className="font-bold text-slate-800">
+                  {modeTrack === "klaster" ? "Ruang kelas" : selectedMandiri?.fasilitas_terkait || "Ruang Kelas"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Dampak operasional</span>
@@ -594,7 +730,9 @@ export default function AntrianValidasi() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900">
-              Alasan Penolakan Sanggahan Klaster
+              {modeTrack === "klaster"
+                ? "Alasan Penolakan Sanggahan Klaster"
+                : "Alasan Penolakan Aduan Mandiri"}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
               Pilih alasan resmi di bawah untuk dicatat pada riwayat audit dinas.

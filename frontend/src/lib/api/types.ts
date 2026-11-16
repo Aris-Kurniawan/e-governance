@@ -304,6 +304,7 @@ export interface LaporanPerluReview {
   kondisi_dilaporkan: string | null;
   deskripsi: string;
   status_sanggahan: string;
+  status_penanganan?: string | null;
   created_at: string;
   klaster: { id: string; label: string | null; kategori: string } | null;
 }

@@ -157,3 +157,65 @@
 .custom-severity-marker:hover .marker-circle-pin {
   transform: scale(1.14);
 }
+
+
+/* ── Custom Sleek Scrollbar untuk Split-View & Modul Dinas ── */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+
+/* ── Scroll Animation Utilities ── */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Header transition effects on scroll */
+.header-glass-scrolled {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 20px -2px rgba(11, 48, 82, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04) !important;
+  border-bottom-color: rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Nav Item hover animation */
+.nav-link-animated {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link-animated:hover {
+  transform: translateY(-1px);
+}
+
+.nav-link-animated:active {
+  transform: translateY(0);
+}

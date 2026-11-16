@@ -40,21 +40,34 @@ def upgrade() -> None:
     if bind.dialect.name != "mysql":
         return
 
-    op.add_column(
-        "laporan",
-        sa.Column("status_penanganan", _STATUS, nullable=True),
-    )
-    op.create_table(
-        "laporan_status_log",
-        sa.Column("id", sa.String(length=36), primary_key=True, nullable=False),
-        sa.Column("laporan_id", sa.String(length=36), nullable=False),
-        sa.Column("status", _LOG_STATUS, nullable=False),
-        sa.Column("alasan", sa.Text(), nullable=True),
-        sa.Column("actor_user_id", sa.String(length=36), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["laporan_id"], ["laporan.id"]),
-        sa.ForeignKeyConstraint(["actor_user_id"], ["users.id"]),
-    )
+    # Idempotent: run sebelumnya bisa gagal di tengah (MySQL DDL
+    # non-transactional) — mis. kolom sudah masuk tapi CREATE TABLE belum.
+    inspector = sa.inspect(bind)
+    if "status_penanganan" not in {
+        c["name"] for c in inspector.get_columns("laporan")
+    }:
+        op.add_column(
+            "laporan",
+            sa.Column("status_penanganan", _STATUS, nullable=True),
+        )
+
+    if not inspector.has_table("laporan_status_log"):
+        # charset/collate eksplisit: tabel existing memakai utf8mb4_unicode_ci,
+        # sedangkan default DB (utf8mb4_0900_ai_ci) membuat FK ke
+        # laporan.id/users.id ditolak MySQL (error 3780 incompatible).
+        op.create_table(
+            "laporan_status_log",
+            sa.Column("id", sa.String(length=36), primary_key=True, nullable=False),
+            sa.Column("laporan_id", sa.String(length=36), nullable=False),
+            sa.Column("status", _LOG_STATUS, nullable=False),
+            sa.Column("alasan", sa.Text(), nullable=True),
+            sa.Column("actor_user_id", sa.String(length=36), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(["laporan_id"], ["laporan.id"]),
+            sa.ForeignKeyConstraint(["actor_user_id"], ["users.id"]),
+            mysql_charset="utf8mb4",
+            mysql_collate="utf8mb4_unicode_ci",
+        )
 
 
 def downgrade() -> None:

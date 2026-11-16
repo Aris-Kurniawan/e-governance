@@ -9,6 +9,7 @@ import { listSekolah } from "@/lib/api/sekolah"
 import { listKlaster } from "@/lib/api/klaster"
 import { isLoggedIn } from "@/lib/api/auth"
 import type { RiwayatLaporanItem, KlasterListItem } from "@/lib/api/types"
+import ScrollReveal from "@/components/composite/ScrollReveal"
 import {
   Plus,
   CheckCircle2,
@@ -720,7 +721,7 @@ export default function RiwayatLaporan() {
                 )}
 
               {/* List Gabungan Isu Publik & Aduan Mandiri */}
-              {paginatedGabungan.map((item) => {
+              {paginatedGabungan.map((item, idx) => {
                 if (item.tipe === "klaster") {
                   const k = item.data
                   const profil = profilSekolah.get(k.sekolah_npsn)
@@ -731,10 +732,10 @@ export default function RiwayatLaporan() {
                   const pengerjaan = getStatusPengerjaan(k.status_penanganan, null, k.status_verifikasi)
 
                   return (
-                    <div
-                      key={item.id}
-                      className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-all space-y-4 max-w-full overflow-hidden"
-                    >
+                    <ScrollReveal key={item.id} direction="up" delay={(idx % 4) * 80} duration={400}>
+                      <div
+                        className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-all space-y-4 max-w-full overflow-hidden"
+                      >
                       {/* Top Header Card */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -813,16 +814,17 @@ export default function RiwayatLaporan() {
                         </Link>
                       </div>
                     </div>
-                  )
-                }
+                  </ScrollReveal>
+                )
+              }
 
-                // item.tipe === "mandiri"
-                const m = item.data
-                const profil = profilSekolah.get(m.sekolah_npsn)
-                const pengerjaan = getStatusPengerjaan(m.status_penanganan, m.status_sanggahan)
-                return (
+              // item.tipe === "mandiri"
+              const m = item.data
+              const profil = profilSekolah.get(m.sekolah_npsn)
+              const pengerjaan = getStatusPengerjaan(m.status_penanganan, m.status_sanggahan)
+              return (
+                <ScrollReveal key={item.id} direction="up" delay={(idx % 4) * 80} duration={400}>
                   <div
-                    key={item.id}
                     className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-all space-y-4 max-w-full overflow-hidden"
                   >
                     {/* Top Header Card */}
@@ -894,8 +896,9 @@ export default function RiwayatLaporan() {
                       </span>
                     </div>
                   </div>
-                )
-              })}
+                </ScrollReveal>
+              )
+            })}
 
               {/* Pagination Publik */}
               {totalPagesPublik > 1 && (
