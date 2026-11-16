@@ -1,9 +1,9 @@
 /**
  * F4.1 — Modul API §1 Auth.
  *
- * Token disimpan lewat `client.tokenStore` (localStorage) supaya `client.ts`
- * bisa memasang header `Authorization: Bearer` otomatis pada request
- * berikutnya. Field `nik` tidak pernah disimpan di sisi FE (INTERFACES.md §1).
+ * Token disimpan lewat `client.tokenStore`; lokasi penyimpanan mengikuti
+ * pilihan sesi user dan dipasang otomatis pada header request oleh `client.ts`.
+ * Field `nik` tidak pernah disimpan di sisi FE (INTERFACES.md §1).
  */
 
 import { getData, postData, tokenStore } from "./client";
@@ -15,13 +15,17 @@ import type {
 } from "./types";
 
 /** `POST /auth/login` — publik. Sukses → token tersimpan di `tokenStore`. */
-export async function login(email: string, password: string): Promise<LoginResponse> {
+export async function login(
+  email: string,
+  password: string,
+  remember = false,
+): Promise<LoginResponse> {
   const data = await postData<LoginResponse>(
     "/auth/login",
     { email, password },
     undefined,
   );
-  tokenStore.set(data.access_token, data.refresh_token);
+  tokenStore.set(data.access_token, data.refresh_token, remember);
   return data;
 }
 

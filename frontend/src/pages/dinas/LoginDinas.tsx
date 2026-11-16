@@ -11,7 +11,6 @@ import {
   EyeOff,
   ShieldCheck,
   AlertTriangle,
-  Sparkles,
 } from "lucide-react"
 
 /**
@@ -24,7 +23,7 @@ export default function LoginDinas() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberSession, setRememberSession] = useState(true)
+  const [rememberSession, setRememberSession] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -41,7 +40,7 @@ export default function LoginDinas() {
     setLoading(true)
     setError(null)
     try {
-      const profile = await login(identitas, password)
+      const profile = await login(identitas, password, rememberSession)
       const dinas = ["verifikator_dinas", "kepala_dinas", "admin"]
       navigate(dinas.includes(profile.role) ? "/dinas/dashboard" : "/dashboard")
     } catch (err) {
@@ -49,12 +48,6 @@ export default function LoginDinas() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleIsiAkunUji = (akunEmail: string, akunPass: string) => {
-    setEmail(akunEmail)
-    setPassword(akunPass)
-    setError(null)
   }
 
   return (
@@ -177,33 +170,6 @@ export default function LoginDinas() {
                 {loading ? "Memverifikasi Kredensial…" : "Masuk ke Panel Dinas"}
               </Button>
 
-              {/* Pintasan Akun Uji Cepat */}
-              <div className="pt-4 border-t border-white/10 mt-6">
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-blue-400" /> Akun Pengujian Sistem
-                  </span>
-                  <span className="text-[10px] text-white/35">Klik untuk mengisi</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-left">
-                  <button
-                    type="button"
-                    onClick={() => handleIsiAkunUji("bambang@simakis.id", "Dinas123!")}
-                    className="p-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs transition-colors cursor-pointer text-left"
-                  >
-                    <div className="font-bold text-blue-300">Bambang H., S.T.</div>
-                    <div className="text-[10px] text-white/45 truncate">Verifikator Sarpras</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleIsiAkunUji("kadis@simakis.id", "Dinas123!")}
-                    className="p-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs transition-colors cursor-pointer text-left"
-                  >
-                    <div className="font-bold text-emerald-300">Kepala Dinas</div>
-                    <div className="text-[10px] text-white/45 truncate">Pengambil Kebijakan</div>
-                  </button>
-                </div>
-              </div>
             </form>
           </div>
         </div>

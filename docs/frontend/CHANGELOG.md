@@ -18,7 +18,33 @@ Format dokumen ini mengacu pada [Keep a Changelog](https://keepachangelog.com/id
 
 ## [Belum Rilis]
 
+### Keamanan
+- **Pembersihan login portal dinas (16 November 2026)**:
+  - `LoginDinas.tsx`: menghapus shortcut akun pengujian dan credential dari bundle frontend.
+  - `client.ts`, `auth.ts`, dan `AuthContext.tsx`: checkbox "Ingat sesi kedinasan" kini menentukan penyimpanan token. Sesi biasa memakai `sessionStorage`, sedangkan sesi yang dipilih user memakai `localStorage`.
+  - Refresh token mempertahankan lokasi penyimpanan sesi yang dipilih.
+
+### Verifikasi
+- `npm run build`: berhasil (`tsc` dan `vite build`).
+- Pencarian credential shortcut pada `frontend/src`, `frontend/public`, `backend`, dan `frontend/dist`: tidak ditemukan.
+
 ### Ditambahkan
+- **Penyederhanaan Iterasi Alur Pelaporan Warga & In-Form Baseline Dapodik (16 November 2026)**:
+  - `FormLaporan.tsx`: Menghapus screen pemblokir `!npsn` yang sebelumnya mewajibkan warga melewati Direktori Sekolah terlebih dahulu. Dropdown pemilih 62 sekolah ditambahkan langsung di langkah 1 form (otomatis terpilih dari profil warga atau parameter URL `?sekolah=`).
+  - Integrasi kartu **Data Resmi Dapodik (Baseline)** langsung di dalam form pelaporan: menampilkan metrik kondisi sarana (total unit, persen kondisi baik/rusak) serta chips fasilitas ruangan resmi yang mendukung fitur *Quick Fill* instan ke input lokasi ruang.
+  - `Direktori.tsx`: Menambahkan tombol aksi cepat **`+ Lapor`** di samping tombol *Lihat Data Baseline* pada setiap kartu sekolah, membuka form pelaporan dengan NPSN sekolah otomatis terisi (`/laporan/baru?sekolah=${school.npsn}`).
+  - `Landing.tsx`, `RiwayatLaporan.tsx`, `PublicLayout.tsx`: Mengalihkan seluruh tombol aksi CTA pelaporan ("Buat Laporan Baru", "Ambil Foto & Unggah Laporan", "Buat Aduan Baru") yang sebelumnya di-hardcode ke `/sekolah` agar langsung menuju form pelaporan `/laporan/baru`.
+
+- **Konsistensi Layout Portal Warga & Standarisasi Navbar Home (16 November 2026)**:
+  - `App.tsx`: Rute `/laporan/baru` disatukan ke dalam `PublicLayout` dengan perlindungan `ProtectedRoute`. Rute `/dashboard` dialihkan langsung ke `/laporan/wilayah`.
+  - Mengeliminasi kemunculan navbar ganda `WargaLayout` (yang sebelumnya memuat menu "Dashboard" terpisah tanpa tautan "Home" sehingga tampak seperti dashboard pemerintah).
+  - Seluruh antarmuka publik dan warga kini seragam menggunakan navbar terpadu: **`Home | Dashboard Wilayah | Klaster Isu | Direktori Sekolah | Riwayat Laporan | Tentang Data`**, dengan logo SIMAKIS mengarah ke beranda (`/`).
+  - `PublicLayout.tsx`: Label navigasi di flyout profil diselaraskan menjadi `Dashboard Wilayah` untuk warga dan `Dashboard Dinas` khusus staf dinas.
+  - `WargaLayout.tsx`: Navigasi desktop dan drawer mobile diselaraskan agar selalu memuat tautan `Home` (`/`).
+
+- **Integrasi Filter Dual-Track Antrean Validasi Klaster Sarpras Dinas (16 November 2026)**:
+  - `AntrianValidasi.tsx`: Menyambungkan filter **`Track Klaster Issue`** (konsumsi `GET /klaster` & verifikasi `PUT /klaster/{id}/verifikasi`) dan **`Track Issue Mandiri`** (konsumsi `GET /laporan/perlu-review` & validasi `PUT /laporan/{id}/status`).
+  - Menghubungkan indikator live status AI Pipeline dengan `GET /ai/status` serta membersihkan duplikasi kode komponen akibat konflik merge.
 - **Modal Konfirmasi Severity Otomatis Terbuka Setelah Submit Laporan (22 Oktober 2026 — DBG-024)**:
   - `FormLaporan.tsx` (halaman penuh): begitu `POST /laporan` mengembalikan `konfirmasi.perlu_konfirmasi = true`, modal `PertanyaanKonfirmasi` **langsung terbuka otomatis** (`setKonfirmasiOpen(true)`).
   - `ModalFormLaporan.tsx` (modal "Buat Aduan Baru" dari Detail Sekolah): perbaikan yang sama — sebelumnya komponen ini **membuang `res.konfirmasi`** sehingga pertanyaan severity tidak pernah muncul di jalur ini. Kini menyimpan `laporanId`, auto-open `PertanyaanKonfirmasi` (nested dialog), plus tombol "Jawab Sekarang" sebagai jalur alternatif dan penanda "terjawab".

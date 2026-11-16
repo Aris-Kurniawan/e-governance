@@ -3,7 +3,7 @@
  *
  * Satu-satunya tempat FE boleh bicara ke backend. Tanggung jawabnya:
  * - ungkap `data` dari amplop `{ data, meta }` (INTERFACES.md §0.1)
- * - pasang `Authorization: Bearer <access_token>` dari localStorage
+ * - pasang header Authorization dari token sesi browser
  * - memetakan respons gagal ke `ApiError` (INTERFACES.md §0.3)
  * - refresh token otomatis sekali saat 401, lalu mengulang request
  *
@@ -31,23 +31,35 @@ const ACCESS_TOKEN_KEY = "simakis_access_token";
 const REFRESH_TOKEN_KEY = "simakis_refresh_token";
 
 // ── Penyimpanan token ────────────────────────────────────────────────────────
-// Sengaja `localStorage`: hanya access/refresh token JWT, tidak ada data
-// pribadi. Field `nik` tidak pernah disimpan di sisi FE (INTERFACES.md §1).
+// Token sesi biasa berada di sessionStorage. Token hanya disimpan lintas
+// penutupan browser jika user memilih "Ingat sesi".
+
+function readToken(key: string): string | null {
+  return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+}
+
+function removeTokens(): void {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+}
 
 export const tokenStore = {
   get access(): string | null {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    return readToken(ACCESS_TOKEN_KEY);
   },
   get refresh(): string | null {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    return readToken(REFRESH_TOKEN_KEY);
   },
-  set(access: string, refresh: string | null): void {
-    localStorage.setItem(ACCESS_TOKEN_KEY, access);
-    if (refresh) localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+  set(access: string, refresh: string | null, remember = false): void {
+    removeTokens();
+    const store = remember ? localStorage : sessionStorage;
+    store.setItem(ACCESS_TOKEN_KEY, access);
+    if (refresh) store.setItem(REFRESH_TOKEN_KEY, refresh);
   },
   clear(): void {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    removeTokens();
     localStorage.removeItem("simakis_auth_user");
   },
 };
@@ -159,7 +171,8 @@ export async function refreshAccessToken(): Promise<boolean> {
         const body = (await res.json()) as Envelope<{ access_token: string; refresh_token?: string }>;
         const data = body.data;
         if (!data?.access_token) return false;
-        tokenStore.set(data.access_token, data.refresh_token ?? refresh);
+        const remember = localStorage.getItem(ACCESS_TOKEN_KEY) !== null;
+        tokenStore.set(data.access_token, data.refresh_token ?? refresh, remember);
         return true;
       } catch {
         return false;
