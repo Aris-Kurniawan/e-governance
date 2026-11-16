@@ -20,7 +20,7 @@ interface AuthContextType {
   role: Role | null
   roleLabel: string | null
   /** Login ke backend. Throw `ApiError` kalau kredensial ditolak. */
-  login: (email: string, password: string) => Promise<UserMe>
+  login: (email: string, password: string, remember?: boolean) => Promise<UserMe>
   /** Ambil ulang profil dari `GET /auth/me` (setelah refresh/halaman reload). */
   refreshUser: () => Promise<void>
   logout: () => void
@@ -53,8 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user])
 
-  const login = useCallback(async (email: string, password: string) => {
-    await apiLogin(email, password)
+  const login = useCallback(async (email: string, password: string, remember = false) => {
+    await apiLogin(email, password, remember)
     const profile = await apiMe()
     setUser(profile)
     setIsLoading(false)

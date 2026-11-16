@@ -1,12 +1,13 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useFetch } from "@/hooks/useFetch"
+import { useAuth } from "@/context/AuthContext"
 import PertanyaanKonfirmasi from "@/components/warga/PertanyaanKonfirmasi"
-import { detailSekolah } from "@/lib/api/sekolah"
+import { detailSekolah, listSekolah } from "@/lib/api/sekolah"
 import { kirimLaporan, uploadFotoBukti } from "@/lib/api/laporan"
 import { ApiError } from "@/lib/api/errors"
-import type { SekolahDetail, StatusKonfirmasi } from "@/lib/api/types"
+import type { SekolahDetail, SekolahList, StatusKonfirmasi } from "@/lib/api/types"
 import {
   CheckCircle2,
   Send,
@@ -17,7 +18,7 @@ import {
   ImageIcon,
   Copy,
   Check,
-  HelpCircle,
+  Building2,
 } from "lucide-react"
 
 type TipeTemuan = "mismatch" | "kerusakan_baru"
@@ -62,11 +63,15 @@ async function stripExif(file: File): Promise<File> {
 }
 
 export default function FormLaporan() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  // Rute /laporan/baru sudah dibungkus ProtectedRoute (App.tsx) — user belum
-  // login diarahkan ke /login?redirect=… otomatis sebelum halaman ini tampil.
-  const npsn = (searchParams.get("sekolah") || "").trim()
+  const { user } = useAuth()
+
+  // Inisialisasi sekolah: prioritaskan URL query ?sekolah=, lalu fallback ke profil user
+  const urlNpsn = (searchParams.get("sekolah") || "").trim()
+  const [selectedNpsn, setSelectedNpsn] = useState<string>(
+    urlNpsn || user?.sekolah_terkait_npsn || "",
+  )
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -79,24 +84,52 @@ export default function FormLaporan() {
   const [copied, setCopied] = useState(false)
   const [fotoFile, setFotoFile] = useState<File | null>(null)
   const [fotoError, setFotoError] = useState<string | null>(null)
-  const [fotoStatus, setFotoStatus] = useState<"kosong" | "terkirim" | "gagal">("kosong")
+  const [, setFotoStatus] = useState<"kosong" | "terkirim" | "gagal">("kosong")
   const [dragOver, setDragOver] = useState(false)
 
   // ── F4.13 — Konfirmasi severity pasca-laporan (opsional, §4.1) ────────────
   const [laporanId, setLaporanId] = useState<string | null>(null)
-  const [perluKonfirmasi, setPerluKonfirmasi] = useState(false)
+  const [, setPerluKonfirmasi] = useState(false)
   const [konfirmasiOpen, setKonfirmasiOpen] = useState(false)
-  const [konfirmasiStatus, setKonfirmasiStatus] = useState<StatusKonfirmasi | null>(null)
-  const [konfirmasiKondisi, setKonfirmasiKondisi] = useState<string | null>(null)
+  const [, setKonfirmasiStatus] = useState<StatusKonfirmasi | null>(null)
+  const [, setKonfirmasiKondisi] = useState<string | null>(null)
 
+  // Fetch daftar seluruh sekolah (untuk pilihan dropdown instan)
+  const { state: sekolahListState } = useFetch(() => listSekolah({ page_size: 100 }), [])
+  const daftarSekolah: SekolahList[] =
+    sekolahListState.status === "success" ? sekolahListState.data.data : []
+
+  // Fetch data detail Dapodik sekolah terpilih
   const { state: sekolahState } = useFetch(
-    () => (npsn ? detailSekolah(npsn) : Promise.resolve(null as unknown as SekolahDetail)),
-    [npsn],
+    () => (selectedNpsn ? detailSekolah(selectedNpsn) : Promise.resolve(null as unknown as SekolahDetail)),
+    [selectedNpsn],
   )
   const sekolah = sekolahState.status === "success" ? sekolahState.data : null
   const sekolahTidakDitemukan =
     sekolahState.status === "error" && sekolahState.code === "NOT_FOUND"
   const sekolahDimuat = sekolah !== null && sekolahState.status === "success"
+
+  // Sinkronisasi jika URL berubah atau profil user selesai dimuat
+  useEffect(() => {
+    if (urlNpsn) {
+      if (urlNpsn !== selectedNpsn) setSelectedNpsn(urlNpsn)
+    } else if (!selectedNpsn && user?.sekolah_terkait_npsn) {
+      setSelectedNpsn(user.sekolah_terkait_npsn)
+    }
+  }, [urlNpsn, user?.sekolah_terkait_npsn, selectedNpsn])
+
+  const handlePilihSekolah = (npsnVal: string) => {
+    setSelectedNpsn(npsnVal)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (npsnVal) {
+        next.set("sekolah", npsnVal)
+      } else {
+        next.delete("sekolah")
+      }
+      return next
+    })
+  }
 
   const displayName = sekolah
     ? sekolah.nama
@@ -104,20 +137,13 @@ export default function FormLaporan() {
       ? "Memuat data sekolah…"
       : sekolahTidakDitemukan
         ? "Sekolah tidak ditemukan"
-        : `NPSN ${npsn}`
-
-  // Baseline dari data nyata — tanpa angka demo fallback.
-  const baselineText = sekolah?.ringkasan_sarpras?.total_unit
-    ? `${sekolah.ringkasan_sarpras.total_unit} unit sarpras: ${sekolah.ringkasan_sarpras.total_baik} baik dan ${sekolah.ringkasan_sarpras.total_rusak_berat} rusak berat.`
-    : sekolahState.status === "loading"
-      ? "Memuat baseline sekolah…"
-      : sekolahTidakDitemukan
-        ? "Baseline tidak tersedia — sekolah tidak ditemukan."
-        : "Baseline Dapodik tidak tersedia untuk sekolah ini."
+        : selectedNpsn
+          ? `NPSN ${selectedNpsn}`
+          : "Pilih Sekolah"
 
   const deskripsiValid =
     deskripsi.trim().length >= MIN_DESKRIPSI && deskripsi.length <= MAX_DESKRIPSI
-  const submitDisabled = loading || !deskripsiValid || !npsn || !sekolahDimuat
+  const submitDisabled = loading || !deskripsiValid || !selectedNpsn || !sekolahDimuat
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -156,7 +182,7 @@ export default function FormLaporan() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // Clipboard bisa diblokir browser — biarkan, user masih bisa salin manual.
+      // Clipboard bisa diblokir browser
     }
   }
 
@@ -167,14 +193,10 @@ export default function FormLaporan() {
     setErrorGagal(null)
     try {
       const res = await kirimLaporan({
-        sekolah_npsn: npsn,
+        sekolah_npsn: selectedNpsn,
         fasilitas_terkait: lokasiSpesifik.trim() || null,
-        // Tipe temuan dikirim sebagai prefix agar AI pipeline mendapat konteks
-        // jenis temuan tanpa menambah field baru di kontrak backend.
         deskripsi: `${LABEL_TIPE[tipeTemuan]} ${deskripsi.trim()}`,
       })
-      // Laporan sudah tersimpan — foto bukti menyusul. Gagal upload tidak
-      // membatalkan laporan; hanya ditandai di layar sukses.
       if (fotoFile) {
         try {
           const bersih = await stripExif(fotoFile)
@@ -185,18 +207,14 @@ export default function FormLaporan() {
         }
       }
       setTrackingId(res.tracking_id)
-      // F4.13 — banner konfirmasi hanya bila backend menandai perlu (§4.1:
-      // opsional, tidak memblokir laporan yang sudah tersimpan).
       setLaporanId(res.id)
       setPerluKonfirmasi(res.konfirmasi?.perlu_konfirmasi === true)
       setKonfirmasiStatus(res.konfirmasi?.perlu_konfirmasi ? "menunggu" : null)
-      // DBG-024 — langsung buka modal agar warga tidak melewatkan pertanyaan
-      // (sebelumnya hanya banner pasif tanpa pemicu otomatis).
       if (res.konfirmasi?.perlu_konfirmasi) setKonfirmasiOpen(true)
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === "UNAUTHORIZED") {
-          const redirect = encodeURIComponent(`/laporan/baru?sekolah=${encodeURIComponent(npsn)}`)
+          const redirect = encodeURIComponent(`/laporan/baru?sekolah=${encodeURIComponent(selectedNpsn)}`)
           navigate(`/login?redirect=${redirect}&action=report`)
           return
         }
@@ -219,25 +237,7 @@ export default function FormLaporan() {
     }
   }
 
-  // Tanpa ?sekolah= — arahkan warga memilih sekolah dulu, jangan menebak NPSN.
-  if (!npsn) {
-    return (
-      <div className="min-h-screen bg-slate-50/60 py-10 px-4 sm:px-6 flex items-center justify-center">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200/90 bg-white p-8 text-center shadow-xl space-y-4">
-          <h1 className="text-xl font-bold text-slate-900">Pilih Sekolah Terlebih Dahulu</h1>
-          <p className="text-sm text-slate-600 leading-relaxed">
-            Laporan harus terkait dengan sekolah tertentu. Buka Direktori Sekolah, lalu tekan
-            tombol &ldquo;Lapor&rdquo; pada kartu sekolah yang ingin diaudit.
-          </p>
-          <Button asChild className="rounded-xl bg-[#64748b] hover:bg-[#475569] text-white font-medium px-5 py-2.5 h-auto">
-            <Link to="/sekolah">Buka Direktori Sekolah</Link>
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  // Tampilan Sukses
+  // Tampilan Sukses Pengiriman Laporan
   if (trackingId) {
     return (
       <div className="min-h-screen bg-slate-50/60 py-12 px-4 sm:px-6 flex items-center justify-center">
@@ -248,91 +248,31 @@ export default function FormLaporan() {
           <div>
             <h1 className="text-xl font-bold text-slate-900">Laporan Berhasil Dikirim</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Laporan audit kamu sudah diterima dan sedang menunggu verifikasi oleh tim audit
-              partisipatif.
+              Laporan Anda untuk <span className="font-semibold text-slate-800">{displayName}</span> telah masuk ke
+              sistem SIMAKIS untuk diverifikasi.
             </p>
-            {fotoStatus === "terkirim" && (
-              <p className="mt-2 text-xs text-emerald-600 font-medium">Foto bukti berhasil diunggah.</p>
-            )}
-            {fotoStatus === "gagal" && (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 text-left leading-relaxed">
-                Foto bukti gagal diunggah — <strong>laporan tetap tersimpan dan sah</strong> tanpa
-                foto. Kamu bisa melampirkan bukti saat verifikasi jika diminta.
-              </div>
-            )}
-            <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-xs text-slate-600 border border-slate-200">
-              <span>
-                Tracking ID: <strong className="font-mono text-slate-900">{trackingId}</strong>
-              </span>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+            <span className="text-xs text-slate-500 font-medium">Nomor Tracking Laporan</span>
+            <div className="flex items-center justify-center gap-2">
+              <span className="font-mono text-base font-bold text-slate-900">{trackingId}</span>
               <button
                 type="button"
                 onClick={handleCopyTracking}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
-                aria-label="Salin Tracking ID"
+                className="text-slate-500 hover:text-slate-700 p-1 cursor-pointer transition-colors"
+                title="Salin nomor tracking"
               >
-                {copied ? (
-                  <>
-                    <Check className="h-3 w-3 text-emerald-600" /> Tersalin
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" /> Salin
-                  </>
-                )}
+                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
+            <p className="text-[11px] text-slate-400">
+              Simpan nomor ini untuk memantau status tindak lanjut sarpras.
+            </p>
           </div>
 
-          {/* F4.13 T3 — banner konfirmasi (opsional, SPEC §19.6: tidak memblokir).
-              DBG-024 — juga tampil saat status masih "menunggu" (warga menutup
-              modal tanpa menjawab) agar pertanyaan tetap bisa diakses. */}
-          {perluKonfirmasi && (konfirmasiStatus === null || konfirmasiStatus === "menunggu") && (
-            <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3.5 text-left space-y-2.5">
-              <p className="text-xs text-blue-950 leading-relaxed flex items-start gap-2">
-                <HelpCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                <span>
-                  <strong>AI menemukan pola pada deskripsimu</strong> — jawab beberapa pertanyaan
-                  singkat agar tingkat kerusakan lebih akurat (±1 menit). Boleh juga dilewati,
-                  laporanmu tetap sah.
-                </span>
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setKonfirmasiOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 cursor-pointer"
-                >
-                  <HelpCircle className="h-3.5 w-3.5" /> Jawab Sekarang
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setKonfirmasiStatus("dilewati")}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold px-3.5 py-2 border border-slate-200 cursor-pointer"
-                >
-                  Lewati
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Status ringkas konfirmasi setelah diputuskan */}
-          {konfirmasiStatus && konfirmasiStatus !== "menunggu" && (
-            <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              Konfirmasi tingkat kerusakan:{" "}
-              <strong className="text-slate-700">
-                {konfirmasiStatus === "terjawab" ? "Terjawab" : "Dilewati"}
-              </strong>
-              {konfirmasiKondisi && (
-                <span className="text-slate-400 font-normal">
-                  · kondisi: {konfirmasiKondisi.replace(/_/g, " ")}
-                </span>
-              )}
-            </p>
-          )}
-
           <div className="flex flex-wrap justify-center gap-3 pt-2">
-            <Button asChild className="rounded-xl bg-[#64748b] hover:bg-[#475569] text-white font-medium">
+            <Button asChild className="rounded-xl bg-[#0B3052] hover:bg-[#07213A] text-white font-medium">
               <Link to="/laporan/riwayat">Lihat Riwayat Laporan</Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl border-slate-200">
@@ -341,7 +281,7 @@ export default function FormLaporan() {
           </div>
         </div>
 
-        {/* F4.13 T3 — modal pertanyaan konfirmasi */}
+        {/* F4.13 T3 — modal pertanyaan konfirmasi AI */}
         {laporanId && (
           <PertanyaanKonfirmasi
             laporanId={laporanId}
@@ -353,7 +293,6 @@ export default function FormLaporan() {
                 setKonfirmasiStatus(hasil.status)
                 setKonfirmasiKondisi(hasil.kondisi_dilaporkan)
               } else {
-                // 409 — sudah pernah dijawab (mis. tab lain) → tutup + tandai.
                 setKonfirmasiStatus("terjawab")
               }
             }}
@@ -364,8 +303,9 @@ export default function FormLaporan() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 py-10 px-4 sm:px-6 flex items-center justify-center">
-      <div className="w-full max-w-lg rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xl space-y-5">
+    <div className="min-h-screen bg-slate-50/60 py-10 px-4 sm:px-6 flex items-center justify-center font-sans">
+      {/* Container Card Form Utama */}
+      <div className="w-full max-w-2xl rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xl space-y-6">
         {errorGagal && (
           <div
             role="alert"
@@ -375,16 +315,14 @@ export default function FormLaporan() {
           </div>
         )}
 
-        {/* ── Header ── */}
+        {/* ── Header Card ── */}
         <div className="relative">
-          {/* Badge tahap */}
           <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/60 text-xs font-semibold px-3 py-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/70 text-xs font-semibold px-3 py-1">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-              Tahap 2 · Sanggahan Fakta Lapangan
+              Audit Partisipatif · Sanggahan Fakta Lapangan
             </span>
 
-            {/* Tombol tutup bulat */}
             <button
               type="button"
               onClick={handleBack}
@@ -396,61 +334,204 @@ export default function FormLaporan() {
           </div>
 
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug mt-3">
-            Audit Ketidaksesuaian Data Sekolah
+            Audit Ketidaksesuaian Fasilitas Sekolah
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-            Bandingkan catatan Dapodik dengan kondisi riil di {displayName}. Laporanmu akan
-            diverifikasi oleh tim audit partisipatif.
+            Periksa catatan resmi Dapodik sekolah di bawah ini, lalu laporkan jika terdapat kerusakan fisik atau
+            ketidaksesuaian dengan kondisi lapangan nyata.
           </p>
         </div>
 
         {/* ── Body Form ── */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Sekolah yang Diperiksa */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-              Sekolah yang Diperiksa
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* 1. Pemilihan Sekolah */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+              1. Sekolah yang Diperiksa <span className="text-rose-500">*</span>
             </label>
-            <div className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm text-slate-800 font-medium">
-              {displayName} (NPSN: {npsn})
-            </div>
+
+            <select
+              value={selectedNpsn}
+              onChange={(e) => handlePilihSekolah(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 font-medium focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] cursor-pointer"
+            >
+              <option value="">-- Pilih Sekolah yang Ingin Diaudit --</option>
+              {daftarSekolah.map((s) => (
+                <option key={s.npsn} value={s.npsn}>
+                  {s.nama} ({s.jenjang} - NPSN {s.npsn})
+                </option>
+              ))}
+            </select>
+
+            {user?.sekolah_terkait_npsn && selectedNpsn === user.sekolah_terkait_npsn && (
+              <p className="text-[11px] text-blue-600 font-medium">
+                ✓ Otomatis terpilih sesuai profil sekolah akun Anda.
+              </p>
+            )}
+
             {sekolahTidakDitemukan && (
-              <p className="mt-1.5 text-[11px] text-red-600 leading-relaxed">
-                Sekolah dengan NPSN {npsn} tidak ditemukan — laporan tidak dapat dikirim. Pilih
-                sekolah lain dari{" "}
-                <Link to="/sekolah" className="underline font-semibold">
-                  Direktori Sekolah
-                </Link>
-                .
+              <p className="text-[11px] text-red-600 leading-relaxed">
+                Sekolah dengan NPSN {selectedNpsn} tidak ditemukan di database. Silakan pilih sekolah lain dari daftar.
               </p>
             )}
           </div>
 
-          {/* Catatan Baseline Dapodik */}
-          <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 flex items-start gap-2.5">
-            <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-bold text-blue-700">Catatan Baseline Dapodik</p>
-              <p className="text-xs text-blue-600 mt-0.5">{baselineText}</p>
-            </div>
-          </div>
+          {/* ── Kompartemen Data Resmi Dapodik (Baseline) Disatukan di Dalam Card ── */}
+          {selectedNpsn && sekolah ? (
+            <div className="rounded-2xl border border-blue-200/90 bg-gradient-to-b from-blue-50/70 to-indigo-50/30 p-4 sm:p-5 space-y-3.5 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-blue-100">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-[#0B3052] text-white flex items-center justify-center shrink-0">
+                    <Building2 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-800 block">
+                      Data Resmi Dapodik (Baseline)
+                    </span>
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                      {sekolah.nama}
+                    </h3>
+                  </div>
+                </div>
 
-          {/* Tipe Temuan Lapangan */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-800 mb-2">
-              Tipe Temuan Lapangan <span className="text-rose-500">*</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-blue-100/80 text-blue-700 border border-blue-200/60">
+                    NPSN {sekolah.npsn}
+                  </span>
+                  {sekolah.akreditasi && (
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Akreditasi {sekolah.akreditasi}
+                    </span>
+                  )}
+                  {sekolah.status_sekolah && (
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                      {sekolah.status_sekolah}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 4 Metrik Ringkasan Sarpras */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs">
+                  <span className="text-[10px] font-medium text-slate-400 block">Total Sarpras</span>
+                  <span className="text-base sm:text-lg font-black text-slate-800">
+                    {sekolah.ringkasan_sarpras?.total_unit ?? 0}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-emerald-200/80 bg-white p-2.5 shadow-2xs">
+                  <span className="text-[10px] font-medium text-emerald-600 block">Kondisi Baik</span>
+                  <span className="text-base sm:text-lg font-black text-emerald-600">
+                    {sekolah.ringkasan_sarpras?.total_baik ?? 0}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-amber-200/80 bg-white p-2.5 shadow-2xs">
+                  <span className="text-[10px] font-medium text-amber-600 block">Rusak Ringan</span>
+                  <span className="text-base sm:text-lg font-black text-amber-600">
+                    {sekolah.ringkasan_sarpras?.total_rusak_ringan ?? 0}
+                  </span>
+                </div>
+                <div className="rounded-xl border border-rose-200/80 bg-white p-2.5 shadow-2xs">
+                  <span className="text-[10px] font-medium text-rose-600 block">Rusak Berat</span>
+                  <span className="text-base sm:text-lg font-black text-rose-600">
+                    {sekolah.ringkasan_sarpras?.total_rusak_berat ?? 0}
+                  </span>
+                </div>
+              </div>
+
+              {/* Rincian Ruang & Fasilitas dari Dapodik (Quick-Pick Chips) */}
+              {sekolah.kondisi_sarana && sekolah.kondisi_sarana.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-600">
+                      Fasilitas tercatat di Dapodik (klik untuk pilih cepat ke lokasi):
+                    </span>
+                    <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+                      Quick Select
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                    {sekolah.kondisi_sarana.map((ks) => {
+                      const totalRusak =
+                        (ks.kondisi_rusak_ringan || 0) +
+                        (ks.kondisi_rusak_sedang || 0) +
+                        (ks.kondisi_rusak_berat || 0)
+                      const isSelected =
+                        lokasiSpesifik.trim().toLowerCase() === ks.nama_ruang.toLowerCase()
+
+                      return (
+                        <button
+                          key={ks.id}
+                          type="button"
+                          onClick={() => setLokasiSpesifik(ks.nama_ruang)}
+                          className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                            isSelected
+                              ? "bg-[#0B3052] text-white border-[#0B3052] shadow-xs font-bold"
+                              : "bg-white text-slate-700 border-slate-200/90 hover:border-blue-400 hover:bg-blue-50/50"
+                          }`}
+                        >
+                          <span>{ks.nama_ruang}</span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                              isSelected
+                                ? "bg-white/20 text-white"
+                                : totalRusak > 0
+                                  ? "bg-rose-50 text-rose-600"
+                                  : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {ks.jumlah} unit
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Edukasi Transparansi Dapodik */}
+              <div className="flex items-start gap-2 pt-1 text-[11px] text-slate-500 leading-relaxed border-t border-blue-100/60">
+                <Info className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                <span>
+                  Data di atas adalah rekaman resmi Dapodik semester ini. Laporkan ketidaksesuaian atau insiden
+                  kerusakan fisik nyata pada formulir di bawah.
+                </span>
+              </div>
+            </div>
+          ) : selectedNpsn && sekolahState.status === "loading" ? (
+            <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 text-center text-xs text-slate-500">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[#0B3052]" />
+                Memuat rekaman data resmi Dapodik...
+              </span>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-center space-y-1">
+              <p className="text-xs font-semibold text-slate-700">
+                Pilih sekolah pada langkah 1 untuk melihat rekaman resmi Dapodik
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Data sarpras Dapodik akan ditampilkan otomatis sebagai baseline sebelum Anda menulis laporan.
+              </p>
+            </div>
+          )}
+
+          {/* 2. Tipe Temuan Lapangan */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+              2. Tipe Temuan Lapangan <span className="text-rose-500">*</span>
             </label>
             <div className="space-y-2">
               {[
                 {
                   value: "mismatch" as TipeTemuan,
                   label: "Ketidaksesuaian Data (Mismatch)",
-                  desc: "Catatan resmi berbeda dari kondisi fisik yang ditemukan.",
+                  desc: "Kondisi fisik di lapangan tidak sesuai dengan catatan resmi Dapodik di atas.",
                 },
                 {
                   value: "kerusakan_baru" as TipeTemuan,
                   label: "Kerusakan Baru / Insiden Mendadak",
-                  desc: "Kerusakan baru setelah verifikasi semester terakhir.",
+                  desc: "Kerusakan terjadi baru-baru ini setelah pemutakhiran data semester.",
                 },
               ].map((opt) => {
                 const isChecked = tipeTemuan === opt.value
@@ -460,14 +541,13 @@ export default function FormLaporan() {
                     onClick={() => setTipeTemuan(opt.value)}
                     className={`rounded-xl p-3.5 flex items-start gap-3.5 cursor-pointer transition-all ${
                       isChecked
-                        ? "border-2 border-slate-800 bg-white"
+                        ? "border-2 border-[#0B3052] bg-white shadow-2xs"
                         : "border border-slate-200 hover:border-slate-300 bg-white"
                     }`}
                   >
-                    {/* Custom Radio Button */}
                     {isChecked ? (
-                      <div className="h-4 w-4 rounded-full border-2 border-slate-800 flex items-center justify-center shrink-0 mt-0.5">
-                        <div className="h-2 w-2 rounded-full bg-slate-800" />
+                      <div className="h-4 w-4 rounded-full border-2 border-[#0B3052] flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="h-2 w-2 rounded-full bg-[#0B3052]" />
                       </div>
                     ) : (
                       <div className="h-4 w-4 rounded-full border border-slate-300 shrink-0 mt-0.5" />
@@ -484,38 +564,35 @@ export default function FormLaporan() {
                 )
               })}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1.5">
-              Pilihan ini dilampirkan otomatis ke awal deskripsi agar AI mengenali jenis temuan.
-            </p>
           </div>
 
-          {/* Lokasi Ruang Spesifik */}
+          {/* 3. Lokasi Ruang Spesifik */}
           <div>
-            <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-              Lokasi Ruang Spesifik{" "}
-              <span className="text-slate-400 font-normal">(opsional)</span>
+            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+              3. Lokasi Ruang / Fasilitas Terkait{" "}
+              <span className="text-slate-400 font-normal lowercase">(opsional)</span>
             </label>
             <input
               type="text"
               value={lokasiSpesifik}
               onChange={(e) => setLokasiSpesifik(e.target.value)}
-              placeholder="Contoh: Gedung Barat, lantai 1 sisi utara"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 transition-colors"
+              placeholder="Contoh: Ruang Kelas 3, Gedung Barat sisi utara"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] transition-colors"
             />
           </div>
 
-          {/* Deskripsi Fakta Lapangan */}
+          {/* 4. Deskripsi Fakta Lapangan */}
           <div>
-            <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-              Deskripsi Fakta Lapangan <span className="text-rose-500">*</span>
+            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+              4. Deskripsi Fakta Lapangan <span className="text-rose-500">*</span>
             </label>
             <textarea
               value={deskripsi}
               onChange={(e) => setDeskripsi(e.target.value)}
               rows={3}
               maxLength={MAX_DESKRIPSI}
-              placeholder="Jelaskan kondisi riil secara objektif. Contoh: Genteng pecah sehingga air menetes ke meja praktikum..."
-              className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 transition-colors resize-none min-h-[96px]"
+              placeholder="Jelaskan kondisi riil secara objektif. Contoh: Atap ruang kelas runtuh sebelah barat, plafon jebol dan air merembes saat hujan sehingga ruang tidak aman digunakan..."
+              className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm placeholder:text-slate-400 focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] transition-colors resize-none min-h-[96px]"
               required
             />
             <div className="flex items-start justify-between gap-3 mt-1">
@@ -538,14 +615,17 @@ export default function FormLaporan() {
             </div>
           </div>
 
-          {/* Lampiran Bukti Foto */}
+          {/* 5. Lampiran Bukti Foto */}
           <div>
-            <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-              Lampiran Bukti Foto{" "}
-              <span className="text-slate-400 font-normal">(opsional)</span>
+            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+              5. Lampiran Bukti Foto{" "}
+              <span className="text-slate-400 font-normal lowercase">(opsional)</span>
             </label>
             <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragOver(true)
+              }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
@@ -553,8 +633,8 @@ export default function FormLaporan() {
                 dragOver
                   ? "border-slate-400 bg-slate-50"
                   : fotoFile
-                  ? "border-emerald-300 bg-emerald-50/30"
-                  : "border-slate-200 hover:border-slate-300 bg-slate-50/20"
+                    ? "border-emerald-300 bg-emerald-50/30"
+                    : "border-slate-200 hover:border-slate-300 bg-slate-50/20"
               }`}
             >
               <input
@@ -570,7 +650,11 @@ export default function FormLaporan() {
                   <p className="text-xs font-semibold text-emerald-700">{fotoFile.name}</p>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setFotoFile(null); setFotoError(null) }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setFotoFile(null)
+                      setFotoError(null)
+                    }}
                     className="text-[11px] text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                   >
                     Hapus file
@@ -586,37 +670,24 @@ export default function FormLaporan() {
                 </>
               )}
             </div>
-            {fotoError && (
-              <p className="text-[11px] text-rose-600 mt-1.5">{fotoError}</p>
-            )}
+            {fotoError && <p className="text-[11px] text-rose-600 mt-1.5">{fotoError}</p>}
             <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-              Foto diunggah sebagai bukti setelah laporan tersimpan; metadata EXIF dibuang di
-              browser sebelum unggah.
+              Foto diunggah sebagai bukti fisik; metadata EXIF GPS dibersihkan otomatis di browser demi privasi pelapor.
             </p>
           </div>
 
-          {/* Info Privasi (pengganti toggle anonim — backend selalu mencatat
-              pelapor untuk keperluan tracking, identitas tidak dipublikasikan) */}
+          {/* Info Privasi */}
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-slate-700 shrink-0 mt-0.5" />
             <div>
               <span className="text-sm font-semibold text-slate-800 block">
-                Privasi Pelapor
+                Privasi Terlindungi UU PDP No. 27/2022
               </span>
               <span className="text-xs text-slate-500 block mt-0.5 leading-relaxed">
-                Identitas kamu tidak ditampilkan ke publik. Laporan dilacak lewat Tracking ID
-                untuk proses verifikasi.
+                Identitas Anda tidak dipublikasikan secara terbuka. Laporan dilacak lewat nomor Tracking ID untuk proses
+                verifikasi lapangan Dinas Pendidikan.
               </span>
             </div>
-          </div>
-
-          {/* Disclaimer */}
-          <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 flex items-start gap-2.5">
-            <Info className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Laporan dikirim ke dinas untuk verifikasi. Jangan gunakan informasi sensitif
-              seperti NIK atau nama korban.
-            </p>
           </div>
 
           {/* Action Buttons */}
@@ -632,10 +703,10 @@ export default function FormLaporan() {
             <Button
               type="submit"
               disabled={submitDisabled}
-              className="rounded-xl bg-[#64748b] hover:bg-[#475569] text-white px-5 py-2.5 text-sm font-medium shadow flex items-center gap-2 cursor-pointer h-auto transition-colors disabled:opacity-50"
+              className="rounded-xl bg-[#0B3052] hover:bg-[#07213A] text-white px-5 py-2.5 text-sm font-bold shadow flex items-center gap-2 cursor-pointer h-auto transition-colors disabled:opacity-50"
             >
               {loading ? (
-                fotoFile ? "Mengirim & mengunggah…" : "Mengirim…"
+                fotoFile ? "Mengirim & mengunggah foto…" : "Mengirim laporan…"
               ) : (
                 <>
                   <Send className="h-4 w-4" /> Kirim Laporan

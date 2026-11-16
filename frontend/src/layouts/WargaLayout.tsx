@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom"
 import {
   Menu,
   X,
-  LayoutDashboard,
+  Home,
   BarChart2,
   FolderOpen,
   School,
@@ -64,7 +64,7 @@ export default function WargaLayout() {
           }`}
         >
           <div className="flex items-center gap-6 lg:gap-8">
-            <Link to="/dashboard" className="flex items-center gap-2.5 sm:gap-3">
+            <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
               <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white border border-slate-200/80 p-1 shadow-xs shrink-0 overflow-hidden">
                 <img
                   src="/logo-simakis-icon.png"
@@ -83,7 +83,7 @@ export default function WargaLayout() {
 
             {/* Navigasi Desktop */}
             <nav className="hidden items-center gap-1 md:flex lg:gap-1.5">
-              <Nav active={location.pathname === "/dashboard"} to="/dashboard" label="Dashboard" />
+              <Nav active={location.pathname === "/"} to="/" label="Home" />
               <Nav active={location.pathname === "/laporan/wilayah"} to="/laporan/wilayah" label="Dashboard Wilayah" />
               <Nav active={location.pathname.startsWith("/klaster")} to="/klaster" label="Klaster Isu" />
               <Nav active={location.pathname.startsWith("/sekolah")} to="/sekolah" label="Direktori Sekolah" />
@@ -98,7 +98,7 @@ export default function WargaLayout() {
               size="sm"
               className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-xs cursor-pointer h-9 px-3 sm:px-4 rounded-lg"
             >
-              <Link to="/sekolah" className="flex items-center gap-1.5">
+              <Link to="/laporan/baru" className="flex items-center gap-1.5">
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Buat Laporan</span>
                 <span className="sm:hidden">Lapor</span>
@@ -149,7 +149,7 @@ export default function WargaLayout() {
             >
               {/* Header panel: logo + avatar + tombol X */}
               <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 shrink-0">
-                <Link to="/dashboard" className="flex items-center gap-2.5" onClick={() => setIsMobileMenuOpen(false)}>
+                <Link to="/" className="flex items-center gap-2.5" onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="h-8 w-8 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-xs shrink-0 overflow-hidden">
                     <img
                       src="/logo-simakis-icon.png"
@@ -202,10 +202,10 @@ export default function WargaLayout() {
                   Menu Portal Warga
                 </span>
                 <MobileNav
-                  to="/dashboard"
-                  label="Dashboard Saya"
-                  icon={<LayoutDashboard className="h-4 w-4" />}
-                  active={location.pathname === "/dashboard"}
+                  to="/"
+                  label="Home / Beranda"
+                  icon={<Home className="h-4 w-4" />}
+                  active={location.pathname === "/"}
                 />
                 <MobileNav
                   to="/laporan/wilayah"
@@ -245,7 +245,11 @@ export default function WargaLayout() {
                   asChild
                   className="w-full bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-11 rounded-xl justify-center shadow-xs"
                 >
-                  <Link to="/sekolah" className="flex items-center gap-2">
+                  <Link
+                    to="/laporan/baru"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-2"
+                  >
                     <PlusCircle className="h-4 w-4" />
                     <span>Buat Laporan Baru</span>
                   </Link>
