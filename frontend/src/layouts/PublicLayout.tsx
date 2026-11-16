@@ -52,7 +52,7 @@ export default function PublicLayout() {
   const { isAuthenticated, user, role, roleLabel, logout } = useAuth()
 
   const isDinasStaff = role === "admin" || role === "verifikator_dinas" || role === "kepala_dinas"
-  const dashboardTarget = isDinasStaff ? "/dinas/dashboard" : "/dashboard"
+  const dashboardTarget = isDinasStaff ? "/dinas/dashboard" : "/laporan/wilayah"
 
   // ── Menu akun dropdown ─────────────────────
   const [isAccountOpen, setIsAccountOpen] = useState(false)
@@ -131,7 +131,19 @@ export default function PublicLayout() {
           {/* Right Area: Auth & Hamburger Toggle */}
           <div className="flex items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
-              <div className="relative" ref={accountContainerRef}>
+              <>
+                <Button
+                  asChild
+                  size="sm"
+                  className="bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-semibold shadow-xs cursor-pointer h-9 px-3 sm:px-4 rounded-xl hidden sm:flex items-center gap-1.5"
+                >
+                  <Link to="/laporan/baru">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span>Buat Laporan</span>
+                  </Link>
+                </Button>
+
+                <div className="relative" ref={accountContainerRef}>
                 <button
                   type="button"
                   onClick={() => setIsAccountOpen((prev) => !prev)}
@@ -197,13 +209,28 @@ export default function PublicLayout() {
                         type="button"
                         onClick={() => {
                           setIsAccountOpen(false)
+                          navigate("/laporan/baru")
+                        }}
+                        className="w-full px-3 py-2 rounded-xl text-left text-xs font-semibold text-[#0B3052] bg-blue-50/50 hover:bg-blue-50 flex items-center justify-between transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <PlusCircle className="h-4 w-4 text-[#0B3052]" />
+                          <span>Buat Laporan Baru</span>
+                        </div>
+                        <ArrowRight className="h-3 w-3 text-blue-400 group-hover:text-[#0B3052] transition-transform group-hover:translate-x-0.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAccountOpen(false)
                           navigate(dashboardTarget)
                         }}
                         className="w-full px-3 py-2 rounded-xl text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center justify-between transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5">
                           <LayoutDashboard className="h-4 w-4 text-slate-400 group-hover:text-[#0B3052]" />
-                          <span>Dashboard Saya</span>
+                          <span>{isDinasStaff ? "Dashboard Dinas" : "Dashboard Wilayah"}</span>
                         </div>
                         <ArrowRight className="h-3 w-3 text-slate-300 group-hover:text-slate-600 transition-transform group-hover:translate-x-0.5" />
                       </button>
@@ -241,6 +268,7 @@ export default function PublicLayout() {
                   </div>
                 )}
               </div>
+            </>
             ) : (
               <div className="hidden sm:flex items-center gap-2.5">
                 <Button asChild variant="ghost" size="sm" className="text-slate-700 hover:text-slate-900 text-xs font-semibold cursor-pointer">
@@ -379,9 +407,13 @@ export default function PublicLayout() {
                   <>
                     <Button
                       asChild
-                      className="w-full bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-11 rounded-xl justify-center shadow-xs"
+                      className="w-full bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-11 rounded-xl justify-center shadow-xs cursor-pointer"
                     >
-                      <Link to="/sekolah" className="flex items-center gap-2">
+                      <Link
+                        to="/laporan/baru"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-2"
+                      >
                         <PlusCircle className="h-4 w-4" />
                         <span>Buat Laporan Baru</span>
                       </Link>

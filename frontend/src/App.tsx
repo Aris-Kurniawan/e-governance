@@ -1,12 +1,11 @@
 import { Suspense, lazy } from "react"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 import { ErrorBoundary } from "@/components/errors/ErrorBoundary"
 import { AuthProvider } from "@/context/AuthContext"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import PublicLayout from "@/layouts/PublicLayout"
 import AuthLayout from "@/layouts/AuthLayout"
-import WargaLayout from "@/layouts/WargaLayout"
 import DinasLayout from "@/layouts/DinasLayout"
 import Landing from "@/pages/warga/Landing"
 
@@ -69,6 +68,7 @@ export default function App() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/tentang" element={<TentangData />} />
                 <Route path="/laporan/wilayah" element={<DashboardWilayah />} />
+                <Route path="/dashboard" element={<Navigate to="/laporan/wilayah" replace />} />
                 <Route path="/sekolah" element={<Direktori />} />
                 <Route path="/sekolah/:npsn" element={<DetailSekolah />} />
                 <Route path="/klaster" element={<DaftarKlaster />} />
@@ -76,24 +76,6 @@ export default function App() {
                 <Route path="/klaster/:klasterId/status" element={<StatusTindakLanjutWarga />} />
                 <Route path="/laporan/riwayat" element={<RiwayatLaporan />} />
                 <Route path="/laporan/publik" element={<RiwayatLaporan />} />
-              </Route>
-
-              {/* Auth Warga (Login / Registrasi) — shell split-dark */}
-              <Route element={<AuthLayout />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/registrasi" element={<Registrasi />} />
-              </Route>
-
-              {/* Warga (terotentikasi & dilindungi) */}
-              <Route element={<WargaLayout />}>
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardWilayah />
-                    </ProtectedRoute>
-                  }
-                />
                 <Route
                   path="/laporan/baru"
                   element={
@@ -102,6 +84,12 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
+              </Route>
+
+              {/* Auth Warga (Login / Registrasi) — shell split-dark */}
+              <Route element={<AuthLayout />}>
+                <Route path="/login" element={<Login />} />
+                <Route path="/registrasi" element={<Registrasi />} />
               </Route>
 
               {/* Dinas (Pemerintah) - Login */}

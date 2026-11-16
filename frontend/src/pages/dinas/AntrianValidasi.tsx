@@ -27,7 +27,6 @@ import { detailKlaster, listKlaster, verifikasiKlaster } from "@/lib/api/klaster
 import { detailLaporan, perluReviewLaporan, updateStatusLaporan } from "@/lib/api/laporan"
 import { listSekolah } from "@/lib/api/sekolah"
 import { ApiError } from "@/lib/api/errors"
-import type { KlasterDetail, KlasterListItem, SekolahList } from "@/lib/api/types"
 import type {
   KlasterDetail,
   KlasterListItem,
@@ -84,8 +83,6 @@ export default function AntrianValidasi() {
   const urlTrack = searchParams.get("track")
 
   // Switcher track: Klaster Issue vs Issue Mandiri
-  const [modeTrack, setModeTrack] = useState<"klaster" | "mandiri">("klaster")
-  const [selectedKlasterId, setSelectedKlasterId] = useState<string>(urlId ?? "")
   const [modeTrack, setModeTrack] = useState<"klaster" | "mandiri">(
     urlTrack === "mandiri" ? "mandiri" : "klaster",
   )
@@ -96,7 +93,6 @@ export default function AntrianValidasi() {
     modeTrack === "mandiri" && urlId ? urlId : "",
   )
 
-  // Feedback & alasan tolak
   // Feedback & alasan tolak klaster
   const [decisionFeedback, setDecisionFeedback] = useState<{
     pesan: string
@@ -181,11 +177,8 @@ export default function AntrianValidasi() {
       }
     }
     if (!selectedKlasterId) setSelectedKlasterId(daftarKlaster[0].klaster_id)
-  }, [urlId, daftarKlaster, selectedKlasterId])
   }, [urlId, daftarKlaster, selectedKlasterId, modeTrack])
 
-  const totalMenunggu = useMemo(
-    () => daftarKlaster.filter((k) => k.status_verifikasi === "menunggu_verifikasi").length || 49,
   // Sinkronisasi pilihan mandiri awal
   useEffect(() => {
     if (modeTrack !== "mandiri") return
@@ -240,7 +233,6 @@ export default function AntrianValidasi() {
     })
   }
 
-  // Aksi verifikasi (Sahkan Klaster vs Tolak Sanggahan)
   const handleSelectMandiri = (id: string) => {
     setSelectedMandiriId(id)
     setSearchParams((prev) => {
@@ -297,7 +289,6 @@ export default function AntrianValidasi() {
     await handleDecision("tolak", alasan)
   }
 
-  // Ambil detail laporan anggota dari API
   // Aksi verifikasi Aduan Mandiri (D-21, D-30 via PUT /laporan/{id}/status)
   const handleDecisionMandiri = async (status: "divalidasi" | "ditolak" | "menunggu") => {
     if (!bolehVerifikasi || !selectedMandiriId) return
@@ -331,7 +322,6 @@ export default function AntrianValidasi() {
     return detail?.laporan ?? []
   }, [detail])
 
-  if (listState.status === "loading") {
   const isLoading =
     (modeTrack === "klaster" && listState.status === "loading") ||
     (modeTrack === "mandiri" && mandiriState.status === "loading")
@@ -347,7 +337,6 @@ export default function AntrianValidasi() {
     )
   }
 
-  if (listState.status === "error") {
   if (modeTrack === "klaster" && listState.status === "error") {
     return (
       <div className="flex items-center justify-center px-6 py-24 text-center">
@@ -366,15 +355,9 @@ export default function AntrianValidasi() {
     )
   }
 
-  if (!selectedKlaster) {
   if (modeTrack === "mandiri" && mandiriState.status === "error") {
     return (
       <div className="flex items-center justify-center px-6 py-24 text-center">
-        <div className="space-y-2">
-          <p className="text-lg font-extrabold text-slate-900">Belum ada klaster untuk divalidasi</p>
-          <p className="text-sm text-slate-600">
-            Antrean verifikasi terisi setelah laporan warga dikelompokkan oleh pipeline AI.
-          </p>
         <div className="space-y-3">
           <p className="text-lg font-extrabold text-slate-900">Gagal memuat antrean aduan mandiri</p>
           <p className="text-sm text-slate-600">{mandiriState.message}</p>
@@ -389,11 +372,6 @@ export default function AntrianValidasi() {
       </div>
     )
   }
-
-  const selectedSekolahObj = profilSekolah.get(selectedKlaster.sekolah_npsn)
-  const namaSekolahAktif = selectedSekolahObj?.nama ?? selectedKlaster.label ?? "SDN 1 Sukodadi"
-  const skorAktif = selectedKlaster.skor_prioritas ?? 84.6
-  const totalAduanValid = anggotaList.length || selectedKlaster.jumlah_vote_terhitung || 4
 
   // Helper kode klaster tampilan (misal: KLS-042)
   const formatKodeKlaster = (id: string, index: number) => {
@@ -411,16 +389,9 @@ export default function AntrianValidasi() {
     return list[index % list.length]
   }
 
-  // Deskripsi ringkasan laporan aktif
-  const deskripsiRingkasan =
-    anggotaList[0]?.deskripsi ||
-    selectedKlaster.label ||
-    "Warga melaporkan kerusakan atap ruang kelas yang runtuh sebagian sehingga aktivitas belajar terganggu dan memerlukan penanganan segera."
-
   const fotoDokumentasi =
     "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=1200&q=80"
 
-  const koordinatTeks =
   // Data terhitung untuk Klaster Terpilih
   const selectedSekolahObj = selectedKlaster
     ? profilSekolah.get(selectedKlaster.sekolah_npsn)
@@ -471,7 +442,6 @@ export default function AntrianValidasi() {
             Antrean Validasi Klaster Sarpras
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Mode Split-View · {totalMenunggu} Klaster Menunggu Verifikasi Lapangan
             {modeTrack === "klaster"
               ? `Mode Split-View · ${totalMenungguKlaster} Klaster Menunggu Verifikasi Lapangan`
               : `Mode Split-View · ${totalMenungguMandiri} Aduan Mandiri Menunggu Verifikasi Manual`}
@@ -492,7 +462,6 @@ export default function AntrianValidasi() {
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => setModeTrack("klaster")}
           onClick={() => handleSwitchTrack("klaster")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             modeTrack === "klaster"
@@ -503,14 +472,12 @@ export default function AntrianValidasi() {
           <Layers className="h-3.5 w-3.5 text-slate-600" />
           <span>Track Klaster Issue</span>
           <span className="rounded bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
-            31
             {daftarKlaster.length}
           </span>
         </button>
 
         <button
           type="button"
-          onClick={() => setModeTrack("mandiri")}
           onClick={() => handleSwitchTrack("mandiri")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             modeTrack === "mandiri"
@@ -521,7 +488,6 @@ export default function AntrianValidasi() {
           <FileText className="h-3.5 w-3.5 text-slate-500" />
           <span>Track Issue Mandiri</span>
           <span className="rounded bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
-            31
             {daftarMandiri.length}
           </span>
         </button>
@@ -553,19 +519,6 @@ export default function AntrianValidasi() {
         </div>
       )}
 
-      {/* ── Main Split View ── */}
-      <div className="grid gap-6 lg:grid-cols-12 items-start">
-        {/* ================= SISI KIRI (5 Cols): ANTREAN PRIORITAS (DAMPAK KBM) ================= */}
-        <div className="lg:col-span-5 space-y-3">
-          {/* Header Antrean */}
-          <div className="flex items-center justify-between pb-1">
-            <h2 className="text-[11px] font-extrabold tracking-wider text-slate-700 uppercase">
-              ANTREAN PRIORITAS (DAMPAK KBM)
-            </h2>
-            <span className="rounded-full bg-slate-100 text-slate-600 font-semibold text-[11px] px-2.5 py-0.5 border border-slate-200/80">
-              {daftarKlaster.length || 4} Ditampilkan
-            </span>
-          </div>
       {/* ========================================================================= */}
       {/* ── MAIN SPLIT VIEW: TRACK KLASTER ISSUE ── */}
       {/* ========================================================================= */}
@@ -595,17 +548,6 @@ export default function AntrianValidasi() {
                   </span>
                 </div>
 
-          {/* List Klaster Card */}
-          <div className="space-y-3">
-            {daftarKlaster.map((klaster, idx) => {
-              const isSelected = klaster.klaster_id === selectedKlaster.klaster_id
-              const profil = profilSekolah.get(klaster.sekolah_npsn)
-              const namaSekolah = profil?.nama ?? klaster.label ?? "Sekolah"
-              const skor = typeof klaster.skor_prioritas === "number" ? klaster.skor_prioritas : 75
-              const prioritasTxt = kePrioritas(skor)
-              const kodeKlaster = formatKodeKlaster(klaster.klaster_id, idx)
-              const aduanCount = klaster.jumlah_vote_terhitung || 4 - (idx % 3)
-              const waktu = getWaktuRelatif(idx)
                 <div className="space-y-3">
                   {daftarKlaster.map((klaster, idx) => {
                     const isSelected = klaster.klaster_id === selectedKlaster.klaster_id
@@ -618,21 +560,6 @@ export default function AntrianValidasi() {
                     const aduanCount = klaster.jumlah_vote_terhitung || 4 - (idx % 3)
                     const waktu = getWaktuRelatif(idx)
 
-              return (
-                <div
-                  key={klaster.klaster_id}
-                  onClick={() => handleSelectKlaster(klaster.klaster_id)}
-                  className={`p-4 rounded-xl transition-all cursor-pointer select-none bg-white ${
-                    isSelected
-                      ? "border-2 border-[#0B3052] shadow-sm"
-                      : "border border-slate-200/90 hover:border-slate-300"
-                  }`}
-                >
-                  {/* Baris 1: Kode - Nama Sekolah - Badge Prioritas */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600 shrink-0">
-                        {kodeKlaster}
                     return (
                       <div
                         key={klaster.klaster_id}
@@ -699,25 +626,11 @@ export default function AntrianValidasi() {
                       <span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-bold text-slate-700 border border-slate-200">
                         KLASTER TERPILIH: {formatKodeKlaster(selectedKlaster.klaster_id, 0)}
                       </span>
-                      <h3 className="font-bold text-xs sm:text-[13px] text-slate-900 truncate">
-                        {namaSekolah}
-                      </h3>
                       <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 border border-slate-200">
                         {selectedSekolahObj?.alamat ? "Kec. Sukodadi" : "Kec. Sukodadi"}
                       </span>
                     </div>
 
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                        prioritasTxt === "Kritis"
-                          ? "bg-rose-50 text-rose-600 border-rose-200/70"
-                          : prioritasTxt === "Tinggi"
-                            ? "bg-amber-50 text-amber-700 border-amber-200/70"
-                            : "bg-blue-50 text-blue-700 border-blue-200/70"
-                      }`}
-                    >
-                      {prioritasTxt}
-                    </span>
                     <div className="text-left sm:text-right">
                       <span className="block text-[10px] text-slate-400 font-medium">
                         Kepala Sekolah
@@ -728,16 +641,6 @@ export default function AntrianValidasi() {
                     </div>
                   </div>
 
-                  {/* Baris 2: Skor - Jumlah Aduan - Timestamp */}
-                  <div className="mt-3 flex items-center justify-between text-xs pt-1 border-t border-slate-50">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`font-black ${
-                          skor >= 70 ? "text-rose-600" : "text-slate-800"
-                        }`}
-                      >
-                        {skor >= 70 && !isSelected && <span className="mr-1">!</span>}
-                        Skor {skor.toFixed(1)}
                   <div className="space-y-2 pt-1">
                     <h2 className="text-2xl sm:text-[26px] font-black text-slate-900 tracking-tight leading-tight">
                       {namaSekolahAktif}
@@ -746,16 +649,12 @@ export default function AntrianValidasi() {
                       <span className="font-mono text-xs font-bold text-slate-500">
                         NPSN {selectedKlaster.sekolah_npsn}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                        <FileCheck className="h-3 w-3 text-slate-400" />
-                        {aduanCount} Aduan
                       <span className="rounded-full bg-rose-50 text-rose-700 border border-rose-200/80 px-3 py-1 text-xs font-bold">
                         {selectedKlaster.label || "Ruang Kelas Rusak Berat (Atap Runtuh Paruh)"}
                       </span>
                     </div>
                   </div>
 
-                    <span className="text-[11px] text-slate-400 font-normal">{waktu}</span>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
                     <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-1">
                       <span className="block text-xs text-slate-500 font-medium">Volume Aduan</span>
@@ -829,25 +728,7 @@ export default function AntrianValidasi() {
                     </div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        </div>
 
-        {/* ================= SISI KANAN (7 Cols): DETAIL KLASTER TERPILIH ================= */}
-        <div className="lg:col-span-7 space-y-5">
-          {/* ── CARD 1: Identitas Klaster, 3 KPI Sejajar, & Keputusan Verifikasi ── */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
-            {/* Header: Klaster Terpilih + Kecamatan & Info Kepsek NIP */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-bold text-slate-700 border border-slate-200">
-                  KLASTER TERPILIH: {formatKodeKlaster(selectedKlaster.klaster_id, 0)}
-                </span>
-                <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 border border-slate-200">
-                  {selectedSekolahObj?.alamat ? "Kec. Sukodadi" : "Kec. Sukodadi"}
-                </span>
-              </div>
                 {/* CARD 2: Deskripsi Aduan Warga Klaster */}
                 <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
                   <div className="flex items-center justify-between">
@@ -860,13 +741,6 @@ export default function AntrianValidasi() {
                     </span>
                   </div>
 
-              <div className="text-left sm:text-right">
-                <span className="block text-[10px] text-slate-400 font-medium">Kepala Sekolah</span>
-                <span className="block font-mono text-[11px] font-bold text-slate-700">
-                  NIP. 198103••••••••
-                </span>
-              </div>
-            </div>
                   <div className="space-y-1.5 pt-1">
                     <span className="block text-xs font-medium text-slate-400">Ringkasan</span>
                     <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
@@ -874,29 +748,6 @@ export default function AntrianValidasi() {
                     </p>
                   </div>
 
-            {/* Nama Sekolah Besar & Status Fasilitas */}
-            <div className="space-y-2 pt-1">
-              <h2 className="text-2xl sm:text-[26px] font-black text-slate-900 tracking-tight leading-tight">
-                {namaSekolahAktif}
-              </h2>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="font-mono text-xs font-bold text-slate-500">
-                  NPSN {selectedKlaster.sekolah_npsn}
-                </span>
-                <span className="rounded-full bg-rose-50 text-rose-700 border border-rose-200/80 px-3 py-1 text-xs font-bold">
-                  Ruang Kelas Rusak Berat (Atap Runtuh Paruh)
-                </span>
-              </div>
-            </div>
-
-            {/* 3 KPI Box Sejajar (Grid 3 Kolom Sesuai Mockup) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
-              {/* Box 1: Volume Aduan */}
-              <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-1">
-                <span className="block text-xs text-slate-500 font-medium">Volume Aduan</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-slate-900">{totalAduanValid}</span>
-                  <span className="text-xs text-slate-500 font-normal">warga</span>
                   <div className="pt-3 border-t border-slate-100 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Jenis kerusakan</span>
@@ -914,18 +765,7 @@ export default function AntrianValidasi() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 pt-0.5">
-                  <Check className="h-3 w-3 stroke-[3]" />
-                  <span>Geotagging cocok</span>
-                </div>
-              </div>
 
-              {/* Box 2: Skor Dampak KBM */}
-              <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3.5 space-y-1">
-                <span className="block text-xs text-slate-500 font-medium">Skor Dampak KBM</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-rose-600">{skorAktif.toFixed(1)}</span>
-                  <span className="text-xs text-slate-400 font-normal">/100</span>
                 {/* CARD 3: Dokumentasi Aduan Warga Klaster */}
                 <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
                   <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
@@ -955,24 +795,12 @@ export default function AntrianValidasi() {
                     </div>
                   </div>
                 </div>
-                <p className="text-[11px] font-semibold text-rose-600 pt-0.5 truncate">
-                  Aktivitas belajar terhenti
-                </p>
               </div>
             </div>
           )}
         </>
       )}
 
-              {/* Box 3: AI Vector Matching */}
-              <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3.5 space-y-1">
-                <span className="block text-xs text-slate-500 font-medium">AI Vector Matching</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-[#0B3052]">0.88</span>
-                  <span className="text-xs text-slate-500 font-normal">Cosine</span>
-                </div>
-                <p className="text-[11px] font-semibold text-blue-600 pt-0.5 truncate">
-                  Tingkat kemiripan valid
       {/* ========================================================================= */}
       {/* ── MAIN SPLIT VIEW: TRACK ISSUE MANDIRI (D-21, D-30) ── */}
       {/* ========================================================================= */}
@@ -1002,12 +830,6 @@ export default function AntrianValidasi() {
                   </span>
                 </div>
 
-            {/* Baris Bawah: Keputusan Verifikasi Klaster + Tombol Sahkan & Tolak */}
-            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                <FileText className="h-4 w-4 text-slate-500" />
-                <span>Keputusan Verifikasi Klaster</span>
-              </div>
                 <div className="space-y-3">
                   {daftarMandiri.map((m) => {
                     const isSelected = m.id === selectedMandiri.id
@@ -1016,31 +838,6 @@ export default function AntrianValidasi() {
                     const prioritasTxt = kePrioritasMandiri(m.kondisi_dilaporkan)
                     const statusSanggahan = m.status_sanggahan || "menunggu"
 
-              <div className="flex items-center gap-2.5">
-                <Button
-                  onClick={() => handleDecision("mismatch")}
-                  disabled={!bolehVerifikasi}
-                  className="h-10 bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-bold px-5 rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-1.5"
-                >
-                  <Check className="h-4 w-4 stroke-[3]" />
-                  <span>Sahkan Klaster</span>
-                </Button>
-                <Button
-                  onClick={() => {
-                    setBukaDialogTolak(true)
-                    setAlasanPreset("")
-                    setAlasanCatatan("")
-                  }}
-                  disabled={!bolehVerifikasi}
-                  variant="outline"
-                  className="h-10 bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 text-xs font-bold px-5 rounded-xl cursor-pointer inline-flex items-center gap-1.5"
-                >
-                  <X className="h-4 w-4 stroke-[2.5]" />
-                  <span>Tolak</span>
-                </Button>
-              </div>
-            </div>
-          </div>
                     return (
                       <div
                         key={m.id}
@@ -1061,17 +858,6 @@ export default function AntrianValidasi() {
                             </h3>
                           </div>
 
-          {/* ── CARD 2: Deskripsi Aduan Warga ── */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-sm text-slate-900">Deskripsi Aduan Warga</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Ringkasan laporan yang sedang dipilih</p>
-              </div>
-              <span className="rounded-full bg-rose-50 text-rose-600 border border-rose-200/70 px-2.5 py-0.5 text-xs font-bold">
-                Kritis
-              </span>
-            </div>
                           <span
                             className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
                               statusSanggahan === "divalidasi"
@@ -1089,12 +875,6 @@ export default function AntrianValidasi() {
                           </span>
                         </div>
 
-            <div className="space-y-1.5 pt-1">
-              <span className="block text-xs font-medium text-slate-400">Ringkasan</span>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                {deskripsiRingkasan}
-              </p>
-            </div>
                         <div className="mt-3 flex items-center justify-between text-xs pt-1 border-t border-slate-50">
                           <div className="flex items-center gap-3">
                             <span
@@ -1114,10 +894,6 @@ export default function AntrianValidasi() {
                             </span>
                           </div>
 
-            <div className="pt-3 border-t border-slate-100 space-y-2.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">Jenis kerusakan</span>
-                <span className="font-bold text-slate-800">Atap runtuh</span>
                           <span className="text-[11px] text-slate-400 font-normal">
                             {formatTanggal(m.created_at)}
                           </span>
@@ -1127,23 +903,7 @@ export default function AntrianValidasi() {
                   })}
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">Lokasi utama</span>
-                <span className="font-bold text-slate-800">Ruang kelas</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">Dampak operasional</span>
-                <span className="font-bold text-slate-800">Aktivitas belajar terhenti</span>
-              </div>
-            </div>
-          </div>
 
-          {/* ── CARD 3: Dokumentasi Aduan Warga ── */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
-            <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-              <Camera className="h-4 w-4 text-slate-600" />
-              <span>Dokumentasi Aduan Warga</span>
-            </div>
               {/* SISI KANAN (7 Cols): DETAIL ADUAN MANDIRI TERPILIH */}
               <div className="lg:col-span-7 space-y-5">
                 {/* CARD 1: Identitas Aduan Mandiri & 3 KPI */}
@@ -1158,14 +918,6 @@ export default function AntrianValidasi() {
                       </span>
                     </div>
 
-            {/* Foto Bukti Kerusakan Lega & Jelas */}
-            <div className="h-64 sm:h-72 w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-              <img
-                src={fotoDokumentasi}
-                alt="Dokumentasi Sarpras"
-                className="h-full w-full object-cover"
-              />
-            </div>
                     <div className="text-left sm:text-right">
                       <span className="block text-[10px] text-slate-400 font-medium">
                         Identitas Pelapor
@@ -1176,13 +928,6 @@ export default function AntrianValidasi() {
                     </div>
                   </div>
 
-            {/* Footer Metadata Foto */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
-              <div className="inline-flex items-center gap-2 text-[11px] font-mono text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-lg">
-                <MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                <span>Koordinat Terverifikasi</span>
-                <span className="font-bold text-slate-800">{koordinatTeks}</span>
-              </div>
                   <div className="space-y-2 pt-1">
                     <h2 className="text-2xl sm:text-[26px] font-black text-slate-900 tracking-tight leading-tight">
                       {namaSekolahMandiriAktif}
@@ -1197,10 +942,6 @@ export default function AntrianValidasi() {
                     </div>
                   </div>
 
-              <div className="inline-flex items-center gap-2 text-[11px] font-mono text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-lg">
-                <ShieldCheck className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                <span>Integritas Hash EXIF</span>
-                <span className="font-bold text-slate-800">SHA256: 8a4f</span>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
                     <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 space-y-1">
                       <span className="block text-xs text-slate-500 font-medium">Tipe Laporan</span>
@@ -1402,14 +1143,10 @@ export default function AntrianValidasi() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
           )}
         </>
       )}
 
-      {/* ── Dialog Alasan Penolakan ── */}
       {/* ── Dialog Alasan Penolakan Klaster ── */}
       <Dialog open={bukaDialogTolak} onOpenChange={setBukaDialogTolak}>
         <DialogContent className="sm:max-w-md">

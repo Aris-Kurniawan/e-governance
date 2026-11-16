@@ -31,7 +31,11 @@ export default function Landing() {
   // Gerbang autentikasi pelaporan:
   // belum login → langsung diarahkan ke halaman login; sudah login → langsung ke form laporan.
   const handleMulaiLapor = () => {
-    navigate("/sekolah")
+    if (isAuthenticated) {
+      navigate("/laporan/baru")
+    } else {
+      navigate("/login?redirect=%2Flaporan%2Fbaru&action=report")
+    }
   }
 
   return (
@@ -616,7 +620,7 @@ export default function Landing() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               {isAuthenticated ? (
                 <Button
-                  onClick={() => navigate("/sekolah")}
+                  onClick={() => navigate("/laporan/baru")}
                   className="bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-md text-white font-semibold px-6 py-3.5 h-auto rounded-xl text-sm transition-all cursor-pointer"
                 >
                   <Camera className="h-4 w-4 mr-1.5" />

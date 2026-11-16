@@ -449,7 +449,11 @@ export default function RiwayatLaporan() {
 
   const handleBuatLaporanClick = (e: React.MouseEvent) => {
     e.preventDefault()
-    navigate("/sekolah")
+    if (loggedIn) {
+      navigate("/laporan/baru")
+    } else {
+      navigate("/login?redirect=%2Flaporan%2Fbaru&action=report")
+    }
   }
 
   return (
@@ -504,7 +508,7 @@ export default function RiwayatLaporan() {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
               <Button asChild className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold px-5 py-3 h-11 rounded-xl text-sm shadow-sm w-full sm:w-auto cursor-pointer">
-                <Link to="/sekolah" onClick={handleBuatLaporanClick}>
+                <Link to="/laporan/baru" onClick={handleBuatLaporanClick}>
                   <Plus className="h-4 w-4 mr-1.5" /> Buat Aduan Baru
                 </Link>
               </Button>

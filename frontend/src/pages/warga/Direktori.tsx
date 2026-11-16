@@ -15,7 +15,8 @@ import {
   HelpCircle,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Plus
 } from "lucide-react"
 import { useFetch } from "@/hooks/useFetch"
 import { listSekolah } from "@/lib/api/sekolah"
@@ -385,13 +386,24 @@ export default function Direktori() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-                    <span className="text-slate-400">Audit: {school.audit}</span>
-                    <Link to={`/sekolah/${school.npsn}`}>
-                      <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-8 px-3 rounded-lg shadow-sm cursor-pointer">
-                        Lihat Data Baseline <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                      </Button>
-                    </Link>
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs gap-2">
+                    <span className="text-slate-400 truncate">Audit: {school.audit}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link to={`/laporan/baru?sekolah=${school.npsn}`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-blue-200 text-[#0B3052] hover:bg-blue-50 font-semibold text-xs h-8 px-2.5 rounded-lg shadow-2xs cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1 text-blue-600" /> Lapor
+                        </Button>
+                      </Link>
+                      <Link to={`/sekolah/${school.npsn}`}>
+                        <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-8 px-3 rounded-lg shadow-sm cursor-pointer">
+                          Baseline <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))}
