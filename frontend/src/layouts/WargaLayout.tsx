@@ -19,6 +19,17 @@ export default function WargaLayout() {
   const location = useLocation()
   const { user, roleLabel, logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // Deteksi scroll untuk efek animasi sticky navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15)
+    }
+    handleScroll()
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   // Tutup drawer ketika rute berubah
   useEffect(() => {
@@ -40,8 +51,18 @@ export default function WargaLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-background w-full max-w-full overflow-x-hidden">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <header
+        className={`sticky top-0 z-40 border-b transition-all duration-300 ease-out ${
+          isScrolled
+            ? "border-slate-200/90 bg-white/90 backdrop-blur-md shadow-md shadow-slate-950/5 py-0"
+            : "border-border bg-white/95 backdrop-blur-md py-0.5 sm:py-1"
+        }`}
+      >
+        <div
+          className={`mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 transition-all duration-300 ${
+            isScrolled ? "h-14 sm:h-16" : "h-16 sm:h-20"
+          }`}
+        >
           <div className="flex items-center gap-6 lg:gap-8">
             <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
               <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white border border-slate-200/80 p-1 shadow-xs shrink-0 overflow-hidden">
@@ -267,10 +288,10 @@ function Nav({ to, label, active }: { to: string; label: string; active: boolean
   return (
     <Link
       to={to}
-      className={`rounded-md px-3 py-1.5 text-xs lg:text-sm font-medium transition-colors ${
+      className={`nav-link-animated rounded-md px-3 py-1.5 text-xs lg:text-sm font-medium transition-all duration-200 ${
         active
-          ? "bg-primary text-white"
-          : "text-ink-secondary hover:bg-surface-alt hover:text-ink"
+          ? "bg-primary text-white shadow-xs font-semibold scale-100"
+          : "text-ink-secondary hover:bg-surface-alt hover:text-ink hover:scale-[1.03]"
       }`}
     >
       {label}

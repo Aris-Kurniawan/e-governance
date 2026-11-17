@@ -2,15 +2,15 @@ import { useState, useMemo } from "react"
 import { Link } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { 
-  Search, 
-  RotateCcw, 
-  Download, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Info, 
-  Clock, 
-  ShieldCheck, 
+import {
+  Search,
+  RotateCcw,
+  Download,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Clock,
+  ShieldCheck,
   ArrowRight,
   HelpCircle,
   X,
@@ -21,6 +21,7 @@ import {
 import { useFetch } from "@/hooks/useFetch"
 import { listSekolah } from "@/lib/api/sekolah"
 import type { SekolahList } from "@/lib/api/types"
+import ScrollReveal from "@/components/composite/ScrollReveal"
 
 /**
  * F4.1 — baris tabel diperluas dari respons `GET /sekolah`.
@@ -93,28 +94,28 @@ export default function Direktori() {
     () =>
       sekolahState.status === "success"
         ? sekolahState.data.data.map((s) => {
-            const status = keStatusIntegritas(String(s.penanda_masalah))
-            const tipe: TemuanBaris["tipe"] =
-              status === "Selisih Kritis" ? "kritis" : status === "Selisih Minor" ? "minor" : "sesuai"
-            return {
-              ...s,
-              status,
-              statusBadge: LABEL_STATUS[status],
-              audit: TIDAK_ADA,
-              stats: [
-                { label: "Isu Aktif", val: String(s.jumlah_isu_aktif ?? 0), desc: "dari laporan warga" },
-                { label: "Kondisi Sarpras", val: TIDAK_ADA, desc: "ringkasan tersedia di detail" },
-                { label: "Klaster Isu", val: TIDAK_ADA, desc: "belum terpopulate di backend" },
-              ],
-              temuan: {
-                tipe,
-                judul: LABEL_STATUS[status],
-                deskripsi:
-                  "Baseline Dapodik per sekolah belum tersedia di backend v1, sehingga perbandingan data " +
-                  "tidak dapat ditampilkan. Buka detail sekolah untuk melihat data sarpras yang tercatat.",
-              },
-            }
-          })
+          const status = keStatusIntegritas(String(s.penanda_masalah))
+          const tipe: TemuanBaris["tipe"] =
+            status === "Selisih Kritis" ? "kritis" : status === "Selisih Minor" ? "minor" : "sesuai"
+          return {
+            ...s,
+            status,
+            statusBadge: LABEL_STATUS[status],
+            audit: TIDAK_ADA,
+            stats: [
+              { label: "Isu Aktif", val: String(s.jumlah_isu_aktif ?? 0), desc: "dari laporan warga" },
+              { label: "Kondisi Sarpras", val: TIDAK_ADA, desc: "ringkasan tersedia di detail" },
+              { label: "Klaster Isu", val: TIDAK_ADA, desc: "belum terpopulate di backend" },
+            ],
+            temuan: {
+              tipe,
+              judul: LABEL_STATUS[status],
+              deskripsi:
+                "Baseline Dapodik per sekolah belum tersedia di backend v1, sehingga perbandingan data " +
+                "tidak dapat ditampilkan. Buka detail sekolah untuk melihat data sarpras yang tercatat.",
+            },
+          }
+        })
         : [],
     [sekolahState],
   )
@@ -179,7 +180,7 @@ export default function Direktori() {
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
     link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `rekap_sekolah_lamongan_${new Date().toISOString().slice(0,10)}.csv`)
+    link.setAttribute("download", `rekap_sekolah_lamongan_${new Date().toISOString().slice(0, 10)}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -260,11 +261,10 @@ export default function Direktori() {
                 <button
                   key={j}
                   onClick={() => handleJenjangChange(j)}
-                  className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition-colors cursor-pointer ${
-                    jenjang === j
+                  className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition-colors cursor-pointer ${jenjang === j
                       ? "bg-[#0B3052] text-white shadow-sm"
                       : "bg-slate-100 hover:bg-slate-200/70 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {j}
                 </button>
@@ -312,11 +312,17 @@ export default function Direktori() {
         <div className="space-y-6">
           {paginatedSekolah.length > 0 ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {paginatedSekolah.map((school) => (
-                <div
+              {paginatedSekolah.map((school, idx) => (
+                <ScrollReveal
                   key={school.npsn}
-                  className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow"
+                  direction="up"
+                  delay={(idx % 3) * 80}
+                  duration={400}
+                  className="h-full"
                 >
+                  <div
+                    className="h-full rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow"
+                  >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono font-medium text-slate-400">NPSN: {school.npsn}</span>
@@ -355,32 +361,29 @@ export default function Direktori() {
                       ))}
                     </div>
 
-                    <div className={`rounded-xl p-3 border text-xs ${
-                      school.temuan.tipe === "kritis"
+                    <div className={`rounded-xl p-3 border text-xs ${school.temuan.tipe === "kritis"
                         ? "bg-rose-50/70 border-rose-100"
                         : school.temuan.tipe === "minor"
-                        ? "bg-blue-50/70 border-blue-100"
-                        : "bg-emerald-50/70 border-emerald-100"
-                    }`}>
-                      <span className={`font-bold flex items-center gap-1 mb-1 ${
-                        school.temuan.tipe === "kritis"
+                          ? "bg-blue-50/70 border-blue-100"
+                          : "bg-emerald-50/70 border-emerald-100"
+                      }`}>
+                      <span className={`font-bold flex items-center gap-1 mb-1 ${school.temuan.tipe === "kritis"
                           ? "text-rose-900"
                           : school.temuan.tipe === "minor"
-                          ? "text-blue-900"
-                          : "text-emerald-900"
-                      }`}>
+                            ? "text-blue-900"
+                            : "text-emerald-900"
+                        }`}>
                         {school.temuan.tipe === "kritis" && <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />}
                         {school.temuan.tipe === "minor" && <Info className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
                         {school.temuan.tipe === "sesuai" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
                         {school.temuan.judul}:
                       </span>
-                      <p className={`text-[11px] leading-relaxed ${
-                        school.temuan.tipe === "kritis"
+                      <p className={`text-[11px] leading-relaxed ${school.temuan.tipe === "kritis"
                           ? "text-[#641E1E]"
                           : school.temuan.tipe === "minor"
-                          ? "text-blue-950"
-                          : "text-emerald-950"
-                      }`}>
+                            ? "text-blue-950"
+                            : "text-emerald-950"
+                        }`}>
                         {school.temuan.deskripsi}
                       </p>
                     </div>
@@ -406,6 +409,7 @@ export default function Direktori() {
                     </div>
                   </div>
                 </div>
+                </ScrollReveal>
               ))}
             </div>
           ) : (
@@ -452,11 +456,10 @@ export default function Direktori() {
                     <button
                       key={p}
                       onClick={() => setCurrentPage(p)}
-                      className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                        currentPage === p
+                      className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${currentPage === p
                           ? "bg-[#0B3052] text-white shadow-sm"
                           : "text-slate-600 hover:bg-slate-100"
-                      }`}
+                        }`}
                     >
                       {p}
                     </button>

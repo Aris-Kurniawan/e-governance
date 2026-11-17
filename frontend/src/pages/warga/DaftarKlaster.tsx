@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import StatusBadge from "@/components/composite/StatusBadge"
 import NumberedPagination from "@/components/composite/NumberedPagination"
+import ScrollReveal from "@/components/composite/ScrollReveal"
 import { useAuth } from "@/context/AuthContext"
 import { useFetch } from "@/hooks/useFetch"
 import { listKlaster } from "@/lib/api/klaster"
@@ -304,11 +305,17 @@ export default function DaftarKlaster() {
           </div>
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {baris.map((k) => (
-              <li
+            {baris.map((k, idx) => (
+              <ScrollReveal
                 key={k.klaster_id}
-                className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm flex flex-col justify-between gap-4 hover:border-primary-border hover:shadow-md transition-all"
+                direction="up"
+                delay={(idx % 3) * 80}
+                duration={400}
+                className="h-full"
               >
+                <li
+                  className="h-full rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm flex flex-col justify-between gap-4 hover:border-primary-border hover:shadow-md transition-all"
+                >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <span className="rounded-md bg-surface-alt px-2 py-0.5 text-[10px] font-bold text-ink-secondary uppercase tracking-wider">
@@ -386,6 +393,7 @@ export default function DaftarKlaster() {
                   </Link>
                 </div>
               </li>
+              </ScrollReveal>
             ))}
           </ul>
         )}

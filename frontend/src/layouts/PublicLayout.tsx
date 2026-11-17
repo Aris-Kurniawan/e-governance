@@ -60,6 +60,18 @@ export default function PublicLayout() {
 
   // ── Mobile Hamburger Menu state ─────────────────────
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // Deteksi scroll untuk efek animasi sticky navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15)
+    }
+    // Set status awal jika saat load sudah dalam posisi scroll
+    handleScroll()
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   // Tutup menu mobile ketika rute berpindah
   useEffect(() => {
@@ -96,8 +108,18 @@ export default function PublicLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-white w-full max-w-full overflow-x-hidden">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <header
+        className={`sticky top-0 z-40 border-b transition-all duration-300 ease-out ${
+          isScrolled
+            ? "border-slate-200/90 bg-white/90 backdrop-blur-md shadow-md shadow-slate-950/5 py-0"
+            : "border-slate-100 bg-white/95 backdrop-blur-md py-0.5 sm:py-1"
+        }`}
+      >
+        <div
+          className={`mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 transition-all duration-300 ${
+            isScrolled ? "h-14 sm:h-16" : "h-16 sm:h-20"
+          }`}
+        >
           {/* Logo & Desktop Nav */}
           <div className="flex items-center gap-6 lg:gap-8">
             <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
@@ -515,10 +537,10 @@ function NavLink({ to, label, active = false }: { to: string; label: string; act
   return (
     <Link
       to={to}
-      className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs lg:text-sm font-medium transition-colors ${
+      className={`nav-link-animated whitespace-nowrap rounded-lg px-3 py-1.5 text-xs lg:text-sm font-medium transition-all duration-200 ${
         active
-          ? "bg-[#0B3052] text-white"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          ? "bg-[#0B3052] text-white shadow-xs font-semibold scale-100"
+          : "text-slate-600 hover:bg-slate-100/90 hover:text-slate-900 hover:scale-[1.03]"
       }`}
     >
       {label}

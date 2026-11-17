@@ -121,3 +121,19 @@ export function postKonfirmasi(
     jawaban,
   });
 }
+
+/**
+ * POST /laporan/{id}/tindak-lanjut?status=&alasan=
+ * Memperbarui status tindak lanjut untuk laporan non-klaster / mandiri (INTERFACES.md §4.5).
+ */
+export function updateTindakLanjutLaporan(
+  id: string,
+  status: string,
+  alasan?: string,
+): Promise<{ id: string; status_penanganan: string }> {
+  return postData<{ id: string; status_penanganan: string }>(
+    `/laporan/${encodeURIComponent(id)}/tindak-lanjut`,
+    undefined,
+    { status, ...(alasan ? { alasan } : {}) },
+  );
+}

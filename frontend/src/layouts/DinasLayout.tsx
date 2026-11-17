@@ -314,473 +314,470 @@ export default function DinasLayout() {
 
   // Render Sidebar Content (Dipakai baik di desktop aside maupun mobile drawer)
   const renderSidebarContent = () => (
-          <div className="flex flex-col justify-between h-full select-none">
-            <div className="overflow-y-auto flex-1">
-              {/* Brand Header */}
-              <div className="px-5 pt-6 pb-2">
-                <Link to="/dinas/dashboard" className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-full bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-2xs shrink-0 overflow-hidden">
-                    <img
-                      src="/logo-simakis-icon.png"
-                      alt="Logo SIMAKIS"
-                      className="h-full w-full object-contain rounded-full"
-                      onError={(e) => {
-                        e.currentTarget.src = "/logo-simakis.png"
-                      }}
-                    />
-                  </div>
-                  <span className="font-extrabold text-[#0B3052] text-lg tracking-tight">SIMAKIS</span>
-                </Link>
+    <div className="flex flex-col justify-between h-full select-none">
+      <div className="overflow-y-auto flex-1">
+        {/* Brand Header */}
+        <div className="px-5 pt-6 pb-2">
+          <Link to="/dinas/dashboard" className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-full bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-2xs shrink-0 overflow-hidden">
+              <img
+                src="/logo-simakis-icon.png"
+                alt="Logo SIMAKIS"
+                className="h-full w-full object-contain rounded-full"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo-simakis.png"
+                }}
+              />
+            </div>
+            <span className="font-extrabold text-[#0B3052] text-lg tracking-tight">SIMAKIS</span>
+          </Link>
+        </div>
+
+        {/* Instansi Dropdown Selector */}
+        <div className="px-4 py-2">
+          <div className="p-2.5 rounded-2xl bg-slate-50/80 border border-slate-200/70 flex items-center justify-between cursor-pointer hover:bg-slate-100/70 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-7 w-7 rounded-full bg-slate-200/90 flex items-center justify-center font-bold text-xs text-[#0B3052] shrink-0">
+                L
               </div>
+              <div className="leading-tight truncate">
+                <span className="font-bold text-xs text-slate-800 block truncate">Dinas Dikbud</span>
+                <span className="text-[10px] text-slate-400 block truncate">Kab. Lamongan</span>
+              </div>
+            </div>
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0 ml-1" />
+          </div>
+        </div>
 
-                    {/* Instansi Dropdown Selector */}
-                    <div className="px-4 py-2">
-                      <div className="p-2.5 rounded-2xl bg-slate-50/80 border border-slate-200/70 flex items-center justify-between cursor-pointer hover:bg-slate-100/70 transition-colors">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="h-7 w-7 rounded-full bg-slate-200/90 flex items-center justify-center font-bold text-xs text-[#0B3052] shrink-0">
-                            L
-                          </div>
-                          <div className="leading-tight truncate">
-                            <span className="font-bold text-xs text-slate-800 block truncate">Dinas Dikbud</span>
-                            <span className="text-[10px] text-slate-400 block truncate">Kab. Lamongan</span>
-                          </div>
-                        </div>
-                        <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0 ml-1" />
-                      </div>
-                    </div>
+        {/* Nav Menu */}
+        <div className="px-3 py-2 space-y-1">
+          <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            MENU UTAMA
+          </p>
 
-                      {/* Nav Menu */}
-                      <div className="px-3 py-2 space-y-1">
-                        <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          MENU UTAMA
-                        </p>
+          {navItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${item.active
+                  ? "bg-[#EBF3FC] text-[#0B3052] shadow-2xs font-bold"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon className={`h-4 w-4 shrink-0 ${item.active ? "text-[#0B3052]" : "text-slate-400"}`} />
+                  <span>{item.label}</span>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
 
-                        {navItems.map((item) => {
-                          const Icon = item.icon
-                          return (
-                            <Link
-                              key={item.to}
-                              to={item.to}
-                              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${item.active
-                                  ? "bg-[#EBF3FC] text-[#0B3052] shadow-2xs font-bold"
-                                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                                }`}
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <Icon className={`h-4 w-4 shrink-0 ${item.active ? "text-[#0B3052]" : "text-slate-400"}`} />
-                                <span>{item.label}</span>
-                              </div>
-                            </Link>
-                          )
-                        })}
-                      </div>
-                    </div>
+      {/* Bottom Area: AI Card, Pengaturan & User Profile */}
+      <div className="space-y-3 pt-2 shrink-0">
+        {/* Card Hijau Al Verifikasi Aktif */}
+        <div className="mx-3.5 p-3 rounded-2xl bg-[#ECFDF5] border border-emerald-200/80 space-y-1.5 shadow-2xs">
+          <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs">
+            <Zap className="h-3.5 w-3.5 text-emerald-600 fill-emerald-600" />
+            <span>Al Verifikasi Aktif</span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-snug">
+            3 klaster darurat memerlukan persetujuan hari ini.
+          </p>
+          <div className="pt-1">
+            <Link
+              to="/dinas/antrian"
+              className="inline-block px-3 py-1 bg-white border border-emerald-300 text-emerald-800 font-semibold text-[11px] rounded-lg shadow-2xs hover:bg-emerald-50 transition-colors"
+            >
+              Periksa antrean
+            </Link>
+          </div>
+        </div>
 
-                    {/* Bottom Area: AI Card, Pengaturan & User Profile */}
-                    <div className="space-y-3 pt-2 shrink-0">
-                      {/* Card Hijau Al Verifikasi Aktif */}
-                      <div className="mx-3.5 p-3 rounded-2xl bg-[#ECFDF5] border border-emerald-200/80 space-y-1.5 shadow-2xs">
-                        <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs">
-                          <Zap className="h-3.5 w-3.5 text-emerald-600 fill-emerald-600" />
-                          <span>Al Verifikasi Aktif</span>
-                        </div>
-                        <p className="text-[11px] text-slate-600 leading-snug">
-                          3 klaster darurat memerlukan persetujuan hari ini.
-                        </p>
-                        <div className="pt-1">
-                          <Link
-                            to="/dinas/antrian"
-                            className="inline-block px-3 py-1 bg-white border border-emerald-300 text-emerald-800 font-semibold text-[11px] rounded-lg shadow-2xs hover:bg-emerald-50 transition-colors"
-                          >
-                            Periksa antrean
-                          </Link>
-                        </div>
-                      </div>
+        {/* Tombol Pengaturan */}
+        <button
+          type="button"
+          onClick={() => setIsProfileModalOpen(true)}
+          className="flex items-center gap-2.5 px-3.5 py-2 mx-3.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer w-[calc(100%-1.75rem)]"
+        >
+          <Settings className="h-4 w-4 text-slate-400" />
+          <span>Pengaturan</span>
+        </button>
 
-                            {/* Tombol Pengaturan */}
-                            <button
-                              type="button"
-                              onClick={() => setIsProfileModalOpen(true)}
-                              className="flex items-center gap-2.5 px-3.5 py-2 mx-3.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer w-[calc(100%-1.75rem)]"
-                            >
-                              <Settings className="h-4 w-4 text-slate-400" />
-                              <span>Pengaturan</span>
-                            </button>
+        {/* User Profile Footer */}
+        <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="h-8 w-8 rounded-full bg-[#0B3052] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+              {inisialPetugas || "MA"}
+            </div>
+            <div className="leading-tight truncate">
+              <span className="font-bold text-xs text-slate-800 block truncate">{namaPetugas}</span>
+              <span className="text-[10px] text-slate-400 block truncate">{jabatanPetugas}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              logout()
+              navigate("/dinas/login")
+            }}
+            title="Keluar dari Akun"
+            className="h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer ml-1 shrink-0"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
-                            {/* User Profile Footer */}
-                            <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between bg-white">
-                              <div className="flex items-center gap-2.5 overflow-hidden">
-                                <div className="h-8 w-8 rounded-full bg-[#0B3052] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                                  {inisialPetugas || "MA"}
-                                </div>
-                                  <div className="leading-tight truncate">
-                                    <span className="font-bold text-xs text-slate-800 block truncate">{namaPetugas}</span>
-                                    <span className="text-[10px] text-slate-400 block truncate">{jabatanPetugas}</span>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    logout()
-                                    navigate("/dinas/login")
-                                  }}
-                                  title="Keluar dari Akun"
-                                  className="h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer ml-1 shrink-0"
-                                >
-                                  <LogOut className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                          )
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-[#F8FAFC]">
+      {/* ── Desktop Left Sidebar (Static width 240px, Fixed Viewport) ── */}
+      <aside className="hidden md:flex w-60 shrink-0 bg-white border-r border-slate-200/80 flex-col justify-between h-full z-30">
+        {renderSidebarContent()}
+      </aside>
 
-                            return (
-                            <div className="flex h-screen w-full overflow-hidden bg-[#F8FAFC]">
-                              {/* ── Desktop Left Sidebar (Static width 240px, Fixed Viewport) ── */}
-                              <aside className="hidden md:flex w-60 shrink-0 bg-white border-r border-slate-200/80 flex-col justify-between h-full z-30">
-                                {renderSidebarContent()}
-                              </aside>
-
-                              {/* ── Mobile Drawer Sidebar ── */}
-                              {isMobileSidebarOpen && (
-                                <div
-                                  className="fixed inset-0 z-50 md:hidden"
-                                  onClick={() => setIsMobileSidebarOpen(false)}
-                                >
-                                  <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" />
-                                  <div
-                                    className="absolute left-0 top-0 h-full w-[80vw] max-w-xs bg-white shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {renderSidebarContent()}
-                                  </div>
-                                </div>
+      {/* ── Mobile Drawer Sidebar ── */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-50 md:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" />
+          <div
+            className="absolute left-0 top-0 h-full w-[80vw] max-w-xs bg-white shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {renderSidebarContent()}
+          </div>
+        </div>
       )}
 
-                            {/* ── Right Content Area ── */}
-                            <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-                              {/* Top Navbar */}
-                                    <header className="h-14 shrink-0 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between z-20">
-                                      <div className="flex items-center gap-3 flex-1 max-w-2xl">
-                                        {/* Hamburger Button (Mobile Only) */}
-                                        <button
-                                          type="button"
-                                          onClick={() => setIsMobileSidebarOpen(true)}
-                                          className="md:hidden h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                                          aria-label="Buka menu"
-                                        >
-                                          <Menu className="h-4 w-4" />
-                                        </button>
+      {/* ── Right Content Area ── */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Top Navbar */}
+        <header className="h-14 shrink-0 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between z-20">
+          <div className="flex items-center gap-3 flex-1 max-w-2xl">
+            {/* Hamburger Button (Mobile Only) */}
+            <button
+              type="button"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="md:hidden h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+              aria-label="Buka menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
 
-                                        {/* Badge SPBE Terintegrasi */}
-                                        <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold shrink-0">
-                                          <span className="rounded bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 border border-slate-200 tracking-wider">
-                                            SPBE TERINTEGRASI
-                                          </span>
-                                        </div>
+            {/* Badge SPBE Terintegrasi */}
+            <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold shrink-0">
+              <span className="rounded bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 border border-slate-200 tracking-wider">
+                SPBE TERINTEGRASI
+              </span>
+            </div>
 
-                                        {/* Global Search Input with Functional Flyout */}
-                                        <div className="relative w-full max-w-md" ref={searchContainerRef}>
-                                          <form onSubmit={handleSearchSubmit} className="relative w-full">
-                                            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                            <input
-                                              type="text"
-                                              value={searchQuery}
-                                              onChange={(e) => {
-                                                setSearchQuery(e.target.value)
-                                                setIsSearchOpen(true)
-                                              }}
-                                              onFocus={() => {
-                                                if (searchQuery.trim()) setIsSearchOpen(true)
-                                              }}
-                                              placeholder="Cari NPSN, nama sekolah, nomor tiket validasi..."
-                                              className="w-full h-8 pl-8 pr-8 text-xs bg-slate-50 border border-slate-200/80 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0B3052] focus:bg-white transition-all"
-                                            />
-                                            {searchQuery && (
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setSearchQuery("")
-                                                  setIsSearchOpen(false)
-                                                }}
-                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
-                                              >
-                                                <X className="h-3 w-3" />
-                                              </button>
-                                            )}
-                                          </form>
+            {/* Global Search Input with Functional Flyout */}
+            <div className="relative w-full max-w-md" ref={searchContainerRef}>
+              <form onSubmit={handleSearchSubmit} className="relative w-full">
+                <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setIsSearchOpen(true)
+                  }}
+                  onFocus={() => {
+                    if (searchQuery.trim()) setIsSearchOpen(true)
+                  }}
+                  placeholder="Cari NPSN, nama sekolah, nomor tiket validasi..."
+                  className="w-full h-8 pl-8 pr-8 text-xs bg-slate-50 border border-slate-200/80 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0B3052] focus:bg-white transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("")
+                      setIsSearchOpen(false)
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </form>
 
-                                          {/* Search Results Dropdown Flyout */}
-                                          {isSearchOpen && searchQuery.trim() && (
-                                              <div className="absolute left-0 top-full mt-2 w-full min-w-[300px] sm:min-w-[440px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 max-h-[460px] flex flex-col">
-                                                {/* Results Header */}
-                                                <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                                                  <span>
-                                                    Hasil pencarian: <strong className="text-slate-800">&quot;{searchQuery}&quot;</strong>
-                                                  </span>
-                                                  <span className="font-semibold text-slate-600">
-                                                    {searchResults.total} ditemukan
-                                                  </span>
-                                                </div>
+              {/* Search Results Dropdown Flyout */}
+              {isSearchOpen && searchQuery.trim() && (
+                <div className="absolute left-0 top-full mt-2 w-full min-w-[300px] sm:min-w-[440px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 max-h-[460px] flex flex-col">
+                  {/* Results Header */}
+                  <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>
+                      Hasil pencarian: <strong className="text-slate-800">&quot;{searchQuery}&quot;</strong>
+                    </span>
+                    <span className="font-semibold text-slate-600">
+                      {searchResults.total} ditemukan
+                    </span>
+                  </div>
 
-                                                <div className="overflow-y-auto flex-1 divide-y divide-slate-100">
-                                                  {/* Klaster / Tiket Matches */}
-                                                  {searchResults.klaster.length > 0 && (
-                                                    <div className="p-2 space-y-1">
-                                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                                                        <Ticket className="h-3 w-3 text-[#0B3052]" />
-                                                        <span>Klaster &amp; Tiket Validasi</span>
-                                                      </div>
-                                                      {searchResults.klaster.map((item) => (
-                                                        <div
-                                                          key={item.klaster_id}
-                                                          onClick={() => handleSelectKlaster(item.klaster_id)}
-                                                          className="p-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group flex items-start justify-between gap-3"
-                                                        >
-                                                          <div className="min-w-0">
-                                                            <div className="flex items-center gap-2 mb-0.5">
-                                                              <span className="font-mono font-bold text-[10px] text-[#0B3052] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                                                                {item.nomorTiket}
-                                                              </span>
-                                                              <span className="font-semibold text-xs text-slate-800 truncate group-hover:text-blue-600 transition-colors">
-                                                                {item.sekolah_npsn}
-                                                              </span>
-                                                            </div>
-                                                            <p className="text-[11px] text-slate-500 truncate">
-                                                              {item.label ?? "Klaster isu"}
-                                                            </p>
-                                                            <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                                                              NPSN: {item.sekolah_npsn} · {item.kategori}
-                                                            </div>
-                                                          </div>
-                                                          <div className="shrink-0 text-right">
-                                                            <span
-                                                              className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${item.skor_prioritas >= 70
-                                                                  ? "bg-rose-50 text-rose-700 border-rose-200"
-                                                                  : item.skor_prioritas >= 40
-                                                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                                }`}
-                                                            >
-                                                              SKOR {item.skor_prioritas}
-                                                            </span>
-                                                          </div>
-                                                        </div>
-                                                      ))}
-                                                    </div>
-                                                  )}
+                  <div className="overflow-y-auto flex-1 divide-y divide-slate-100">
+                    {/* Klaster / Tiket Matches */}
+                    {searchResults.klaster.length > 0 && (
+                      <div className="p-2 space-y-1">
+                        <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                          <Ticket className="h-3 w-3 text-[#0B3052]" />
+                          <span>Klaster &amp; Tiket Validasi</span>
+                        </div>
+                        {searchResults.klaster.map((item) => (
+                          <div
+                            key={item.klaster_id}
+                            onClick={() => handleSelectKlaster(item.klaster_id)}
+                            className="p-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group flex items-start justify-between gap-3"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="font-mono font-bold text-[10px] text-[#0B3052] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                                  {item.nomorTiket}
+                                </span>
+                                <span className="font-semibold text-xs text-slate-800 truncate group-hover:text-blue-600 transition-colors">
+                                  {item.sekolah_npsn}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 truncate">
+                                {item.label ?? "Klaster isu"}
+                              </p>
+                              <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                                NPSN: {item.sekolah_npsn} · {item.kategori}
+                              </div>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <span
+                                className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${item.skor_prioritas >= 70
+                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                  : item.skor_prioritas >= 40
+                                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  }`}
+                              >
+                                SKOR {item.skor_prioritas}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                                                  {/* Sekolah Matches */}
-                                                  {searchResults.sekolah.length > 0 && (
-                                                    <div className="p-2 space-y-1">
-                                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                                                        <School className="h-3 w-3 text-emerald-600" />
-                                                        <span>Entitas Sekolah di Lamongan</span>
-                                                      </div>
-                                                      {searchResults.sekolah.map((item) => (
-                                                        <div
-                                                          key={item.npsn}
-                                                          onClick={() => handleSelectSekolah(item.npsn)}
-                                                          className="p-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group flex items-start justify-between gap-3"
-                                                        >
-                                                          <div className="min-w-0">
-                                                            <div className="flex items-center gap-2 mb-0.5">
-                                                              <span className="rounded bg-slate-100 text-slate-700 text-[10px] font-bold px-1.5 py-0.5">
-                                                                {item.jenjang}
-                                                              </span>
-                                                              <span className="font-semibold text-xs text-slate-800 truncate group-hover:text-blue-600 transition-colors">
-                                                                {item.nama}
-                                                              </span>
-                                                            </div>
-                                                            <p className="text-[11px] text-slate-400 truncate">{item.alamat}</p>
-                                                            <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                                                              NPSN: {item.npsn}
-                                                            </div>
-                                                          </div>
-                                                          <div className="shrink-0">
-                                                            <span
-                                                              className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${item.penanda_masalah === "kritis"
-                                                                  ? "bg-rose-50 text-rose-700 border-rose-200"
-                                                                  : item.penanda_masalah === "perlu_perhatian"
-                                                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                                }`}
-                                                            >
-                                                              {item.penanda_masalah}
-                                                            </span>
-                                                          </div>
-                                                        </div>
-                                                      ))}
-                                                    </div>
-                                                  )}
+                    {/* Sekolah Matches */}
+                    {searchResults.sekolah.length > 0 && (
+                      <div className="p-2 space-y-1">
+                        <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                          <School className="h-3 w-3 text-emerald-600" />
+                          <span>Entitas Sekolah di Lamongan</span>
+                        </div>
+                        {searchResults.sekolah.map((item) => (
+                          <div
+                            key={item.npsn}
+                            onClick={() => handleSelectSekolah(item.npsn)}
+                            className="p-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group flex items-start justify-between gap-3"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="rounded bg-slate-100 text-slate-700 text-[10px] font-bold px-1.5 py-0.5">
+                                  {item.jenjang}
+                                </span>
+                                <span className="font-semibold text-xs text-slate-800 truncate group-hover:text-blue-600 transition-colors">
+                                  {item.nama}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 truncate">{item.alamat}</p>
+                              <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                                NPSN: {item.npsn}
+                              </div>
+                            </div>
+                            <div className="shrink-0">
+                              <span
+                                className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${item.penanda_masalah === "kritis"
+                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                  : item.penanda_masalah === "perlu_perhatian"
+                                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  }`}
+                              >
+                                {item.penanda_masalah}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                                                  {/* Empty State */}
-                                                  {searchResults.total === 0 && (
-                                                    <div className="p-6 text-center space-y-1">
-                                                      <Search className="h-6 w-6 text-slate-300 mx-auto mb-1" />
-                                                      <p className="text-xs font-bold text-slate-700">
-                                                        Tidak ditemukan data yang cocok
-                                                      </p>
-                                                      <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-                                                        Coba kata kunci lain seperti nama sekolah, nomor tiket (contoh: KLS-2026), atau NPSN.
-                                                      </p>
-                                                    </div>
-                                                  )}
-                                                </div>
+                    {/* Empty State */}
+                    {searchResults.total === 0 && (
+                      <div className="p-6 text-center space-y-1">
+                        <Search className="h-6 w-6 text-slate-300 mx-auto mb-1" />
+                        <p className="text-xs font-bold text-slate-700">
+                          Tidak ditemukan data yang cocok
+                        </p>
+                        <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                          Coba kata kunci lain seperti nama sekolah, nomor tiket (contoh: KLS-2026), atau NPSN.
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
-                                                {/* Results Footer */}
-                                                <div className="p-2 bg-slate-50/80 border-t border-slate-100 text-center">
-                                                  <button
-                                                    type="button"
-                                                    onClick={handleSearchSubmit}
-                                                    className="w-full h-7 rounded-lg text-xs font-semibold text-[#0B3052] hover:bg-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                                                  >
-                                                    <span>Lihat Semua di Antrian Validasi</span>
-                                                    <ArrowRight className="h-3 w-3" />
-                                                  </button>
-                                                </div>
-                                              </div>
+                  {/* Results Footer */}
+                  <div className="p-2 bg-slate-50/80 border-t border-slate-100 text-center">
+                    <button
+                      type="button"
+                      onClick={handleSearchSubmit}
+                      className="w-full h-7 rounded-lg text-xs font-semibold text-[#0B3052] hover:bg-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span>Lihat Semua di Antrian Validasi</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
               )}
-                                            </div>
+            </div>
           </div>
 
-                                        {/* Right Status Controls */}
-                                            <div className="flex items-center gap-2 sm:gap-3">
-                                              {/* Hash & Version indicator */}
-                                              <div className="hidden lg:flex items-center gap-2 font-mono text-[11px] text-slate-500">
-                                                <span>HASH: <strong className="text-slate-800">8F2A-90DC-71</strong></span>
-                                                <span>•</span>
-                                                <span>v2.4</span>
-                                              </div>
+          {/* Right Status Controls */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Hash & Version indicator */}
+            <div className="hidden lg:flex items-center gap-2 font-mono text-[11px] text-slate-500">
 
-                                              {/* Notification Bell with Dropdown */}
-                                              <div className="relative" ref={notifContainerRef}>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => setIsNotifOpen((prev) => !prev)}
-                                                  title="Notifikasi & Pembaruan Sistem"
-                                                  className={`relative h-8 w-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer ${isNotifOpen
-                                                      ? "bg-blue-50 border-blue-300 text-[#0B3052]"
-                                                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                                                    }`}
-                                                >
-                                                  <Bell className="h-4 w-4" />
-                                                  {unreadCount > 0 && (
-                                                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-rose-600 text-white font-bold text-[9px] flex items-center justify-center shadow-xs">
-                                                        {unreadCount}
-                                                      </span>
+            </div>
+
+            {/* Notification Bell with Dropdown */}
+            <div className="relative" ref={notifContainerRef}>
+              <button
+                type="button"
+                onClick={() => setIsNotifOpen((prev) => !prev)}
+                title="Notifikasi & Pembaruan Sistem"
+                className={`relative h-8 w-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer ${isNotifOpen
+                  ? "bg-blue-50 border-blue-300 text-[#0B3052]"
+                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-rose-600 text-white font-bold text-[9px] flex items-center justify-center shadow-xs">
+                    {unreadCount}
+                  </span>
                 )}
-                                                    </button>
+              </button>
 
               {/* Notification Popup Dropdown */}
-                                                  {isNotifOpen && (
-                                                    <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
-                                                      {/* Header */}
-                                                      <div className="px-4 py-3 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                          <span className="font-bold text-xs text-slate-800">Notifikasi Sistem</span>
-                                                          {unreadCount > 0 && (
-                                                            <span className="rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-[10px] px-2 py-0.2">
-                                                              {unreadCount} Baru
-                                                            </span>
-                                                          )}
-                                                        </div>
-                                                        {unreadCount > 0 && (
-                                                          <button
-                                                            type="button"
-                                                            onClick={markAllNotifsAsRead}
-                                                            className="text-[11px] font-semibold text-[#0B3052] hover:underline flex items-center gap-1 cursor-pointer"
-                                                          >
-                                                            <CheckCheck className="h-3 w-3" />
-                                                            <span>Tandai dibaca</span>
-                                                          </button>
-                                                        )}
-                                                      </div>
+              {isNotifOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                  {/* Header */}
+                  <div className="px-4 py-3 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-slate-800">Notifikasi Sistem</span>
+                      {unreadCount > 0 && (
+                        <span className="rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-[10px] px-2 py-0.2">
+                          {unreadCount} Baru
+                        </span>
+                      )}
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={markAllNotifsAsRead}
+                        className="text-[11px] font-semibold text-[#0B3052] hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <CheckCheck className="h-3 w-3" />
+                        <span>Tandai dibaca</span>
+                      </button>
+                    )}
+                  </div>
 
-                                                      {/* List of Notifications */}
-                                                      <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
-                                                        {notifications.map((item) => (
-                                                          <div
-                                                            key={item.id}
-                                                            onClick={() => handleNotifClick(item)}
-                                                            className={`p-3.5 hover:bg-slate-50/80 cursor-pointer transition-colors flex items-start gap-3 ${item.unread ? "bg-blue-50/30" : ""
-                                                              }`}
-                                                          >
-                                                            <div className="shrink-0 mt-0.5">
-                                                              {item.type === "kritis" ? (
-                                                                <div className="h-7 w-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
-                                                                  <AlertTriangle className="h-3.5 w-3.5" />
-                                                                </div>
-                                                              ) : item.type === "warning" ? (
-                                                                <div className="h-7 w-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
-                                                                  <Clock className="h-3.5 w-3.5" />
-                                                                </div>
-                                                              ) : item.type === "success" ? (
-                                                                <div className="h-7 w-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                                                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                                                </div>
-                                                              ) : (
-                                                                <div className="h-7 w-7 rounded-lg bg-blue-100 text-[#0B3052] flex items-center justify-center">
-                                                                  <Sparkles className="h-3.5 w-3.5" />
-                                                                </div>
-                                                              )}
-                                                            </div>
+                  {/* List of Notifications */}
+                  <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+                    {notifications.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleNotifClick(item)}
+                        className={`p-3.5 hover:bg-slate-50/80 cursor-pointer transition-colors flex items-start gap-3 ${item.unread ? "bg-blue-50/30" : ""
+                          }`}
+                      >
+                        <div className="shrink-0 mt-0.5">
+                          {item.type === "kritis" ? (
+                            <div className="h-7 w-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                            </div>
+                          ) : item.type === "warning" ? (
+                            <div className="h-7 w-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                              <Clock className="h-3.5 w-3.5" />
+                            </div>
+                          ) : item.type === "success" ? (
+                            <div className="h-7 w-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            </div>
+                          ) : (
+                            <div className="h-7 w-7 rounded-lg bg-blue-100 text-[#0B3052] flex items-center justify-center">
+                              <Sparkles className="h-3.5 w-3.5" />
+                            </div>
+                          )}
+                        </div>
 
-                                                            <div className="flex-1 min-w-0">
-                                                              <div className="flex items-center justify-between gap-1 mb-0.5">
-                                                                <span className="font-bold text-xs text-slate-900 truncate">
-                                                                  {item.title}
-                                                                </span>
-                                                                <span className="text-[10px] text-slate-400 shrink-0 font-medium">
-                                                                  {item.time}
-                                                                </span>
-                                                              </div>
-                                                              <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
-                                                                {item.desc}
-                                                              </p>
-                                                              <div className="flex items-center gap-2 mt-1.5">
-                                                                <span className="rounded bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 border border-slate-200">
-                                                                  {item.category}
-                                                                </span>
-                                                                {item.unread && (
-                                                                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-                                                                )}
-                                                              </div>
-                                                            </div>
-                                                          </div>
-                                                        ))}
-                                                      </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <span className="font-bold text-xs text-slate-900 truncate">
+                              {item.title}
+                            </span>
+                            <span className="text-[10px] text-slate-400 shrink-0 font-medium">
+                              {item.time}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
+                            {item.desc}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="rounded bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 border border-slate-200">
+                              {item.category}
+                            </span>
+                            {item.unread && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-                                                      {/* Footer */}
-                                                      <div className="p-2.5 bg-slate-50/90 border-t border-slate-100 text-center">
-                                                        <Link
-                                                          to="/dinas/log-audit"
-                                                          onClick={() => setIsNotifOpen(false)}
-                                                          className="text-xs font-bold text-[#0B3052] hover:underline flex items-center justify-center gap-1.5 py-1"
-                                                        >
-                                                          <span>Lihat Semua Riwayat di Log Audit PDP</span>
-                                                          <ArrowRight className="h-3 w-3" />
-                                                        </Link>
-                                                      </div>
-                                                    </div>
-                                                  )}
-                                              </div>
+                  {/* Footer */}
+                  <div className="p-2.5 bg-slate-50/90 border-t border-slate-100 text-center">
+                    <Link
+                      to="/dinas/log-audit"
+                      onClick={() => setIsNotifOpen(false)}
+                      className="text-xs font-bold text-[#0B3052] hover:underline flex items-center justify-center gap-1.5 py-1"
+                    >
+                      <span>Lihat Semua Riwayat di Log Audit PDP</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
-                                              {/* Account Menu with Dropdown */}
-                                              <div className="relative" ref={accountContainerRef}>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    setIsAccountOpen((prev) => !prev)
-                                                    setIsNotifOpen(false)
-                                                    setIsSearchOpen(false)
-                                                  }}
-                                                  title="Menu Akun Verifikator"
-                                          className={`relative h-8 w-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
-                                            isAccountOpen
-                                              ? "bg-[#0B3052] text-white border-[#0B3052] shadow-xs"
-                                              : "bg-[#0B3052] text-white border-transparent hover:opacity-90"
-                                          }`}
-                                        >
+            {/* Account Menu with Dropdown */}
+            <div className="relative" ref={accountContainerRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAccountOpen((prev) => !prev)
+                  setIsNotifOpen(false)
+                  setIsSearchOpen(false)
+                }}
+                title="Menu Akun Verifikator"
+                className={`relative h-8 w-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${isAccountOpen
+                    ? "bg-[#0B3052] text-white border-[#0B3052] shadow-xs"
+                    : "bg-[#0B3052] text-white border-transparent hover:opacity-90"
+                  }`}
+              >
                 <span className="font-bold text-xs">{inisialPetugas}</span>
               </button>
 

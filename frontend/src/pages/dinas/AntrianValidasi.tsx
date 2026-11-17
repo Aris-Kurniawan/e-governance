@@ -548,7 +548,7 @@ export default function AntrianValidasi() {
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[calc(100vh-210px)] overflow-y-auto pr-2 custom-scrollbar">
                   {daftarKlaster.map((klaster, idx) => {
                     const isSelected = klaster.klaster_id === selectedKlaster.klaster_id
                     const profil = profilSekolah.get(klaster.sekolah_npsn)
@@ -618,7 +618,7 @@ export default function AntrianValidasi() {
               </div>
 
               {/* SISI KANAN (7 Cols): DETAIL KLASTER TERPILIH */}
-              <div className="lg:col-span-7 space-y-5">
+              <div className="lg:col-span-7 space-y-5 max-h-[calc(100vh-210px)] overflow-y-auto pr-2 custom-scrollbar">
                 {/* CARD 1: Identitas Klaster & 3 KPI */}
                 <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
@@ -830,7 +830,7 @@ export default function AntrianValidasi() {
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[calc(100vh-210px)] overflow-y-auto pr-2 custom-scrollbar">
                   {daftarMandiri.map((m) => {
                     const isSelected = m.id === selectedMandiri.id
                     const profil = profilSekolah.get(m.sekolah_npsn)
@@ -905,7 +905,7 @@ export default function AntrianValidasi() {
               </div>
 
               {/* SISI KANAN (7 Cols): DETAIL ADUAN MANDIRI TERPILIH */}
-              <div className="lg:col-span-7 space-y-5">
+              <div className="lg:col-span-7 space-y-5 max-h-[calc(100vh-210px)] overflow-y-auto pr-2 custom-scrollbar">
                 {/* CARD 1: Identitas Aduan Mandiri & 3 KPI */}
                 <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
