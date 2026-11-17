@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { TiltCard } from "@/components/ui/TiltCard"
 import { useAuth } from "@/context/AuthContext"
 import {
   ArrowRight,
@@ -117,92 +118,114 @@ export default function Landing() {
 
             {/* Right Floating Preview Cards – disembunyikan di mobile */}
             <div className="hidden lg:block lg:col-span-5 relative">
-              {/* Kartu kecil: sekolah tervalidasi */}
-              <div className="absolute -top-4 left-0 z-20 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
-                <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                </div>
-                <div className="leading-tight">
-                  <span className="block text-xs font-bold text-slate-900">SDN 1 Sukodadi</span>
-                  <span className="block text-[10px] text-slate-400">Laporan Terverifikasi · NPSN 6401 Validasi</span>
-                </div>
-              </div>
-
-              {/* Kartu utama: Indeks Integritas Sarpras */}
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/50">
-                <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                  <span className="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">
-                    Verifikasi Sarpras Terbuka
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live Sistem
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center gap-5">
-                  {/* Gauge indeks */}
-                  <div className="relative h-24 w-24 shrink-0">
-                    <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                      <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="10" />
-                      <circle
-                        cx="50" cy="50" r="42" fill="none"
-                        stroke="#2563EB" strokeWidth="10" strokeLinecap="round"
-                        strokeDasharray={2 * Math.PI * 42}
-                        strokeDashoffset={2 * Math.PI * 42 * (1 - 0.942)}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xl font-extrabold text-slate-900 leading-none">94.2</span>
-                      <span className="text-[9px] font-bold text-slate-400 tracking-wider mt-0.5">INDEKS</span>
-                    </div>
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-slate-900">Indeks Integritas Sarpras</h3>
-                    <p className="text-[11px] text-slate-500 leading-snug mt-1">
-                      Berbasis audit 62 sekolah dan 49 laporan warga terverifikasi.
-                    </p>
-                    <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      Terverifikasi Dapodik &amp; Warga
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 mb-1.5">
-                    <span>Realisasi Perbaikan Semester Ini</span>
-                    <span className="font-bold text-slate-700">64%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full w-[64%] rounded-full bg-blue-600" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Kartu melayang: AI Consensus */}
-              <div className="absolute -bottom-6 -left-6 z-20 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-md bg-blue-50 flex items-center justify-center">
-                    <Bot className="h-3.5 w-3.5 text-blue-600" />
+              <TiltCard
+                maxTilt={9}
+                scale={1.025}
+                glare={true}
+                className="relative rounded-3xl p-1 bg-transparent border-0 shadow-none cursor-pointer"
+              >
+                {/* Kartu kecil: sekolah tervalidasi */}
+                <div
+                  style={{ transform: "translateZ(36px)" }}
+                  className="absolute -top-4 left-0 z-30 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60 transition-transform duration-200"
+                >
+                  <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                   </div>
                   <div className="leading-tight">
-                    <span className="block text-[11px] font-bold text-slate-900">AI Consensus: 0.88</span>
-                    <span className="block text-[10px] text-slate-400">Kualitas Klaster</span>
+                    <span className="block text-xs font-bold text-slate-900">SDN 1 Sukodadi</span>
+                    <span className="block text-[10px] text-slate-400">Laporan Terverifikasi · NPSN 6401 Validasi</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Pil isu mendesak */}
-              <div className="absolute top-1/2 -right-4 z-20 rounded-full bg-amber-50 border border-amber-200/80 px-3 py-1.5 text-[10px] font-bold text-amber-700 shadow-sm">
-                4 Isu Mendesak
-              </div>
+                {/* Kartu utama: Indeks Integritas Sarpras */}
+                <div
+                  style={{ transform: "translateZ(18px)" }}
+                  className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/50 transition-shadow duration-300 hover:border-blue-300"
+                >
+                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <span className="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">
+                      Verifikasi Sarpras Terbuka
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Sistem
+                    </span>
+                  </div>
 
-              {/* Pil status antrean */}
-              <div className="absolute -bottom-4 right-4 z-20 rounded-full bg-[#0B3052] px-4 py-2 text-[10px] font-bold text-white shadow-lg">
-                Status: Masuk Antrian Prioritas Dinas
-              </div>
+                  <div className="mt-4 flex items-center gap-5">
+                    {/* Gauge indeks */}
+                    <div className="relative h-24 w-24 shrink-0">
+                      <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                        <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="10" />
+                        <circle
+                          cx="50" cy="50" r="42" fill="none"
+                          stroke="#2563EB" strokeWidth="10" strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 42}
+                          strokeDashoffset={2 * Math.PI * 42 * (1 - 0.942)}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-xl font-extrabold text-slate-900 leading-none">94.2</span>
+                        <span className="text-[9px] font-bold text-slate-400 tracking-wider mt-0.5">INDEKS</span>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-slate-900">Indeks Integritas Sarpras</h3>
+                      <p className="text-[11px] text-slate-500 leading-snug mt-1">
+                        Berbasis audit 62 sekolah dan 49 laporan warga terverifikasi.
+                      </p>
+                      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Terverifikasi Dapodik &amp; Warga
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 mb-1.5">
+                      <span>Realisasi Perbaikan Semester Ini</span>
+                      <span className="font-bold text-slate-700">64%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full w-[64%] rounded-full bg-blue-600" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kartu melayang: AI Consensus */}
+                <div
+                  style={{ transform: "translateZ(42px)" }}
+                  className="absolute -bottom-6 -left-6 z-30 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60 transition-transform duration-200"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-md bg-blue-50 flex items-center justify-center">
+                      <Bot className="h-3.5 w-3.5 text-blue-600" />
+                    </div>
+                    <div className="leading-tight">
+                      <span className="block text-[11px] font-bold text-slate-900">AI Consensus: 0.88</span>
+                      <span className="block text-[10px] text-slate-400">Kualitas Klaster</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pil isu mendesak */}
+                <div
+                  style={{ transform: "translateZ(38px)" }}
+                  className="absolute top-1/2 -right-4 z-30 rounded-full bg-amber-50 border border-amber-200/80 px-3 py-1.5 text-[10px] font-bold text-amber-700 shadow-sm"
+                >
+                  4 Isu Mendesak
+                </div>
+
+                {/* Pil status antrean */}
+                <div
+                  style={{ transform: "translateZ(46px)" }}
+                  className="absolute -bottom-4 right-4 z-30 rounded-full bg-[#0B3052] px-4 py-2 text-[10px] font-bold text-white shadow-lg"
+                >
+                  Status: Masuk Antrian Prioritas Dinas
+                </div>
+              </TiltCard>
             </div>
           </div>
 
@@ -275,7 +298,11 @@ export default function Landing() {
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {/* Kartu 1 */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+            <TiltCard
+              maxTilt={7}
+              scale={1.025}
+              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group"
+            >
               <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
                 <Lock className="h-5 w-5" />
               </div>
@@ -288,12 +315,15 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Sanitasi Kriptografi 100%</span>
-
               </div>
-            </div>
+            </TiltCard>
 
             {/* Kartu 2 */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+            <TiltCard
+              maxTilt={7}
+              scale={1.025}
+              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group"
+            >
               <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
                 <Bot className="h-5 w-5" />
               </div>
@@ -306,12 +336,15 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Cosine Distance Matching</span>
-
               </div>
-            </div>
+            </TiltCard>
 
             {/* Kartu 3 */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+            <TiltCard
+              maxTilt={7}
+              scale={1.025}
+              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group"
+            >
               <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
                 <ThumbsUp className="h-5 w-5" />
               </div>
@@ -324,12 +357,15 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Konsensus Warga Transparan</span>
-
               </div>
-            </div>
+            </TiltCard>
 
             {/* Kartu 4 */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+            <TiltCard
+              maxTilt={7}
+              scale={1.025}
+              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group"
+            >
               <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
                 <Activity className="h-5 w-5" />
               </div>
@@ -342,9 +378,8 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Status Ledger D-32 Terbuka</span>
-
               </div>
-            </div>
+            </TiltCard>
           </div>
         </div>
       </section>
@@ -355,7 +390,11 @@ export default function Landing() {
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             {/* Mockup Ponsel — mobile: setelah teks, desktop: kolom kiri */}
             <div className="order-2 flex justify-center lg:order-1 lg:justify-start">
-              <div className="w-full max-w-[320px] rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/30">
+              <TiltCard
+                maxTilt={6}
+                scale={1.02}
+                className="w-full max-w-[320px] rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/30 cursor-pointer"
+              >
                 <div className="flex items-center justify-between pb-3">
                   <span className="text-xs font-extrabold text-slate-900">SIMAKIS Mobile</span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">
@@ -411,7 +450,7 @@ export default function Landing() {
                   </span>
                   <span className="text-xs font-extrabold text-slate-900">Rp 125.000.000</span>
                 </div>
-              </div>
+              </TiltCard>
             </div>
 
             {/* Langkah 1–3 — mobile: urutan pertama */}
