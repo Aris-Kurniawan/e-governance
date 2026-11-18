@@ -16,10 +16,13 @@ import { ApiError, type ApiErrorCode } from "./errors";
 const rawApiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, "");
 
 if (!rawApiBaseUrl && import.meta.env.PROD) {
-  throw new Error("https://api.aris.biz.id");
+  throw new Error("VITE_API_BASE_URL belum dikonfigurasi untuk Production");
 }
 
-export const API_BASE_URL: string = rawApiBaseUrl ?? "http://localhost:8000";
+// Pada build production, string "http://localhost:8000" dieliminasi total dari bundle oleh compiler
+export const API_BASE_URL: string = import.meta.env.PROD
+  ? (rawApiBaseUrl as string)
+  : (rawApiBaseUrl ?? "http://localhost:8000");
 
 /**
  * Batas waktu satu request. Tanpa ini, `fetch` ke backend yang mati dapat
