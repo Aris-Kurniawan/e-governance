@@ -184,22 +184,8 @@ function SchoolVortexPill({
   )
 }
 
-// Komponen Kartu Rekapitulasi Sekolah Modern Gelap dengan Background Logo SIMAKIS Transparan (Referensi OmniRoute)
-function OmniRouteStyleSchoolCard({ progress }: { progress: MotionValue<number> }) {
-  const [count, setCount] = useState(0)
-
-  useMotionValueEvent(progress, "change", (latest) => {
-    // Menghitung naik dari 0 ke 62 seiring scroll progress berjalan
-    if (latest <= 0.22) {
-      setCount(0)
-    } else if (latest >= 0.70) {
-      setCount(62)
-    } else {
-      const p = (latest - 0.22) / (0.70 - 0.22)
-      setCount(Math.min(62, Math.max(0, Math.round(p * 62))))
-    }
-  })
-
+// Komponen Tampilan Kartu Rekapitulasi Sekolah Modern Gelap dengan Background Logo SIMAKIS Transparan
+function SchoolCardView({ count }: { count: number }) {
   // Breakdown proporsional yang selalu sinkron dan jumlahnya tepat sama dengan count
   const sdCount = Math.min(37, Math.round((count * 37) / 62))
   const smpCount = Math.min(12, Math.round((count * 12) / 62))
@@ -208,7 +194,6 @@ function OmniRouteStyleSchoolCard({ progress }: { progress: MotionValue<number> 
 
   return (
     <div className="w-full max-w-[420px] aspect-4/3 sm:aspect-square rounded-[36px] bg-[#071626]/35 border border-white/10 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden relative flex flex-col justify-center items-center p-6 sm:p-8 select-none transition-all duration-300">
-
       {/* ── WATERMARK LOGO SIMAKIS TRANSPARAN DI LATAR BELAKANG (S Monokrom Geometris) ── */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
         <img
@@ -260,9 +245,27 @@ function OmniRouteStyleSchoolCard({ progress }: { progress: MotionValue<number> 
           </div>
         </div>
       </div>
-
     </div>
   )
+}
+
+// Wrapper beranimasi scroll untuk desktop
+function OmniRouteStyleSchoolCard({ progress }: { progress: MotionValue<number> }) {
+  const [count, setCount] = useState(0)
+
+  useMotionValueEvent(progress, "change", (latest) => {
+    // Menghitung naik dari 0 ke 62 seiring scroll progress berjalan
+    if (latest <= 0.22) {
+      setCount(0)
+    } else if (latest >= 0.70) {
+      setCount(62)
+    } else {
+      const p = (latest - 0.22) / (0.70 - 0.22)
+      setCount(Math.min(62, Math.max(0, Math.round(p * 62))))
+    }
+  })
+
+  return <SchoolCardView count={count} />
 }
 
 // Komponen Pembungkus Langkah Pelaporan yang muncul bergantian saat di-scroll
@@ -393,6 +396,17 @@ export default function ConvergingWorkflow() {
     })
   }, [])
 
+  // Deteksi ukuran layar desktop (>= 1024px)
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(typeof window !== "undefined" && window.innerWidth >= 1024)
+    }
+    checkDesktop()
+    window.addEventListener("resize", checkDesktop, { passive: true })
+    return () => window.removeEventListener("resize", checkDesktop)
+  }, [])
+
   // Cek rasio layar sekali di awal / saat resize (bukan 124x per scroll frame)
   const [screenRatio, setScreenRatio] = useState(1.0)
   useEffect(() => {
@@ -433,145 +447,217 @@ export default function ConvergingWorkflow() {
   const progressPercent = useTransform(smoothProgress, [0, 1], ["0%", "100%"])
 
   return (
-    <section
-      ref={containerRef}
-      className="relative w-full"
-      style={{
-        // Runway scroll 340vh memberikan kenyamanan alur bergantian yang lapang
-        minHeight: "340vh",
-      }}
-    >
-      {/* ── STICKY PINNED VIEWPORT ── */}
-      <div
-        className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between pt-14 sm:pt-18 pb-6 px-4 sm:px-6 lg:px-8 select-none"
+    <>
+      {/* ════════════════════════════════════════════════════════════════════
+          TAMPILAN MOBILE (< lg):
+          Langsung tampilkan konten langkah-langkah pelaporan tanpa animasi scroll
+         ════════════════════════════════════════════════════════════════════ */}
+      <section
+        className="block lg:hidden w-full py-12 sm:py-16 px-4 sm:px-6 select-none relative overflow-hidden"
         style={{
           backgroundColor: "#07192D",
           backgroundImage: "linear-gradient(180deg, #09233F 0%, #07192D 50%, #051322 100%)",
         }}
       >
         {/* Ambience Glow */}
-        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-blue-500/10 blur-[140px]" />
-        <div className="pointer-events-none absolute bottom-0 right-0 h-96 w-96 rounded-full bg-cyan-500/5 blur-[120px]" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[400px] w-[500px] rounded-full bg-blue-500/10 blur-[120px]" />
 
-        {/* ════════════════════════════════════════════════════════════════════
-            SCENE AWAL: JUDUL & PETUNJUK KONSTELASI 62 SEKOLAH
-            Bebas dari tumpukan kartu karena kartu diatur berada di luar radius teks!
-           ════════════════════════════════════════════════════════════════════ */}
-        <motion.div
-          style={{
-            opacity: centerPromptOpacity,
-            scale: centerPromptScale,
-          }}
-          className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 pointer-events-none"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-[#0c243d] px-3.5 py-1 text-xs font-bold text-blue-200 mb-3 shadow-xs">
-            <Sparkles className="h-3.5 w-3.5 text-blue-300" />
-            <span>Dapodik Wilayah Kerja Kecamatan Lamongan</span>
+        <div className="max-w-xl mx-auto space-y-8 relative z-10">
+          {/* Kartu Rekapitulasi Sekolah (62+ Sekolah Terdaftar) */}
+          <div className="flex justify-center">
+            <SchoolCardView count={62} />
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight max-w-xl">
-            62 Sekolah Terdaftar di SIMAKIS
-          </h2>
-          <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-md leading-relaxed">
-            Scroll ke bawah — saksikan aduan dari 62 sekolah bergerak masuk ke dalam membentuk alur penanganan resmi yang transparan.
-          </p>
-          <div className="mt-4 flex items-center gap-1.5 text-xs text-blue-300 font-mono animate-pulse">
-            <span>Scroll perlahan ke bawah</span>
-            <ChevronDown className="h-4 w-4 animate-bounce" />
-          </div>
-        </motion.div>
 
-        {/* ════════════════════════════════════════════════════════════════════
-            STAGE 62 CHIP SEKOLAH: BERGERAK LURUS RADIAL MASUK KE DALAM
-            (Bukan memutar sudut kartu)
-           ════════════════════════════════════════════════════════════════════ */}
-        <div
-          className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden"
-          style={{ perspective: "1200px" }}
-        >
-          {schoolNodes.map((school) => (
-            <SchoolVortexPill
-              key={school.id}
-              school={school}
-              progress={smoothProgress}
-              ratio={screenRatio}
-            />
-          ))}
-        </div>
-
-        {/* ════════════════════════════════════════════════════════════════════
-            KONTEN TIGA LANGKAH MUDAH & KARTU REKAPITULASI OMNIROUTE STYLE
-            Transparan 0% di scene awal, mekar mengembang dari pusat!
-           ════════════════════════════════════════════════════════════════════ */}
-        <motion.div
-          style={{
-            opacity: workflowOpacity,
-            scale: workflowScale,
-          }}
-          className="relative z-10 max-w-7xl w-full mx-auto my-auto py-2"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-
-            {/* ── KOLOM KIRI: KARTU REKAPITULASI OMNIROUTE STYLE DENGAN WATERMARK LOGO SIMAKIS ── */}
-            <div className="lg:col-span-5 flex justify-center lg:justify-end">
-              <OmniRouteStyleSchoolCard progress={smoothProgress} />
+          {/* Konten Alur Kerja Partisipatif */}
+          <div className="space-y-6">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-300 mb-3">
+                <Sparkles className="h-3.5 w-3.5 text-blue-400" />
+                <span>Alur Kerja Partisipatif</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                Tiga Langkah Mudah Mengawal Fasilitas Belajar
+              </h2>
             </div>
 
-            {/* ── KOLOM KANAN: ALUR KERJA PARTISIPATIF (3 LANGKAH MUNCUL BERGANTIAN) ── */}
-            <div className="lg:col-span-7 space-y-5">
-
-              {/* Header Judul Alur */}
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-300 mb-3">
-                  <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-                  <span>Alur Kerja Partisipatif</span>
+            {/* List 3 Langkah Pelaporan (Langsung Tampak Tanpa Scroll) */}
+            <div className="space-y-5">
+              {STEPS_DATA.map((step) => (
+                <div key={step.stepNumber} className="flex items-start gap-4">
+                  <div className="h-11 w-11 rounded-full font-black text-sm flex items-center justify-center shrink-0 shadow-lg mt-0.5 bg-blue-600 text-white shadow-blue-600/40 ring-4 ring-blue-500/20">
+                    {step.stepNumber}
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-white leading-snug">
+                      {step.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                      {step.desc}
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-2xl sm:text-4xl lg:text-[38px] font-extrabold text-white tracking-tight leading-tight">
-                  Tiga Langkah Mudah Mengawal Fasilitas Belajar
-                </h2>
-              </div>
-
-              {/* List 3 Langkah (Muncul Bergantian Satu per Satu Saat Di-scroll) */}
-              <div className="space-y-4 pt-1">
-                {STEPS_DATA.map((step, idx) => (
-                  <StaggeredStepItem
-                    key={step.stepNumber}
-                    step={step}
-                    index={idx}
-                    progress={smoothProgress}
-                  />
-                ))}
-              </div>
-
-              {/* Tombol CTA (Muncul di Akhir Alur) */}
-              <motion.div
-                style={{ opacity: ctaOpacity, y: ctaY }}
-                className="pt-2 flex flex-wrap items-center gap-4"
-              >
-                <Button
-                  onClick={handleMulaiLapor}
-                  className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3.5 h-auto rounded-xl text-xs sm:text-sm shadow-xl shadow-blue-600/30 transition-all duration-300 cursor-pointer inline-flex items-center gap-2"
-                >
-                  <span>Mulai Laporkan Sarpras Sekarang</span>
-                  <ArrowUpRight className="h-4 w-4" />
-                </Button>
-              </motion.div>
-
+              ))}
             </div>
 
-          </div>
-        </motion.div>
-
-        {/* Indikator scroll bar di paling bawah sticky frame */}
-        <div className="relative z-20 w-full max-w-xs mx-auto pb-1 flex items-center justify-center gap-2">
-          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-blue-500 to-emerald-400"
-              style={{ width: progressPercent }}
-            />
+            {/* Tombol CTA */}
+            <div className="pt-2">
+              <Button
+                onClick={handleMulaiLapor}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3.5 h-auto rounded-xl text-xs sm:text-sm shadow-xl shadow-blue-600/30 transition-all duration-300 cursor-pointer inline-flex items-center justify-center gap-2"
+              >
+                <span>Mulai Laporkan Sarpras Sekarang</span>
+                <ArrowUpRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
+      </section>
 
-      </div>
-    </section>
+      {/* ════════════════════════════════════════════════════════════════════
+          TAMPILAN DESKTOP (>= lg):
+          Animasi Scroll Konvergensi 62 Sekolah & Runway 340vh
+         ════════════════════════════════════════════════════════════════════ */}
+      <section
+        ref={containerRef}
+        className="hidden lg:block relative w-full"
+        style={{
+          // Runway scroll 340vh memberikan kenyamanan alur bergantian yang lapang
+          minHeight: "340vh",
+        }}
+      >
+        {/* ── STICKY PINNED VIEWPORT ── */}
+        <div
+          className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between pt-14 sm:pt-18 pb-6 px-4 sm:px-6 lg:px-8 select-none"
+          style={{
+            backgroundColor: "#07192D",
+            backgroundImage: "linear-gradient(180deg, #09233F 0%, #07192D 50%, #051322 100%)",
+          }}
+        >
+          {/* Ambience Glow */}
+          <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-blue-500/10 blur-[140px]" />
+          <div className="pointer-events-none absolute bottom-0 right-0 h-96 w-96 rounded-full bg-cyan-500/5 blur-[120px]" />
+
+          {/* ════════════════════════════════════════════════════════════════════
+              SCENE AWAL: JUDUL & PETUNJUK KONSTELASI 62 SEKOLAH
+              Bebas dari tumpukan kartu karena kartu diatur berada di luar radius teks!
+             ════════════════════════════════════════════════════════════════════ */}
+          <motion.div
+            style={{
+              opacity: centerPromptOpacity,
+              scale: centerPromptScale,
+            }}
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 pointer-events-none"
+          >
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-[#0c243d] px-3.5 py-1 text-xs font-bold text-blue-200 mb-3 shadow-xs">
+              <Sparkles className="h-3.5 w-3.5 text-blue-300" />
+              <span>Dapodik Wilayah Kerja Kecamatan Lamongan</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight max-w-xl">
+              62 Sekolah Terdaftar di SIMAKIS
+            </h2>
+            <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-md leading-relaxed">
+              Scroll ke bawah — saksikan aduan dari 62 sekolah bergerak masuk ke dalam membentuk alur penanganan resmi yang transparan.
+            </p>
+            <div className="mt-4 flex items-center gap-1.5 text-xs text-blue-300 font-mono animate-pulse">
+              <span>Scroll perlahan ke bawah</span>
+              <ChevronDown className="h-4 w-4 animate-bounce" />
+            </div>
+          </motion.div>
+
+          {/* ════════════════════════════════════════════════════════════════════
+              STAGE 62 CHIP SEKOLAH: BERGERAK LURUS RADIAL MASUK KE DALAM
+              (Hanya dirender pada layar desktop)
+             ════════════════════════════════════════════════════════════════════ */}
+          <div
+            className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden"
+            style={{ perspective: "1200px" }}
+          >
+            {isDesktop &&
+              schoolNodes.map((school) => (
+                <SchoolVortexPill
+                  key={school.id}
+                  school={school}
+                  progress={smoothProgress}
+                  ratio={screenRatio}
+                />
+              ))}
+          </div>
+
+          {/* ════════════════════════════════════════════════════════════════════
+              KONTEN TIGA LANGKAH MUDAH & KARTU REKAPITULASI OMNIROUTE STYLE
+              Transparan 0% di scene awal, mekar mengembang dari pusat!
+             ════════════════════════════════════════════════════════════════════ */}
+          <motion.div
+            style={{
+              opacity: workflowOpacity,
+              scale: workflowScale,
+            }}
+            className="relative z-10 max-w-7xl w-full mx-auto my-auto py-2"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+
+              {/* ── KOLOM KIRI: KARTU REKAPITULASI OMNIROUTE STYLE DENGAN WATERMARK LOGO SIMAKIS ── */}
+              <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                <OmniRouteStyleSchoolCard progress={smoothProgress} />
+              </div>
+
+              {/* ── KOLOM KANAN: ALUR KERJA PARTISIPATIF (3 LANGKAH MUNCUL BERGANTIAN) ── */}
+              <div className="lg:col-span-7 space-y-5">
+
+                {/* Header Judul Alur */}
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-300 mb-3">
+                    <Sparkles className="h-3.5 w-3.5 text-blue-400" />
+                    <span>Alur Kerja Partisipatif</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-4xl lg:text-[38px] font-extrabold text-white tracking-tight leading-tight">
+                    Tiga Langkah Mudah Mengawal Fasilitas Belajar
+                  </h2>
+                </div>
+
+                {/* List 3 Langkah (Muncul Bergantian Satu per Satu Saat Di-scroll) */}
+                <div className="space-y-4 pt-1">
+                  {STEPS_DATA.map((step, idx) => (
+                    <StaggeredStepItem
+                      key={step.stepNumber}
+                      step={step}
+                      index={idx}
+                      progress={smoothProgress}
+                    />
+                  ))}
+                </div>
+
+                {/* Tombol CTA (Muncul di Akhir Alur) */}
+                <motion.div
+                  style={{ opacity: ctaOpacity, y: ctaY }}
+                  className="pt-2 flex flex-wrap items-center gap-4"
+                >
+                  <Button
+                    onClick={handleMulaiLapor}
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3.5 h-auto rounded-xl text-xs sm:text-sm shadow-xl shadow-blue-600/30 transition-all duration-300 cursor-pointer inline-flex items-center gap-2"
+                  >
+                    <span>Mulai Laporkan Sarpras Sekarang</span>
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+
+              </div>
+
+            </div>
+          </motion.div>
+
+          {/* Indikator scroll bar di paling bawah sticky frame */}
+          <div className="relative z-20 w-full max-w-xs mx-auto pb-1 flex items-center justify-center gap-2">
+            <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-blue-500 to-emerald-400"
+                style={{ width: progressPercent }}
+              />
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </>
   )
 }
