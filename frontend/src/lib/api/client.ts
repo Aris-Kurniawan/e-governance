@@ -13,9 +13,13 @@
 
 import { ApiError, type ApiErrorCode } from "./errors";
 
-export const API_BASE_URL: string =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, "") ??
-  "http://localhost:8000";
+const rawApiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, "");
+
+if (!rawApiBaseUrl && import.meta.env.PROD) {
+  throw new Error("https://api.aris.biz.id");
+}
+
+export const API_BASE_URL: string = rawApiBaseUrl ?? "http://localhost:8000";
 
 /**
  * Batas waktu satu request. Tanpa ini, `fetch` ke backend yang mati dapat
@@ -267,7 +271,7 @@ export async function request<T>(
       "NETWORK_ERROR",
       lewatWaktu
         ? `Server tidak merespons dalam ${Math.round((timeoutMs ?? DEFAULT_TIMEOUT_MS) / 1000)} detik. ` +
-            `Pastikan backend berjalan di ${API_BASE_URL}.`
+        `Pastikan backend berjalan di ${API_BASE_URL}.`
         : "Tidak dapat terhubung ke server. Pastikan backend berjalan di " + API_BASE_URL,
     );
   }
