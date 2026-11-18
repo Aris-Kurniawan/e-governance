@@ -516,13 +516,6 @@ export default function PublicLayout() {
               Dinas Pendidikan Kab. Lamongan<br />
               Kecamatan Lamongan
             </p>
-            <Link
-              to="/dinas/login"
-              className="mt-3 inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors"
-            >
-              Portal Dinas (Aparatur)
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
           </div>
         </div>
         <div className="border-t border-white/10 px-6 py-4 text-center text-xs text-slate-500">
