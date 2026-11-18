@@ -125,12 +125,32 @@ export default function Registrasi() {
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!nama.trim()) {
+      setError("Nama lengkap wajib diisi.")
+      return
+    }
+    if (nama.trim().length > 100) {
+      setError("Nama lengkap maksimal 100 karakter.")
+      return
+    }
+    if (/[<>]/.test(nama)) {
+      setError("Nama lengkap tidak boleh mengandung karakter khusus '<' atau '>'.")
+      return
+    }
     if (!EMAIL_RE.test(email.trim())) {
       setError("Format alamat email tidak valid.")
       return
     }
+    if (email.trim().length > 100) {
+      setError("Alamat email maksimal 100 karakter.")
+      return
+    }
     if (password.length < 8) {
       setError("Kata sandi minimal 8 karakter.")
+      return
+    }
+    if (password.length > 128) {
+      setError("Kata sandi maksimal 128 karakter.")
       return
     }
     if (password !== confirmPassword) {
@@ -297,7 +317,8 @@ export default function Registrasi() {
           <AuthField
             label="Nama Lengkap"
             value={nama}
-            onChange={(e) => setNama(e.target.value)}
+            onChange={(e) => setNama(e.target.value.replace(/[<>]/g, "").slice(0, 100))}
+            maxLength={100}
             placeholder="Sesuai KTP / KIA / Kartu Pelajar"
             icon={<User className="h-4 w-4" />}
             required
@@ -308,7 +329,8 @@ export default function Registrasi() {
               label="Alamat Email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value.slice(0, 100))}
+              maxLength={100}
               placeholder="nama@email.com"
               icon={<Mail className="h-4 w-4" />}
               required
@@ -317,7 +339,9 @@ export default function Registrasi() {
               label="Nomor WhatsApp"
               type="tel"
               value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
+              onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, "").slice(0, 15))}
+              maxLength={15}
+              inputMode="numeric"
               placeholder="81234567890"
               icon={<Phone className="h-4 w-4" />}
               required
@@ -328,7 +352,8 @@ export default function Registrasi() {
             label="Kata Sandi"
             type={showPassword ? "text" : "password"}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value.slice(0, 128))}
+            maxLength={128}
             placeholder="Buat kata sandi (min. 8 karakter)"
             required
             trailing={
@@ -362,7 +387,8 @@ export default function Registrasi() {
             label="Konfirmasi Kata Sandi"
             type={showConfirmPassword ? "text" : "password"}
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => setConfirmPassword(e.target.value.slice(0, 128))}
+            maxLength={128}
             placeholder="Ulangi kata sandi"
             required
             trailing={

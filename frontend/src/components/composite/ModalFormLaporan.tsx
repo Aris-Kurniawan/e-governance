@@ -291,7 +291,8 @@ export default function ModalFormLaporan({
                 <input
                   type="text"
                   value={lokasiSpesifik}
-                  onChange={(e) => setLokasiSpesifik(e.target.value)}
+                  onChange={(e) => setLokasiSpesifik(e.target.value.replace(/[<>]/g, "").slice(0, 100))}
+                  maxLength={100}
                   placeholder="Contoh: Gedung Barat, lantai 1 sisi utara"
                   className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 transition-colors"
                 />
@@ -304,7 +305,8 @@ export default function ModalFormLaporan({
                 </label>
                 <textarea
                   value={deskripsi}
-                  onChange={(e) => setDeskripsi(e.target.value)}
+                  onChange={(e) => setDeskripsi(e.target.value.slice(0, 2000))}
+                  maxLength={2000}
                   rows={3}
                   placeholder="Jelaskan kondisi riil secara objektif. Contoh: Genteng pecah sehingga air menetes ke meja praktikum..."
                   className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 transition-colors resize-none min-h-[96px]"

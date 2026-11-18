@@ -102,7 +102,8 @@ export default function Login() {
           autoComplete="email"
           icon={<Mail className="h-4 w-4" />}
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value.slice(0, 100))}
+          maxLength={100}
           required
         />
 
@@ -112,7 +113,8 @@ export default function Login() {
           placeholder="Masukkan kata sandi"
           autoComplete="current-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value.slice(0, 128))}
+          maxLength={128}
           required
           trailing={
             <button

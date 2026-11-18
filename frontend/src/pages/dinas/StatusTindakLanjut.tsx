@@ -781,8 +781,9 @@ export default function StatusTindakLanjut() {
               </label>
               <textarea
                 value={alasanStatus}
-                onChange={(e) => setAlasanStatus(e.target.value)}
-                placeholder="Catatan penanganan lapangan, nomor SPK/BAST, atau kendala..."
+                onChange={(e) => setAlasanStatus(e.target.value.replace(/[<>]/g, "").slice(0, 500))}
+                maxLength={500}
+                placeholder="Catatan penanganan lapangan, nomor SPK/BAST, atau kendala (maks. 500 karakter)..."
                 rows={3}
                 className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#0B3052]"
               />

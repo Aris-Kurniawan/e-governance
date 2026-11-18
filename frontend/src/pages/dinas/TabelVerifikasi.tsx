@@ -845,9 +845,10 @@ export default function TabelVerifikasi() {
                 required
                 rows={3}
                 value={overrideAlasan}
-                onChange={(e) => setOverrideAlasan(e.target.value)}
+                onChange={(e) => setOverrideAlasan(e.target.value.replace(/[<>]/g, "").slice(0, 500))}
+                maxLength={500}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#0B3052] resize-y"
-                placeholder="Wajib diisi — dipertahankan untuk audit trail (PAGE_STATES §B2)..."
+                placeholder="Wajib diisi (maks. 500 karakter) — dipertahankan untuk audit trail (PAGE_STATES §B2)..."
               />
               <p className="text-[11px] text-slate-400">
                 Tanpa alasan, backend menolak dengan <span className="font-mono">422 REASON_REQUIRED</span>.

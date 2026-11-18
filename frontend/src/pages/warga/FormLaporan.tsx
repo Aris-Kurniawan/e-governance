@@ -188,6 +188,10 @@ export default function FormLaporan() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (submitDisabled) return
+    if (/[<>]/.test(deskripsi)) {
+      setErrorGagal("Deskripsi tidak boleh mengandung karakter khusus '<' atau '>'.")
+      return
+    }
     setLoading(true)
     setErrorGagal(null)
     try {
@@ -574,7 +578,8 @@ export default function FormLaporan() {
             <input
               type="text"
               value={lokasiSpesifik}
-              onChange={(e) => setLokasiSpesifik(e.target.value)}
+              onChange={(e) => setLokasiSpesifik(e.target.value.replace(/[<>]/g, "").slice(0, 100))}
+              maxLength={100}
               placeholder="Contoh: Ruang Kelas 3, Gedung Barat sisi utara"
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] transition-colors"
             />
