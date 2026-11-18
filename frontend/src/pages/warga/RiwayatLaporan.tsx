@@ -10,6 +10,7 @@ import { listKlaster } from "@/lib/api/klaster"
 import { isLoggedIn } from "@/lib/api/auth"
 import type { RiwayatLaporanItem, KlasterListItem } from "@/lib/api/types"
 import ScrollReveal from "@/components/composite/ScrollReveal"
+import MobileBreadcrumb from "@/components/composite/MobileBreadcrumb"
 import {
   Plus,
   CheckCircle2,
@@ -459,9 +460,12 @@ export default function RiwayatLaporan() {
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
-      {/* ── Top Header Strip ── */}
-      <div className="border-b border-slate-200/80 bg-white py-2.5 text-xs">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 flex-wrap gap-2 text-slate-500">
+      {/* ── Mobile Breadcrumb (mobile only) ── */}
+      <MobileBreadcrumb items={[{ label: "Beranda", to: "/" }, { label: "Riwayat Laporan" }]} />
+
+      {/* ── Top Header Strip (desktop only) ── */}
+      <div className="hidden sm:block border-b border-slate-200/80 bg-white py-2.5 text-xs">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 flex-wrap gap-2 text-slate-500">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800 tracking-wider uppercase text-[11px]">
               REGISTRI TRANSPARANSI PUBLIK SIMAKIS
@@ -1084,6 +1088,17 @@ export default function RiwayatLaporan() {
                           key={item.id}
                           className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4 max-w-full overflow-hidden"
                         >
+                          {/* Nama Sekolah & Fasilitas ditaruh paling atas */}
+                          <div className="border-b border-slate-100 pb-3">
+                            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                              {sekolah ?? `Sekolah NPSN ${item.sekolah_npsn}`}
+                              {item.fasilitas_terkait ? ` — ${item.fasilitas_terkait}` : ""}
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5 font-mono">
+                              NPSN: {item.sekolah_npsn}
+                            </p>
+                          </div>
+
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-mono font-bold text-slate-900 text-sm">
@@ -1138,16 +1153,6 @@ export default function RiwayatLaporan() {
                                 ? `Kondisi: ${KONDISI_LABEL[item.kondisi_dilaporkan] ?? item.kondisi_dilaporkan}`
                                 : "Kondisi tidak disebutkan"}
                             </span>
-                          </div>
-
-                          <div>
-                            <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-                              {sekolah ?? `Sekolah NPSN ${item.sekolah_npsn}`}
-                              {item.fasilitas_terkait ? ` — ${item.fasilitas_terkait}` : ""}
-                            </h3>
-                            <p className="text-xs text-slate-500 mt-1 font-mono">
-                              NPSN: {item.sekolah_npsn}
-                            </p>
                           </div>
 
                           <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 space-y-2">

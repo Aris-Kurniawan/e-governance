@@ -297,7 +297,7 @@ export default function DetailSekolah() {
             <span className="font-mono text-slate-400 text-[11px] ml-1">NPSN: {baseline.npsn}</span>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px]">
+          <div className="hidden sm:flex items-center gap-2 text-[11px]">
             <span>Sinkronisasi Dapodik: <strong>14 Feb 2026 04:12 WIB</strong></span>
             <span>·</span>
             <span className="font-mono text-slate-400">ID Audit: AUD-LMNG-2026-{baseline.npsn.slice(-3)}</span>

@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { TiltCard } from "@/components/ui/TiltCard"
+import { EllipseGallery } from "@/components/ui/EllipseGallery"
+import ConvergingWorkflow from "@/components/composite/ConvergingWorkflow"
 import { useAuth } from "@/context/AuthContext"
 import {
   ArrowRight,
-  ArrowUpRight,
   Lock,
   CheckCircle2,
   Sparkles,
@@ -20,7 +21,6 @@ import {
   LineChart,
   Megaphone,
   MapPin,
-  Heart,
   TrendingUp,
   Users,
 } from "lucide-react"
@@ -279,6 +279,31 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Galeri Elips: Bukti Nyata Laporan Warga ── */}
+      {/* Hanya tampil di layar md ke atas — terlalu padat di mobile */}
+      <section className="hidden md:block bg-white py-12 md:py-16 border-b border-slate-100 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          {/* Header section */}
+          <div className="text-center mb-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-900 mb-3">
+              <Camera className="h-3.5 w-3.5 text-blue-600" />
+              <span>Dampak Nyata dari Partisipasi Warga</span>
+            </div>
+            <p className="text-xs text-slate-400 max-w-xs mx-auto">
+              Foto-foto berikut mewakili kondisi fasilitas sekolah yang telah berhasil dilaporkan dan ditindaklanjuti
+            </p>
+          </div>
+
+          <EllipseGallery
+            centerStat="1.200+"
+            centerStatLabel="Laporan Terverifikasi"
+            centerTitle="Jejak Nyata Laporan Warga"
+            centerSubtitle="Setiap foto adalah langkah nyata menuju sekolah yang layak"
+            className="mt-0"
+          />
+        </div>
+      </section>
+
       {/* ── Transparansi Penuh: 4 Kartu Fitur ── */}
       <section className="bg-[#F8FAFC] py-14 md:py-20 border-b border-slate-100">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -384,128 +409,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Tiga Langkah: Alur Kerja Partisipatif (gelap) ── */}
-      <section className="bg-[#0B3052] py-14 md:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="grid gap-12 lg:grid-cols-2 items-center">
-            {/* Mockup Ponsel — mobile: setelah teks, desktop: kolom kiri */}
-            <div className="order-2 flex justify-center lg:order-1 lg:justify-start">
-              <TiltCard
-                maxTilt={6}
-                scale={1.02}
-                className="w-full max-w-[320px] rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/30 cursor-pointer"
-              >
-                <div className="flex items-center justify-between pb-3">
-                  <span className="text-xs font-extrabold text-slate-900">SIMAKIS Mobile</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Terpantau
-                  </span>
-                </div>
-
-                <div className="rounded-2xl bg-[#0E2A47] p-4 text-white space-y-3.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-[11px] font-bold text-blue-300">LAP-2026-042</span>
-                    <span className="rounded-full bg-amber-400/15 border border-amber-400/30 px-2 py-0.5 text-[9px] font-bold text-amber-300">
-                      Dalam Pengerjaan (66%)
-                    </span>
-                  </div>
-
-                  <h3 className="text-base font-extrabold leading-snug">
-                    Atap Ruang Kelas 3 Roboh
-                  </h3>
-
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-md bg-emerald-500/15 border border-emerald-400/30 px-2 py-0.5 text-[9px] font-bold text-emerald-300">
-                      Berita Warga
-                    </span>
-                    <div className="text-right leading-tight">
-                      <span className="block text-[9px] text-slate-400">Proyek Prioritas</span>
-                      <span className="block text-[11px] font-bold">Rp 45.000.000</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between text-[10px] font-medium text-slate-300 mb-1.5">
-                      <span>Progress Fisik SPK</span>
-                      <span className="font-bold text-white">45% Selesai</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                      <div className="h-full w-[45%] rounded-full bg-blue-500" />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] text-slate-300 pt-1">
-                    <span className="font-semibold">Citra Karya Mulya</span>
-                    <span className="inline-flex items-center gap-1 font-semibold">
-                      <Heart className="h-3 w-3 text-rose-400 fill-rose-400" />
-                      24 Suara Warga
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3.5 py-2.5">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Anggaran DAK 2026
-                  </span>
-                  <span className="text-xs font-extrabold text-slate-900">Rp 125.000.000</span>
-                </div>
-              </TiltCard>
-            </div>
-
-            {/* Langkah 1–3 — mobile: urutan pertama */}
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-200 mb-4">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Alur Kerja Partisipatif</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-snug">
-                Tiga Langkah Mudah Mengawal Fasilitas Belajar
-              </h2>
-
-              <div className="mt-8 space-y-6">
-                {[
-                  {
-                    no: "01",
-                    title: "Foto & Kirim Aduan",
-                    desc: "Sertakan foto kerusakan fasilitas dari HP Anda. Sistem secara otomatis mencocokkan metadata sensitif dan mengamankan data pelapor dalam brankas kriptografis.",
-                  },
-                  {
-                    no: "02",
-                    title: "Validasi AI & Konsensus Komunitas",
-                    desc: "Sistem mengelompokkan laporan serupa menjadi klaster isu dan membuka voting dukungan publik (1 NIK 1 Suara) untuk menentukan bobot urgensi pelaporan.",
-                  },
-                  {
-                    no: "03",
-                    title: "Dinas Menurunkan Anggaran Perbaikan",
-                    desc: "Dinas Pendidikan menerbitkan Surat Perintah Kerja (SPK). Warga dapat memantau serah terima material hingga proyek tuntas 100% secara transparan.",
-                  },
-                ].map((step) => (
-                  <div key={step.no} className="flex gap-4">
-                    <div className="h-10 w-10 shrink-0 rounded-full bg-blue-600 flex items-center justify-center text-xs font-extrabold text-white">
-                      {step.no}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-sm sm:text-base font-bold text-white">{step.title}</h3>
-                      <p className="mt-1 text-xs sm:text-[13px] text-blue-100/70 leading-relaxed">
-                        {step.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button
-                onClick={handleMulaiLapor}
-                className="mt-9 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3.5 h-auto rounded-xl text-sm shadow-sm transition-colors cursor-pointer"
-              >
-                Mulai Laporkan Sarpras Sekarang
-                <ArrowUpRight className="h-4 w-4 ml-1.5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ── Alur Kerja Partisipatif: Animasi Konvergensi Scroll (Pure React + Tailwind) ── */}
+      <ConvergingWorkflow />
 
       {/* ── Skor Prioritas Perbaikan ── */}
       <section className="bg-white py-14 md:py-20 border-b border-slate-100">
@@ -524,9 +429,9 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="flex flex-col lg:flex-row items-stretch justify-center gap-4 lg:gap-3">
+          <div className="flex flex-col lg:flex-row items-stretch justify-center gap-4 lg:gap-3 max-w-sm mx-auto lg:max-w-none">
             {/* Kartu 1: Skor Keparahan */}
-            <div className="flex-1 max-w-sm mx-auto lg:mx-0 lg:max-w-none rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+            <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
               <div className="flex items-center justify-between mb-3">
                 <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
                   <Activity className="h-5 w-5" />
@@ -558,14 +463,14 @@ export default function Landing() {
             </div>
 
             {/* Konektor + */}
-            <div className="hidden lg:flex items-center">
+            <div className="flex items-center justify-center self-center py-2 lg:py-0">
               <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-md">
-                +
+                <span className="leading-none pb-0.5">+</span>
               </div>
             </div>
 
             {/* Kartu 2: Dukungan Partisipasi */}
-            <div className="flex-1 max-w-sm mx-auto lg:mx-0 lg:max-w-none rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+            <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
               <div className="flex items-center justify-between mb-3">
                 <div className="h-9 w-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">
                   <ThumbsUp className="h-5 w-5" />
@@ -596,14 +501,14 @@ export default function Landing() {
             </div>
 
             {/* Konektor = */}
-            <div className="hidden lg:flex items-center">
+            <div className="flex items-center justify-center self-center py-2 lg:py-0">
               <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-md">
-                =
+                <span className="leading-none pb-0.5">=</span>
               </div>
             </div>
 
             {/* Kartu 3: Skor Prioritas Final */}
-            <div className="flex-1 max-w-sm mx-auto lg:mx-0 lg:max-w-none rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+            <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
               <div className="flex items-center justify-between mb-3">
                 <div className="h-9 w-9 rounded-lg bg-slate-900 text-white flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                   <LineChart className="h-5 w-5" />

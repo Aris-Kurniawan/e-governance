@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Send,
   Upload,
-  ShieldCheck,
   Info,
   X,
   ImageIcon,
@@ -674,20 +673,6 @@ export default function FormLaporan() {
             <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
               Foto diunggah sebagai bukti fisik; metadata EXIF GPS dibersihkan otomatis di browser demi privasi pelapor.
             </p>
-          </div>
-
-          {/* Info Privasi */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex items-start gap-3">
-            <ShieldCheck className="h-5 w-5 text-slate-700 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-sm font-semibold text-slate-800 block">
-                Privasi Terlindungi UU PDP No. 27/2022
-              </span>
-              <span className="text-xs text-slate-500 block mt-0.5 leading-relaxed">
-                Identitas Anda tidak dipublikasikan secara terbuka. Laporan dilacak lewat nomor Tracking ID untuk proses
-                verifikasi lapangan Dinas Pendidikan.
-              </span>
-            </div>
           </div>
 
           {/* Action Buttons */}

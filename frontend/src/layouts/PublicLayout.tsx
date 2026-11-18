@@ -106,7 +106,7 @@ export default function PublicLayout() {
   }, [isAccountOpen])
 
   return (
-    <div className="flex min-h-screen flex-col bg-white w-full max-w-full overflow-x-hidden">
+    <div className="flex min-h-screen flex-col bg-white w-full max-w-full overflow-x-clip">
       {/* ── Header ── */}
       <header
         className={`sticky top-0 z-40 border-b transition-all duration-300 ease-out ${
@@ -468,7 +468,7 @@ export default function PublicLayout() {
         )}
 
       {/* ── Main ── */}
-      <main className="flex-1 w-full max-w-full overflow-x-hidden">
+      <main className="flex-1 w-full max-w-full overflow-x-clip">
         <Outlet />
       </main>
 

@@ -14,6 +14,7 @@ import type { DashboardPrioritasItem, KlasterListItem, SekolahList } from "@/lib
 import NumberedPagination from "@/components/composite/NumberedPagination"
 import AuthRequiredModal from "@/components/composite/AuthRequiredModal"
 import ScrollReveal from "@/components/composite/ScrollReveal"
+import MobileBreadcrumb from "@/components/composite/MobileBreadcrumb"
 import {
   Building2,
   AlertTriangle,
@@ -24,6 +25,8 @@ import {
   Lock,
   RotateCw,
   ThumbsUp,
+  ChevronDown,
+  ExternalLink,
 } from "lucide-react"
 
 /**
@@ -69,12 +72,6 @@ function labelUrgensi(skor: number): { label: string; kelas: string } {
   return { label: "Rendah", kelas: "bg-slate-100 text-slate-700 border-slate-200" };
 }
 
-function kelasSkor(skor: number): string {
-  if (skor >= 70) return "bg-rose-100 text-rose-800";
-  if (skor >= 40) return "bg-amber-100 text-amber-800";
-  return "bg-slate-100 text-slate-600";
-}
-
 export default function DashboardWilayah() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -90,6 +87,11 @@ export default function DashboardWilayah() {
 
   // Peta sebaran (fitur 74fbcca5 — dipulihkan setelah hilang di merge 74b5e977).
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+  const [expandedMobileId, setExpandedMobileId] = useState<string | null>(null);
+
+  const toggleExpandMobile = (id: string) => {
+    setExpandedMobileId((prev) => (prev === id ? null : id));
+  };
 
   const { state: sekolahState, refetch: refetchSekolah } = useFetch(() => listSekolah({ page_size: PAGE_SIZE }));
   const { state: klasterState, refetch: refetchKlaster } = useFetch(() => listKlaster({ page_size: PAGE_SIZE }));
@@ -274,10 +276,11 @@ export default function DashboardWilayah() {
   );
 
   const handleReportClick = (school?: { npsn: string; nama: string }) => {
-    if (school) {
-      navigate(`/sekolah/${school.npsn}`);
+    const targetUrl = school ? `/laporan/baru?sekolah=${school.npsn}` : "/laporan/baru";
+    if (isAuthenticated) {
+      navigate(targetUrl);
     } else {
-      navigate("/sekolah");
+      navigate(`/login?redirect=${encodeURIComponent(targetUrl)}&action=report`);
     }
   };
 
@@ -290,20 +293,23 @@ export default function DashboardWilayah() {
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
-      {/* ── Status Bar ── */}
-      <div className="border-b border-slate-200/80 bg-white py-2 sm:py-2.5 text-xs">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 flex-wrap gap-2 text-slate-500">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] min-w-0">
+      {/* ── Mobile Breadcrumb (mobile only) ── */}
+      <MobileBreadcrumb items={[{ label: "Beranda", to: "/" }, { label: "Dashboard" }]} />
+
+      {/* ── Status Bar (desktop only) ── */}
+      <div className="hidden sm:block border-b border-slate-200/80 bg-white py-2.5 text-xs">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 flex-wrap gap-2 text-slate-500">
+          <div className="flex items-center gap-2 text-[11px] min-w-0">
             <span className="font-bold text-slate-800 tracking-wider uppercase shrink-0">PORTAL RESMI AUDIT DAPODIK</span>
             <span className="text-slate-300">|</span>
             <span className="truncate">Kecamatan Lamongan</span>
           </div>
-          <div className="flex items-center gap-2 font-medium text-[11px] sm:text-xs">
+          <div className="flex items-center gap-2 font-medium text-xs">
             <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
             <span>
               Sekolah: <strong className="text-slate-700 tabular-nums">{sekolahState.status === "success" ? totalSekolah : "…"}</strong>
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 border border-emerald-200/80 ml-1 sm:ml-2 shrink-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/80 ml-2 shrink-0">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               {sekolahState.status === "success" ? "Data Backend Aktif" : "Menghubungkan…"}
             </span>
@@ -356,8 +362,59 @@ export default function DashboardWilayah() {
           </div>
         </ScrollReveal>
 
-        {/* ── KPI Cards (angka dari backend) ── */}
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3">
+        {/* ── KPI Cards (Responsive: 1 Horizontal Segmented Bar di Mobile, 3 Cards di Desktop) ── */}
+
+        {/* Versi Mobile (< sm): 1 Horizontal Segmented Bar */}
+        <div className="block sm:hidden">
+          <ScrollReveal direction="up" delay={50} duration={500}>
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm">
+              <div className="grid grid-cols-3 divide-x divide-slate-100 items-center text-center">
+                {/* Kolom 1: Cakupan Wilayah */}
+                <div className="px-2">
+                  <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    <Building2 className="h-3 w-3 text-blue-600" />
+                    <span>Cakupan</span>
+                  </div>
+                  <div className="text-xl font-extrabold text-slate-900 leading-none tabular-nums">
+                    {sekolahState.status === "success" ? totalSekolah : "…"}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium mt-1 block">Sekolah</span>
+                </div>
+
+                {/* Kolom 2: Sekolah Berklaster */}
+                <div className="px-2">
+                  <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    <AlertTriangle className="h-3 w-3 text-rose-500" />
+                    <span>Berklaster</span>
+                  </div>
+                  <div className="text-xl font-extrabold text-slate-900 leading-none tabular-nums">
+                    {klasterState.status === "success" ? sekolahDenganKlaster : "…"}
+                  </div>
+                  <span className="text-[10px] text-amber-700 font-semibold mt-1 block">
+                    {totalKlaster - klasterTerverifikasi} blm verif
+                  </span>
+                </div>
+
+                {/* Kolom 3: Total Klaster Isu */}
+                <div className="px-2">
+                  <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                    <span>Total Isu</span>
+                  </div>
+                  <div className="text-xl font-extrabold text-slate-900 leading-none tabular-nums">
+                    {klasterState.status === "success" ? totalKlaster : "…"}
+                  </div>
+                  <span className="text-[10px] text-emerald-700 font-semibold mt-1 block">
+                    {totalKlaster === 0 ? 0 : Math.round((klasterTerverifikasi / totalKlaster) * 100)}% terverif
+                  </span>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+
+        {/* Versi Desktop (>= sm): 3 Kartu Terpisah */}
+        <div className="hidden sm:grid gap-4 sm:gap-6 sm:grid-cols-3">
           <ScrollReveal direction="up" delay={50} duration={500} className="h-full">
             <div className="h-full rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm flex flex-col justify-between">
               <div>
@@ -470,11 +527,190 @@ export default function DashboardWilayah() {
 
         {!memuat && !gagal && (
           <>
-            {/* ── Daftar Klaster Isu Terkini & Widgets (D-27) ── */}
+            {/* ── Widget: Peta Sebaran Wilayah Audit ── */}
+            {/* Di Mobile (< lg): Tampil di ATAS tepat setelah KPI Bar */}
+            {/* Di Desktop (>= lg): Pindah ke kolom samping kanan (order-2) */}
             <div className="grid gap-6 lg:gap-8 lg:grid-cols-12 items-start min-w-0 max-w-full">
-              <div className="lg:col-span-8 space-y-6 min-w-0 max-w-full">
-                <ScrollReveal direction="up" duration={600}>
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-5 sm:space-y-6 min-w-0">
+
+              {/* Kolom Peta (Di mobile order-1 agar tampil duluan di atas daftar isu) */}
+              <div className="order-1 lg:order-2 lg:col-span-4 space-y-6 min-w-0 max-w-full">
+                <ScrollReveal direction="up" delay={100} duration={600}>
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
+                    <div className="flex items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold tracking-wider text-slate-800 uppercase block">
+                          SEBARAN WILAYAH AUDIT
+                        </span>
+                        <span className="text-[11px] text-slate-400 block truncate">Peta Sebaran Faktual Sekolah</span>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-[#0B3052] border border-blue-200/60 shrink-0">
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+                        Kec. Lamongan
+                      </span>
+                    </div>
+
+                    {/* Map Canvas */}
+                    <div className="relative h-[250px] sm:h-[320px] w-full max-w-full rounded-xl overflow-hidden border border-slate-200/90 shadow-inner">
+                      {/* Indikator koordinat pojok peta */}
+                      <div className="absolute top-2.5 left-12 sm:left-16 z-[500] pointer-events-none max-w-[calc(100%-60px)]">
+                        <div className="bg-white/95 backdrop-blur-sm rounded-md border border-slate-200/80 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-mono font-medium text-slate-600 shadow-sm flex items-center gap-1.5 truncate">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="truncate">EPSG:4326 &middot; -7.1197&deg;, 112.4145&deg;</span>
+                        </div>
+                      </div>
+
+                      <MapContainer
+                        center={[-7.1197, 112.4145]}
+                        zoom={13}
+                        className="w-full h-full min-h-0"
+                        style={{ height: "100%", width: "100%" }}
+                        scrollWheelZoom={false}
+                        onMapClick={() => setSelectedPinId(null)}
+                      >
+                        {titikTerfilter.map((point) => (
+                          <SeverityMarker
+                            key={point.id}
+                            id={point.id}
+                            position={[point.lat, point.lng]}
+                            sekolah={point.sekolah}
+                            skor={point.skor}
+                            status={point.status}
+                            isSelected={point.id === selectedPinId}
+                            onClick={() => setSelectedPinId((prev) => (prev === point.id ? null : point.id))}
+                          />
+                        ))}
+                      </MapContainer>
+
+                      {/* Floating Popup Card saat pin dipilih */}
+                      {selectedPoint && (
+                        <div className="absolute bottom-2.5 left-2.5 right-2.5 z-[1000] rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 p-3 shadow-lg transition-all">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                {selectedPoint.jenjang} &middot; NPSN: {selectedPoint.npsn}
+                              </span>
+                              <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                                {selectedPoint.sekolah}
+                              </h4>
+                              <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                {selectedPoint.alamat}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPinId(null)}
+                              className="h-5 w-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center shrink-0 cursor-pointer"
+                              aria-label="Tutup info"
+                            >
+                              &times;
+                            </button>
+                          </div>
+
+                          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedPoint.status === "kritis"
+                              ? "bg-rose-50 text-rose-700 border border-rose-200"
+                              : selectedPoint.status === "sedang"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              }`}>
+                              Skor: {selectedPoint.skor} ({selectedPoint.status === "kritis" ? "Kritis" : selectedPoint.status === "sedang" ? "Sedang" : "Rendah"})
+                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                asChild
+                                size="sm"
+                                className="h-7 text-[11px] px-2.5 bg-[#0B3052] hover:bg-[#07213A] text-white font-medium rounded-lg cursor-pointer"
+                              >
+                                <Link to={`/sekolah/${selectedPoint.npsn}`}>
+                                  Detail
+                                </Link>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleReportClick({
+                                    npsn: selectedPoint.npsn,
+                                    nama: selectedPoint.sekolah,
+                                  })
+                                }
+                                className="h-7 text-[11px] px-2 text-[#0B3052] border-blue-200 hover:bg-blue-50 font-medium rounded-lg cursor-pointer"
+                              >
+                                Laporkan
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Legend Ambang Prioritas */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pt-1 text-slate-500 border-t border-slate-100">
+                      <span className="font-semibold text-slate-600 shrink-0">Ambang:</span>
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                        <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500" /> &lt;40
+                        </span>
+                        <span className="flex items-center gap-1 text-amber-700 font-medium">
+                          <span className="h-2 w-2 rounded-full bg-amber-500" /> 40&ndash;70
+                        </span>
+                        <span className="flex items-center gap-1 text-rose-700 font-medium">
+                          <span className="h-2 w-2 rounded-full bg-rose-600" /> &gt;70
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Link ke Direktori Lengkap */}
+                    <Button asChild variant="outline" className="w-full text-xs h-9 text-slate-700 border-slate-200 hover:bg-slate-50 font-semibold cursor-pointer">
+                      <Link to="/sekolah">
+                        Buka Direktori &amp; Peta Lengkap
+                      </Link>
+                    </Button>
+                  </div>
+                </ScrollReveal>
+
+                {/* Widget Desktop-Only: Sebaran Kategori (Disembunyikan di Mobile) */}
+                <div className="hidden lg:flex lg:flex-col space-y-6">
+                  <ScrollReveal direction="up" delay={200} duration={600} className="flex-1 flex flex-col">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4 min-w-0 flex-1 flex flex-col justify-between">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <span className="text-xs font-bold tracking-wider text-slate-700 uppercase">SEBARAN KLASTER PER KATEGORI</span>
+                          <span className="text-xs text-slate-400 tabular-nums shrink-0">{totalKlaster} klaster</span>
+                        </div>
+
+                        {sebaranKategori.length === 0 ? (
+                          <p className="text-xs text-slate-500">Belum ada data kategori.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {sebaranKategori.map((item) => (
+                              <div key={item.kategori} className="space-y-1.5">
+                                <div className="flex items-center justify-between text-xs gap-2">
+                                  <span className="font-mono text-slate-600 truncate min-w-0">{item.kategori}</span>
+                                  <span className="font-bold text-slate-800 tabular-nums shrink-0">{item.jumlah}</span>
+                                </div>
+                                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                  <div className="h-full rounded-full bg-[#0B3052]" style={{ width: `${item.persen}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-[10px] text-slate-400 pt-3 border-t border-slate-100 break-words leading-relaxed">
+                        Kategori &ldquo;belum_terklasifikasi&rdquo; muncul untuk laporan yang tidak masuk ambang klaster.
+                      </p>
+                    </div>
+                  </ScrollReveal>
+                </div>
+              </div>
+
+              {/* Kolom Daftar Klaster Isu (Di mobile order-2 agar berada di bawah peta) */}
+              <div className="order-2 lg:order-1 lg:col-span-8 flex flex-col space-y-6 min-w-0 max-w-full">
+                <ScrollReveal direction="up" duration={600} className="flex-1 flex flex-col">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-5 sm:space-y-6 min-w-0 flex-1 flex flex-col">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-slate-100">
                       <div>
                         <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Daftar Klaster Isu Terkini</h2>
@@ -492,392 +728,287 @@ export default function DashboardWilayah() {
                       </div>
                     </div>
 
-                {/* Filter Chips Bar */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    {([
-                      { id: "semua", label: `Semua Klaster (${totalKlaster})` },
-                      { id: "belum", label: "Belum Terverifikasi" },
-                      { id: "terverifikasi", label: "Terverifikasi" },
-                    ] as { id: FilterKlaster; label: string }[]).map((chip) => (
-                      <button
-                        key={chip.id}
-                        onClick={() => handleFilterKlaster(chip.id)}
-                        className={`rounded-lg px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-medium transition-colors cursor-pointer ${
-                          filterKlaster === chip.id
-                            ? "bg-[#0B3052] text-white font-semibold"
-                            : "bg-slate-100 hover:bg-slate-200/70 text-slate-600"
-                        }`}
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-  
-                {voteError && (
-                  <div className="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-                    <span>{voteError}</span>
-                    <button
-                      type="button"
-                      onClick={() => setVoteError(null)}
-                      aria-label="Tutup pesan"
-                      className="shrink-0 font-bold text-rose-500 hover:text-rose-700 cursor-pointer"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-  
-                <div className="overflow-x-auto w-full max-w-full rounded-xl border border-slate-100 sm:border-none">
-                  <table className="w-full text-left text-xs font-sans">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                        <th className="py-3 pl-3 pr-2 w-auto">ISU &amp; SEKOLAH</th>
-                        <th className="py-3 px-1.5 text-center w-28 whitespace-nowrap">KLASTER ISU</th>
-                        <th className="py-3 px-1.5 text-center w-32 whitespace-nowrap">STATUS VERIFIKASI</th>
-                        <th className="py-3 px-1.5 text-center w-36 whitespace-nowrap">TINGKAT URGENSI</th>
-                        <th className="py-3 pl-1.5 pr-3 text-center w-32 whitespace-nowrap">AKSI</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {/* Filter Chips Bar */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        {([
+                          { id: "semua", label: `Semua Klaster (${totalKlaster})` },
+                          { id: "belum", label: "Belum Terverifikasi" },
+                          { id: "terverifikasi", label: "Terverifikasi" },
+                        ] as { id: FilterKlaster; label: string }[]).map((chip) => (
+                          <button
+                            key={chip.id}
+                            onClick={() => handleFilterKlaster(chip.id)}
+                            className={`rounded-lg px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-medium transition-colors cursor-pointer ${filterKlaster === chip.id
+                              ? "bg-[#0B3052] text-white font-semibold"
+                              : "bg-slate-100 hover:bg-slate-200/70 text-slate-600"
+                              }`}
+                          >
+                            {chip.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {voteError && (
+                      <div className="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                        <span>{voteError}</span>
+                        <button
+                          type="button"
+                          onClick={() => setVoteError(null)}
+                          aria-label="Tutup pesan"
+                          className="shrink-0 font-bold text-rose-500 hover:text-rose-700 cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+
+                    {/* ── Tampilan Mobile: Accordion / Collapsible Row (Opsi 2) ── */}
+                    <div className="block md:hidden divide-y divide-slate-100 rounded-xl border border-slate-200/80 bg-white overflow-hidden">
                       {klasterTerfilter.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-8 text-center text-xs text-slate-400">
-                            {totalKlaster === 0
-                              ? "Belum ada klaster isu. Jalankan POST /ai/cluster untuk memproses laporan."
-                              : "Tidak ada klaster pada filter ini."}
-                          </td>
-                        </tr>
+                        <div className="py-8 text-center text-xs text-slate-400 px-4">
+                          {totalKlaster === 0
+                            ? "Belum ada klaster isu. Jalankan POST /ai/cluster untuk memproses laporan."
+                            : "Tidak ada klaster pada filter ini."}
+                        </div>
                       ) : (
                         paginatedKlasterRows.map((k) => {
                           const urgensi = labelUrgensi(k.skor_prioritas);
+                          const isExpanded = expandedMobileId === k.klaster_id;
                           const sudahVote = !!votedKlaster[k.klaster_id];
                           const jumlahVote =
                             (voteCountById[k.klaster_id] ?? 0) + (voteBoost[k.klaster_id] ?? 0);
+
                           return (
-                            <tr key={k.klaster_id} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="py-3.5 pl-3 pr-2">
-                                <span className="font-bold text-slate-900 text-sm block leading-snug">{k.label ?? k.kategori}</span>
-                                <span className="text-[11px] text-slate-400">{k.sekolah_nama}</span>
-                              </td>
-                              <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
-                                <span className="inline-block rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-800 border border-blue-200/60 font-sans">
-                                  {k.kategori}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
-                                <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-bold font-sans ${STATUS_VERIFIKASI_STYLE[k.status_verifikasi] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
-                                  {STATUS_VERIFIKASI_LABEL[k.status_verifikasi] ?? k.status_verifikasi}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
-                                <div className="inline-flex flex-col items-center justify-center">
-                                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold border font-sans ${urgensi.kelas}`}>
-                                    <span className="h-1.5 w-1.5 rounded-full bg-current" /> {urgensi.label}
+                            <div key={k.klaster_id} className="transition-colors">
+                              {/* Header Baris Ringkas (Tap untuk Expand) */}
+                              <div
+                                onClick={() => toggleExpandMobile(k.klaster_id)}
+                                className="p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/80 active:bg-slate-100/70 select-none"
+                              >
+                                <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                                  {/* Baris Badge: Status & Kategori */}
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold font-sans ${STATUS_VERIFIKASI_STYLE[k.status_verifikasi] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                                      {STATUS_VERIFIKASI_LABEL[k.status_verifikasi] ?? k.status_verifikasi}
+                                    </span>
+                                    <span className="inline-block rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800 border border-blue-200/60 font-sans">
+                                      {k.kategori}
+                                    </span>
+                                  </div>
+
+                                  {/* Judul Masalah Isu */}
+                                  <span className="font-bold text-slate-900 text-xs leading-snug line-clamp-2">
+                                    {k.label ?? k.kategori}
                                   </span>
-                                  <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400 tabular-nums font-sans mt-0.5">
-                                    <span>skor {k.skor_prioritas}</span>
-                                    <span>·</span>
-                                    <span>{jumlahVote} vote</span>
+
+                                  {/* Nama Sekolah */}
+                                  <span className="text-[11px] text-slate-500 font-medium truncate">
+                                    {k.sekolah_nama}
+                                  </span>
+                                </div>
+
+                                {/* Sisi Kanan: Skor & Chevron */}
+                                <div className="flex items-center gap-2 shrink-0 self-center">
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border font-sans ${urgensi.kelas}`}>
+                                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                                    {k.skor_prioritas}
+                                  </span>
+                                  <div className={`p-1 rounded-full text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180 text-blue-600 bg-blue-50" : ""}`}>
+                                    <ChevronDown className="h-4 w-4" />
                                   </div>
                                 </div>
-                              </td>
-                              <td className="py-3.5 pl-1.5 pr-3 text-center whitespace-nowrap">
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleVote(k.klaster_id)}
-                                    disabled={sudahVote || pendingVoteId === k.klaster_id}
-                                    title={sudahVote ? "Kamu sudah memvote klaster ini" : "Beri vote dukungan untuk isu ini"}
-                                    className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-colors font-sans ${
-                                      sudahVote
-                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
-                                        : "border-slate-200 bg-white text-[#0B3052] hover:bg-blue-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                                    }`}
-                                  >
-                                    {pendingVoteId === k.klaster_id ? (
-                                      "…"
-                                    ) : sudahVote ? (
-                                      <>
-                                        <CheckCircle2 className="h-3.5 w-3.5" /> Voted
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ThumbsUp className="h-3.5 w-3.5" /> Vote
-                                      </>
-                                    )}
-                                  </button>
-                                  <Link
-                                    to={`/klaster/${k.klaster_id}`}
-                                    className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3052] hover:underline font-sans"
-                                  >
-                                    Tinjau Isu
-                                  </Link>
+                              </div>
+
+                              {/* Detail Panel Saat Di-tap (Accordion Body dengan Animasi CSS Grid Mulus) */}
+                              <div
+                                className={`grid transition-all duration-300 ease-in-out border-slate-100/80 ${isExpanded
+                                  ? "grid-rows-[1fr] opacity-100 border-t"
+                                  : "grid-rows-[0fr] opacity-0 border-t-0"
+                                  }`}
+                              >
+                                <div className="overflow-hidden">
+                                  <div className="px-3.5 pb-3.5 pt-2.5 bg-slate-50/70 space-y-3">
+                                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                      <div className="bg-white p-2.5 rounded-lg border border-slate-200/60 shadow-xs">
+                                        <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Tingkat Urgensi</span>
+                                        <span className="font-bold text-slate-800 mt-0.5 block">{urgensi.label}</span>
+                                        <span className="text-[10px] text-slate-500">Skor: {k.skor_prioritas} · {jumlahVote} vote warga</span>
+                                      </div>
+                                      <div className="bg-white p-2.5 rounded-lg border border-slate-200/60 shadow-xs">
+                                        <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Verifikasi Dinas</span>
+                                        <span className="font-bold text-slate-800 mt-0.5 block">{STATUS_VERIFIKASI_LABEL[k.status_verifikasi] ?? k.status_verifikasi}</span>
+                                        <span className="text-[10px] text-slate-500">Kategori: {k.kategori}</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 pt-1">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleVote(k.klaster_id);
+                                        }}
+                                        disabled={sudahVote || pendingVoteId === k.klaster_id}
+                                        className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border py-2 px-3 text-xs font-bold transition-all ${sudahVote
+                                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                                          : "border-slate-300 bg-white text-[#0B3052] hover:bg-blue-50 shadow-xs active:scale-98 cursor-pointer disabled:opacity-40"
+                                          }`}
+                                      >
+                                        {pendingVoteId === k.klaster_id ? (
+                                          "Memproses…"
+                                        ) : sudahVote ? (
+                                          <>
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                            Sudah Didukung ({jumlahVote})
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ThumbsUp className="h-4 w-4 text-blue-600" />
+                                            Dukung Isu ({jumlahVote})
+                                          </>
+                                        )}
+                                      </button>
+
+                                      <Link
+                                        to={`/klaster/${k.klaster_id}`}
+                                        className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#0B3052] text-white py-2 px-3.5 text-xs font-bold hover:bg-[#07213A] shadow-xs active:scale-98 transition-all"
+                                      >
+                                        Detail
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                      </Link>
+                                    </div>
+                                  </div>
                                 </div>
-                              </td>
-                            </tr>
+                              </div>
+                            </div>
                           );
                         })
                       )}
-                    </tbody>
-                  </table>
-                </div>
-  
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
-                  <span className="tabular-nums">
-                    {klasterTerfilter.length === 0 ? (
-                      "0 klaster"
-                    ) : (
-                      <>
-                        Menampilkan{" "}
-                        <strong className="text-slate-700">
-                          {(currentPageKlaster - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPageKlaster * ITEMS_PER_PAGE, klasterTerfilter.length)}
-                        </strong>{" "}
-                        dari <strong className="text-slate-700">{klasterTerfilter.length}</strong> klaster
-                      </>
-                    )}
-                  </span>
-                  {totalPagesKlaster > 1 && (
-                    <NumberedPagination
-                      currentPage={currentPageKlaster}
-                      totalPages={totalPagesKlaster}
-                      onPageChange={setPageKlaster}
-                    />
-                  )}
-                  <Link to="/laporan/riwayat" className="text-xs font-bold text-[#0B3052] hover:underline">
-                    Lihat riwayat laporan
-                  </Link>
-                </div>
-              </div>
-              </ScrollReveal>
-              </div>
+                    </div>
 
-              {/* Widgets */}
-              <div className="lg:col-span-4 space-y-6 min-w-0 max-w-full">
-                <ScrollReveal direction="up" delay={50} duration={600}>
-                  <div className="rounded-2xl border border-rose-200/80 bg-rose-50/30 p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
-                    <div className="flex items-center justify-between border-b border-rose-100 pb-3">
-                      <span className="text-xs font-extrabold tracking-wider text-rose-700 uppercase flex items-center gap-1.5">
-                        <AlertTriangle className="h-4 w-4 shrink-0" /> TEMUAN PRIORITAS TERATAS
+                    {/* ── Tampilan Desktop: Tabel Lengkap ── */}
+                    <div className="hidden md:block overflow-x-auto w-full max-w-full rounded-xl border border-slate-100 sm:border-none">
+                      <table className="w-full text-left text-xs font-sans">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                            <th className="py-3 pl-3 pr-2 w-auto">ISU &amp; SEKOLAH</th>
+                            <th className="py-3 px-1.5 text-center w-28 whitespace-nowrap">KLASTER ISU</th>
+                            <th className="py-3 px-1.5 text-center w-32 whitespace-nowrap">STATUS VERIFIKASI</th>
+                            <th className="py-3 px-1.5 text-center w-36 whitespace-nowrap">TINGKAT URGENSI</th>
+                            <th className="py-3 pl-1.5 pr-3 text-center w-32 whitespace-nowrap">AKSI</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                          {klasterTerfilter.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="py-8 text-center text-xs text-slate-400">
+                                {totalKlaster === 0
+                                  ? "Belum ada klaster isu. Jalankan POST /ai/cluster untuk memproses laporan."
+                                  : "Tidak ada klaster pada filter ini."}
+                              </td>
+                            </tr>
+                          ) : (
+                            paginatedKlasterRows.map((k) => {
+                              const urgensi = labelUrgensi(k.skor_prioritas);
+                              const sudahVote = !!votedKlaster[k.klaster_id];
+                              const jumlahVote =
+                                (voteCountById[k.klaster_id] ?? 0) + (voteBoost[k.klaster_id] ?? 0);
+                              return (
+                                <tr key={k.klaster_id} className="hover:bg-slate-50/80 transition-colors">
+                                  <td className="py-3.5 pl-3 pr-2">
+                                    <span className="font-bold text-slate-900 text-sm block leading-snug">{k.label ?? k.kategori}</span>
+                                    <span className="text-[11px] text-slate-400">{k.sekolah_nama}</span>
+                                  </td>
+                                  <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
+                                    <span className="inline-block rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-800 border border-blue-200/60 font-sans">
+                                      {k.kategori}
+                                    </span>
+                                  </td>
+                                  <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
+                                    <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-bold font-sans ${STATUS_VERIFIKASI_STYLE[k.status_verifikasi] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                                      {STATUS_VERIFIKASI_LABEL[k.status_verifikasi] ?? k.status_verifikasi}
+                                    </span>
+                                  </td>
+                                  <td className="py-3.5 px-1.5 text-center whitespace-nowrap">
+                                    <div className="inline-flex flex-col items-center justify-center">
+                                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold border font-sans ${urgensi.kelas}`}>
+                                        <span className="h-1.5 w-1.5 rounded-full bg-current" /> {urgensi.label}
+                                      </span>
+                                      <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400 tabular-nums font-sans mt-0.5">
+                                        <span>skor {k.skor_prioritas}</span>
+                                        <span>·</span>
+                                        <span>{jumlahVote} vote</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3.5 pl-1.5 pr-3 text-center whitespace-nowrap">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleVote(k.klaster_id)}
+                                        disabled={sudahVote || pendingVoteId === k.klaster_id}
+                                        title={sudahVote ? "Kamu sudah memvote klaster ini" : "Beri vote dukungan untuk isu ini"}
+                                        className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-colors font-sans ${sudahVote
+                                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                                          : "border-slate-200 bg-white text-[#0B3052] hover:bg-blue-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                          }`}
+                                      >
+                                        {pendingVoteId === k.klaster_id ? (
+                                          "…"
+                                        ) : sudahVote ? (
+                                          <>
+                                            <CheckCircle2 className="h-3.5 w-3.5" /> Voted
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ThumbsUp className="h-3.5 w-3.5" /> Vote
+                                          </>
+                                        )}
+                                      </button>
+                                      <Link
+                                        to={`/klaster/${k.klaster_id}`}
+                                        className="inline-flex items-center gap-1 text-xs font-bold text-[#0B3052] hover:underline font-sans"
+                                      >
+                                        Tinjau Isu
+                                      </Link>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
+                      <span className="tabular-nums">
+                        {klasterTerfilter.length === 0 ? (
+                          "0 klaster"
+                        ) : (
+                          <>
+                            Menampilkan{" "}
+                            <strong className="text-slate-700">
+                              {(currentPageKlaster - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPageKlaster * ITEMS_PER_PAGE, klasterTerfilter.length)}
+                            </strong>{" "}
+                            dari <strong className="text-slate-700">{klasterTerfilter.length}</strong> klaster
+                          </>
+                        )}
                       </span>
-                      <span className="text-[11px] font-mono font-medium text-rose-500">GET /dashboard/prioritas</span>
-                    </div>
-
-                  {klastersPrioritas.length === 0 ? (
-                    <p className="text-xs text-slate-500">Belum ada klaster isu. Jalankan pipeline clustering lebih dahulu.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {klastersPrioritas.slice(0, 3).map((k) => (
-                        <div key={k.klaster_id} className="rounded-xl bg-white p-3 border border-rose-200/70 space-y-1">
-                          <span className="font-bold text-slate-900 text-xs block">{k.label ?? k.kategori}</span>
-                          <p className="text-[11px] text-slate-500 truncate">
-                            {k.sekolah_nama} · <span className="font-mono">{k.kategori}</span>
-                          </p>
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className={`inline-block rounded-full border px-2 py-0.5 font-bold ${STATUS_VERIFIKASI_STYLE[k.status_verifikasi] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}>
-                              {STATUS_VERIFIKASI_LABEL[k.status_verifikasi] ?? k.status_verifikasi}
-                            </span>
-                            <span className={`inline-block rounded px-2 py-0.5 font-black tabular-nums ${kelasSkor(k.skor_prioritas)}`}>
-                              {k.skor_prioritas}
-                            </span>
-                          </div>
-                          <Link
-                            to={`/klaster/${k.klaster_id}`}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0B3052] hover:underline"
-                          >
-                            Periksa klaster
-                          </Link>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                </ScrollReveal>
-
-                <ScrollReveal direction="up" delay={150} duration={600}>
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-xs font-bold tracking-wider text-slate-700 uppercase">SEBARAN KLASTER PER KATEGORI</span>
-                      <span className="text-xs text-slate-400 tabular-nums shrink-0">{totalKlaster} klaster</span>
-                    </div>
-
-                    {sebaranKategori.length === 0 ? (
-                      <p className="text-xs text-slate-500">Belum ada data kategori.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {sebaranKategori.map((item) => (
-                          <div key={item.kategori} className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px] gap-2">
-                              <span className="font-mono text-slate-600 truncate min-w-0">{item.kategori}</span>
-                              <span className="font-bold text-slate-800 tabular-nums shrink-0">{item.jumlah}</span>
-                            </div>
-                            <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                              <div className="h-full rounded-full bg-[#0B3052]" style={{ width: `${item.persen}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-100 break-words leading-relaxed">
-                      Kategori &ldquo;belum_terklasifikasi&rdquo; muncul untuk laporan yang tidak masuk ambang klaster.
-                    </p>
-                  </div>
-                </ScrollReveal>
-
-                {/* Widget: Peta Sebaran Wilayah Audit (dipulihkan dari commit 74fbcca5) */}
-                <ScrollReveal direction="up" delay={250} duration={600}>
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
-                    <div className="flex items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div className="min-w-0">
-                      <span className="text-xs font-bold tracking-wider text-slate-800 uppercase block">
-                        SEBARAN WILAYAH AUDIT
-                      </span>
-                      <span className="text-[11px] text-slate-400 block truncate">Peta Sebaran Faktual Sekolah</span>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-[#0B3052] border border-blue-200/60 shrink-0">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
-                      Kec. Lamongan
-                    </span>
-                  </div>
-
-                  {/* Map Canvas — real Leaflet map seperti di PetaSebaranDinas */}
-                  <div className="relative h-[280px] sm:h-[340px] w-full max-w-full rounded-xl overflow-hidden border border-slate-200/90 shadow-inner">
-                    {/* Indikator koordinat pojok peta (digeser agar tidak menghalangi tombol zoom) */}
-                    <div className="absolute top-2.5 left-12 sm:left-16 z-[500] pointer-events-none max-w-[calc(100%-60px)]">
-                      <div className="bg-white/95 backdrop-blur-sm rounded-md border border-slate-200/80 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-mono font-medium text-slate-600 shadow-sm flex items-center gap-1.5 truncate">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                        <span className="truncate">EPSG:4326 &middot; -7.1197&deg;, 112.4145&deg;</span>
-                      </div>
-                    </div>
-
-                    <MapContainer
-                      center={[-7.1197, 112.4145]}
-                      zoom={13}
-                      className="w-full h-full min-h-0"
-                      style={{ height: "100%", width: "100%" }}
-                      scrollWheelZoom={false}
-                      onMapClick={() => setSelectedPinId(null)}
-                    >
-                      {titikTerfilter.map((point) => (
-                        <SeverityMarker
-                          key={point.id}
-                          id={point.id}
-                          position={[point.lat, point.lng]}
-                          sekolah={point.sekolah}
-                          skor={point.skor}
-                          status={point.status}
-                          isSelected={point.id === selectedPinId}
-                          onClick={() => setSelectedPinId((prev) => (prev === point.id ? null : point.id))}
+                      {totalPagesKlaster > 1 && (
+                        <NumberedPagination
+                          currentPage={currentPageKlaster}
+                          totalPages={totalPagesKlaster}
+                          onPageChange={setPageKlaster}
                         />
-                      ))}
-                    </MapContainer>
-
-                    {/* Floating Popup Card saat pin dipilih */}
-                    {selectedPoint && (
-                      <div className="absolute bottom-2.5 left-2.5 right-2.5 z-[1000] rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 p-3 shadow-lg transition-all">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              {selectedPoint.jenjang} &middot; NPSN: {selectedPoint.npsn}
-                            </span>
-                            <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate">
-                              {selectedPoint.sekolah}
-                            </h4>
-                            <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                              {selectedPoint.alamat}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedPinId(null)}
-                            className="h-5 w-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center shrink-0 cursor-pointer"
-                            aria-label="Tutup info"
-                          >
-                            &times;
-                          </button>
-                        </div>
-
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            selectedPoint.status === "kritis"
-                              ? "bg-rose-50 text-rose-700 border border-rose-200"
-                              : selectedPoint.status === "sedang"
-                                ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          }`}>
-                            Skor: {selectedPoint.skor} ({selectedPoint.status === "kritis" ? "Kritis" : selectedPoint.status === "sedang" ? "Sedang" : "Rendah"})
-                          </span>
-
-                          <div className="flex items-center gap-1.5">
-                            <Button
-                              asChild
-                              size="sm"
-                              className="h-7 text-[11px] px-2.5 bg-[#0B3052] hover:bg-[#07213A] text-white font-medium rounded-lg cursor-pointer"
-                            >
-                              <Link to={`/sekolah/${selectedPoint.npsn}`}>
-                                Detail Sekolah
-                              </Link>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleReportClick({
-                                   npsn: selectedPoint.npsn,
-                                   nama: selectedPoint.sekolah,
-                                })
-                              }
-                              className="h-7 text-[11px] px-2 text-[#0B3052] border-blue-200 hover:bg-blue-50 font-medium rounded-lg cursor-pointer"
-                            >
-                              Laporkan
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Legend Ambang Prioritas */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pt-1 text-slate-500 border-t border-slate-100">
-                    <span className="font-semibold text-slate-600 shrink-0">Ambang Prioritas:</span>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                      <span className="flex items-center gap-1 text-emerald-700 font-medium">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" /> &lt;40
-                      </span>
-                      <span className="flex items-center gap-1 text-amber-700 font-medium">
-                        <span className="h-2 w-2 rounded-full bg-amber-500" /> 40&ndash;70
-                      </span>
-                      <span className="flex items-center gap-1 text-rose-700 font-medium">
-                        <span className="h-2 w-2 rounded-full bg-rose-600" /> &gt;70
-                      </span>
+                      )}
+                      <Link to="/laporan/riwayat" className="text-xs font-bold text-[#0B3052] hover:underline">
+                        Lihat riwayat laporan
+                      </Link>
                     </div>
                   </div>
-
-                  {/* Info Statistik Bawah */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs pt-1 border-t border-slate-100">
-                    <div>
-                      <span className="text-slate-400 block text-[11px]">Sekolah Terpetakan:</span>
-                      <strong className="text-slate-800 font-bold">
-                        {titikTerfilter.length} Sekolah
-                      </strong>
-                      <span className="text-slate-400 block text-[10px] mt-0.5">
-                        {titikSekolah.length - titikTerfilter.length} belum memiliki klaster
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[11px]">Koordinat Wilayah:</span>
-                      <strong className="text-slate-800 font-bold block truncate">7.1197&deg; S, 112.4145&deg; E</strong>
-                    </div>
-                  </div>
-
-                  <Button asChild variant="outline" className="w-full text-xs h-9 text-slate-700 border-slate-200 hover:bg-slate-50 font-semibold cursor-pointer">
-                    <Link to="/sekolah">
-                      Buka Direktori &amp; Peta Lengkap
-                    </Link>
-                  </Button>
-                </div>
                 </ScrollReveal>
               </div>
             </div>
