@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   motion,
@@ -114,67 +114,45 @@ interface ConfiguredSchool extends SchoolChipItem {
   startY: number
   startTilt: number
   targetTilt: number
-  depthZ: number
-  rotX: number
-  rotY: number
 }
 
-// Chip sekolah: bergerak radial masuk ke dalam dengan rotasi dinamis & kemiringan 3D yang hidup & luwes
+// Chip sekolah: dioptimalkan untuk performa 60–120 FPS tanpa backdrop-blur & layout thrashing
 function SchoolVortexPill({
   school,
   progress,
+  ratio = 1.0,
 }: {
   school: ConfiguredSchool
   progress: MotionValue<number>
+  ratio?: number
 }) {
   // Gerakan radial meluncur masuk ke pusat tengah (0, 0)
   const x = useTransform(progress, (p) => {
-    // Tarikan akselerasi gravitasi yang mulus
     const pull = Math.pow(p, 1.35)
-    const isSmall = typeof window !== "undefined" && window.innerWidth < 640
-    const ratio = isSmall ? 0.45 : 1.0
     return school.startX * (1 - pull) * ratio
   })
 
   const y = useTransform(progress, (p) => {
     const pull = Math.pow(p, 1.35)
-    const isSmall = typeof window !== "undefined" && window.innerWidth < 640
-    const ratio = isSmall ? 0.45 : 1.0
     return school.startY * (1 - pull) * ratio
   })
 
-  // Bergerak masuk ke kedalaman sumbu Z (depth 3D ke dalam layar)
-  const z = useTransform(progress, (p) => {
-    return school.depthZ - Math.pow(p, 1.4) * 450
-  })
-
-  // Rotasi dinamis yang hidup & memutar luwes:
-  // Berputar seiring tersedot ke pusaran gravitasi pusat
-  const rotateZ = useTransform(progress, (p) => {
+  // Rotasi banking dinamis 2D yang halus & natural
+  const rotate = useTransform(progress, (p) => {
     const pull = Math.pow(p, 1.25)
     return school.startTilt * (1 - pull) + school.targetTilt * pull
   })
 
-  const rotateX = useTransform(progress, (p) => {
-    const pull = Math.pow(p, 1.3)
-    return school.rotX * (1 - pull * 0.5)
-  })
-
-  const rotateY = useTransform(progress, (p) => {
-    const pull = Math.pow(p, 1.3)
-    return school.rotY * (1 - pull * 0.5)
-  })
-
-  // Efek kedalaman perspektif: mengecil seiring bergerak masuk ke dalam pusaran pusat
+  // Efek kedalaman perspektif (scale)
   const scale = useTransform(progress, (p) => {
-    return Math.max(0.1, 1 - Math.pow(p, 1.4) * 0.75)
+    return Math.max(0.12, 1 - Math.pow(p, 1.4) * 0.72)
   })
 
-  // Opasitas: tetap terang saat berputar & meluncur, lalu tuntas lenyap sebelum alur 3 langkah membesar
+  // Opasitas: lenyap tuntas sebelum alur kerja mekar
   const opacity = useTransform(progress, (p) => {
     if (p < 0.08) return 1
-    if (p > 0.55) return 0
-    return Math.max(0, 1 - (p - 0.08) / 0.47)
+    if (p > 0.52) return 0
+    return Math.max(0, 1 - (p - 0.08) / 0.44)
   })
 
   return (
@@ -182,17 +160,14 @@ function SchoolVortexPill({
       style={{
         x,
         y,
-        z,
         scale,
         opacity,
-        rotateZ,
-        rotateX,
-        rotateY,
-        transformStyle: "preserve-3d",
+        rotate,
       }}
       className="absolute will-change-transform"
     >
-      <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-[#0A1E33]/95 backdrop-blur-md px-2.5 py-1 shadow-lg shadow-black/40 text-left hover:border-blue-400/50 transition-colors">
+      {/* Warna solid #0c2238 menggantikan backdrop-blur agar GPU super ringan & mulus 60-120fps */}
+      <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-[#0c2238] px-2.5 py-1 shadow-md shadow-black/40 text-left hover:border-blue-400/50 transition-colors">
         <span
           className={`h-1.5 w-1.5 rounded-full shrink-0 ${school.jenjang === "SD"
             ? "bg-blue-400 shadow-xs shadow-blue-400"
@@ -267,19 +242,19 @@ function OmniRouteStyleSchoolCard({ progress }: { progress: MotionValue<number> 
 
         {/* Pills Jenjang di bawah teks (Gaya Persis Gambar 1) */}
         <div className="pt-3 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 max-w-[340px] mx-auto">
-          <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] sm:text-[11px] font-mono text-slate-200 backdrop-blur-md">
+          <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-[#0e2640] px-2.5 py-1 text-[10px] sm:text-[11px] font-mono text-slate-200">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
             <span>{sdCount} SD</span>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] sm:text-[11px] font-mono text-slate-200 backdrop-blur-md">
+          <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-[#0e2640] px-2.5 py-1 text-[10px] sm:text-[11px] font-mono text-slate-200">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             <span>{smpCount} SMP</span>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] sm:text-[11px] font-mono text-slate-200 backdrop-blur-md">
+          <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-[#0e2640] px-2.5 py-1 text-[10px] sm:text-[11px] font-mono text-slate-200">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             <span>{smaCount} SMA</span>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] sm:text-[11px] font-mono text-slate-200 backdrop-blur-md">
+          <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-[#0e2640] px-2.5 py-1 text-[10px] sm:text-[11px] font-mono text-slate-200">
             <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
             <span>{smkCount} SMK</span>
           </div>
@@ -407,11 +382,6 @@ export default function ConvergingWorkflow() {
       const quadrantSign = Math.sign(Math.sin(angle)) * Math.sign(Math.cos(angle)) || 1
       const targetTilt = Math.round(quadrantSign * (18 + (index % 5) * 4))
 
-      // Sedikit kemiringan 3D (pitch & yaw)
-      const rotX = Math.round(Math.sin(index * 2.1) * 8)
-      const rotY = Math.round(Math.cos(index * 1.9) * 12)
-      const depthZ = Math.round(Math.sin(index * 4.3) * 40)
-
       return {
         ...school,
         index,
@@ -419,11 +389,19 @@ export default function ConvergingWorkflow() {
         startY,
         startTilt,
         targetTilt,
-        depthZ,
-        rotX,
-        rotY,
       }
     })
+  }, [])
+
+  // Cek rasio layar sekali di awal / saat resize (bukan 124x per scroll frame)
+  const [screenRatio, setScreenRatio] = useState(1.0)
+  useEffect(() => {
+    const updateRatio = () => {
+      setScreenRatio(typeof window !== "undefined" && window.innerWidth < 640 ? 0.45 : 1.0)
+    }
+    updateRatio()
+    window.addEventListener("resize", updateRatio, { passive: true })
+    return () => window.removeEventListener("resize", updateRatio)
   }, [])
 
   // Hook useScroll dari framer-motion untuk container runway
@@ -486,7 +464,7 @@ export default function ConvergingWorkflow() {
           }}
           className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 pointer-events-none"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/15 px-3.5 py-1 text-xs font-bold text-blue-200 mb-3 backdrop-blur-md shadow-xs">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-[#0c243d] px-3.5 py-1 text-xs font-bold text-blue-200 mb-3 shadow-xs">
             <Sparkles className="h-3.5 w-3.5 text-blue-300" />
             <span>Dapodik Wilayah Kerja Kecamatan Lamongan</span>
           </div>
@@ -515,6 +493,7 @@ export default function ConvergingWorkflow() {
               key={school.id}
               school={school}
               progress={smoothProgress}
+              ratio={screenRatio}
             />
           ))}
         </div>
