@@ -185,7 +185,7 @@ export function getStatusPengerjaan(
 function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan }) {
   if (pengerjaan.tahapIndex === 0) {
     return (
-      <div className="rounded-xl bg-rose-50/70 border border-rose-200/80 p-3.5 text-xs text-rose-800 flex items-center gap-2">
+      <div className="rounded-xl bg-rose-50/70 border border-rose-200/80 p-2.5 sm:p-3 text-xs text-rose-800 flex items-center gap-2">
         <XCircle className="h-4 w-4 shrink-0 text-rose-600" />
         <span>Status penanganan dihentikan atau tidak dapat ditindaklanjuti oleh dinas.</span>
       </div>
@@ -200,20 +200,20 @@ function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan })
   ]
 
   return (
-    <div className="rounded-2xl bg-white border border-slate-200/90 p-3 sm:p-5 shadow-xs space-y-3 sm:space-y-4 max-w-full overflow-hidden">
+    <div className="rounded-xl bg-white border border-slate-200/90 p-2.5 sm:p-3.5 shadow-2xs space-y-2.5 max-w-full overflow-hidden">
       {/* Header Info Alur */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-        <span className="flex items-center gap-1.5 font-bold text-slate-800">
-          <Activity className="h-4 w-4 text-[#3B82F6]" />
+        <span className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] sm:text-xs">
+          <Activity className="h-3.5 w-3.5 text-[#3B82F6]" />
           Alur Pengerjaan Laporan
         </span>
-        <span className="text-slate-500 font-medium text-[11px] sm:text-xs">
+        <span className="text-slate-500 font-medium text-[10px] sm:text-[11px]">
           {pengerjaan.ringkas}
         </span>
       </div>
 
-      {/* Stepper Bulat Horizontal persis seperti gambar */}
-      <div className="pt-2 pb-1">
+      {/* Stepper Bulat Horizontal */}
+      <div className="pt-1.5 pb-0.5">
         <div className="flex items-start justify-between w-full">
           {steps.map((st, idx) => {
             const isDone = st.no < pengerjaan.tahapIndex || pengerjaan.status === "sudah_selesai"
@@ -225,41 +225,39 @@ function PengerjaanTracker({ pengerjaan }: { pengerjaan: InfoStatusPengerjaan })
                 {/* Garis Penghubung antar bulatan */}
                 {!isLast && (
                   <div
-                    className={`absolute top-[18px] sm:top-[22px] left-[50%] right-[-50%] h-[2.5px] sm:h-[3px] -translate-y-1/2 z-0 ${
-                      st.no < pengerjaan.tahapIndex || pengerjaan.status === "sudah_selesai"
-                        ? "bg-[#3B82F6]"
-                        : "bg-slate-200"
-                    }`}
+                    className={`absolute top-[14px] sm:top-[16px] left-[50%] right-[-50%] h-[2px] sm:h-[2.5px] -translate-y-1/2 z-0 ${st.no < pengerjaan.tahapIndex || pengerjaan.status === "sudah_selesai"
+                      ? "bg-[#3B82F6]"
+                      : "bg-slate-200"
+                      }`}
                   />
                 )}
 
                 {/* Lingkaran Step */}
                 <div className="relative z-10 flex items-center justify-center">
                   {isDone ? (
-                    <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-[#3B82F6] text-white flex items-center justify-center shadow-xs text-xs sm:text-base">
-                      <Check className="h-5 w-5 stroke-[3]" />
+                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-[#3B82F6] text-white flex items-center justify-center shadow-xs text-xs">
+                      <Check className="h-4 w-4 stroke-[3]" />
                     </div>
                   ) : isCurrent ? (
-                    <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-white border-[2.5px] sm:border-[3.5px] border-[#3B82F6] text-[#3B82F6] font-bold text-xs sm:text-base flex items-center justify-center shadow-xs">
+                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white border-[2px] sm:border-[2.5px] border-[#3B82F6] text-[#3B82F6] font-bold text-xs flex items-center justify-center shadow-xs">
                       {st.no}
                     </div>
                   ) : (
-                    <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-white border-[3.5px] border-[#3B82F6] text-[#3B82F6] font-bold text-sm sm:text-base flex items-center justify-center shadow-xs">
+                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white border-[2px] sm:border-[2.5px] border-[#3B82F6] text-[#3B82F6] font-bold text-xs flex items-center justify-center shadow-xs">
                       {st.no}
                     </div>
                   )}
                 </div>
 
                 {/* Label teks di bawah lingkaran */}
-                <div className="mt-2.5 text-center px-1">
+                <div className="mt-1.5 text-center px-1">
                   <span
-                    className={`text-[10px] sm:text-xs block leading-tight ${
-                      isCurrent
-                        ? "font-bold text-slate-900"
-                        : isDone
-                          ? "font-medium text-slate-400"
-                          : "font-semibold text-slate-700"
-                    }`}
+                    className={`text-[9.5px] sm:text-[11px] block leading-tight ${isCurrent
+                      ? "font-bold text-slate-900"
+                      : isDone
+                        ? "font-medium text-slate-400"
+                        : "font-semibold text-slate-700"
+                      }`}
                   >
                     {st.title}
                   </span>
@@ -529,20 +527,18 @@ export default function RiwayatLaporan() {
                   setViewMode("publik")
                   setPagePublik(1)
                 }}
-                className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center ${
-                  viewMode === "publik"
-                    ? "bg-[#0B3052] text-white shadow-md"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-                }`}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center ${viewMode === "publik"
+                  ? "bg-[#0B3052] text-white shadow-md"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                  }`}
               >
                 <Globe2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                <span className="truncate">Riwayat Publik</span>
+                <span className="truncate">Laporan Publik</span>
                 <span
-                  className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold shrink-0 ${
-                    viewMode === "publik"
-                      ? "bg-white/20 text-white"
-                      : "bg-slate-200 text-slate-700"
-                  }`}
+                  className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold shrink-0 ${viewMode === "publik"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200 text-slate-700"
+                    }`}
                 >
                   {itemsPublikRaw.length + itemsMandiriRaw.length}
                 </span>
@@ -554,21 +550,19 @@ export default function RiwayatLaporan() {
                   setViewMode("pribadi")
                   setPagePribadi(1)
                 }}
-                className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center ${
-                  viewMode === "pribadi"
-                    ? "bg-[#0B3052] text-white shadow-md"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-                }`}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center ${viewMode === "pribadi"
+                  ? "bg-[#0B3052] text-white shadow-md"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                  }`}
               >
                 <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                 <span className="truncate">Laporan Pribadi</span>
                 {loggedIn ? (
                   <span
-                    className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold shrink-0 ${
-                      viewMode === "pribadi"
-                        ? "bg-white/20 text-white"
-                        : "bg-slate-200 text-slate-700"
-                    }`}
+                    className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold shrink-0 ${viewMode === "pribadi"
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-200 text-slate-700"
+                      }`}
                   >
                     {itemsPribadi.length}
                   </span>
@@ -616,11 +610,10 @@ export default function RiwayatLaporan() {
                       setSubModePublik(tab.id as "semua" | "klaster" | "mandiri")
                       setPagePublik(1)
                     }}
-                    className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
-                      subModePublik === tab.id
-                        ? "bg-white text-[#0B3052] shadow-sm"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
+                    className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${subModePublik === tab.id
+                      ? "bg-[#0B3052] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                      }`}
                   >
                     <span className="sm:hidden">{tab.shortLabel}</span>
                     <span className="hidden sm:inline">{tab.label}</span>
@@ -659,11 +652,10 @@ export default function RiwayatLaporan() {
                           setFilterPublikStatus(st.id as FilterPublik)
                           setPagePublik(1)
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                          filterPublikStatus === st.id
-                            ? "bg-[#0B3052] text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${filterPublikStatus === st.id
+                          ? "bg-[#0B3052] text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
                       >
                         {st.label}
                       </button>
@@ -742,171 +734,171 @@ export default function RiwayatLaporan() {
                   return (
                     <ScrollReveal key={item.id} direction="up" delay={(idx % 4) * 80} duration={400}>
                       <div
-                        className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-all space-y-4 max-w-full overflow-hidden"
+                        className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-sm transition-all space-y-3 max-w-full overflow-hidden"
                       >
-                      {/* Top Header Card */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-slate-900 text-sm">
-                            {k.klaster_id}
+                        {/* Top Header Card */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-bold text-slate-900 text-xs sm:text-sm">
+                              {k.klaster_id}
+                            </span>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold border flex items-center gap-1 ${stVerif.box}`}
+                            >
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                              {stVerif.label}
+                            </span>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${pengerjaan.dotStyle}`} />
+                              Status Pengerjaan: {pengerjaan.label}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-slate-700 font-semibold uppercase tracking-wider text-[10px]">
+                              {k.kategori.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Info Sekolah & Isu */}
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono mb-1">
+                            <Building2 className="h-3.5 w-3.5 text-[#0B3052]" />
+                            <span>NPSN: {k.sekolah_npsn}</span>
+                            <span>&middot;</span>
+                            <span className="rounded bg-slate-100 px-1.5 py-0.2 font-bold text-slate-700">
+                              {profil?.jenjang ?? "Sekolah"}
+                            </span>
+                          </div>
+                          <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                            {profil?.nama ?? "Sekolah"} &mdash; {k.label ?? "Klaster Isu Sarpras"}
+                          </h3>
+                        </div>
+
+                        {/* Skor & Partisipasi Suara */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-100 text-xs">
+                          <div>
+                            <span className="text-[10px] sm:text-[11px] text-slate-400 block font-medium">Skor Prioritas</span>
+                            <span className="text-sm sm:text-base font-bold text-[#0B3052] tabular-nums">
+                              {k.skor_prioritas ?? "—"}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] sm:text-[11px] text-slate-400 block font-medium">Skor Keparahan</span>
+                            <span className="text-sm sm:text-base font-bold text-rose-700 tabular-nums">
+                              {k.skor_keparahan ?? "—"}
+                            </span>
+                          </div>
+                          <div className="col-span-2 sm:col-span-1">
+                            <span className="text-[10px] sm:text-[11px] text-slate-400 block font-medium">Dukungan Warga</span>
+                            <span className="text-sm sm:text-base font-bold text-emerald-700 tabular-nums flex items-center gap-1">
+                              <ThumbsUp className="h-3.5 w-3.5" /> {k.jumlah_vote_terhitung ?? 0} suara
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Tracker Alur Pengerjaan */}
+                        <PengerjaanTracker pengerjaan={pengerjaan} />
+
+                        {/* Footer Actions */}
+                        <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
+                          <span className="text-slate-400 text-[10px] sm:text-[11px]">
+                            Teragregasi dari aduan terverifikasi
                           </span>
-                          <span
-                            className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1 ${stVerif.box}`}
+                          <Link
+                            to={`/klaster/${k.klaster_id}`}
+                            className="inline-flex items-center gap-1.5 font-bold text-[#0B3052] hover:underline text-xs"
                           >
-                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                            {stVerif.label}
+                            Lihat Detail Klaster &amp; Dukung <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    </ScrollReveal>
+                  )
+                }
+
+                // item.tipe === "mandiri"
+                const m = item.data
+                const profil = profilSekolah.get(m.sekolah_npsn)
+                const pengerjaan = getStatusPengerjaan(m.status_penanganan, m.status_sanggahan)
+                return (
+                  <ScrollReveal key={item.id} direction="up" delay={(idx % 4) * 80} duration={400}>
+                    <div
+                      className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs hover:shadow-sm transition-all space-y-3 max-w-full overflow-hidden"
+                    >
+                      {/* Top Header Card */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono font-bold text-slate-900 text-xs sm:text-sm">
+                            {m.tracking_id}
                           </span>
-                          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
+                          <span className="rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold border flex items-center gap-1 bg-emerald-50 text-emerald-800 border-emerald-200">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                            Terverifikasi Dinas (Aduan Mandiri)
+                          </span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
                             <span className={`h-1.5 w-1.5 rounded-full ${pengerjaan.dotStyle}`} />
                             Status Pengerjaan: {pengerjaan.label}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-slate-700 font-semibold uppercase tracking-wider text-[10px]">
-                            {k.kategori.replace(/_/g, " ")}
-                          </span>
-                        </div>
+                        <span className="text-[11px] text-slate-400">
+                          {new Date(m.created_at).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
                       </div>
 
-                      {/* Info Sekolah & Isu */}
+                      {/* Info Sekolah & Fasilitas */}
                       <div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mb-1">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono mb-1">
                           <Building2 className="h-3.5 w-3.5 text-[#0B3052]" />
-                          <span>NPSN: {k.sekolah_npsn}</span>
+                          <span>NPSN: {m.sekolah_npsn}</span>
                           <span>&middot;</span>
                           <span className="rounded bg-slate-100 px-1.5 py-0.2 font-bold text-slate-700">
                             {profil?.jenjang ?? "Sekolah"}
                           </span>
                         </div>
-                        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-                          {profil?.nama ?? "Sekolah"} &mdash; {k.label ?? "Klaster Isu Sarpras"}
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                          {profil?.nama ?? "Sekolah"} &mdash; {m.fasilitas_terkait ?? "Fasilitas Sarpras"}
                         </h3>
+                        {m.kondisi_dilaporkan && (
+                          <div className="mt-1">
+                            <span className="text-[11px] font-medium text-slate-500">
+                              Kondisi dilaporkan:{" "}
+                              <span className="capitalize font-bold text-slate-700">
+                                {m.kondisi_dilaporkan.replace(/_/g, " ")}
+                              </span>
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Skor & Partisipasi Suara */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs">
-                        <div>
-                          <span className="text-[11px] text-slate-400 block font-medium">Skor Prioritas</span>
-                          <span className="text-base font-black text-[#0B3052] tabular-nums">
-                            {k.skor_prioritas ?? "—"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[11px] text-slate-400 block font-medium">Skor Keparahan</span>
-                          <span className="text-base font-black text-rose-700 tabular-nums">
-                            {k.skor_keparahan ?? "—"}
-                          </span>
-                        </div>
-                        <div className="col-span-2 sm:col-span-1">
-                          <span className="text-[11px] text-slate-400 block font-medium">Dukungan Warga</span>
-                          <span className="text-base font-black text-emerald-700 tabular-nums flex items-center gap-1">
-                            <ThumbsUp className="h-3.5 w-3.5" /> {k.jumlah_vote_terhitung ?? 0} suara
-                          </span>
-                        </div>
+                      {/* Deskripsi Aduan */}
+                      <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                        <p className="line-clamp-3 text-slate-700">{m.deskripsi}</p>
                       </div>
 
                       {/* Tracker Alur Pengerjaan */}
                       <PengerjaanTracker pengerjaan={pengerjaan} />
 
-                      {/* Footer Actions */}
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                        <span className="text-slate-400 text-[11px]">
-                          Teragregasi dari aduan terverifikasi
+                      {/* Footer Info Transparansi */}
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-100/60">
+                        <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          Divalidasi keabsahannya oleh Dinas Pendidikan (D-21)
                         </span>
-                        <Link
-                          to={`/klaster/${k.klaster_id}`}
-                          className="inline-flex items-center gap-1.5 font-bold text-[#0B3052] hover:underline"
-                        >
-                          Lihat Detail Klaster &amp; Dukung <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
+                        <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-500">
+                          Non-Klaster
+                        </span>
                       </div>
                     </div>
                   </ScrollReveal>
                 )
-              }
-
-              // item.tipe === "mandiri"
-              const m = item.data
-              const profil = profilSekolah.get(m.sekolah_npsn)
-              const pengerjaan = getStatusPengerjaan(m.status_penanganan, m.status_sanggahan)
-              return (
-                <ScrollReveal key={item.id} direction="up" delay={(idx % 4) * 80} duration={400}>
-                  <div
-                    className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm hover:shadow-md transition-all space-y-4 max-w-full overflow-hidden"
-                  >
-                    {/* Top Header Card */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono font-bold text-slate-900 text-sm">
-                          {m.tracking_id}
-                        </span>
-                        <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1 bg-emerald-50 text-emerald-800 border-emerald-200">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                          Terverifikasi Dinas (Aduan Mandiri)
-                        </span>
-                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${pengerjaan.dotStyle}`} />
-                          Status Pengerjaan: {pengerjaan.label}
-                        </span>
-                      </div>
-
-                      <span className="text-xs text-slate-400">
-                        {new Date(m.created_at).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </span>
-                    </div>
-
-                    {/* Info Sekolah & Fasilitas */}
-                    <div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mb-1">
-                        <Building2 className="h-3.5 w-3.5 text-[#0B3052]" />
-                        <span>NPSN: {m.sekolah_npsn}</span>
-                        <span>&middot;</span>
-                        <span className="rounded bg-slate-100 px-1.5 py-0.2 font-bold text-slate-700">
-                          {profil?.jenjang ?? "Sekolah"}
-                        </span>
-                      </div>
-                      <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-                        {profil?.nama ?? "Sekolah"} &mdash; {m.fasilitas_terkait ?? "Fasilitas Sarpras"}
-                      </h3>
-                      {m.kondisi_dilaporkan && (
-                        <div className="mt-1">
-                          <span className="text-[11px] font-medium text-slate-500">
-                            Kondisi dilaporkan:{" "}
-                            <span className="capitalize font-bold text-slate-700">
-                              {m.kondisi_dilaporkan.replace(/_/g, " ")}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Deskripsi Aduan */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
-                      <p className="line-clamp-4 text-slate-700">{m.deskripsi}</p>
-                    </div>
-
-                    {/* Tracker Alur Pengerjaan */}
-                    <PengerjaanTracker pengerjaan={pengerjaan} />
-
-                    {/* Footer Info Transparansi */}
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100/60">
-                      <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        Divalidasi keabsahannya oleh Dinas Pendidikan (D-21)
-                      </span>
-                      <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-500">
-                        Non-Klaster
-                      </span>
-                    </div>
-                  </div>
-                </ScrollReveal>
-              )
-            })}
+              })}
 
               {/* Pagination Publik */}
               {totalPagesPublik > 1 && (
@@ -1031,11 +1023,10 @@ export default function RiwayatLaporan() {
                           setTabPribadi(item.id)
                           setPagePribadi(1)
                         }}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                          tabPribadi === item.id
-                            ? "bg-[#0B3052] text-white shadow-sm"
-                            : "bg-slate-100 hover:bg-slate-200/70 text-slate-700"
-                        }`}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${tabPribadi === item.id
+                          ? "bg-[#0B3052] text-white shadow-sm"
+                          : "bg-slate-100 hover:bg-slate-200/70 text-slate-700"
+                          }`}
                       >
                         {item.label} ({countsPribadi[item.id]})
                       </button>
@@ -1080,32 +1071,23 @@ export default function RiwayatLaporan() {
                         box: "bg-slate-100 text-slate-700 border-slate-200",
                         label: item.status_sanggahan,
                       }
-                      const sekolah = profilSekolah.get(item.sekolah_npsn)?.nama
+                      const profil = profilSekolah.get(item.sekolah_npsn)
+                      const sekolah = profil?.nama
                       const pengerjaan = getStatusPengerjaan(item.status_penanganan, item.status_sanggahan)
 
                       return (
                         <div
                           key={item.id}
-                          className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-sm space-y-4 max-w-full overflow-hidden"
+                          className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 shadow-xs space-y-3 max-w-full overflow-hidden"
                         >
-                          {/* Nama Sekolah & Fasilitas ditaruh paling atas */}
-                          <div className="border-b border-slate-100 pb-3">
-                            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
-                              {sekolah ?? `Sekolah NPSN ${item.sekolah_npsn}`}
-                              {item.fasilitas_terkait ? ` — ${item.fasilitas_terkait}` : ""}
-                            </h3>
-                            <p className="text-xs text-slate-500 mt-0.5 font-mono">
-                              NPSN: {item.sekolah_npsn}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-mono font-bold text-slate-900 text-sm">
+                          {/* Top Header Card: Tracking ID & Status di Atas */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-mono font-bold text-slate-900 text-xs sm:text-sm">
                                 {item.tracking_id}
                               </span>
                               <span
-                                className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1 ${status.box}`}
+                                className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold border flex items-center gap-1 ${status.box}`}
                               >
                                 {item.status_sanggahan === "divalidasi" ? (
                                   <CheckCircle2 className="h-3 w-3" />
@@ -1114,13 +1096,13 @@ export default function RiwayatLaporan() {
                                 )}
                                 {status.label}
                               </span>
-                              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold border flex items-center gap-1.5 ${pengerjaan.badgeStyle}`}>
                                 <span className={`h-1.5 w-1.5 rounded-full ${pengerjaan.dotStyle}`} />
                                 Status Pengerjaan: {pengerjaan.label}
                               </span>
                               {/* F4.13 T4 — penanda konfirmasi severity (§4.4) */}
                               {item.konfirmasi_perlu_dijawab && (
-                                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 flex items-center gap-1">
+                                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-amber-800 flex items-center gap-1">
                                   <HelpCircle className="h-3 w-3" />
                                   Konfirmasi: Menunggu Jawaban
                                   <button
@@ -1134,29 +1116,47 @@ export default function RiwayatLaporan() {
                               )}
                               {!item.konfirmasi_perlu_dijawab &&
                                 item.status_konfirmasi === "terjawab" && (
-                                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 flex items-center gap-1">
+                                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-800 flex items-center gap-1">
                                     <CheckCircle2 className="h-3 w-3" /> Konfirmasi Terjawab
                                   </span>
                                 )}
                               {!item.konfirmasi_perlu_dijawab &&
                                 item.status_konfirmasi === "dilewati" && (
-                                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-slate-600 flex items-center gap-1">
                                     Konfirmasi Dilewati
                                   </span>
                                 )}
-                              <span className="text-[11px] text-slate-400 font-mono">
-                                Diajukan: {formatTanggal(item.created_at)}
-                              </span>
                             </div>
-                            <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 shrink-0">
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-slate-700 shrink-0">
                               {item.kondisi_dilaporkan
                                 ? `Kondisi: ${KONDISI_LABEL[item.kondisi_dilaporkan] ?? item.kondisi_dilaporkan}`
                                 : "Kondisi tidak disebutkan"}
                             </span>
                           </div>
 
-                          <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 space-y-2">
-                            <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase block">
+                          {/* Info Sekolah & Fasilitas */}
+                          <div>
+                            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono mb-1">
+                              <Building2 className="h-3.5 w-3.5 text-[#0B3052]" />
+                              <span>NPSN: {item.sekolah_npsn}</span>
+                              <span>&middot;</span>
+                              <span className="rounded bg-slate-100 px-1.5 py-0.2 font-bold text-slate-700">
+                                {profil?.jenjang ?? "Sekolah"}
+                              </span>
+                              <span>&middot;</span>
+                              <span className="text-slate-400 font-sans">
+                                Diajukan: {formatTanggal(item.created_at)}
+                              </span>
+                            </div>
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                              {sekolah ?? `Sekolah NPSN ${item.sekolah_npsn}`}
+                              {item.fasilitas_terkait ? ` — ${item.fasilitas_terkait}` : ""}
+                            </h3>
+                          </div>
+
+                          {/* Deskripsi Sanggahan */}
+                          <div className="rounded-xl bg-slate-50 p-3 sm:p-3.5 border border-slate-100 space-y-1.5">
+                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase block">
                               DESKRIPSI SANGGAHAN
                             </span>
                             <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
@@ -1167,7 +1167,7 @@ export default function RiwayatLaporan() {
                           {/* Tracker Alur Pengerjaan */}
                           <PengerjaanTracker pengerjaan={pengerjaan} />
 
-                          <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400 font-mono">
+                          <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 text-[11px] text-slate-400 font-mono">
                             <span>ID: {item.id}</span>
                             <span>Status backend: {item.status_sanggahan}</span>
                           </div>
