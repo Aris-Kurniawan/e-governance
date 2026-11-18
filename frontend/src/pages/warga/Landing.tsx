@@ -429,7 +429,141 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="flex flex-col lg:flex-row items-stretch justify-center gap-4 lg:gap-3 max-w-sm mx-auto lg:max-w-none">
+          {/* ── TAMPILAN MOBILE (< lg): Unified Formula Ledger Card (Muat 1 Layar Penuh) ── */}
+          <div className="block lg:hidden max-w-md mx-auto">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-3.5">
+              
+              {/* Baris 1: Skor Keparahan Fasilitas */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+                      <Activity className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                        1. Skor Keparahan Fasilitas
+                      </h3>
+                      <p className="text-[10px] text-slate-500">Matriks 100 Poin Kerusakan Fisik</p>
+                    </div>
+                  </div>
+                  <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[9px] font-bold text-blue-700 shrink-0">
+                    Bobot 70:30
+                  </span>
+                </div>
+
+                <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 space-y-1.5">
+                  <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden flex">
+                    <div className="h-full w-[70%] bg-blue-600" />
+                    <div className="h-full w-[30%] bg-blue-300" />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-600 font-medium">
+                    <span className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> 70% Fakta
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-300" /> 30% Dapodik
+                    </span>
+                    <span className="font-mono text-[9px] text-slate-400">
+                      (Fakta×0.7 + Dapodik×0.3)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider Operator (+) */}
+              <div className="relative flex items-center justify-center py-0.5">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <span className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-xs font-black shadow-2xs">
+                  +
+                </span>
+              </div>
+
+              {/* Baris 2: Dukungan Partisipasi Warga */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 shrink-0">
+                      <ThumbsUp className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                        2. Dukungan Partisipasi Warga
+                      </h3>
+                      <p className="text-[10px] text-slate-500">1 NIK = 1 Suara Sah (Terverifikasi)</p>
+                    </div>
+                  </div>
+                  <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-bold text-emerald-700 shrink-0">
+                    Multiplier
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/50 px-3 py-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-blue-600 shrink-0" />
+                    <span className="font-bold text-slate-900 text-xs">+1.0 Poin per Suara</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <span>Anti-Bot</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider Operator (=) */}
+              <div className="relative flex items-center justify-center py-0.5">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t-2 border-slate-300" />
+                </div>
+                <span className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-black shadow-xs">
+                  =
+                </span>
+              </div>
+
+              {/* Baris 3: Output Resmi (Skor Prioritas Final) */}
+              <div className="rounded-xl bg-slate-900 p-3.5 text-white space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded bg-white/10 flex items-center justify-center">
+                      <LineChart className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="text-xs font-bold tracking-tight">3. Skor Prioritas Final (P_k)</span>
+                  </div>
+                  <span className="rounded bg-white/10 px-2 py-0.5 text-[9px] font-semibold text-slate-300">
+                    Output Resmi
+                  </span>
+                </div>
+
+                <div className="flex items-end justify-between pt-0.5">
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
+                      Indeks Urgensi
+                    </span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl sm:text-3xl font-black text-white leading-none">85.5</span>
+                      <span className="text-xs font-semibold text-slate-400">/100</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-400/20 border border-amber-400/30 px-2.5 py-1 text-[10px] font-bold text-amber-300">
+                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                      <span>Prioritas Darurat</span>
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-800 leading-snug">
+                  Urutan antrean Surat Perintah Kerja (SPK) RKT Dinas Pendidikan.
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          {/* ── TAMPILAN DESKTOP (≥ lg): 3 Kartu Horizontal Lebar ── */}
+          <div className="hidden lg:flex items-stretch justify-center gap-4 lg:gap-3 max-w-none">
             {/* Kartu 1: Skor Keparahan */}
             <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
               <div className="flex items-center justify-between mb-3">

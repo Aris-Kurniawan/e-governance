@@ -143,6 +143,13 @@ export default function Registrasi() {
 
   const handleStep2 = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (peran === "pelajar") {
+      const nisnDigits = nisn.replace(/\D/g, "")
+      if (nisnDigits.length !== 10) {
+        setError("NISN harus terdiri dari tepat 10 digit angka.")
+        return
+      }
+    }
     const nikDigits = nik.replace(/\D/g, "")
     if (nikDigits.length !== 16) {
       setError("NIK harus terdiri dari tepat 16 digit angka.")
@@ -497,10 +504,13 @@ export default function Registrasi() {
               <AuthField
                 label="NISN 10-Digit"
                 value={nisn}
-                onChange={(e) => setNisn(e.target.value)}
+                onChange={(e) => setNisn(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 placeholder="0078129341"
                 className="font-mono"
                 icon={<Hash className="h-4 w-4" />}
+                maxLength={10}
+                inputMode="numeric"
+                pattern="[0-9]*"
                 required
               />
 
@@ -597,10 +607,13 @@ export default function Registrasi() {
           <AuthField
             label="NIK Sesuai KK / KIA / KTP"
             value={nik}
-            onChange={(e) => setNik(e.target.value)}
+            onChange={(e) => setNik(e.target.value.replace(/\D/g, "").slice(0, 16))}
             placeholder="3524052104070001"
             className="font-mono"
             icon={<CreditCard className="h-4 w-4" />}
+            maxLength={16}
+            inputMode="numeric"
+            pattern="[0-9]*"
             required
           />
 
