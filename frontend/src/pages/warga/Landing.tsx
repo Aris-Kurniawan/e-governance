@@ -118,148 +118,7 @@ export default function Landing() {
 
             {/* Right Floating Preview Cards – disembunyikan di mobile */}
             <div className="hidden lg:block lg:col-span-5 relative">
-<<<<<<< HEAD
-              {/* Kartu kecil: sekolah tervalidasi */}
-              <div className="absolute -top-11 left-0 z-20 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
-                <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                </div>
-                <div className="leading-tight">
-                  <span className="block text-xs font-bold text-slate-900">SDN 1 Sukodadi</span>
-                  <span className="block text-[10px] text-slate-400">Laporan Terverifikasi · NPSN 6401 Validasi</span>
-                </div>
-              </div>
-
-              {/* Kartu utama: Indeks Integritas Sarpras */}
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/50">
-                <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                  <span className="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">
-                    Verifikasi Sarpras Terbuka
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live Sistem
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center gap-5">
-                  {/* Gauge indeks */}
-                  <div className="relative h-24 w-24 shrink-0">
-                    <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                      <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="10" />
-                      <circle
-                        cx="50" cy="50" r="42" fill="none"
-                        stroke="#2563EB" strokeWidth="10" strokeLinecap="round"
-                        strokeDasharray={2 * Math.PI * 42}
-                        strokeDashoffset={2 * Math.PI * 42 * (1 - 0.942)}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xl font-extrabold text-slate-900 leading-none">94.2</span>
-                      <span className="text-[9px] font-bold text-slate-400 tracking-wider mt-0.5">INDEKS</span>
-                    </div>
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-slate-900">Indeks Integritas Sarpras</h3>
-                    <p className="text-[11px] text-slate-500 leading-snug mt-1">
-                      Berbasis audit 62 sekolah dan 49 laporan warga terverifikasi.
-                    </p>
-                    <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      Terverifikasi Dapodik &amp; Warga
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 mb-1.5">
-                    <span>Realisasi Perbaikan Semester Ini</span>
-                    <span className="font-bold text-slate-700">64%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full w-[64%] rounded-full bg-blue-600" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Kartu melayang: AI Consensus */}
-              <div className="absolute -bottom-12 -left-6 z-20 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-md bg-blue-50 flex items-center justify-center">
-                    <Bot className="h-3.5 w-3.5 text-blue-600" />
-||||||| 5982711
-              {/* Kartu kecil: sekolah tervalidasi */}
-              <div className="absolute -top-4 left-0 z-20 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
-                <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                </div>
-                <div className="leading-tight">
-                  <span className="block text-xs font-bold text-slate-900">SDN 1 Sukodadi</span>
-                  <span className="block text-[10px] text-slate-400">Laporan Terverifikasi · NPSN 6401 Validasi</span>
-                </div>
-              </div>
-
-              {/* Kartu utama: Indeks Integritas Sarpras */}
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/50">
-                <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                  <span className="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">
-                    Verifikasi Sarpras Terbuka
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live Sistem
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center gap-5">
-                  {/* Gauge indeks */}
-                  <div className="relative h-24 w-24 shrink-0">
-                    <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                      <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="10" />
-                      <circle
-                        cx="50" cy="50" r="42" fill="none"
-                        stroke="#2563EB" strokeWidth="10" strokeLinecap="round"
-                        strokeDasharray={2 * Math.PI * 42}
-                        strokeDashoffset={2 * Math.PI * 42 * (1 - 0.942)}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xl font-extrabold text-slate-900 leading-none">94.2</span>
-                      <span className="text-[9px] font-bold text-slate-400 tracking-wider mt-0.5">INDEKS</span>
-                    </div>
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-slate-900">Indeks Integritas Sarpras</h3>
-                    <p className="text-[11px] text-slate-500 leading-snug mt-1">
-                      Berbasis audit 62 sekolah dan 49 laporan warga terverifikasi.
-                    </p>
-                    <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      Terverifikasi Dapodik &amp; Warga
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 mb-1.5">
-                    <span>Realisasi Perbaikan Semester Ini</span>
-                    <span className="font-bold text-slate-700">64%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full w-[64%] rounded-full bg-blue-600" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Kartu melayang: AI Consensus */}
-              <div className="absolute -bottom-6 -left-6 z-20 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-md bg-blue-50 flex items-center justify-center">
-                    <Bot className="h-3.5 w-3.5 text-blue-600" />
-=======
-              <TiltCard
+<TiltCard
                 maxTilt={9}
                 scale={1.025}
                 glare={true}
@@ -268,11 +127,10 @@ export default function Landing() {
                 {/* Kartu kecil: sekolah tervalidasi */}
                 <div
                   style={{ transform: "translateZ(36px)" }}
-                  className="absolute -top-4 left-0 z-30 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60 transition-transform duration-200"
+                  className="absolute -top-11 left-0 z-30 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60 transition-transform duration-200"
                 >
                   <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
->>>>>>> 0954b9a591e2808cb519ff57d2be98b8cf601497
                   </div>
                   <div className="leading-tight">
                     <span className="block text-xs font-bold text-slate-900">SDN 1 Sukodadi</span>
@@ -339,7 +197,7 @@ export default function Landing() {
                 {/* Kartu melayang: AI Consensus */}
                 <div
                   style={{ transform: "translateZ(42px)" }}
-                  className="absolute -bottom-6 -left-6 z-30 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60 transition-transform duration-200"
+                  className="absolute -bottom-12 -left-6 z-30 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60 transition-transform duration-200"
                 >
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 rounded-md bg-blue-50 flex items-center justify-center">
