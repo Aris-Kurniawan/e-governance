@@ -119,7 +119,7 @@ export default function Landing() {
             {/* Right Floating Preview Cards – disembunyikan di mobile */}
             <div className="hidden lg:block lg:col-span-5 relative">
               {/* Kartu kecil: sekolah tervalidasi */}
-              <div className="absolute -top-4 left-0 z-20 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
+              <div className="absolute -top-11 left-0 z-20 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
                 <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                 </div>
@@ -183,7 +183,7 @@ export default function Landing() {
               </div>
 
               {/* Kartu melayang: AI Consensus */}
-              <div className="absolute -bottom-6 -left-6 z-20 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
+              <div className="absolute -bottom-12 -left-6 z-20 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded-md bg-blue-50 flex items-center justify-center">
                     <Bot className="h-3.5 w-3.5 text-blue-600" />
