@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Send,
   Upload,
-  ShieldCheck,
   Info,
   X,
   ImageIcon,
@@ -189,6 +188,10 @@ export default function FormLaporan() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (submitDisabled) return
+    if (/[<>]/.test(deskripsi)) {
+      setErrorGagal("Deskripsi tidak boleh mengandung karakter khusus '<' atau '>'.")
+      return
+    }
     setLoading(true)
     setErrorGagal(null)
     try {
@@ -575,7 +578,8 @@ export default function FormLaporan() {
             <input
               type="text"
               value={lokasiSpesifik}
-              onChange={(e) => setLokasiSpesifik(e.target.value)}
+              onChange={(e) => setLokasiSpesifik(e.target.value.replace(/[<>]/g, "").slice(0, 100))}
+              maxLength={100}
               placeholder="Contoh: Ruang Kelas 3, Gedung Barat sisi utara"
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-slate-400 focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] transition-colors"
             />
@@ -674,20 +678,6 @@ export default function FormLaporan() {
             <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
               Foto diunggah sebagai bukti fisik; metadata EXIF GPS dibersihkan otomatis di browser demi privasi pelapor.
             </p>
-          </div>
-
-          {/* Info Privasi */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex items-start gap-3">
-            <ShieldCheck className="h-5 w-5 text-slate-700 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-sm font-semibold text-slate-800 block">
-                Privasi Terlindungi UU PDP No. 27/2022
-              </span>
-              <span className="text-xs text-slate-500 block mt-0.5 leading-relaxed">
-                Identitas Anda tidak dipublikasikan secara terbuka. Laporan dilacak lewat nomor Tracking ID untuk proses
-                verifikasi lapangan Dinas Pendidikan.
-              </span>
-            </div>
           </div>
 
           {/* Action Buttons */}

@@ -25,6 +25,7 @@ import {
 import StatusBadge from "@/components/composite/StatusBadge"
 import NumberedPagination from "@/components/composite/NumberedPagination"
 import ScrollReveal from "@/components/composite/ScrollReveal"
+import MobileBreadcrumb from "@/components/composite/MobileBreadcrumb"
 import { useAuth } from "@/context/AuthContext"
 import { useFetch } from "@/hooks/useFetch"
 import { listKlaster } from "@/lib/api/klaster"
@@ -194,7 +195,10 @@ export default function DaftarKlaster() {
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
-      {/* Header */}
+      {/* Mobile Breadcrumb */}
+      <MobileBreadcrumb items={[{ label: "Beranda", to: "/" }, { label: "Daftar Klaster" }]} />
+
+      {/* Header (desktop — full page header) */}
       <div className="border-b border-slate-200/80 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 space-y-2">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500 tracking-wider uppercase">

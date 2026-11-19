@@ -8,10 +8,10 @@ from pydantic import BaseModel, Field
 class LaporanCreateRequest(BaseModel):
     """Request untuk membuat laporan baru (teks bebas, tanpa kategori)."""
 
-    sekolah_npsn: str = Field(..., description="NPSN sekolah")
-    fasilitas_terkait: Optional[str] = Field(None, description="Nama fasilitas/ruang")
-    kondisi_dilaporkan: Optional[str] = Field(None, description="baik, rusak_ringan, rusak_sedang, rusak_berat")
-    deskripsi: str = Field(..., description="Deskripsi masalah (teks bebas); kategori ditentukan AI pipeline")
+    sekolah_npsn: str = Field(..., min_length=8, max_length=8, pattern=r"^\d{8}$", description="NPSN sekolah (8 digit)")
+    fasilitas_terkait: Optional[str] = Field(None, max_length=150, description="Nama fasilitas/ruang")
+    kondisi_dilaporkan: Optional[str] = Field(None, max_length=50, description="baik, rusak_ringan, rusak_sedang, rusak_berat")
+    deskripsi: str = Field(..., min_length=1, max_length=2500, description="Deskripsi masalah (teks bebas); kategori ditentukan AI pipeline")
 
 
 model_config = {"from_attributes": True}

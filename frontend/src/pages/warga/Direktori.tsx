@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import {
   Search,
   RotateCcw,
-  Download,
   AlertTriangle,
   CheckCircle2,
   Info,
@@ -16,12 +15,14 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Plus
 } from "lucide-react"
 import { useFetch } from "@/hooks/useFetch"
 import { listSekolah } from "@/lib/api/sekolah"
 import type { SekolahList } from "@/lib/api/types"
 import ScrollReveal from "@/components/composite/ScrollReveal"
+import MobileBreadcrumb from "@/components/composite/MobileBreadcrumb"
 
 /**
  * F4.1 — baris tabel diperluas dari respons `GET /sekolah`.
@@ -165,44 +166,26 @@ export default function Direktori() {
   const totalPages = sekolahState.status === "success" ? sekolahState.data.meta.total_pages : 1
   const paginatedSekolah = filteredSekolah
 
-  // Ekspor CSV dari sekolah hasil filter
-  const handleExportCsv = () => {
-    const headers = ["NPSN", "Nama Sekolah", "Jenjang", "Alamat", "Status Integritas", "Terakhir Audit"]
-    const rows = filteredSekolah.map((s) => [
-      `"${s.npsn}"`,
-      `"${s.nama}"`,
-      `"${s.jenjang}"`,
-      `"${s.alamat}"`,
-      `"${s.status}"`,
-      `"${s.audit}"`
-    ])
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n")
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `rekap_sekolah_lamongan_${new Date().toISOString().slice(0, 10)}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
   return (
     <div className="bg-[#F8FAFC] min-h-screen pb-16">
-      {/* ── Top Header Section ── */}
-      <div className="border-b border-slate-200/80 bg-white py-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 space-y-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 tracking-wider uppercase">
-            <span className="h-2 w-2 rounded-full bg-blue-600" />
-            <span>ARSIP DATA POKOK PENDIDIKAN · WILAYAH KERJA 07.24</span>
-          </div>
+      {/* Mobile Breadcrumb */}
+      <MobileBreadcrumb items={[{ label: "Beranda", to: "/" }, { label: "Direktori Sekolah" }]} />
 
+      {/* ── Top Header Section ── */}
+      <div className="border-b border-slate-200/80 bg-white py-4 sm:py-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 space-y-3 sm:space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                 Direktori Sekolah Kecamatan Lamongan
               </h1>
-              <p className="text-slate-500 text-sm mt-1">
+              {/* Desktop description */}
+              <p className="hidden sm:block text-slate-500 text-sm mt-1">
                 Menampilkan {totalItems} lembaga pendidikan resmi terdaftar dalam pangkalan data Dapodik Kemendikdasmen wilayah Kec. Lamongan.
+              </p>
+              {/* Mobile description (ringkas & padat) */}
+              <p className="sm:hidden text-slate-500 text-xs mt-1">
+                {totalItems} sekolah terdaftar di Dapodik Kec. Lamongan.
               </p>
             </div>
 
@@ -215,26 +198,35 @@ export default function Direktori() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2 text-xs text-slate-600 border-t border-slate-100 flex-wrap gap-2">
-            <div className="flex items-center gap-3 font-medium">
-              <span><strong>{totalItems}</strong> Lembaga Terdaftar</span>
-              <span>·</span>
-              <span className="text-rose-700 font-bold">{kritisCount} Selisih Kritis</span>
-              <span>·</span>
-              <span className="text-amber-700 font-bold">{minorCount} Selisih Minor</span>
-              <span>·</span>
-              <span className="text-emerald-700 font-bold">{sesuaiCount} Valid Sesuai</span>
+          <div className="pt-2 border-t border-slate-100 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-600 font-medium whitespace-nowrap">
+              <span>
+                <strong className="text-slate-900">{totalItems}</strong>{" "}
+                <span className="sm:hidden">Sekolah</span>
+                <span className="hidden sm:inline">Lembaga Terdaftar</span>
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="text-rose-700 font-bold">
+                {kritisCount} <span className="sm:hidden">Kritis</span><span className="hidden sm:inline">Selisih Kritis</span>
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="text-amber-700 font-bold">
+                {minorCount} <span className="sm:hidden">Minor</span><span className="hidden sm:inline">Selisih Minor</span>
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="text-emerald-700 font-bold">
+                {sesuaiCount} <span className="sm:hidden">Sesuai</span><span className="hidden sm:inline">Valid Sesuai</span>
+              </span>
             </div>
-            <span className="font-mono text-slate-400 text-[11px]">KODE DISTRIK: 052401</span>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 space-y-6 w-full max-w-full overflow-x-hidden">
         {/* ── Search & Filter Bar ── */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-sm space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
           {/* Search Input */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 lg:max-w-md">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             <Input
               placeholder="Cari nama sekolah atau NPSN..."
@@ -253,58 +245,55 @@ export default function Direktori() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Filter Controls Group */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
             {/* Filter Jenjang */}
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-slate-500 font-medium mr-1">Jenjang:</span>
-              {["Semua", "SD/MI", "SMP/MTs", "SMA/SMK"].map((j) => (
-                <button
-                  key={j}
-                  onClick={() => handleJenjangChange(j)}
-                  className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition-colors cursor-pointer ${jenjang === j
-                      ? "bg-[#0B3052] text-white shadow-sm"
-                      : "bg-slate-100 hover:bg-slate-200/70 text-slate-700"
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-500 shrink-0">Jenjang:</span>
+              <div className="grid grid-cols-4 sm:flex sm:items-center gap-1 bg-slate-100/90 p-1 rounded-xl flex-1 sm:flex-initial">
+                {["Semua", "SD/MI", "SMP/MTs", "SMA/SMK"].map((j) => (
+                  <button
+                    key={j}
+                    onClick={() => handleJenjangChange(j)}
+                    className={`py-1.5 px-2 sm:px-3 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      jenjang === j
+                        ? "bg-[#0B3052] text-white shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
                     }`}
+                  >
+                    {j}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter Integritas + Reset */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-500 shrink-0 sm:hidden">Status:</span>
+              <div className="relative flex-1 sm:w-44">
+                <select
+                  value={statusIntegritas}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className="w-full h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 pr-8 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3052] cursor-pointer appearance-none"
                 >
-                  {j}
-                </button>
-              ))}
-            </div>
+                  <option>Semua Status</option>
+                  <option>Selisih Kritis</option>
+                  <option>Selisih Minor</option>
+                  <option>Data Sesuai</option>
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              </div>
 
-            {/* Select Integritas */}
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-slate-500 font-medium">Integritas:</span>
-              <select
-                value={statusIntegritas}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3052] cursor-pointer"
+              {/* Reset */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="h-9 px-3 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 rounded-xl cursor-pointer shrink-0"
               >
-                <option>Semua Status</option>
-                <option>Selisih Kritis</option>
-                <option>Selisih Minor</option>
-                <option>Data Sesuai</option>
-              </select>
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
+              </Button>
             </div>
-
-            {/* Reset */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReset}
-              className="h-9 px-3 text-xs text-slate-600 border-slate-200 hover:bg-slate-50 rounded-lg cursor-pointer"
-            >
-              <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
-            </Button>
-
-            {/* Ekspor CSV */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportCsv}
-              className="h-9 px-3 text-xs text-slate-700 border-slate-200 hover:bg-slate-50 rounded-lg cursor-pointer ml-auto"
-            >
-              <Download className="h-3.5 w-3.5 mr-1.5" /> Ekspor Rekap (.CSV)
-            </Button>
           </div>
         </div>
 

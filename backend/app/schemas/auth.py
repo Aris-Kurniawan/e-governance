@@ -4,11 +4,11 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class RegisterRequest(BaseModel):
-    nama: str = Field(..., min_length=1, max_length=255)
-    nik: str = Field(..., min_length=16, max_length=16)
-    email: EmailStr
-    password: str = Field(..., min_length=8)
-    sekolah_terkait_id: str | None = None
+    nama: str = Field(..., min_length=1, max_length=100)
+    nik: str = Field(..., min_length=16, max_length=16, pattern=r"^\d{16}$")
+    email: EmailStr = Field(..., max_length=100)
+    password: str = Field(..., min_length=8, max_length=128)
+    sekolah_terkait_id: str | None = Field(None, max_length=50)
 
 
 class RegisterResponse(BaseModel):
@@ -17,8 +17,8 @@ class RegisterResponse(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(..., max_length=100)
+    password: str = Field(..., min_length=1, max_length=128)
 
 
 class TokenResponse(BaseModel):

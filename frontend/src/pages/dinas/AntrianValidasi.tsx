@@ -1179,9 +1179,10 @@ export default function AntrianValidasi() {
 
             <textarea
               value={alasanCatatan}
-              onChange={(e) => setAlasanCatatan(e.target.value)}
+              onChange={(e) => setAlasanCatatan(e.target.value.replace(/[<>]/g, "").slice(0, 500))}
+              maxLength={500}
               rows={3}
-              placeholder="Catatan tambahan (opsional)..."
+              placeholder="Catatan tambahan (opsional, maks. 500 karakter)..."
               className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#0B3052]"
             />
           </div>

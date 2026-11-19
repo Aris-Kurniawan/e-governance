@@ -93,6 +93,29 @@ def test_pipeline_cluster_meta():
         ]
 
 
+def test_pipeline_similarity_serupa_satu_klaster():
+    """Blackbox: dua issue dengan similarity cukup harus jatuh ke klaster yang sama,
+    dan berbeda dari issue dengan topik lain. Noise (-1) tidak dihitung sebagai klaster."""
+    texts = [
+        "atap ruang kelas 3 bocor parah air masuk",   # 0 — kelompok A
+        "plafon kelas 3 bocor air masuk ke dalam",    # 1 — kelompok A
+        "wc siswa tersumbat tidak bisa dipakai",      # 2 — kelompok B
+        "toilet siswa mampet air tidak mengalir",     # 3 — kelompok B
+        "listrik kelas mati lampu ruang guru pecah",  # 4 — kelompok C
+        "lampu mati total genset sekolah rusak",      # 5 — kelompok C
+    ]
+    result = AIPipeline().run(texts)
+    labels = list(result["labels"])
+
+    # Pasangan serupa wajib berbagi klaster positif — bukan sama-sama noise.
+    assert labels[0] == labels[1] and labels[0] != -1, labels
+    assert labels[2] == labels[3] and labels[2] != -1, labels
+    assert labels[4] == labels[5] and labels[4] != -1, labels
+
+    # Kelompok berbeda tidak boleh tergabung.
+    assert len({labels[0], labels[2], labels[4]}) == 3, labels
+
+
 def test_pipeline_category_inference():
     """Test inferensi kategori berdasarkan keywords."""
     pipeline = AIPipeline()
