@@ -585,40 +585,54 @@ export default function RiwayatLaporan() {
           <div className="grid gap-6 lg:grid-cols-12 items-start">
             <div className="lg:col-span-8 space-y-6">
               {/* Sub-filter Switcher: Semua vs Klaster vs Mandiri */}
-              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/70 w-full sm:w-fit flex-wrap">
+              <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80 shadow-inner w-full sm:w-fit flex-wrap">
                 {[
                   {
                     id: "semua",
-                    shortLabel: `Semua (${itemsPublikRaw.length + itemsMandiriRaw.length})`,
-                    label: `Semua Laporan Publik (${itemsPublikRaw.length + itemsMandiriRaw.length})`,
+                    shortLabel: "Semua",
+                    label: "Semua Laporan Publik",
+                    count: itemsPublikRaw.length + itemsMandiriRaw.length,
                   },
                   {
                     id: "klaster",
-                    shortLabel: `Klaster (${itemsPublikRaw.length})`,
-                    label: `Klaster Isu Sarpras (${itemsPublikRaw.length})`,
+                    shortLabel: "Klaster",
+                    label: "Klaster Isu Sarpras",
+                    count: itemsPublikRaw.length,
                   },
                   {
                     id: "mandiri",
-                    shortLabel: `Mandiri (${itemsMandiriRaw.length})`,
-                    label: `Aduan Mandiri Tervalidasi (${itemsMandiriRaw.length})`,
+                    shortLabel: "Mandiri",
+                    label: "Aduan Mandiri Tervalidasi",
+                    count: itemsMandiriRaw.length,
                   },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => {
-                      setSubModePublik(tab.id as "semua" | "klaster" | "mandiri")
-                      setPagePublik(1)
-                    }}
-                    className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${subModePublik === tab.id
-                      ? "bg-[#0B3052] text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                      }`}
-                  >
-                    <span className="sm:hidden">{tab.shortLabel}</span>
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </button>
-                ))}
+                ].map((tab) => {
+                  const isActive = subModePublik === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        setSubModePublik(tab.id as "semua" | "klaster" | "mandiri")
+                        setPagePublik(1)
+                      }}
+                      className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${isActive
+                        ? "bg-[#0B3052] text-white shadow-md"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                        }`}
+                    >
+                      <span className="sm:hidden">{tab.shortLabel}</span>
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold shrink-0 ${isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-200 text-slate-700"
+                          }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
 
               {/* Search & Filter Bar Publik */}
