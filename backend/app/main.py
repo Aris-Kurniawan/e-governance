@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
-from app.routers import auth, sekolah, laporan, upload, ingest, sanggahan, klaster, vote, dashboard, audit
+from app.routers import auth, sekolah, laporan, upload, ingest, sanggahan, klaster, vote, dashboard, audit, users
 
 # Kode error standar — INTERFACES.md §0.3
 ERROR_CODES = {
@@ -87,6 +87,7 @@ app.include_router(klaster.verifikasi_router)
 app.include_router(vote.router)
 app.include_router(dashboard.router)
 app.include_router(audit.router)
+app.include_router(users.router)
 
 
 
