@@ -291,26 +291,44 @@ export default function DinasLayout() {
       label: "Overview",
       icon: LayoutGrid,
       active: location.pathname === "/dinas" || location.pathname === "/dinas/dashboard",
+      roles: ["admin", "verifikator_dinas", "kepala_dinas"],
     },
     {
       to: "/dinas/antrian",
       label: "Validasi Sarpras",
       icon: CheckSquare,
       active: location.pathname.startsWith("/dinas/antrian") || location.pathname.startsWith("/dinas/perlu-review"),
-    },
-    {
-      to: "/dinas/ingest",
-      label: "Ingest Data CSV",
-      icon: CloudUpload,
-      active: location.pathname.startsWith("/dinas/ingest") || location.pathname.startsWith("/dinas/log-audit"),
+      roles: ["admin", "verifikator_dinas", "kepala_dinas"],
     },
     {
       to: "/dinas/status",
       label: "Status Tindak Lanjut",
       icon: Clock,
       active: location.pathname.startsWith("/dinas/status") || location.pathname.startsWith("/dinas/tindak-lanjut"),
+      roles: ["admin", "verifikator_dinas", "kepala_dinas"],
     },
-  ]
+    {
+      to: "/dinas/log-audit",
+      label: "Log Audit",
+      icon: ShieldCheck,
+      active: location.pathname.startsWith("/dinas/log-audit"),
+      roles: ["admin", "kepala_dinas"],
+    },
+    {
+      to: "/dinas/ingest",
+      label: "Ingest Data CSV",
+      icon: CloudUpload,
+      active: location.pathname.startsWith("/dinas/ingest"),
+      roles: ["admin", "verifikator_dinas"],
+    },
+    {
+      to: "/dinas/sistem",
+      label: "Sistem & Akun",
+      icon: Settings,
+      active: location.pathname.startsWith("/dinas/sistem"),
+      roles: ["admin"],
+    },
+  ].filter((item) => item.roles.includes(user?.role ?? ""))
 
   // Render Sidebar Content (Dipakai baik di desktop aside maupun mobile drawer)
   const renderSidebarContent = () => (

@@ -35,6 +35,7 @@ const StatusTindakLanjut = lazy(() => import("@/pages/dinas/StatusTindakLanjut")
 const LaporanSkorKbm = lazy(() => import("@/pages/dinas/LaporanSkorKbm"))
 const LogAuditPdp = lazy(() => import("@/pages/dinas/LogAuditPdp"))
 const LaporanPerluReview = lazy(() => import("@/pages/dinas/LaporanPerluReview"))
+const SistemAdmin = lazy(() => import("@/pages/dinas/SistemAdmin"))
 
 function NotFound() {
   return (
@@ -115,6 +116,14 @@ export default function App() {
                 <Route path="tindak-lanjut" element={<StatusTindakLanjut />} />
                 <Route path="skor-kbm" element={<LaporanSkorKbm />} />
                 <Route path="log-audit" element={<LogAuditPdp />} />
+                <Route
+                  path="sistem"
+                  element={
+                    <ProtectedRoute loginPath="/dinas/login" allowedRoles={["admin"]}>
+                      <SistemAdmin />
+                    </ProtectedRoute>
+                  }
+                />
               </Route>
 
               {/* 404 */}
