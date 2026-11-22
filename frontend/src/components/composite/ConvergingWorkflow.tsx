@@ -463,11 +463,6 @@ export default function ConvergingWorkflow() {
         <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[400px] w-[500px] rounded-full bg-blue-500/10 blur-[120px]" />
 
         <div className="max-w-xl mx-auto space-y-8 relative z-10">
-          {/* Kartu Rekapitulasi Sekolah (62+ Sekolah Terdaftar) */}
-          <div className="flex justify-center">
-            <SchoolCardView count={62} />
-          </div>
-
           {/* Konten Alur Kerja Partisipatif */}
           <div className="space-y-6">
             <div>
@@ -509,6 +504,11 @@ export default function ConvergingWorkflow() {
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+
+          {/* Kartu Rekapitulasi Sekolah (62+ Sekolah Terdaftar) — di bawah konten teks pada mobile */}
+          <div className="flex justify-center">
+            <SchoolCardView count={62} />
           </div>
         </div>
       </section>

@@ -6,9 +6,9 @@ import ConvergingWorkflow from "@/components/composite/ConvergingWorkflow"
 import { useAuth } from "@/context/AuthContext"
 import {
   ArrowRight,
+  ChevronRight,
   Lock,
   CheckCircle2,
-  Sparkles,
   ShieldCheck,
   Camera,
   ThumbsUp,
@@ -51,11 +51,6 @@ export default function Landing() {
           <div className="grid gap-10 lg:grid-cols-12 items-center">
             {/* Left Content Column */}
             <div className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-                Platform Transparansi Sarpras Sekolah Kab. Lamongan
-              </div>
-
               <h1 className="mt-5 text-3xl sm:text-4xl lg:text-[42px] font-extrabold leading-[1.15] tracking-tight text-slate-900">
                 Kawal Fasilitas Sekolah,
                 <br />
@@ -118,7 +113,7 @@ export default function Landing() {
 
             {/* Right Floating Preview Cards – disembunyikan di mobile */}
             <div className="hidden lg:block lg:col-span-5 relative">
-<TiltCard
+              <TiltCard
                 maxTilt={9}
                 scale={1.025}
                 glare={true}
@@ -285,10 +280,7 @@ export default function Landing() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           {/* Header section */}
           <div className="text-center mb-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-900 mb-3">
-              <Camera className="h-3.5 w-3.5 text-blue-600" />
-              <span>Dampak Nyata dari Partisipasi Warga</span>
-            </div>
+
             <p className="text-xs text-slate-400 max-w-xs mx-auto">
               Foto-foto berikut mewakili kondisi fasilitas sekolah yang telah berhasil dilaporkan dan ditindaklanjuti
             </p>
@@ -308,10 +300,6 @@ export default function Landing() {
       <section className="bg-[#F8FAFC] py-14 md:py-20 border-b border-slate-100">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-900 mb-4">
-              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-              <span>Arsitektur Transparansi Nirlaba</span>
-            </div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
               Transparansi Penuh dari Aduan hingga Realisasi Fisik
             </h2>
@@ -326,7 +314,7 @@ export default function Landing() {
             <TiltCard
               maxTilt={7}
               scale={1.025}
-              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group"
+              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
             >
               <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
                 <Lock className="h-5 w-5" />
@@ -340,6 +328,7 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Sanitasi Kriptografi 100%</span>
+                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
               </div>
             </TiltCard>
 
@@ -347,7 +336,7 @@ export default function Landing() {
             <TiltCard
               maxTilt={7}
               scale={1.025}
-              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group"
+              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
             >
               <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
                 <Bot className="h-5 w-5" />
@@ -361,6 +350,7 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Cosine Distance Matching</span>
+                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
               </div>
             </TiltCard>
 
@@ -368,7 +358,7 @@ export default function Landing() {
             <TiltCard
               maxTilt={7}
               scale={1.025}
-              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group"
+              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
             >
               <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
                 <ThumbsUp className="h-5 w-5" />
@@ -382,6 +372,7 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Konsensus Warga Transparan</span>
+                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
               </div>
             </TiltCard>
 
@@ -389,7 +380,7 @@ export default function Landing() {
             <TiltCard
               maxTilt={7}
               scale={1.025}
-              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group"
+              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
             >
               <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
                 <Activity className="h-5 w-5" />
@@ -403,6 +394,7 @@ export default function Landing() {
               </p>
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Status Ledger D-32 Terbuka</span>
+                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
               </div>
             </TiltCard>
           </div>
@@ -432,7 +424,7 @@ export default function Landing() {
           {/* ── TAMPILAN MOBILE (< lg): Unified Formula Ledger Card (Muat 1 Layar Penuh) ── */}
           <div className="block lg:hidden max-w-md mx-auto">
             <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-3.5">
-              
+
               {/* Baris 1: Skor Keparahan Fasilitas */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -447,9 +439,7 @@ export default function Landing() {
                       <p className="text-[10px] text-slate-500">Matriks 100 Poin Kerusakan Fisik</p>
                     </div>
                   </div>
-                  <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[9px] font-bold text-blue-700 shrink-0">
-                    Bobot 70:30
-                  </span>
+
                 </div>
 
                 <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 space-y-1.5">
@@ -463,9 +453,6 @@ export default function Landing() {
                     </span>
                     <span className="flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-blue-300" /> 30% Dapodik
-                    </span>
-                    <span className="font-mono text-[9px] text-slate-400">
-                      (Fakta×0.7 + Dapodik×0.3)
                     </span>
                   </div>
                 </div>
@@ -495,9 +482,7 @@ export default function Landing() {
                       <p className="text-[10px] text-slate-500">1 NIK = 1 Suara Sah (Terverifikasi)</p>
                     </div>
                   </div>
-                  <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-bold text-emerald-700 shrink-0">
-                    Multiplier
-                  </span>
+
                 </div>
 
                 <div className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/50 px-3 py-2 text-xs">
