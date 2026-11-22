@@ -1,0 +1,138 @@
+{
+  "user": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/users.svg",
+    "file": "user.svg",
+    "bytes": 456
+  },
+  "react": {
+    "source": "svgl",
+    "url": "https://svgl.app/library/react_light.svg",
+    "file": "react.svg",
+    "bytes": 6534,
+    "dark_file": "react_dark.svg",
+    "dark_url": "https://svgl.app/library/react_dark.svg"
+  },
+  "typescript": {
+    "source": "svgl",
+    "url": "https://svgl.app/library/typescript.svg",
+    "file": "typescript.svg",
+    "bytes": 1744
+  },
+  "tailwind": {
+    "source": "devicon",
+    "url": "https://raw.githubusercontent.com/devicons/devicon/master/icons/tailwindcss/tailwindcss-original.svg",
+    "file": "tailwind.svg",
+    "bytes": 689
+  },
+  "vite": {
+    "source": "svgl",
+    "url": "https://svgl.app/library/vite.svg",
+    "file": "vite.svg",
+    "bytes": 10132
+  },
+  "fastapi": {
+    "source": "svgl",
+    "url": "https://svgl.app/library/fastapi.svg",
+    "file": "fastapi.svg",
+    "bytes": 280
+  },
+  "python": {
+    "source": "svgl",
+    "url": "https://svgl.app/library/python.svg",
+    "file": "python.svg",
+    "bytes": 1126
+  },
+  "mysql": {
+    "source": "svgl",
+    "url": "https://svgl.app/library/mysql-icon-light.svg",
+    "file": "mysql.svg",
+    "bytes": 925,
+    "dark_file": "mysql_dark.svg",
+    "dark_url": "https://svgl.app/library/mysql-icon-dark.svg"
+  },
+  "jwt": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/shield-check.svg",
+    "file": "jwt.svg",
+    "bytes": 495
+  },
+  "huggingface": {
+    "source": "devicon",
+    "url": "https://raw.githubusercontent.com/devicons/devicon/master/icons/huggingface/huggingface-original.svg",
+    "file": "huggingface.svg",
+    "bytes": 19022
+  },
+  "cluster": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/network.svg",
+    "file": "cluster.svg",
+    "bytes": 520
+  },
+  "cron": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/clock.svg",
+    "file": "cron.svg",
+    "bytes": 344
+  },
+  "storage": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/hard-drive.svg",
+    "file": "storage.svg",
+    "bytes": 537
+  },
+  "dapodik": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/graduation-cap.svg",
+    "file": "dapodik.svg",
+    "bytes": 494
+  },
+  "tfidf": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/binary.svg",
+    "file": "tfidf.svg",
+    "bytes": 483
+  },
+  "severity": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/gauge.svg",
+    "file": "severity.svg",
+    "bytes": 351
+  },
+  "scoring": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/calculator.svg",
+    "file": "scoring.svg",
+    "bytes": 601
+  },
+  "ranking": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/bar-chart-3.svg",
+    "file": "ranking.svg",
+    "bytes": 399
+  },
+  "mismatch": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/git-compare.svg",
+    "file": "mismatch.svg",
+    "bytes": 434
+  },
+  "prompt": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/bot.svg",
+    "file": "prompt.svg",
+    "bytes": 451
+  },
+  "dialog": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/message-square-text.svg",
+    "file": "dialog.svg",
+    "bytes": 495
+  },
+  "question": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/help-circle.svg",
+    "file": "question.svg",
+    "bytes": 399
+  }
+}
