@@ -496,9 +496,6 @@ export default function RiwayatLaporan() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-8 shadow-sm space-y-5 sm:space-y-6 max-w-full overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-3xl">
-              <div className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-900 border border-blue-200/60">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> PORTAL ADUAN &amp; AUDIT PARTISIPATIF
-              </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                 {viewMode === "publik" ? "Registri Aduan & Isu Sarpras Publik" : "Riwayat Laporan Saya"}
               </h1>

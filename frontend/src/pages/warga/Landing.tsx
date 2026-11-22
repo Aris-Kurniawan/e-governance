@@ -408,10 +408,6 @@ export default function Landing() {
       <section className="bg-white py-14 md:py-20 border-b border-slate-100">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900 mb-4">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Kalkulasi Objektif &amp; Transparan (Tanpa Intervensi Politik)</span>
-            </div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
               Bagaimana Skor Prioritas Perbaikan Sekolah Ditentukan?
             </h2>
@@ -472,7 +468,7 @@ export default function Landing() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 shrink-0">
+                    <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
                       <ThumbsUp className="h-4 w-4" />
                     </div>
                     <div>
@@ -490,8 +486,8 @@ export default function Landing() {
                     <Users className="h-4 w-4 text-blue-600 shrink-0" />
                     <span className="font-bold text-slate-900 text-xs">+1.0 Poin per Suara</span>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <div className="flex items-center gap-1 text-[10px] text-blue-700 font-medium">
+                    <ShieldCheck className="h-3.5 w-3.5 text-blue-600 shrink-0" />
                     <span>Anti-Bot</span>
                   </div>
                 </div>
@@ -516,9 +512,6 @@ export default function Landing() {
                     </div>
                     <span className="text-xs font-bold tracking-tight">3. Skor Prioritas Final (P_k)</span>
                   </div>
-                  <span className="rounded bg-white/10 px-2 py-0.5 text-[9px] font-semibold text-slate-300">
-                    Output Resmi
-                  </span>
                 </div>
 
                 <div className="flex items-end justify-between pt-0.5">
@@ -532,8 +525,8 @@ export default function Landing() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-400/20 border border-amber-400/30 px-2.5 py-1 text-[10px] font-bold text-amber-300">
-                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-400/20 border border-blue-400/30 px-2.5 py-1 text-[10px] font-bold text-blue-200">
+                      <TrendingUp className="h-3 w-3 text-blue-300" />
                       <span>Prioritas Darurat</span>
                     </span>
                   </div>
@@ -551,13 +544,10 @@ export default function Landing() {
           <div className="hidden lg:flex items-stretch justify-center gap-4 lg:gap-3 max-w-none">
             {/* Kartu 1: Skor Keparahan */}
             <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3">
                 <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
                   <Activity className="h-5 w-5" />
                 </div>
-                <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                  Bobot 70:30
-                </span>
               </div>
               <h3 className="text-sm font-bold text-slate-900">1. Skor Keparahan Fasilitas</h3>
               <p className="text-[11px] text-slate-500 mt-1 leading-snug">
@@ -575,10 +565,6 @@ export default function Landing() {
                   <span className="h-2 w-2 rounded-full bg-blue-200" /> 30% Audit Dapodik
                 </span>
               </div>
-              <div className="mt-auto pt-4 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100">
-                <span className="font-semibold">Formula:</span>
-                <span className="font-mono font-bold text-slate-600">(Fakta &times; 0.7) + (Dapodik &times; 0.3)</span>
-              </div>
             </div>
 
             {/* Konektor + */}
@@ -590,13 +576,10 @@ export default function Landing() {
 
             {/* Kartu 2: Dukungan Partisipasi */}
             <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="h-9 w-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">
+              <div className="mb-3">
+                <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">
                   <ThumbsUp className="h-5 w-5" />
                 </div>
-                <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                  Multiplier Faktor
-                </span>
               </div>
               <h3 className="text-sm font-bold text-slate-900">2. Dukungan Partisipasi Warga</h3>
               <p className="text-[11px] text-slate-500 mt-1 leading-snug">
@@ -613,10 +596,6 @@ export default function Landing() {
                   </div>
                 </div>
               </div>
-              <div className="mt-auto pt-4 flex items-center gap-1.5 text-[10px] text-slate-500 border-t border-slate-100">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                <span>Bebas bot &amp; otomatis dihitung duplikasi NIK</span>
-              </div>
             </div>
 
             {/* Konektor = */}
@@ -628,19 +607,16 @@ export default function Landing() {
 
             {/* Kartu 3: Skor Prioritas Final */}
             <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="h-9 w-9 rounded-lg bg-slate-900 text-white flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+              <div className="mb-3">
+                <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110">
                   <LineChart className="h-5 w-5" />
                 </div>
-                <span className="rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  Output Resmi
-                </span>
               </div>
               <h3 className="text-sm font-bold text-slate-900">3. Skor Prioritas Final (P_k)</h3>
               <p className="text-[11px] text-slate-500 mt-1 leading-snug">
                 Penentuan Akhir Susunan Fisik oleh Dinas
               </p>
-              <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100 px-3.5 py-3">
+              <div className="mt-3.5 rounded-xl border border-blue-100 bg-blue-50/50 px-3.5 py-3">
                 <span className="text-[9px] font-bold tracking-wider text-slate-400 uppercase">
                   Indeks Urgensi
                 </span>
@@ -649,14 +625,9 @@ export default function Landing() {
                     <span className="text-3xl font-extrabold text-slate-900 leading-none">85.5</span>
                     <span className="text-xs font-bold text-slate-400">/100</span>
                   </div>
-                  <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                  <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
                   </div>
-                </div>
-              </div>
-              <div className="mt-auto pt-4">
-                <div className="w-full rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-center text-[10px] font-bold text-amber-800">
-                  Prioritas Darurat (Masuk RKT Tahun Berjalan)
                 </div>
               </div>
             </div>

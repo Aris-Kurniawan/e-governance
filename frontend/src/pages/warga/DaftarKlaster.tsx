@@ -10,7 +10,6 @@ import {
   LogIn,
   RefreshCw,
   ShieldQuestion,
-  Sparkles,
   ThumbsUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -201,10 +200,6 @@ export default function DaftarKlaster() {
       {/* Header (desktop — full page header) */}
       <div className="border-b border-slate-200/80 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 tracking-wider uppercase">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span>Isu Sarpras Terkelompokkan</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             Daftar Klaster Isu
           </h1>

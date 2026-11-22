@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
 import {
-  Sparkles,
   ArrowUpRight,
   ChevronDown,
 } from "lucide-react"
@@ -466,10 +465,6 @@ export default function ConvergingWorkflow() {
           {/* Konten Alur Kerja Partisipatif */}
           <div className="space-y-6">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-300 mb-3">
-                <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-                <span>Alur Kerja Partisipatif</span>
-              </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
                 Tiga Langkah Mudah Mengawal Fasilitas Belajar
               </h2>
@@ -548,10 +543,6 @@ export default function ConvergingWorkflow() {
             }}
             className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 pointer-events-none"
           >
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-[#0c243d] px-3.5 py-1 text-xs font-bold text-blue-200 mb-3 shadow-xs">
-              <Sparkles className="h-3.5 w-3.5 text-blue-300" />
-              <span>Dapodik Wilayah Kerja Kecamatan Lamongan</span>
-            </div>
             <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight max-w-xl">
               62 Sekolah Terdaftar di SIMAKIS
             </h2>
@@ -606,10 +597,6 @@ export default function ConvergingWorkflow() {
 
                 {/* Header Judul Alur */}
                 <div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-300 mb-3">
-                    <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-                    <span>Alur Kerja Partisipatif</span>
-                  </div>
                   <h2 className="text-2xl sm:text-4xl lg:text-[38px] font-extrabold text-white tracking-tight leading-tight">
                     Tiga Langkah Mudah Mengawal Fasilitas Belajar
                   </h2>

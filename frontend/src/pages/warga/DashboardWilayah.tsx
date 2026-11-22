@@ -19,7 +19,6 @@ import {
   Building2,
   AlertTriangle,
   CheckCircle2,
-  Shield,
   Clock,
   Plus,
   Lock,
@@ -322,10 +321,6 @@ export default function DashboardWilayah() {
         <ScrollReveal direction="up" duration={600}>
           <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-blue-50/30 p-4 sm:p-8 shadow-sm relative overflow-hidden">
             <div className="relative z-10 max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 border border-slate-200/60 mb-3 sm:mb-4">
-                <Shield className="h-3.5 w-3.5 text-[#0B3052]" />
-                <span>PEDOMAN VERIFIKASI PARTISIPATIF SARPRAS</span>
-              </div>
               <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
                 Selamat Datang di Portal Audit Partisipatif Sarana Sekolah Kec. Lamongan
               </h1>
