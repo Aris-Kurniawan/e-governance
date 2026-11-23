@@ -871,8 +871,7 @@ sebatas monitoring.
 ## 10. Upload File (Foto Bukti)
 
 - Endpoint: `POST /upload/laporan?laporan_id={id}` dan `DELETE /upload/{storage_key}`
-- `Content-Type: multipart/form-data`, field `file` (image, maks — *tentukan
-  batas ukuran, belum diputuskan, lihat §11*)
+- `Content-Type: multipart/form-data`, field `file` (image JPEG/PNG, maks 2 MB)
 - Akses: pemilik laporan atau `verifikator_dinas`/`kepala_dinas`/`admin`
 - Hapus: `DELETE /upload/{storage_key}` (param path = key hasil upload)
 - Disimpan ke MinIO/S3 (`ARCHITECTURE.md` §4.2, §5.1) — response hanya

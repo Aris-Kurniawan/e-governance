@@ -24,7 +24,7 @@ type TipeTemuan = "mismatch" | "kerusakan_baru"
 
 const MIN_DESKRIPSI = 20
 const MAX_DESKRIPSI = 2000
-const MAX_FOTO_BYTES = 5 * 1024 * 1024
+const MAX_FOTO_BYTES = 2 * 1024 * 1024
 
 const LABEL_TIPE: Record<TipeTemuan, string> = {
   mismatch: "[Ketidaksesuaian Data]",
@@ -160,7 +160,7 @@ export default function FormLaporan() {
       return
     }
     if (file.size > MAX_FOTO_BYTES) {
-      setFotoError("Ukuran foto maksimal 5 MB.")
+      setFotoError("Ukuran foto maksimal 2 MB.")
       return
     }
     setFotoError(null)
@@ -670,7 +670,7 @@ export default function FormLaporan() {
                   <p className="text-xs font-semibold text-slate-700">
                     Pilih atau seret foto bukti fisik
                   </p>
-                  <p className="text-[11px] text-slate-400">PNG, JPG · maksimal 5 MB</p>
+                  <p className="text-[11px] text-slate-400">PNG, JPG · maksimal 2 MB</p>
                 </>
               )}
             </div>

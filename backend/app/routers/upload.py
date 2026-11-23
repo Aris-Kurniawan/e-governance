@@ -44,10 +44,10 @@ def upload_laporan_foto(
             detail="File harus berupa gambar (JPEG/PNG)",
         )
 
-    if file.size and file.size > 5 * 1024 * 1024:  # 5MB limit
+    if file.size and file.size > 2 * 1024 * 1024:  # 2MB limit
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ukuran file terlalu besar (max 5MB)",
+            detail="Ukuran file terlalu besar (max 2MB)",
         )
 
     # Upload ke MinIO
