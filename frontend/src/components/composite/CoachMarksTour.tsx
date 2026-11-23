@@ -1,19 +1,17 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
+import { Icon } from "@iconify/react"
+import { registerCoachMarksIcons } from "@/components/composite/coachMarksIcons"
 import {
   X,
   ChevronRight,
   ChevronLeft,
-  Sparkles,
-  MapPin,
-  School,
-  PlusCircle,
-  CheckCircle2,
   ExternalLink,
-  Layers,
-  HelpCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+
+// Inisialisasi registrasi ikon Solar Duotone sekali saat runtime
+registerCoachMarksIcons()
 
 export interface CoachMarkStep {
   id: string
@@ -23,110 +21,425 @@ export interface CoachMarkStep {
   title: string
   description: string
   highlights?: string[]
-  icon: React.ComponentType<{ className?: string }>
+  iconName: string
   iconColor: string
   iconBg: string
   route?: string
+  preferredPlacement?: "bottom" | "top" | "right" | "left" | "auto"
 }
 
-const DEFAULT_STEPS: CoachMarkStep[] = [
-  {
-    id: "step-wilayah",
-    targetSelector: '[data-coachmark="nav-wilayah"]',
-    fallbackSelector: '[data-coachmark="hero-peta-btn"]',
-    badge: "Fitur 1 dari 5 · Spasial & Transparansi",
-    title: "Dashboard Wilayah & Peta Sebaran",
-    description:
-      "Pantau sebaran kondisi 62 sekolah di Kecamatan Lamongan secara interaktif. Anda dapat melihat indeks integritas sarpras, tingkat kerusakan fasilitas, dan peringkat prioritas perbaikan.",
-    highlights: [
-      "Peta interaktif sebaran sekolah se-Kecamatan Lamongan",
-      "Skor integritas sarpras per sekolah dari audit dan laporan",
-      "Filter prioritas darurat, waspada, hingga normal",
-    ],
-    icon: MapPin,
-    iconColor: "text-blue-600",
-    iconBg: "bg-blue-50 border-blue-200/80",
-    route: "/laporan/wilayah",
-  },
-  {
-    id: "step-klaster",
-    targetSelector: '[data-coachmark="nav-klaster"]',
-    badge: "Fitur 2 dari 5 · Otomatisasi AI",
-    title: "Analisis Klaster Isu Berbasis AI",
-    description:
-      "SIMAKIS mengelompokkan laporan warga secara otomatis menggunakan kecerdasan buatan (Machine Learning). Sistem mendeteksi pola masalah fasilitas fisik yang serupa di lapangan.",
-    highlights: [
-      "Pengelompokan otomatis topik masalah (atap bocor, sanitasi, lab)",
-      "Peringkat urgensi penanganan per klaster masalah",
-      "Transparansi data tanpa bias laporan tunggal",
-    ],
-    icon: Layers,
-    iconColor: "text-indigo-600",
-    iconBg: "bg-indigo-50 border-indigo-200/80",
-    route: "/klaster",
-  },
-  {
-    id: "step-sekolah",
-    targetSelector: '[data-coachmark="nav-sekolah"]',
-    badge: "Fitur 3 dari 5 · Database Sekolah",
-    title: "Direktori & Detail Fasilitas Sekolah",
-    description:
-      "Cari profil spesifik sekolah untuk memeriksa kondisi sarpras resmi Dapodik, status ruang kelas rusak, fasilitas sanitasi, dan riwayat laporan dari warga sekitar.",
-    highlights: [
-      "Pencarian cepat 62 sekolah jenjang SD/SMP Lamongan",
-      "Detail perbandingan data Dapodik vs fakta laporan warga",
-      "Katalog foto audit kondisi fisik sekolah terkini",
-    ],
-    icon: School,
-    iconColor: "text-emerald-600",
-    iconBg: "bg-emerald-50 border-emerald-200/80",
-    route: "/sekolah",
-  },
-  {
-    id: "step-lapor",
-    targetSelector: '[data-coachmark="action-laporan"]',
-    fallbackSelector: '[data-coachmark="hero-lapor-btn"]',
-    badge: "Fitur 4 dari 5 · Partisipasi Warga",
-    title: "Kirim Laporan Kerusakan Fasilitas",
-    description:
-      "Temukan fasilitas sekolah yang rusak atau membahayakan siswa? Laporkan langsung dengan mengunggah foto bukti, memilih kategori, dan menentukan titik koordinat sekolah.",
-    highlights: [
-      "Unggah bukti foto kerusakan langsung dari perangkat",
-      "Privasi aman dengan enkripsi data identitas warga",
-      "Laporan diteruskan langsung ke antrean verifikasi dinas",
-    ],
-    icon: PlusCircle,
-    iconColor: "text-amber-600",
-    iconBg: "bg-amber-50 border-amber-200/80",
-    route: "/laporan/baru",
-  },
-  {
-    id: "step-riwayat",
-    targetSelector: '[data-coachmark="nav-riwayat"]',
-    fallbackSelector: '[data-coachmark="user-menu"]',
-    badge: "Fitur 5 dari 5 · Kawal & Dukung",
-    title: "Riwayat Laporan & Dukungan Suara",
-    description:
-      "Pantau perkembangan tindak lanjut laporan yang Anda ajukan, serta berikan dukungan suara (vote) pada laporan warga lain untuk menaikkan prioritas penanganannya.",
-    highlights: [
-      "Status real-time: Terkirim → Terverifikasi → Ditindaklanjuti",
-      "Dukung laporan darurat di lingkungan Anda lewat fitur upvote",
-      "Transparansi catatan perbaikan dari Dinas Pendidikan",
-    ],
-    icon: CheckCircle2,
-    iconColor: "text-sky-600",
-    iconBg: "bg-sky-50 border-sky-200/80",
-    route: "/laporan/riwayat",
-  },
-]
-
-const STORAGE_KEY = "simakis_warga_coachmarks_completed"
-
-interface CoachMarksTourProps {
-  steps?: CoachMarkStep[]
+export interface PageTourConfig {
+  key: string
+  name: string
+  storageKey: string
+  steps: CoachMarkStep[]
 }
 
-export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTourProps) {
+export const PAGE_TOURS: Record<string, PageTourConfig> = {
+  // ── 1. Beranda (Home Overview Tour) ──────────────────────────
+  home: {
+    key: "home",
+    name: "Beranda SIMAKIS",
+    storageKey: "simakis_tour_home_completed",
+    steps: [
+      {
+        id: "step-wilayah",
+        targetSelector: '[data-coachmark="nav-wilayah"]',
+        fallbackSelector: '[data-coachmark="hero-peta-btn"]',
+        badge: "Fitur 1 dari 5 · Spasial & Transparansi",
+        title: "Dashboard Wilayah & Peta Sebaran",
+        description:
+          "Pantau sebaran kondisi 62 sekolah di Kecamatan Lamongan secara interaktif. Anda dapat melihat indeks integritas sarpras, tingkat kerusakan fasilitas, dan peringkat prioritas perbaikan.",
+        highlights: [
+          "Peta interaktif sebaran sekolah se-Kecamatan Lamongan",
+          "Skor integritas sarpras per sekolah dari audit dan laporan",
+          "Filter prioritas darurat, waspada, hingga normal",
+        ],
+        iconName: "solar:map-point-wave-bold-duotone",
+        iconColor: "text-blue-600",
+        iconBg: "bg-blue-50/90 border-blue-200/80 ring-2 ring-blue-100",
+        route: "/laporan/wilayah",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-klaster",
+        targetSelector: '[data-coachmark="nav-klaster"]',
+        badge: "Fitur 2 dari 5 · Otomatisasi AI",
+        title: "Analisis Klaster Isu Berbasis AI",
+        description:
+          "SIMAKIS mengelompokkan laporan warga secara otomatis menggunakan kecerdasan buatan (Machine Learning). Sistem mendeteksi pola masalah fasilitas fisik yang serupa di lapangan.",
+        highlights: [
+          "Pengelompokan otomatis topik masalah (atap bocor, sanitasi, lab)",
+          "Peringkat urgensi penanganan per klaster masalah",
+          "Transparansi data tanpa bias laporan tunggal",
+        ],
+        iconName: "solar:layers-minimalistic-bold-duotone",
+        iconColor: "text-indigo-600",
+        iconBg: "bg-indigo-50/90 border-indigo-200/80 ring-2 ring-indigo-100",
+        route: "/klaster",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-sekolah",
+        targetSelector: '[data-coachmark="nav-sekolah"]',
+        badge: "Fitur 3 dari 5 · Database Sekolah",
+        title: "Direktori & Detail Fasilitas Sekolah",
+        description:
+          "Cari profil spesifik sekolah untuk memeriksa kondisi sarpras resmi Dapodik, status ruang kelas rusak, fasilitas sanitasi, dan riwayat laporan dari warga sekitar.",
+        highlights: [
+          "Pencarian cepat 62 sekolah jenjang SD/SMP Lamongan",
+          "Detail perbandingan data Dapodik vs fakta laporan warga",
+          "Katalog foto audit kondisi fisik sekolah terkini",
+        ],
+        iconName: "solar:buildings-3-bold-duotone",
+        iconColor: "text-emerald-600",
+        iconBg: "bg-emerald-50/90 border-emerald-200/80 ring-2 ring-emerald-100",
+        route: "/sekolah",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-lapor",
+        targetSelector: '[data-coachmark="action-laporan"]',
+        fallbackSelector: '[data-coachmark="hero-lapor-btn"]',
+        badge: "Fitur 4 dari 5 · Partisipasi Warga",
+        title: "Kirim Laporan Kerusakan Fasilitas",
+        description:
+          "Temukan fasilitas sekolah yang rusak atau membahayakan siswa? Laporkan langsung dengan mengunggah foto bukti, memilih kategori, dan menentukan titik koordinat sekolah.",
+        highlights: [
+          "Unggah bukti foto kerusakan langsung dari perangkat",
+          "Privasi aman dengan enkripsi data identitas warga",
+          "Laporan diteruskan langsung ke antrean verifikasi dinas",
+        ],
+        iconName: "solar:clipboard-add-bold-duotone",
+        iconColor: "text-amber-600",
+        iconBg: "bg-amber-50/90 border-amber-200/80 ring-2 ring-amber-100",
+        route: "/laporan/baru",
+        preferredPlacement: "auto",
+      },
+      {
+        id: "step-riwayat",
+        targetSelector: '[data-coachmark="nav-riwayat"]',
+        fallbackSelector: '[data-coachmark="user-menu"]',
+        badge: "Fitur 5 dari 5 · Kawal & Dukung",
+        title: "Riwayat Laporan & Dukungan Suara",
+        description:
+          "Pantau perkembangan tindak lanjut laporan yang Anda ajukan, serta berikan dukungan suara (vote) pada laporan warga lain untuk menaikkan prioritas penanganannya.",
+        highlights: [
+          "Status real-time: Terkirim → Terverifikasi → Ditindaklanjuti",
+          "Dukung laporan darurat di lingkungan Anda lewat fitur upvote",
+          "Transparansi catatan perbaikan dari Dinas Pendidikan",
+        ],
+        iconName: "solar:check-circle-bold-duotone",
+        iconColor: "text-sky-600",
+        iconBg: "bg-sky-50/90 border-sky-200/80 ring-2 ring-sky-100",
+        route: "/laporan/riwayat",
+        preferredPlacement: "bottom",
+      },
+    ],
+  },
+
+  // ── 2. Dashboard Wilayah (/laporan/wilayah) ───────────────────
+  wilayah: {
+    key: "wilayah",
+    name: "Dashboard Wilayah",
+    storageKey: "simakis_tour_wilayah_completed",
+    steps: [
+      {
+        id: "step-wilayah-kpi",
+        targetSelector: '[data-coachmark="wilayah-kpi"]',
+        badge: "Fitur 1 dari 3 · Ringkasan Sarpras",
+        title: "Indikator Kondisi Sarpras Wilayah",
+        description:
+          "Ringkasan statistik data pangkalan: mencakup 62 sekolah di Kecamatan Lamongan, jumlah sekolah yang memiliki klaster masalah aktif, dan persentase laporan yang telah diverifikasi dinas.",
+        highlights: [
+          "Cakupan total sekolah terdata di Dapodikdasmen",
+          "Jumlah sekolah yang terdeteksi memiliki isu fasilitas",
+          "Tingkat verifikasi faktual lapangan oleh tim pengawas",
+        ],
+        iconName: "solar:chart-2-bold-duotone",
+        iconColor: "text-blue-600",
+        iconBg: "bg-blue-50/90 border-blue-200/80 ring-2 ring-blue-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-wilayah-peta",
+        targetSelector: '[data-coachmark="wilayah-peta"]',
+        badge: "Fitur 2 dari 3 · Peta Spasial",
+        title: "Peta Interaktif Sebaran Sekolah",
+        description:
+          "Peta spasial berkoordinat nyata. Pin warna menandakan tingkat urgensi kerusakan fisik (merah = darurat, kuning = waspada, hijau = normal). Klik pada pin sekolah mana pun untuk melihat skor dan statusnya.",
+        highlights: [
+          "Koordinat presisi EPSG:4326 titik sekolah",
+          "Warna visual menandakan ambang prioritas kerusakan",
+          "Klik pin untuk membuka ringkasan dan form laporan",
+        ],
+        iconName: "solar:map-point-wave-bold-duotone",
+        iconColor: "text-indigo-600",
+        iconBg: "bg-indigo-50/90 border-indigo-200/80 ring-2 ring-indigo-100",
+        preferredPlacement: "auto",
+      },
+      {
+        id: "step-wilayah-tabel",
+        targetSelector: '[data-coachmark="wilayah-tabel"]',
+        badge: "Fitur 3 dari 3 · Prioritas & Vote",
+        title: "Peringkat Prioritas & Partisipasi Suara",
+        description:
+          "Daftar klaster isu diurutkan dari skor urgensi tertinggi. Anda dapat memberikan dukungan suara (vote) untuk mempercepat alokasi perbaikan sarpras oleh Dinas Pendidikan.",
+        highlights: [
+          "Daftar transparan berbasis formula pembobotan resmi",
+          "Berikan 1 vote per akun warga terdaftar",
+          "Paginasi 10 klaster per halaman dengan filter",
+        ],
+        iconName: "solar:ranking-bold-duotone",
+        iconColor: "text-amber-600",
+        iconBg: "bg-amber-50/90 border-amber-200/80 ring-2 ring-amber-100",
+        preferredPlacement: "auto",
+      },
+    ],
+  },
+
+  // ── 3. Klaster Isu (/klaster) ────────────────────────────────
+  klaster: {
+    key: "klaster",
+    name: "Klaster Isu",
+    storageKey: "simakis_tour_klaster_completed",
+    steps: [
+      {
+        id: "step-klaster-header",
+        targetSelector: '[data-coachmark="klaster-header"]',
+        badge: "Fitur 1 dari 3 · Pengelompokan AI",
+        title: "Analisis Klaster Isu Berbasis AI",
+        description:
+          "SIMAKIS menggunakan kecerdasan buatan (Machine Learning) untuk mendeteksi kesamaan kata dan topik dalam laporan warga, lalu menggabungkannya ke dalam satu klaster secara otomatis tanpa manipulasi data.",
+        highlights: [
+          "Pengelompokan otomatis tanpa rekayasa manual",
+          "Menghubungkan laporan serupa dari berbagai warga",
+          "Skor gabungan tingkat keparahan masalah",
+        ],
+        iconName: "solar:layers-minimalistic-bold-duotone",
+        iconColor: "text-indigo-600",
+        iconBg: "bg-indigo-50/90 border-indigo-200/80 ring-2 ring-indigo-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-klaster-filter",
+        targetSelector: '[data-coachmark="klaster-filter"]',
+        badge: "Fitur 2 dari 3 · Filter Fasilitas",
+        title: "Filter Berdasarkan Kategori Fasilitas",
+        description:
+          "Pilah klaster isu berdasarkan kategori fasilitas yang ingin Anda pantau, seperti Ruang Kelas, Sanitasi/Toilet, Perpustakaan, atau Laboratorium.",
+        highlights: [
+          "Penyaringan instan kategori sarpras utama",
+          "Pencarian kata kunci topik kerusakan fasilitas",
+          "Pilihan urutan prioritas darurat dan jumlah sekolah",
+        ],
+        iconName: "solar:filter-bold-duotone",
+        iconColor: "text-blue-600",
+        iconBg: "bg-blue-50/90 border-blue-200/80 ring-2 ring-blue-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-klaster-list",
+        targetSelector: '[data-coachmark="klaster-list"]',
+        badge: "Fitur 3 dari 3 · Partisipasi Warga",
+        title: "Daftar Klaster & Dukungan Partisipatif",
+        description:
+          "Setiap kartu menampilkan jumlah sekolah terdampak, skor urgensi gabungan, status penanganan dinas, serta tombol dukungan suara (vote) warga.",
+        highlights: [
+          "Ringkasan jumlah laporan & sekolah terdampak",
+          "Tombol vote untuk menaikkan prioritas penanganan",
+          "Akses ke detail lengkap foto dan riwayat isu",
+        ],
+        iconName: "solar:check-circle-bold-duotone",
+        iconColor: "text-sky-600",
+        iconBg: "bg-sky-50/90 border-sky-200/80 ring-2 ring-sky-100",
+        preferredPlacement: "auto",
+      },
+    ],
+  },
+
+  // ── 4. Direktori Sekolah (/sekolah) ──────────────────────────
+  sekolah: {
+    key: "sekolah",
+    name: "Direktori Sekolah",
+    storageKey: "simakis_tour_sekolah_completed",
+    steps: [
+      {
+        id: "step-direktori-search",
+        targetSelector: '[data-coachmark="direktori-search"]',
+        badge: "Fitur 1 dari 3 · Pencarian Lembaga",
+        title: "Pencarian Cepat & Filter Jenjang",
+        description:
+          "Temukan sekolah dengan mengetikkan nama sekolah atau nomor NPSN, serta filter berdasarkan jenjang pendidikan (SD / SMP) dan status integritas data.",
+        highlights: [
+          "Cari berdasarkan nama atau 8 digit NPSN",
+          "Filter jenjang pendidikan SD dan SMP",
+          "Sinkronisasi langsung dengan pangkalan Dapodik",
+        ],
+        iconName: "solar:magnifer-bold-duotone",
+        iconColor: "text-blue-600",
+        iconBg: "bg-blue-50/90 border-blue-200/80 ring-2 ring-blue-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-direktori-stats",
+        targetSelector: '[data-coachmark="direktori-stats"]',
+        badge: "Fitur 2 dari 3 · Status Audit",
+        title: "Indikator Integritas & Selisih Data",
+        description:
+          "Melihat perbandingan status fasilitas: Data Sesuai (valid), Selisih Minor, hingga Selisih Kritis antara laporan warga dengan data resmi pemerintah.",
+        highlights: [
+          "Klasifikasi status integritas sarpras",
+          "Transparansi data selisih kondisi fisik",
+          "Total lembaga terdaftar di Dapodikdasmen",
+        ],
+        iconName: "solar:pie-chart-2-bold-duotone",
+        iconColor: "text-emerald-600",
+        iconBg: "bg-emerald-50/90 border-emerald-200/80 ring-2 ring-emerald-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-direktori-list",
+        targetSelector: '[data-coachmark="direktori-list"]',
+        badge: "Fitur 3 dari 3 · Detail Fasilitas",
+        title: "Katalog Profil & Fasilitas Sekolah",
+        description:
+          "Klik kartu sekolah untuk melihat profil lengkap, ruang kelas rusak berat/sedang, sanitasi, riwayat audit kondisi fisik, serta foto lapangan.",
+        highlights: [
+          "Akses kartu detail sarpras per sekolah",
+          "Daftar kerusakan ruang kelas & toilet",
+          "Riwayat laporan warga khusus sekolah terkait",
+        ],
+        iconName: "solar:buildings-3-bold-duotone",
+        iconColor: "text-indigo-600",
+        iconBg: "bg-indigo-50/90 border-indigo-200/80 ring-2 ring-indigo-100",
+        preferredPlacement: "auto",
+      },
+    ],
+  },
+
+  // ── 5. Riwayat Laporan (/laporan/riwayat) ─────────────────────
+  riwayat: {
+    key: "riwayat",
+    name: "Riwayat Laporan",
+    storageKey: "simakis_tour_riwayat_completed",
+    steps: [
+      {
+        id: "step-riwayat-mode",
+        targetSelector: '[data-coachmark="riwayat-mode-switcher"]',
+        badge: "Fitur 1 dari 3 · Pilihan Mode",
+        title: "Beralih Registri Publik & Laporan Saya",
+        description:
+          "Pilih 'Laporan Publik' untuk memantau seluruh isu sarpras terbuka se-Kecamatan Lamongan, atau 'Laporan Pribadi' untuk memantau aduan yang diajukan oleh akun Anda.",
+        highlights: [
+          "Mode Registri Publik: transparansi seluruh warga",
+          "Mode Laporan Pribadi: kelola riwayat aduan sendiri",
+          "Perlindungan privasi akun dan data pelapor",
+        ],
+        iconName: "solar:users-group-two-rounded-bold-duotone",
+        iconColor: "text-blue-600",
+        iconBg: "bg-blue-50/90 border-blue-200/80 ring-2 ring-blue-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-riwayat-filter",
+        targetSelector: '[data-coachmark="riwayat-filter"]',
+        badge: "Fitur 2 dari 3 · Filter Tahapan",
+        title: "Filter Tahapan Tindak Lanjut Dinas",
+        description:
+          "Lacak perkembangan laporan berdasarkan tahapannya: Menunggu Verifikasi, Terverifikasi, Sedang Ditindaklanjuti, atau Selesai Diperbaiki.",
+        highlights: [
+          "Status alur audit transparan dari dinas",
+          "Filter jenjang dan pencarian sekolah",
+          "Indikator status verifikasi lapangan",
+        ],
+        iconName: "solar:tuning-square-2-bold-duotone",
+        iconColor: "text-indigo-600",
+        iconBg: "bg-indigo-50/90 border-indigo-200/80 ring-2 ring-indigo-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-riwayat-list",
+        targetSelector: '[data-coachmark="riwayat-list"]',
+        badge: "Fitur 3 dari 3 · Kawal & Dukung",
+        title: "Kawal Laporan & Berikan Dukungan (Vote)",
+        description:
+          "Setiap aduan dilengkapi bukti foto, kategori kerusakan, catatan hasil audit dinas, serta tombol dukungan suara warga untuk mempercepat realisasi penanganan.",
+        highlights: [
+          "Foto bukti lapangan & keterangan pelapor",
+          "Catatan tindak lanjut tim pengawas dinas",
+          "Tombol vote warga untuk menaikkan urgensi",
+        ],
+        iconName: "solar:check-circle-bold-duotone",
+        iconColor: "text-sky-600",
+        iconBg: "bg-sky-50/90 border-sky-200/80 ring-2 ring-sky-100",
+        preferredPlacement: "auto",
+      },
+    ],
+  },
+
+  // ── 6. Tentang Data (/tentang) ────────────────────────────────
+  tentang: {
+    key: "tentang",
+    name: "Tentang Data",
+    storageKey: "simakis_tour_tentang_completed",
+    steps: [
+      {
+        id: "step-tentang-sumber",
+        targetSelector: '[data-coachmark="tentang-sumber"]',
+        badge: "Fitur 1 dari 3 · Sumber Data",
+        title: "Integrasi Data Dapodik & Partisipasi Warga",
+        description:
+          "SIMAKIS menggabungkan data resmi semesteran dari Dapodik Kemendikdasmen dengan laporan faktual real-time warga untuk potret sarpras yang adil.",
+        highlights: [
+          "Data baseline resmi institusi pemerintah",
+          "Laporan faktual langsung dari lapangan",
+          "Pencegahan bias data sepihak",
+        ],
+        iconName: "solar:database-bold-duotone",
+        iconColor: "text-blue-600",
+        iconBg: "bg-blue-50/90 border-blue-200/80 ring-2 ring-blue-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-tentang-pilar",
+        targetSelector: '[data-coachmark="tentang-pilar"]',
+        badge: "Fitur 2 dari 3 · Privasi & UU PDP",
+        title: "4 Prinsip Audit & Pelindungan Data Pribadi",
+        description:
+          "Keamanan warga terjamin: NIK dan identitas pelapor disanitasi dan tidak dibuka ke publik sesuai amanat UU PDP No. 27/2022.",
+        highlights: [
+          "Enkripsi dan sanitasi identitas warga",
+          "Kepatuhan penuh pada UU PDP No. 27/2022",
+          "Audit partisipatif yang aman bagi pelapor",
+        ],
+        iconName: "solar:shield-check-bold-duotone",
+        iconColor: "text-emerald-600",
+        iconBg: "bg-emerald-50/90 border-emerald-200/80 ring-2 ring-emerald-100",
+        preferredPlacement: "bottom",
+      },
+      {
+        id: "step-tentang-timeline",
+        targetSelector: '[data-coachmark="tentang-timeline"]',
+        badge: "Fitur 3 dari 3 · Alur Siklus",
+        title: "Tahapan Siklus Audit Berkelanjutan",
+        description:
+          "Alur 4 tahap: Pelaporan Warga → Validasi AI & Pengelompokan → Verifikasi Lapangan oleh Dinas → Tindak Lanjut Perbaikan Sarpras Sekolah.",
+        highlights: [
+          "Alur kerja 4 tahap yang terukur",
+          "Verifikasi komite sekolah & pengawas",
+          "Siklus audit berkelanjutan untuk Lamongan",
+        ],
+        iconName: "solar:history-bold-duotone",
+        iconColor: "text-amber-600",
+        iconBg: "bg-amber-50/90 border-amber-200/80 ring-2 ring-amber-100",
+        preferredPlacement: "auto",
+      },
+    ],
+  },
+}
+
+export default function CoachMarksTour() {
   const [isOpen, setIsOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [targetRect, setTargetRect] = useState<{
@@ -138,28 +451,78 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
   const [targetFound, setTargetFound] = useState(false)
 
   const navigate = useNavigate()
+  const location = useLocation()
   const tooltipRef = useRef<HTMLDivElement>(null)
 
-  // Otomatis buka untuk pengguna baru setelah delay awal
+  // Deteksi kunci tur halaman berdasarkan rute yang sedang aktif
+  const currentRouteKey = useMemo(() => {
+    const path = location.pathname.toLowerCase()
+    if (path.startsWith("/laporan/wilayah")) return "wilayah"
+    if (path.startsWith("/klaster")) return "klaster"
+    if (path.startsWith("/sekolah")) return "sekolah"
+    if (path.startsWith("/laporan/riwayat")) return "riwayat"
+    if (path.startsWith("/tentang")) return "tentang"
+    return "home"
+  }, [location.pathname])
+
+  const activeTour = useMemo(
+    () => PAGE_TOURS[currentRouteKey] || PAGE_TOURS.home,
+    [currentRouteKey]
+  )
+  const steps = activeTour.steps
+  const storageKey = activeTour.storageKey
+
+  // Otomatis buka tur halaman saat pengguna pertama kali masuk ke halaman terkait
   useEffect(() => {
-    const isCompleted = localStorage.getItem(STORAGE_KEY)
+    const isCompleted = localStorage.getItem(storageKey)
     if (!isCompleted) {
       const timer = setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: "instant" })
+        setCurrentIndex(0)
         setIsOpen(true)
-      }, 1000)
+      }, 900)
       return () => clearTimeout(timer)
     }
-  }, [])
+  }, [storageKey])
 
-  // Listener event global agar bisa dipicu dari tombol Panduan kapan saja
+  // Listener event global agar bisa dipicu dari tombol Panduan Halaman kapan saja
   useEffect(() => {
     const handleOpen = () => {
+      window.scrollTo({ top: 0, behavior: "instant" })
       setCurrentIndex(0)
       setIsOpen(true)
     }
     window.addEventListener("open-simakis-coachmarks", handleOpen)
     return () => window.removeEventListener("open-simakis-coachmarks", handleOpen)
   }, [])
+
+  // ── Kunci Scroll Halaman saat Coach Marks Aktif ─────────────────────
+  useEffect(() => {
+    if (!isOpen) return
+
+    const originalBodyOverflow = document.body.style.overflow
+    const originalHtmlOverflow = document.documentElement.style.overflow
+
+    document.body.style.overflow = "hidden"
+    document.documentElement.style.overflow = "hidden"
+
+    const preventScroll = (e: Event) => {
+      if (tooltipRef.current && tooltipRef.current.contains(e.target as Node)) {
+        return
+      }
+      e.preventDefault()
+    }
+
+    window.addEventListener("wheel", preventScroll, { passive: false })
+    window.addEventListener("touchmove", preventScroll, { passive: false })
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow
+      document.documentElement.style.overflow = originalHtmlOverflow
+      window.removeEventListener("wheel", preventScroll)
+      window.removeEventListener("touchmove", preventScroll)
+    }
+  }, [isOpen])
 
   const currentStep = useMemo(() => steps[currentIndex] || steps[0], [steps, currentIndex])
 
@@ -169,12 +532,10 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
 
     let element: HTMLElement | null = document.querySelector(currentStep.targetSelector)
 
-    // Jika tidak ditemukan atau tidak terlihat (misal di mobile navbar disembunyikan), coba fallback
     if ((!element || element.offsetParent === null) && currentStep.fallbackSelector) {
       element = document.querySelector(currentStep.fallbackSelector)
     }
 
-    // Jika masih tidak ditemukan atau tidak terlihat, coba mobile hamburger
     if (!element || element.offsetParent === null) {
       const mobileNav = document.querySelector('[data-coachmark="mobile-menu-btn"]') as HTMLElement | null
       if (mobileNav && mobileNav.offsetParent !== null) {
@@ -184,7 +545,6 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
 
     if (element && element.offsetParent !== null) {
       const rect = element.getBoundingClientRect()
-      // Pastikan ada ukuran nyata
       if (rect.width > 0 && rect.height > 0) {
         setTargetRect({
           top: rect.top,
@@ -197,12 +557,11 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
       }
     }
 
-    // Fallback jika tidak ada elemen target yang dapat dijangkau
     setTargetRect(null)
     setTargetFound(false)
   }, [isOpen, currentStep])
 
-  // Scroll target ke pandangan pengguna bila perlu
+  // Scroll target ke pandangan bila di luar layar
   useEffect(() => {
     if (!isOpen || !currentStep) return
 
@@ -213,18 +572,15 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
 
     if (element && element.offsetParent !== null) {
       const rect = element.getBoundingClientRect()
-      // Scroll hanya jika elemen berada di luar viewport vertikal
       if (rect.top < 80 || rect.bottom > window.innerHeight - 80) {
         element.scrollIntoView({ behavior: "smooth", block: "center" })
       }
     }
 
-    // Perbarui posisi setelah sedikit jeda scroll
     const timer = setTimeout(updateTargetPosition, 150)
     return () => clearTimeout(timer)
   }, [isOpen, currentIndex, currentStep, updateTargetPosition])
 
-  // Update posisi saat resize / scroll
   useEffect(() => {
     if (!isOpen) return
 
@@ -243,7 +599,6 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
     }
   }, [isOpen, updateTargetPosition])
 
-  // Navigasi keyboard (Escape = tutup, Panah Kanan = lanjut, Panah Kiri = kembali)
   useEffect(() => {
     if (!isOpen) return
 
@@ -277,12 +632,12 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
 
   const handleClose = () => {
     setIsOpen(false)
-    localStorage.setItem(STORAGE_KEY, "true")
+    localStorage.setItem(storageKey, "true")
   }
 
   const handleComplete = () => {
     setIsOpen(false)
-    localStorage.setItem(STORAGE_KEY, "true")
+    localStorage.setItem(storageKey, "true")
   }
 
   if (!isOpen) return null
@@ -294,40 +649,75 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
   const spotlightW = targetRect ? targetRect.width + padding * 2 : 0
   const spotlightH = targetRect ? targetRect.height + padding * 2 : 0
 
-  // Hitung posisi Tooltip Card secara responsif
+  // ── Perhitungan Posisi Pop-Up Pintar Agar Tidak Menghalangi Target ─────────
   const tooltipWidth = typeof window !== "undefined" ? Math.min(420, window.innerWidth - 32) : 380
-  const isTargetNearTop = targetRect ? targetRect.top < 220 : false
+  const tooltipEstimatedHeight = 360
 
   let tooltipTop = 0
   let tooltipLeft = 0
-  let arrowOffsetLeft = "50%"
+  let activePlacement: "bottom" | "top" | "right" | "left" | "center" = "center"
+  let arrowOffset = "50%"
 
   if (targetRect && targetFound) {
-    // Letakkan di bawah target jika target di atas, atau di atas target jika di bawah
-    if (isTargetNearTop) {
-      tooltipTop = targetRect.top + targetRect.height + padding + 14
-    } else {
-      tooltipTop = targetRect.top - padding - 340 // perkiraan tinggi kartu
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1200
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800
+
+    const spaceTop = targetRect.top - padding
+    const spaceBottom = vh - (targetRect.top + targetRect.height + padding)
+    const spaceRight = vw - (targetRect.left + targetRect.width + padding)
+    const spaceLeft = targetRect.left - padding
+
+    let preferred = currentStep.preferredPlacement || "auto"
+
+    if (preferred === "auto") {
+      if (targetRect.top < 120) {
+        preferred = "bottom"
+      } else if (spaceRight >= tooltipWidth + 24) {
+        preferred = "right"
+      } else if (spaceBottom >= tooltipEstimatedHeight + 20) {
+        preferred = "bottom"
+      } else if (spaceTop >= tooltipEstimatedHeight + 20) {
+        preferred = "top"
+      } else {
+        preferred = "bottom"
+      }
     }
 
-    // Posisikan horizontal terpusat terhadap target
-    const targetCenterX = targetRect.left + targetRect.width / 2
-    let desiredLeft = targetCenterX - tooltipWidth / 2
+    if (preferred === "right" && spaceRight < tooltipWidth + 16) {
+      preferred = spaceBottom >= tooltipEstimatedHeight + 16 ? "bottom" : (spaceTop >= tooltipEstimatedHeight + 16 ? "top" : "bottom")
+    } else if (preferred === "left" && spaceLeft < tooltipWidth + 16) {
+      preferred = spaceBottom >= tooltipEstimatedHeight + 16 ? "bottom" : (spaceTop >= tooltipEstimatedHeight + 16 ? "top" : "bottom")
+    }
 
-    // Batasi agar tidak terpotong tepi layar
-    const minLeft = 16
-    const maxLeft = window.innerWidth - tooltipWidth - 16
-    desiredLeft = Math.max(minLeft, Math.min(maxLeft, desiredLeft))
+    activePlacement = preferred as "bottom" | "top" | "right" | "left"
 
-    tooltipLeft = desiredLeft
-    arrowOffsetLeft = `${Math.max(20, Math.min(tooltipWidth - 20, targetCenterX - desiredLeft))}px`
+    if (activePlacement === "right") {
+      tooltipLeft = targetRect.left + targetRect.width + padding + 18
+      const targetCenterY = targetRect.top + targetRect.height / 2
+      tooltipTop = Math.max(16, Math.min(vh - tooltipEstimatedHeight - 16, targetCenterY - 100))
+      arrowOffset = `${Math.max(20, Math.min(tooltipEstimatedHeight - 40, targetCenterY - tooltipTop))}px`
+    } else if (activePlacement === "left") {
+      tooltipLeft = Math.max(16, targetRect.left - padding - tooltipWidth - 18)
+      const targetCenterY = targetRect.top + targetRect.height / 2
+      tooltipTop = Math.max(16, Math.min(vh - tooltipEstimatedHeight - 16, targetCenterY - 100))
+      arrowOffset = `${Math.max(20, Math.min(tooltipEstimatedHeight - 40, targetCenterY - tooltipTop))}px`
+    } else if (activePlacement === "top") {
+      tooltipTop = Math.max(16, targetRect.top - padding - tooltipEstimatedHeight - 16)
+      const targetCenterX = targetRect.left + targetRect.width / 2
+      tooltipLeft = Math.max(16, Math.min(vw - tooltipWidth - 16, targetCenterX - tooltipWidth / 2))
+      arrowOffset = `${Math.max(24, Math.min(tooltipWidth - 24, targetCenterX - tooltipLeft))}px`
+    } else {
+      tooltipTop = targetRect.top + targetRect.height + padding + 14
+      const targetCenterX = targetRect.left + targetRect.width / 2
+      tooltipLeft = Math.max(16, Math.min(vw - tooltipWidth - 16, targetCenterX - tooltipWidth / 2))
+      arrowOffset = `${Math.max(24, Math.min(tooltipWidth - 24, targetCenterX - tooltipLeft))}px`
+    }
   } else {
-    // Tampilan di tengah layar jika target tidak ditemukan
     tooltipTop = typeof window !== "undefined" ? Math.max(80, window.innerHeight / 2 - 180) : 100
     tooltipLeft = typeof window !== "undefined" ? Math.max(16, (window.innerWidth - tooltipWidth) / 2) : 20
+    activePlacement = "center"
   }
 
-  const IconComponent = currentStep.icon || HelpCircle
   const progressPercent = ((currentIndex + 1) / steps.length) * 100
 
   return (
@@ -341,9 +731,7 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
         <title>Klik di mana saja untuk lanjut ke fitur berikutnya</title>
         <defs>
           <mask id="simakis-coachmarks-mask">
-            {/* Area putih = tetap gelap */}
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {/* Area hitam = tembus pandang (spotlight target) */}
             {targetRect && targetFound && (
               <rect
                 x={spotlightX}
@@ -359,7 +747,6 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
           </mask>
         </defs>
 
-        {/* Dimmed Backdrop Navy Brand */}
         <rect
           x="0"
           y="0"
@@ -388,7 +775,7 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
       <div
         ref={tooltipRef}
         style={{
-          top: `${Math.max(16, Math.min(window.innerHeight - 380, tooltipTop))}px`,
+          top: `${tooltipTop}px`,
           left: `${tooltipLeft}px`,
           width: `${tooltipWidth}px`,
         }}
@@ -402,27 +789,34 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
           />
         </div>
 
-        {/* Panah Indikator menunjuk ke target */}
-        {targetRect && targetFound && (
+        {/* Panah Indikator menunjuk ke target secara presisi */}
+        {targetRect && targetFound && activePlacement !== "center" && (
           <div
-            style={{ left: arrowOffsetLeft }}
-            className={`absolute w-3.5 h-3.5 bg-white border-slate-200/90 transform -translate-x-1/2 rotate-45 z-10 ${
-              isTargetNearTop
-                ? "-top-2 border-t border-l"
-                : "-bottom-2 border-b border-r"
+            style={
+              activePlacement === "bottom"
+                ? { left: arrowOffset, top: "-7px" }
+                : activePlacement === "top"
+                ? { left: arrowOffset, bottom: "-7px" }
+                : activePlacement === "right"
+                ? { top: arrowOffset, left: "-7px" }
+                : { top: arrowOffset, right: "-7px" }
+            }
+            className={`absolute w-3.5 h-3.5 bg-white border-slate-200/90 transform rotate-45 z-10 ${
+              activePlacement === "bottom"
+                ? "-translate-x-1/2 border-t border-l"
+                : activePlacement === "top"
+                ? "-translate-x-1/2 border-b border-r"
+                : activePlacement === "right"
+                ? "-translate-y-1/2 border-b border-l"
+                : "-translate-y-1/2 border-t border-r"
             }`}
           />
         )}
 
         {/* Content Card Body */}
         <div className="p-4 sm:p-5">
-          {/* Header Step: Badge & Tutup Button */}
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-blue-800 bg-blue-50/90 border border-blue-200/80 px-2.5 py-1 rounded-full">
-              <Sparkles className="h-3 w-3 text-blue-600" />
-              {currentStep.badge}
-            </span>
-
+          {/* Header Step: Tutup Button */}
+          <div className="flex items-center justify-end mb-3">
             <button
               type="button"
               onClick={handleClose}
@@ -434,14 +828,14 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
             </button>
           </div>
 
-          {/* Judul & Ikon Fitur */}
-          <div className="flex items-start gap-3 mb-2.5">
+          {/* Judul & Ikon Fitur (Iconify Solar Duotone Icons dengan Rounded-Full Badge) */}
+          <div className="flex items-start gap-3.5 mb-2.5">
             <div
-              className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border shadow-xs ${currentStep.iconBg}`}
+              className={`h-11 w-11 rounded-full flex items-center justify-center shrink-0 border shadow-xs ${currentStep.iconBg}`}
             >
-              <IconComponent className={`h-5 w-5 ${currentStep.iconColor}`} />
+              <Icon icon={currentStep.iconName} className={`w-6 h-6 ${currentStep.iconColor}`} />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
                 {currentStep.title}
               </h3>
@@ -451,12 +845,12 @@ export default function CoachMarksTour({ steps = DEFAULT_STEPS }: CoachMarksTour
             </div>
           </div>
 
-          {/* Poin-Poin Manfaat Fitur */}
+          {/* Poin-Poin Manfaat Fitur dengan Iconify Checkmarks */}
           {currentStep.highlights && currentStep.highlights.length > 0 && (
-            <div className="mt-3.5 bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col gap-1.5">
+            <div className="mt-3.5 bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col gap-2">
               {currentStep.highlights.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2 text-[11px] sm:text-xs text-slate-700 font-medium">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5 shrink-0" />
+                  <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                   <span>{item}</span>
                 </div>
               ))}
