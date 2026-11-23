@@ -1125,18 +1125,6 @@ export default function RiwayatLaporan() {
                                   </button>
                                 </span>
                               )}
-                              {!item.konfirmasi_perlu_dijawab &&
-                                item.status_konfirmasi === "terjawab" && (
-                                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-800 flex items-center gap-1">
-                                    <CheckCircle2 className="h-3 w-3" /> Konfirmasi Terjawab
-                                  </span>
-                                )}
-                              {!item.konfirmasi_perlu_dijawab &&
-                                item.status_konfirmasi === "dilewati" && (
-                                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                                    Konfirmasi Dilewati
-                                  </span>
-                                )}
                             </div>
                             <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-slate-700 shrink-0">
                               {item.kondisi_dilaporkan
