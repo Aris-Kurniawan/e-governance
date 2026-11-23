@@ -96,10 +96,14 @@ function PanelAkun() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Akun" value={s ? s.total : "—"} />
+        <StatCard label="Total Akun" value={s ? s.total : "—"} hint="Seluruh role" />
         <StatCard label="Menunggu Verifikasi" value={s ? s.menunggu_verifikasi : "—"} hint="NIK menunggu ditinjau" />
         <StatCard label="Dinas" value={s ? s.per_role.verifikator_dinas + s.per_role.kepala_dinas : "—"} hint="Verifikator + Kepala Dinas" />
-        <StatCard label="Warga & Komite" value={s ? s.per_role.warga_umum + s.per_role.warga_terverifikasi + s.per_role.komite_sekolah : "—"} />
+        <StatCard
+          label="Warga & Komite"
+          value={s ? s.per_role.warga_umum + s.per_role.warga_terverifikasi + s.per_role.komite_sekolah : "—"}
+          hint="Warga + komite sekolah"
+        />
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
@@ -200,7 +204,7 @@ function PanelAkun() {
               </tbody>
             </table>
           </div>
-          {meta && (
+          {meta && meta.total_pages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
               <p className="text-xs text-slate-500">
                 {meta.total_items} akun · halaman {meta.page} dari {meta.total_pages}

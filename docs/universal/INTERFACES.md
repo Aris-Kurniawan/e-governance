@@ -831,6 +831,43 @@ diimplementasikan sampai ada keputusan lanjutan.
 
 ---
 
+## 9.1 Manajemen Akun — Admin (`/users`)
+
+| Method | Endpoint | Akses | Deskripsi |
+|---|---|---|---|
+| GET | `/users` | `admin` | Daftar akun; filter `role`, `status_verifikasi`, `q`; paginasi §0.2 |
+| GET | `/users/statistik` | `admin` | Jumlah akun per role + jumlah menunggu verifikasi |
+
+response `200` `GET /users`:
+```json
+{
+  "data": [
+    {
+      "user_id": "uuid",
+      "nama": "string",
+      "email": "string",
+      "role": "warga_umum|warga_terverifikasi|komite_sekolah|verifikator_dinas|kepala_dinas|admin",
+      "status_verifikasi": "menunggu|terverifikasi|ditolak",
+      "nip": "string|null",
+      "sekolah_terkait_npsn": "string|null",
+      "created_at": "ISO8601"
+    }
+  ],
+  "meta": { "page": 1, "page_size": 20, "total_items": 0, "total_pages": 0 }
+}
+```
+
+response `200` `GET /users/statistik`:
+```json
+{ "data": { "total": 0, "per_role": { "warga_umum": 0, "warga_terverifikasi": 0, "komite_sekolah": 0, "verifikator_dinas": 0, "kepala_dinas": 0, "admin": 0 }, "menunggu_verifikasi": 0 } }
+```
+
+**Catatan:** NIK **tidak** dikirim endpoint ini (D-29) — hanya status verifikasi.
+Belum ada endpoint tulis (ubah role, verifikasi warga); halaman `/dinas/sistem` baru
+sebatas monitoring.
+
+---
+
 ## 10. Upload File (Foto Bukti)
 
 - Endpoint: `POST /upload/laporan?laporan_id={id}` dan `DELETE /upload/{storage_key}`
