@@ -14,9 +14,13 @@ import {
   FileText,
   Info,
   PlusCircle,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
+import OnboardingGuideModal from "@/components/composite/OnboardingGuideModal"
+import CoachMarksTour from "@/components/composite/CoachMarksTour"
 
 /** Badge status akun warga — `UserMe.status_verifikasi` (menunggu/terverifikasi/ditolak). */
 const STATUS_VERIFIKASI_META: Record<
@@ -53,6 +57,28 @@ export default function PublicLayout() {
 
   const isDinasStaff = role === "admin" || role === "verifikator_dinas" || role === "kepala_dinas"
   const dashboardTarget = isDinasStaff ? "/dinas/dashboard" : "/laporan/wilayah"
+
+  // ── Onboarding Tour untuk Pengguna Baru ─────────────────────
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
+
+  // Cek jika pengguna baru pertama kali membuka web warga
+  useEffect(() => {
+    const hasSeen = localStorage.getItem("simakis_warga_onboarding_completed")
+    if (!hasSeen) {
+      const timer = setTimeout(() => {
+        setIsOnboardingOpen(true)
+      }, 700)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
+  // Listener event global agar tombol panduan di halaman mana pun bisa memicu modal
+  useEffect(() => {
+    const handleOpenOnboarding = () => setIsOnboardingOpen(true)
+    window.addEventListener("open-simakis-onboarding", handleOpenOnboarding)
+    return () => window.removeEventListener("open-simakis-onboarding", handleOpenOnboarding)
+  }, [])
+
 
   // ── Menu akun dropdown ─────────────────────
   const [isAccountOpen, setIsAccountOpen] = useState(false)
@@ -140,24 +166,25 @@ export default function PublicLayout() {
             </Link>
 
             {/* Navigasi Desktop */}
-            <nav className="hidden items-center gap-1 md:flex lg:gap-1.5">
-              <NavLink to="/" label="Home" active={location.pathname === "/"} />
-              <NavLink to="/laporan/wilayah" label="Dashboard Wilayah" active={location.pathname === "/laporan/wilayah"} />
-              <NavLink to="/klaster" label="Klaster Isu" active={location.pathname.startsWith("/klaster")} />
-              <NavLink to="/sekolah" label="Direktori Sekolah" active={location.pathname === "/sekolah"} />
-              <NavLink to="/laporan/riwayat" label="Riwayat Laporan" active={location.pathname === "/laporan/riwayat"} />
-              <NavLink to="/tentang" label="Tentang Data" active={location.pathname === "/tentang"} />
+            <nav className="hidden items-center gap-1 lg:flex xl:gap-1.5">
+              <NavLink to="/" label="Home" active={location.pathname === "/"} dataCoachmark="nav-home" />
+              <NavLink to="/laporan/wilayah" label="Dashboard Wilayah" active={location.pathname === "/laporan/wilayah"} dataCoachmark="nav-wilayah" />
+              <NavLink to="/klaster" label="Klaster Isu" active={location.pathname.startsWith("/klaster")} dataCoachmark="nav-klaster" />
+              <NavLink to="/sekolah" label="Direktori Sekolah" active={location.pathname === "/sekolah"} dataCoachmark="nav-sekolah" />
+              <NavLink to="/laporan/riwayat" label="Riwayat Laporan" active={location.pathname === "/laporan/riwayat"} dataCoachmark="nav-riwayat" />
+              <NavLink to="/tentang" label="Tentang Data" active={location.pathname === "/tentang"} dataCoachmark="nav-tentang" />
             </nav>
           </div>
 
           {/* Right Area: Auth & Hamburger Toggle */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {isAuthenticated ? (
               <>
                 <Button
                   asChild
                   size="sm"
-                  className="bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-semibold shadow-xs cursor-pointer h-9 px-3 sm:px-4 rounded-xl hidden sm:flex items-center gap-1.5"
+                  data-coachmark="action-laporan"
+                  className="bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-semibold shadow-xs cursor-pointer h-9 px-3 sm:px-3.5 rounded-xl hidden md:flex items-center gap-1.5 shrink-0 whitespace-nowrap"
                 >
                   <Link to="/laporan/baru">
                     <PlusCircle className="h-3.5 w-3.5" />
@@ -165,26 +192,29 @@ export default function PublicLayout() {
                   </Link>
                 </Button>
 
-                <div className="relative" ref={accountContainerRef}>
+                <div className="relative shrink-0" ref={accountContainerRef} data-coachmark="user-menu">
                 <button
                   type="button"
                   onClick={() => setIsAccountOpen((prev) => !prev)}
-                  title="Menu Akun Warga"
-                  className={`flex items-center gap-2 sm:gap-2.5 rounded-xl border px-2.5 sm:px-3 py-1.5 transition-colors cursor-pointer ${
+                  title={user?.nama || "Menu Akun"}
+                  className={`flex items-center gap-2 sm:gap-2.5 rounded-xl border px-2.5 sm:px-3 py-1.5 transition-colors cursor-pointer shrink-0 select-none ${
                     isAccountOpen
                       ? "bg-slate-100 border-slate-300"
-                      : "bg-slate-50 hover:bg-slate-100 border-slate-200/80"
+                      : "bg-white hover:bg-slate-50 border-slate-200/90 shadow-2xs"
                   }`}
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0B3052] text-[11px] font-bold text-white shadow-xs">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[#0B3052] text-xs font-bold text-white shadow-xs shrink-0">
                     {user?.nama?.charAt(0) || "U"}
                   </div>
-                  <div className="leading-tight hidden sm:block text-left">
-                    <span className="text-xs font-bold text-slate-800 block truncate max-w-[120px] lg:max-w-[150px]">
+                  <div className="leading-tight text-left min-w-0 hidden sm:block">
+                    <span className="text-xs font-bold text-slate-900 block truncate max-w-[130px] sm:max-w-[150px] md:max-w-[170px] lg:max-w-[190px] xl:max-w-[220px]">
                       {user?.nama}
                     </span>
-                    <span className="text-[10px] text-blue-700 font-semibold">{roleLabel ?? "Warga Terdaftar"}</span>
+                    <span className="text-[10px] text-blue-700 font-semibold block truncate">
+                      {roleLabel ?? "Warga Terdaftar"}
+                    </span>
                   </div>
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0 hidden sm:block" />
                 </button>
 
                 {/* Account Flyout Dropdown Desktop */}
@@ -271,6 +301,21 @@ export default function PublicLayout() {
                         </div>
                         <ArrowRight className="h-3 w-3 text-slate-300 group-hover:text-slate-600 transition-transform group-hover:translate-x-0.5" />
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAccountOpen(false)
+                          window.dispatchEvent(new CustomEvent("open-simakis-coachmarks"))
+                        }}
+                        className="w-full px-3 py-2 rounded-xl text-left text-xs font-semibold text-blue-700 hover:bg-blue-50/80 flex items-center justify-between transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Sparkles className="h-4 w-4 text-blue-600" />
+                          <span>Tur Panduan Fitur</span>
+                        </div>
+                        <ArrowRight className="h-3 w-3 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
                     </div>
 
                     {/* Logout Button */}
@@ -292,7 +337,7 @@ export default function PublicLayout() {
               </div>
             </>
             ) : (
-              <div className="hidden sm:flex items-center gap-2.5">
+              <div className="hidden sm:flex items-center gap-2.5" data-coachmark="user-menu">
                 <Button asChild variant="ghost" size="sm" className="text-slate-700 hover:text-slate-900 text-xs font-semibold cursor-pointer">
                   <Link to="/login">Masuk</Link>
                 </Button>
@@ -305,9 +350,10 @@ export default function PublicLayout() {
             {/* Tombol Hamburger Mobile */}
             <button
               type="button"
+              data-coachmark="mobile-menu-btn"
               onClick={() => setIsMobileMenuOpen((prev) => !prev)}
               aria-label={isMobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
-              className="flex md:hidden h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
+              className="flex lg:hidden h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
             >
               {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -318,7 +364,7 @@ export default function PublicLayout() {
       {/* ── Mobile Navigation Drawer — Sidebar Slide-in Kiri ── */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-[9999] md:hidden"
+          className="fixed inset-0 z-[9999] lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         >
           {/* Overlay blur */}
@@ -501,6 +547,25 @@ export default function PublicLayout() {
               <li><Link to="/klaster" className="hover:text-white transition-colors">Klaster Isu</Link></li>
               <li><Link to="/laporan/riwayat" className="hover:text-white transition-colors">Laporan Saya</Link></li>
               <li><Link to="/tentang" className="hover:text-white transition-colors">Tentang Data</Link></li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("open-simakis-coachmarks"))}
+                  className="hover:text-white transition-colors cursor-pointer text-left flex items-center gap-1.5 text-blue-300 hover:text-blue-200"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  <span>Tur Panduan Fitur (Coach Marks)</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setIsOnboardingOpen(true)}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Panduan Pemakaian Aplikasi
+                </button>
+              </li>
             </ul>
           </div>
           <div>
@@ -522,15 +587,32 @@ export default function PublicLayout() {
           &copy; 2026 SIMAKIS &middot; Dibuat di Lamongan
         </div>
       </footer>
+
+      {/* Modal Petunjuk Pemakaian untuk Warga */}
+      <OnboardingGuideModal open={isOnboardingOpen} onOpenChange={setIsOnboardingOpen} />
+
+      {/* Coach Marks Guided Tour Spotlight untuk Pengguna Pertama Kali */}
+      <CoachMarksTour />
     </div>
   )
 }
 
-function NavLink({ to, label, active = false }: { to: string; label: string; active?: boolean }) {
+function NavLink({
+  to,
+  label,
+  active = false,
+  dataCoachmark,
+}: {
+  to: string
+  label: string
+  active?: boolean
+  dataCoachmark?: string
+}) {
   return (
     <Link
       to={to}
-      className={`nav-link-animated whitespace-nowrap rounded-lg px-3 py-1.5 text-xs lg:text-sm font-medium transition-all duration-200 ${
+      data-coachmark={dataCoachmark}
+      className={`nav-link-animated whitespace-nowrap rounded-lg px-2 lg:px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-medium transition-all duration-200 ${
         active
           ? "bg-[#0B3052] text-white shadow-xs font-semibold scale-100"
           : "text-slate-600 hover:bg-slate-100/90 hover:text-slate-900 hover:scale-[1.03]"
