@@ -367,21 +367,6 @@ export default function Registrasi() {
             }
           />
 
-          {/* Meter kekuatan sandi */}
-          <div className="space-y-1.5 -mt-1">
-            <div className="flex gap-1.5">
-              <div className="h-1.5 flex-1 rounded-full bg-emerald-500" />
-              <div className="h-1.5 flex-1 rounded-full bg-emerald-500" />
-              <div className="h-1.5 flex-1 rounded-full bg-emerald-500" />
-              <div className="h-1.5 flex-1 rounded-full bg-emerald-500" />
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-white/50 font-medium">
-                Kekuatan Sandi: <strong className="text-emerald-400">Kuat</strong> (Huruf, Angka &amp; Simbol)
-              </span>
-              <span className="text-white/35">Min. 8 Karakter</span>
-            </div>
-          </div>
 
           <AuthField
             label="Konfirmasi Kata Sandi"
