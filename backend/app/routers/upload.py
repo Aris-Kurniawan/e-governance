@@ -63,7 +63,7 @@ def upload_laporan_foto(
     if not stored_name:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Gagal upload ke MinIO",
+            detail="Gagal upload foto ke storage",
         )
 
     # Simpan ke database

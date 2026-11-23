@@ -430,7 +430,9 @@ export default function AntrianValidasi() {
 
   const fotoMandiri =
     detailMandiri?.foto && detailMandiri.foto.length > 0
-      ? `/api/upload/${detailMandiri.foto[0].storage_key}`
+      ? detailMandiri.foto[0].storage_key.startsWith("http")
+        ? detailMandiri.foto[0].storage_key
+        : `/api/upload/${detailMandiri.foto[0].storage_key}`
       : fotoDokumentasi
 
   return (

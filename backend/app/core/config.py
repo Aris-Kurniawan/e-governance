@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = ""
     MINIO_BUCKET: str = "simakis-media"
 
+    # ImageKit (Cloud Object Storage)
+    IMAGEKIT_PUBLIC_KEY: str = "public_DHheJPZlCE/NRTQdEnNaDToGPEI="
+    IMAGEKIT_PRIVATE_KEY: str = "private_TcyOZi28x3f1fZBrpp5u2qzahqA="
+    IMAGEKIT_URL_ENDPOINT: str = "https://ik.imagekit.io/waz3ovygpj/"
+
     # AI Pipeline
     EMBEDDING_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
     # D-24: kekuatan prior shrinkage skor laporan (kebijakan, default 5).
