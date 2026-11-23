@@ -526,13 +526,12 @@ export default function DetailSekolah() {
         {/* ── Section: Rincian Fasilitas Sekolah ── */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">Rincian Fasilitas Sekolah</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Catatan resmi menjadi titik awal pemeriksaan Anda.</p>
-            </div>
-            <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              Baseline {baseline.tahunAjaran}
-            </span>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Rincian Fasilitas Sekolah</h2>
+            {baseline.tahunAjaran !== TIDAK_ADA && (
+              <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                Baseline {baseline.tahunAjaran}
+              </span>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
