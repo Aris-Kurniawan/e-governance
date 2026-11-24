@@ -5,7 +5,6 @@ import { EllipseGallery } from "@/components/ui/EllipseGallery"
 import ConvergingWorkflow from "@/components/composite/ConvergingWorkflow"
 import { useAuth } from "@/context/AuthContext"
 import {
-  Sparkles,
   ArrowRight,
   ChevronRight,
   Lock,
@@ -77,16 +76,6 @@ export default function Landing() {
                     <MapPin className="h-4 w-4 mr-1.5 text-blue-600" />
                     Jelajahi Peta Sekolah
                   </Link>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => window.dispatchEvent(new CustomEvent("open-simakis-coachmarks"))}
-                  className="bg-blue-50/80 hover:bg-blue-100 text-[#0B3052] border border-blue-200/80 font-semibold px-4 py-3.5 h-auto rounded-xl text-sm transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                  title="Lihat petunjuk langkah demi langkah pemakaian SIMAKIS"
-                >
-                  <Sparkles className="h-4 w-4 text-blue-600" />
-                  <span>Tur Fitur Interaktif</span>
                 </Button>
               </div>
 

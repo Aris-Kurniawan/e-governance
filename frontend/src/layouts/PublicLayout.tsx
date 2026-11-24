@@ -19,7 +19,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
-import OnboardingGuideModal from "@/components/composite/OnboardingGuideModal"
 import CoachMarksTour from "@/components/composite/CoachMarksTour"
 
 /** Badge status akun warga — `UserMe.status_verifikasi` (menunggu/terverifikasi/ditolak). */
@@ -57,28 +56,6 @@ export default function PublicLayout() {
 
   const isDinasStaff = role === "admin" || role === "verifikator_dinas" || role === "kepala_dinas"
   const dashboardTarget = isDinasStaff ? "/dinas/dashboard" : "/laporan/wilayah"
-
-  // ── Onboarding Tour untuk Pengguna Baru ─────────────────────
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
-
-  // Cek jika pengguna baru pertama kali membuka web warga
-  useEffect(() => {
-    const hasSeen = localStorage.getItem("simakis_warga_onboarding_completed")
-    if (!hasSeen) {
-      const timer = setTimeout(() => {
-        setIsOnboardingOpen(true)
-      }, 700)
-      return () => clearTimeout(timer)
-    }
-  }, [])
-
-  // Listener event global agar tombol panduan di halaman mana pun bisa memicu modal
-  useEffect(() => {
-    const handleOpenOnboarding = () => setIsOnboardingOpen(true)
-    window.addEventListener("open-simakis-onboarding", handleOpenOnboarding)
-    return () => window.removeEventListener("open-simakis-onboarding", handleOpenOnboarding)
-  }, [])
-
 
   // ── Menu akun dropdown ─────────────────────
   const [isAccountOpen, setIsAccountOpen] = useState(false)
@@ -560,7 +537,7 @@ export default function PublicLayout() {
               <li>
                 <button
                   type="button"
-                  onClick={() => setIsOnboardingOpen(true)}
+                  onClick={() => window.dispatchEvent(new CustomEvent("open-simakis-coachmarks"))}
                   className="hover:text-white transition-colors cursor-pointer text-left"
                 >
                   Panduan Pemakaian Aplikasi
@@ -587,9 +564,6 @@ export default function PublicLayout() {
           &copy; 2026 SIMAKIS &middot; Dibuat di Lamongan
         </div>
       </footer>
-
-      {/* Modal Petunjuk Pemakaian untuk Warga */}
-      <OnboardingGuideModal open={isOnboardingOpen} onOpenChange={setIsOnboardingOpen} />
 
       {/* Coach Marks Guided Tour Spotlight untuk Pengguna Pertama Kali */}
       <CoachMarksTour />

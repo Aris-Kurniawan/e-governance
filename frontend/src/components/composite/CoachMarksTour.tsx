@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Icon } from "@iconify/react"
-import { registerCoachMarksIcons } from "@/components/composite/coachMarksIcons"
+import { CoachMarkIcon } from "@/components/composite/coachMarksIcons"
 import {
   X,
   ChevronRight,
@@ -9,9 +8,6 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-// Inisialisasi registrasi ikon Solar Duotone sekali saat runtime
-registerCoachMarksIcons()
 
 export interface CoachMarkStep {
   id: string
@@ -454,47 +450,46 @@ export default function CoachMarksTour() {
   const location = useLocation()
   const tooltipRef = useRef<HTMLDivElement>(null)
 
-  // Deteksi kunci tur halaman berdasarkan rute yang sedang aktif
-  const currentRouteKey = useMemo(() => {
-    const path = location.pathname.toLowerCase()
-    if (path.startsWith("/laporan/wilayah")) return "wilayah"
-    if (path.startsWith("/klaster")) return "klaster"
-    if (path.startsWith("/sekolah")) return "sekolah"
-    if (path.startsWith("/laporan/riwayat")) return "riwayat"
-    if (path.startsWith("/tentang")) return "tentang"
-    return "home"
-  }, [location.pathname])
+  const isHomePage = location.pathname === "/"
 
-  const activeTour = useMemo(
-    () => PAGE_TOURS[currentRouteKey] || PAGE_TOURS.home,
-    [currentRouteKey]
-  )
+  // Hanya jalankan tur di halaman Home ("/") — halaman selain home dinonaktifkan sementara
+  const activeTour = PAGE_TOURS.home
   const steps = activeTour.steps
   const storageKey = activeTour.storageKey
 
-  // Otomatis buka tur halaman saat pengguna pertama kali masuk ke halaman terkait
+  // Otomatis tutup tur jika berpindah dari halaman Beranda
   useEffect(() => {
+    if (!isHomePage && isOpen) {
+      setIsOpen(false)
+    }
+  }, [isHomePage, isOpen])
+
+  // Otomatis buka tur halaman saat pengguna pertama kali masuk ke Beranda
+  useEffect(() => {
+    if (!isHomePage) return
     const isCompleted = localStorage.getItem(storageKey)
+
     if (!isCompleted) {
       const timer = setTimeout(() => {
         window.scrollTo({ top: 0, behavior: "instant" })
         setCurrentIndex(0)
         setIsOpen(true)
-      }, 900)
+      }, 700)
       return () => clearTimeout(timer)
     }
-  }, [storageKey])
+  }, [storageKey, isHomePage])
 
-  // Listener event global agar bisa dipicu dari tombol Panduan Halaman kapan saja
+  // Listener event global agar bisa dipicu kapan saja (hanya jika di Beranda)
   useEffect(() => {
     const handleOpen = () => {
+      if (!isHomePage) return
       window.scrollTo({ top: 0, behavior: "instant" })
       setCurrentIndex(0)
       setIsOpen(true)
     }
     window.addEventListener("open-simakis-coachmarks", handleOpen)
     return () => window.removeEventListener("open-simakis-coachmarks", handleOpen)
-  }, [])
+  }, [isHomePage])
 
   // ── Kunci Scroll Halaman saat Coach Marks Aktif ─────────────────────
   useEffect(() => {
@@ -633,14 +628,16 @@ export default function CoachMarksTour() {
   const handleClose = () => {
     setIsOpen(false)
     localStorage.setItem(storageKey, "true")
+    localStorage.setItem("simakis_warga_onboarding_completed", "true")
   }
 
   const handleComplete = () => {
     setIsOpen(false)
     localStorage.setItem(storageKey, "true")
+    localStorage.setItem("simakis_warga_onboarding_completed", "true")
   }
 
-  if (!isOpen) return null
+  if (!isHomePage || !isOpen) return null
 
   // Parameter spotlight dengan padding
   const padding = 8
@@ -650,6 +647,10 @@ export default function CoachMarksTour() {
   const spotlightH = targetRect ? targetRect.height + padding * 2 : 0
 
   // ── Perhitungan Posisi Pop-Up Pintar Agar Tidak Menghalangi Target ─────────
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800
+  const isMobile = vw < 640
+
   const tooltipWidth = typeof window !== "undefined" ? Math.min(420, window.innerWidth - 32) : 380
   const tooltipEstimatedHeight = 360
 
@@ -659,9 +660,6 @@ export default function CoachMarksTour() {
   let arrowOffset = "50%"
 
   if (targetRect && targetFound) {
-    const vw = typeof window !== "undefined" ? window.innerWidth : 1200
-    const vh = typeof window !== "undefined" ? window.innerHeight : 800
-
     const spaceTop = targetRect.top - padding
     const spaceBottom = vh - (targetRect.top + targetRect.height + padding)
     const spaceRight = vw - (targetRect.left + targetRect.width + padding)
@@ -707,7 +705,7 @@ export default function CoachMarksTour() {
       tooltipLeft = Math.max(16, Math.min(vw - tooltipWidth - 16, targetCenterX - tooltipWidth / 2))
       arrowOffset = `${Math.max(24, Math.min(tooltipWidth - 24, targetCenterX - tooltipLeft))}px`
     } else {
-      tooltipTop = targetRect.top + targetRect.height + padding + 14
+      tooltipTop = Math.max(16, Math.min(vh - tooltipEstimatedHeight - 16, targetRect.top + targetRect.height + padding + 14))
       const targetCenterX = targetRect.left + targetRect.width / 2
       tooltipLeft = Math.max(16, Math.min(vw - tooltipWidth - 16, targetCenterX - tooltipWidth / 2))
       arrowOffset = `${Math.max(24, Math.min(tooltipWidth - 24, targetCenterX - tooltipLeft))}px`
@@ -774,23 +772,34 @@ export default function CoachMarksTour() {
       {/* ── 3. Tooltip Card Berpemandu ── */}
       <div
         ref={tooltipRef}
-        style={{
-          top: `${tooltipTop}px`,
-          left: `${tooltipLeft}px`,
-          width: `${tooltipWidth}px`,
-        }}
-        className="fixed z-[9995] bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-300 ease-out animate-in fade-in zoom-in-95 pointer-events-auto"
+        style={
+          isMobile
+            ? {
+                left: "12px",
+                right: "12px",
+                width: "calc(100% - 24px)",
+                ...(targetRect && targetRect.top > vh / 2
+                  ? { top: "12px", bottom: "auto" }
+                  : { bottom: "12px", top: "auto" }),
+              }
+            : {
+                top: `${tooltipTop}px`,
+                left: `${tooltipLeft}px`,
+                width: `${tooltipWidth}px`,
+              }
+        }
+        className="fixed z-[9995] bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-300 ease-out animate-in fade-in zoom-in-95 pointer-events-auto flex flex-col max-h-[calc(100dvh-24px)]"
       >
         {/* Progress Bar di sisi atas */}
-        <div className="h-1.5 w-full bg-slate-100 relative overflow-hidden">
+        <div className="h-1 sm:h-1.5 w-full bg-slate-100 relative overflow-hidden shrink-0">
           <div
             className="h-full bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 transition-all duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        {/* Panah Indikator menunjuk ke target secara presisi */}
-        {targetRect && targetFound && activePlacement !== "center" && (
+        {/* Panah Indikator menunjuk ke target secara presisi (hanya desktop) */}
+        {targetRect && targetFound && !isMobile && activePlacement !== "center" && (
           <div
             style={
               activePlacement === "bottom"
@@ -814,52 +823,53 @@ export default function CoachMarksTour() {
         )}
 
         {/* Content Card Body */}
-        <div className="p-4 sm:p-5">
-          {/* Header Step: Tutup Button */}
-          <div className="flex items-center justify-end mb-3">
-            <button
-              type="button"
-              onClick={handleClose}
-              aria-label="Tutup petunjuk tur"
-              className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
-              title="Lewati dan tutup petunjuk (Esc)"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+        <div className="p-3 sm:p-5 overflow-y-auto max-h-[calc(100dvh-110px)] sm:max-h-none relative">
+          {/* Tombol Tutup X (posisi absolute di pojok kanan atas agar hemat tempat) */}
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Tutup petunjuk tur"
+            className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 h-7 w-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer z-10"
+            title="Lewati dan tutup petunjuk (Esc)"
+          >
+            <X className="h-4 w-4" />
+          </button>
 
-          {/* Judul & Ikon Fitur (Iconify Solar Duotone Icons dengan Rounded-Full Badge) */}
-          <div className="flex items-start gap-3.5 mb-2.5">
+          {/* Judul & Ikon Fitur */}
+          <div className="flex items-start gap-2.5 sm:gap-3.5 pr-7 sm:pr-8">
             <div
-              className={`h-11 w-11 rounded-full flex items-center justify-center shrink-0 border shadow-xs ${currentStep.iconBg}`}
+              className={`h-8 w-8 sm:h-11 sm:w-11 rounded-full flex items-center justify-center shrink-0 border shadow-xs ${currentStep.iconBg}`}
             >
-              <Icon icon={currentStep.iconName} className={`w-6 h-6 ${currentStep.iconColor}`} />
+              <CoachMarkIcon icon={currentStep.iconName} className={`w-4 h-4 sm:w-6 sm:h-6 ${currentStep.iconColor}`} />
             </div>
-            <div className="min-w-0">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] sm:text-xs font-semibold text-blue-600 mb-0.5 sm:mb-1">
+                Langkah {currentIndex + 1} dari {steps.length}
+              </div>
+              <h3 className="text-sm sm:text-lg font-bold text-slate-900 leading-snug">
                 {currentStep.title}
               </h3>
-              <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed mt-1">
+              <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed mt-1 line-clamp-2 sm:line-clamp-none">
                 {currentStep.description}
               </p>
             </div>
           </div>
 
-          {/* Poin-Poin Manfaat Fitur dengan Iconify Checkmarks */}
+          {/* Poin-Poin Manfaat Fitur dengan Checkmarks (hanya desktop agar mobile ringkas) */}
           {currentStep.highlights && currentStep.highlights.length > 0 && (
-            <div className="mt-3.5 bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex flex-col gap-2">
+            <div className="hidden sm:flex mt-3.5 bg-slate-50/80 rounded-xl p-3 border border-slate-100 flex-col gap-2">
               {currentStep.highlights.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2 text-[11px] sm:text-xs text-slate-700 font-medium">
-                  <Icon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                  <CoachMarkIcon icon="solar:check-read-linear" className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                   <span>{item}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Quick link jika ada */}
+          {/* Quick link jika ada (hanya desktop agar mobile ringkas) */}
           {currentStep.route && (
-            <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+            <div className="hidden sm:flex mt-3 items-center justify-between text-[11px] text-slate-500">
               <span className="italic">Jalur Cepat:</span>
               <button
                 type="button"
@@ -877,29 +887,29 @@ export default function CoachMarksTour() {
         </div>
 
         {/* Footer Navigasi Tur */}
-        <div className="px-4 py-3 sm:px-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+        <div className="px-3 py-2 sm:px-5 sm:py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2 shrink-0">
           {/* Sisi Kiri: Lewati & Step Dots */}
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleClose}
-              className="text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors cursor-pointer mr-1"
+              className="text-[11px] sm:text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors cursor-pointer mr-0.5"
             >
-              Lewati Tur
+              Lewati
             </button>
 
             {/* Dots Navigasi */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               {steps.map((_, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setCurrentIndex(idx)}
                   aria-label={`Ke langkah ${idx + 1}`}
-                  className={`h-2 rounded-full transition-all duration-200 cursor-pointer ${
+                  className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
                     idx === currentIndex
-                      ? "w-5 bg-blue-600"
-                      : "w-2 bg-slate-300 hover:bg-slate-400"
+                      ? "w-3.5 sm:w-5 bg-blue-600"
+                      : "w-1.5 sm:w-2 bg-slate-300 hover:bg-slate-400"
                   }`}
                 />
               ))}
@@ -907,16 +917,16 @@ export default function CoachMarksTour() {
           </div>
 
           {/* Sisi Kanan: Tombol Sebelumnya & Lanjut */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {currentIndex > 0 && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handlePrev}
-                className="h-8 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
+                className="h-7 sm:h-8 px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
               >
-                <ChevronLeft className="h-3.5 w-3.5 mr-0.5" />
+                <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5" />
                 Kembali
               </Button>
             )}
@@ -925,10 +935,10 @@ export default function CoachMarksTour() {
               type="button"
               size="sm"
               onClick={handleNext}
-              className="h-8 px-3.5 text-xs font-semibold bg-[#0B3052] hover:bg-[#07213A] text-white rounded-xl shadow-xs cursor-pointer flex items-center gap-1 transition-all"
+              className="h-7 sm:h-8 px-3 sm:px-3.5 text-[11px] sm:text-xs font-semibold bg-[#0B3052] hover:bg-[#07213A] text-white rounded-lg sm:rounded-xl shadow-xs cursor-pointer flex items-center gap-1 transition-all"
             >
-              <span>{currentIndex === steps.length - 1 ? "Selesai & Jelajahi" : "Lanjut"}</span>
-              <ChevronRight className="h-3.5 w-3.5" />
+              <span>{currentIndex === steps.length - 1 ? "Selesai" : "Lanjut"}</span>
+              <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             </Button>
           </div>
         </div>
