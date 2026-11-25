@@ -81,6 +81,7 @@ export default function AntrianValidasi() {
   const [searchParams, setSearchParams] = useSearchParams()
   const urlId = searchParams.get("id")
   const urlTrack = searchParams.get("track")
+  const urlSearch = (searchParams.get("search") ?? "").trim()
 
   // Switcher track: Klaster Issue vs Issue Mandiri
   const [modeTrack, setModeTrack] = useState<"klaster" | "mandiri">(
@@ -127,12 +128,12 @@ export default function AntrianValidasi() {
   )
   const { state: sekolahState } = useFetch(() => listSekolah({ page_size: 100 }))
 
-  const daftarKlaster: KlasterListItem[] = useMemo(
+  const rawKlaster: KlasterListItem[] = useMemo(
     () => (listState.status === "success" ? listState.data.data : []),
     [listState],
   )
 
-  const daftarMandiri: LaporanPerluReview[] = useMemo(
+  const rawMandiri: LaporanPerluReview[] = useMemo(
     () => (mandiriState.status === "success" ? mandiriState.data.data : []),
     [mandiriState],
   )
@@ -146,6 +147,35 @@ export default function AntrianValidasi() {
     }
     return map
   }, [sekolahState])
+
+  const daftarKlaster: KlasterListItem[] = useMemo(() => {
+    if (!urlSearch) return rawKlaster
+    const q = urlSearch.toLowerCase()
+    return rawKlaster.filter((k) => {
+      const sekolahNama = profilSekolah.get(k.sekolah_npsn)?.nama ?? ""
+      return (
+        k.sekolah_npsn.toLowerCase().includes(q) ||
+        sekolahNama.toLowerCase().includes(q) ||
+        k.klaster_id.toLowerCase().includes(q) ||
+        (k.label ?? "").toLowerCase().includes(q) ||
+        k.kategori.toLowerCase().includes(q)
+      )
+    })
+  }, [rawKlaster, urlSearch, profilSekolah])
+
+  const daftarMandiri: LaporanPerluReview[] = useMemo(() => {
+    if (!urlSearch) return rawMandiri
+    const q = urlSearch.toLowerCase()
+    return rawMandiri.filter((m) => {
+      const sekolahNama = profilSekolah.get(m.sekolah_npsn)?.nama ?? ""
+      return (
+        m.sekolah_npsn.toLowerCase().includes(q) ||
+        sekolahNama.toLowerCase().includes(q) ||
+        m.tracking_id.toLowerCase().includes(q) ||
+        (m.deskripsi ?? "").toLowerCase().includes(q)
+      )
+    })
+  }, [rawMandiri, urlSearch, profilSekolah])
 
   // Fetch detail klaster terpilih
   const { state: detailState } = useFetch(
@@ -452,7 +482,7 @@ export default function AntrianValidasi() {
       </div>
 
       {/* ── Switcher Track: Track Klaster Issue vs Track Issue Mandiri ── */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={() => handleSwitchTrack("klaster")}
@@ -484,6 +514,23 @@ export default function AntrianValidasi() {
             {daftarMandiri.length}
           </span>
         </button>
+
+        {urlSearch && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev)
+                next.delete("search")
+                return next
+              })
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold hover:bg-blue-100 cursor-pointer"
+          >
+            <span>Pencarian: {urlSearch}</span>
+            <span className="font-bold">×</span>
+          </button>
+        )}
       </div>
 
       {/* Feedback banner */}

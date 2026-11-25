@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react"
+import { useSearchParams } from "react-router-dom"
 import {
   RotateCw,
   History,
@@ -52,6 +53,8 @@ const OPSI_PILIHAN_STATUS: { value: StatusPenanganan; label: string; desc: strin
 ]
 
 export default function StatusTindakLanjut() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlSearch = (searchParams.get("search") ?? "").trim()
   const [activeMode, setActiveMode] = useState<"klaster" | "mandiri">("klaster")
   const [filterJenjang, setFilterJenjang] = useState<string>("Semua")
 
@@ -122,22 +125,42 @@ export default function StatusTindakLanjut() {
     }
   }, [activeMode, daftarKlaster, daftarMandiri, mapSekolah])
 
-  // Data terfilter berdasarkan jenjang
+  // Data terfilter berdasarkan jenjang & pencarian header
   const klasterTerfilter = useMemo(() => {
+    const q = urlSearch.toLowerCase()
     return daftarKlaster.filter((k) => {
-      if (filterJenjang === "Semua") return true
-      const j = mapSekolah.get(k.sekolah_npsn)?.jenjang?.toUpperCase() || ""
-      return j.includes(filterJenjang)
+      if (filterJenjang !== "Semua") {
+        const j = mapSekolah.get(k.sekolah_npsn)?.jenjang?.toUpperCase() || ""
+        if (!j.includes(filterJenjang)) return false
+      }
+      if (!q) return true
+      const nama = mapSekolah.get(k.sekolah_npsn)?.nama ?? ""
+      return (
+        k.sekolah_npsn.toLowerCase().includes(q) ||
+        nama.toLowerCase().includes(q) ||
+        k.klaster_id.toLowerCase().includes(q) ||
+        (k.label ?? "").toLowerCase().includes(q)
+      )
     })
-  }, [daftarKlaster, filterJenjang, mapSekolah])
+  }, [daftarKlaster, filterJenjang, mapSekolah, urlSearch])
 
   const mandiriTerfilter = useMemo(() => {
+    const q = urlSearch.toLowerCase()
     return daftarMandiri.filter((m) => {
-      if (filterJenjang === "Semua") return true
-      const j = mapSekolah.get(m.sekolah_npsn)?.jenjang?.toUpperCase() || ""
-      return j.includes(filterJenjang)
+      if (filterJenjang !== "Semua") {
+        const j = mapSekolah.get(m.sekolah_npsn)?.jenjang?.toUpperCase() || ""
+        if (!j.includes(filterJenjang)) return false
+      }
+      if (!q) return true
+      const nama = mapSekolah.get(m.sekolah_npsn)?.nama ?? ""
+      return (
+        m.sekolah_npsn.toLowerCase().includes(q) ||
+        nama.toLowerCase().includes(q) ||
+        m.tracking_id.toLowerCase().includes(q) ||
+        (m.deskripsi ?? "").toLowerCase().includes(q)
+      )
     })
-  }, [daftarMandiri, filterJenjang, mapSekolah])
+  }, [daftarMandiri, filterJenjang, mapSekolah, urlSearch])
 
   // Kelompokkan klaster ke dalam 4 kolom Kanban
   const kanbanKlasterColumns = useMemo(() => {
@@ -526,6 +549,23 @@ export default function StatusTindakLanjut() {
               {daftarMandiri.length}
             </span>
           </button>
+
+          {urlSearch && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev)
+                  next.delete("search")
+                  return next
+                })
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold hover:bg-blue-100 cursor-pointer"
+            >
+              <span>Pencarian: {urlSearch}</span>
+              <span className="font-bold">×</span>
+            </button>
+          )}
         </div>
 
         {/* Filter Jenjang Kanan */}

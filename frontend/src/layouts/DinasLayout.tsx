@@ -23,7 +23,6 @@ import {
   CloudUpload,
   CheckSquare,
   LayoutGrid,
-  Zap,
   Settings,
   Menu
 } from "@/components/ui/iconify-icons"
@@ -254,6 +253,16 @@ export default function DinasLayout() {
     }
   }, [q, klasterState, sekolahState])
 
+  const getSearchTargetPath = () => {
+    if (
+      location.pathname.startsWith("/dinas/status") ||
+      location.pathname.startsWith("/dinas/tindak-lanjut")
+    ) {
+      return "/dinas/status"
+    }
+    return "/dinas/antrian"
+  }
+
   const handleSelectKlaster = (id: string) => {
     setIsSearchOpen(false)
     setSearchQuery("")
@@ -263,14 +272,14 @@ export default function DinasLayout() {
   const handleSelectSekolah = (npsn: string) => {
     setIsSearchOpen(false)
     setSearchQuery("")
-    navigate(`/sekolah/${npsn}`)
+    navigate(`${getSearchTargetPath()}?search=${encodeURIComponent(npsn)}`)
   }
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!searchQuery.trim()) return
     setIsSearchOpen(false)
-    navigate(`/dinas/antrian?search=${encodeURIComponent(searchQuery.trim())}`)
+    navigate(`${getSearchTargetPath()}?search=${encodeURIComponent(searchQuery.trim())}`)
   }
 
   const markAllNotifsAsRead = () => {
@@ -394,27 +403,8 @@ export default function DinasLayout() {
         </div>
       </div>
 
-      {/* Bottom Area: AI Card, Pengaturan & User Profile */}
+      {/* Bottom Area: Pengaturan & User Profile */}
       <div className="space-y-3 pt-2 shrink-0">
-        {/* Card Hijau Al Verifikasi Aktif */}
-        <div className="mx-3.5 p-3 rounded-2xl bg-[#ECFDF5] border border-emerald-200/80 space-y-1.5 shadow-2xs">
-          <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs">
-            <Zap className="h-3.5 w-3.5 text-emerald-600 fill-emerald-600" />
-            <span>Al Verifikasi Aktif</span>
-          </div>
-          <p className="text-[11px] text-slate-600 leading-snug">
-            3 klaster darurat memerlukan persetujuan hari ini.
-          </p>
-          <div className="pt-1">
-            <Link
-              to="/dinas/antrian"
-              className="inline-block px-3 py-1 bg-white border border-emerald-300 text-emerald-800 font-semibold text-[11px] rounded-lg shadow-2xs hover:bg-emerald-50 transition-colors"
-            >
-              Periksa antrean
-            </Link>
-          </div>
-        </div>
-
         {/* Tombol Pengaturan */}
         <button
           type="button"
@@ -792,8 +782,8 @@ export default function DinasLayout() {
                 }}
                 title="Menu Akun Verifikator"
                 className={`relative h-8 w-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${isAccountOpen
-                    ? "bg-[#0B3052] text-white border-[#0B3052] shadow-xs"
-                    : "bg-[#0B3052] text-white border-transparent hover:opacity-90"
+                  ? "bg-[#0B3052] text-white border-[#0B3052] shadow-xs"
+                  : "bg-[#0B3052] text-white border-transparent hover:opacity-90"
                   }`}
               >
                 <span className="font-bold text-xs">{inisialPetugas}</span>
