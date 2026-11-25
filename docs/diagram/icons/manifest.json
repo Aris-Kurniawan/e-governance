@@ -134,5 +134,23 @@
     "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/help-circle.svg",
     "file": "question.svg",
     "bytes": 399
+  },
+  "tag": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/tag.svg",
+    "file": "tag.svg",
+    "bytes": 501
+  },
+  "umap": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/minimize-2.svg",
+    "file": "umap.svg",
+    "bytes": 389
+  },
+  "review": {
+    "source": "lucide",
+    "url": "https://cdn.jsdelivr.net/npm/lucide-static/icons/inbox.svg",
+    "file": "review.svg",
+    "bytes": 461
   }
 }

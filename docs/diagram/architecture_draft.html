@@ -183,51 +183,51 @@ svg.edges { position:absolute; inset:0; width:1180px; height:680px; pointer-even
 
       <!-- Flow 2: Data Dapodik -> FastAPI Gateway -->
       <path class="n" d="M175 310 H240 V150 H396" marker-end="url(#ar)"/>
-      <text class="el" x="215" y="302" text-anchor="middle">ingest 62 sekolah</text>
+      <text class="el" x="248" y="212" text-anchor="start">CSV ingest</text>
 
       <!-- Flow 3: FastAPI Gateway -> Data Mismatch -->
       <path class="n" d="M460 130 H646" marker-end="url(#ar)"/>
-      <text class="el" x="553" y="122" text-anchor="middle">audit silang Dapodik</text>
+      <text class="el" x="553" y="122" text-anchor="middle">audit silang</text>
 
       <!-- Flow 4: FastAPI Gateway -> AI Question Generator (Severity Prompt) -->
       <path class="e" d="M430 190 V225 H365 V279" marker-end="url(#ar)"/>
-      <text class="el a" x="375" y="235" text-anchor="start">analisis aduan</text>
+      <text class="el a" x="397" y="217" text-anchor="middle">analisis</text>
 
       <!-- Flow 5: AI Question Generator -> Konfirmasi Warga (Tanya-Jawab Interaktif) -->
       <path class="e" d="M395 315 H461" marker-end="url(#ar)"/>
-      <text class="el a" x="428" y="307" text-anchor="middle">generate tanya</text>
+      <text class="el a" x="428" y="307" text-anchor="middle">tanya</text>
 
       <!-- Flow 6: Konfirmasi Warga -> Skoring Prioritas (Bobot Severity 70%) -->
       <path class="e" d="M495 375 V440 H680 V484" marker-end="url(#ar)"/>
-      <text class="el a" x="535" y="432" text-anchor="middle">fakta terkonfirmasi (70%)</text>
+      <text class="el a" x="588" y="454" text-anchor="middle">70% fakta</text>
 
       <!-- Flow 7: FastAPI Gateway -> TF-IDF Vectorizer (Batch Clustering) -->
       <path class="n" d="M430 190 V225 H655 V279" marker-end="url(#ar)"/>
-      <text class="el" x="550" y="220" text-anchor="middle">teks deskripsi aduan</text>
+      <text class="el" x="550" y="217" text-anchor="middle">teks aduan</text>
 
       <!-- Flow 8: TF-IDF -> UMAP + HDBSCAN -->
       <path class="n" d="M685 315 H751" marker-end="url(#ar)"/>
-      <text class="el" x="718" y="307" text-anchor="middle">reduksi n=10</text>
+      <text class="el" x="718" y="307" text-anchor="middle">reduksi</text>
 
       <!-- Flow 9: UMAP + HDBSCAN -> Klaster Isu Sarpras (Output) -->
       <path class="e" d="M815 315 H880 V140 H986" marker-end="url(#ar)"/>
-      <text class="el a" x="880" y="210" text-anchor="middle">klaster aduan</text>
+      <text class="el a" x="933" y="132" text-anchor="middle">klaster</text>
 
       <!-- Flow 10: UMAP + HDBSCAN -> Ranking Prioritas (Output) -->
       <path class="e" d="M815 315 H986" marker-end="url(#ar)"/>
-      <text class="el a" x="895" y="307" text-anchor="middle">agregasi isu</text>
+      <text class="el a" x="933" y="307" text-anchor="middle">agregasi isu</text>
 
       <!-- Flow 11: Dukungan Warga (1 NIK 1 Vote) -> MySQL Database -->
       <path class="e" d="M175 490 H240 V520 H396" marker-end="url(#ar)"/>
-      <text class="el a" x="260" y="512" text-anchor="middle">1 NIK 1 suara</text>
+      <text class="el a" x="318" y="512" text-anchor="middle">1 NIK / vote</text>
 
       <!-- Flow 12: MySQL (Dapodik 30% + Vote) -> Skoring Prioritas -->
       <path class="e" d="M460 520 H646" marker-end="url(#ar)"/>
-      <text class="el a" x="553" y="512" text-anchor="middle">dapodik (30%) + vote</text>
+      <text class="el a" x="553" y="512" text-anchor="middle">30% dapodik + vote</text>
 
       <!-- Flow 13: Skoring Prioritas -> Ranking Prioritas & KBM -->
       <path class="n" d="M710 520 H880 V310 H986" marker-end="url(#ar)"/>
-      <text class="el" x="830" y="440" text-anchor="middle">Sprioritas = Skeparahan + vote</text>
+      <text class="el" x="795" y="512" text-anchor="middle">skor prioritas</text>
 
       <!-- Flow 14: Ranking Prioritas -> Tindak Lanjut Dinas (SPK) -->
       <path class="e" d="M1020 370 V454" marker-end="url(#ar)"/>
@@ -237,21 +237,21 @@ svg.edges { position:absolute; inset:0; width:1180px; height:680px; pointer-even
     <!-- NODES -->
     <!-- ── ZONA 1: INPUT NODES ── -->
     <div class="node" style="left:79px; top:110px">
-      <div class="tile"><img src="%%ICON_user%%" alt="Aduan Warga"></div>
+      <div class="tile"><img src="%%ICON_react%%" alt="React + Vite PWA"></div>
       <div class="name"><span>Aduan Warga</span></div>
-      <div class="role"><span>deskripsi &amp; foto bukti</span></div>
+      <div class="role"><span>React 18 · Vite · TS</span></div>
     </div>
 
     <div class="node" style="left:79px; top:280px">
-      <div class="tile"><img src="%%ICON_dapodik%%" alt="Data Dapodik"></div>
+      <div class="tile"><img src="%%ICON_python%%" alt="Python CSV Ingest"></div>
       <div class="name"><span>Data Dapodik</span></div>
-      <div class="role"><span>kondisi resmi 62 sekolah</span></div>
+      <div class="role"><span>Python CSV · 62 sekolah</span></div>
     </div>
 
     <div class="node" style="left:79px; top:460px">
-      <div class="tile"><img src="%%ICON_scoring%%" alt="Dukungan Warga"></div>
+      <div class="tile"><img src="%%ICON_jwt%%" alt="JWT Auth Voting"></div>
       <div class="name"><span>Dukungan Warga</span></div>
-      <div class="role"><span>voting 1 NIK 1 suara</span></div>
+      <div class="role"><span>JWT Auth · 1 NIK 1 suara</span></div>
     </div>
 
     <!-- ── ZONA 2: PROSES & AI PIPELINE NODES ── -->

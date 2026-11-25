@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIMAKIS — AI Batch Clustering Pipeline (A2+B1+C2+D1)</title>
+<style>
+:root {
+  color-scheme: light;
+  --color-paper:   oklch(98.5% 0.004 250);
+  --color-paper-2: oklch(96.5% 0.005 252);
+  --color-rule:    oklch(93% 0.007 255);
+  --color-rule-2:  oklch(83% 0.011 255);
+  --color-muted:   oklch(56% 0.013 255);
+  --color-neutral: oklch(46% 0.015 255);
+  --color-ink-2:   oklch(34% 0.018 257);
+  --color-ink:     oklch(24% 0.020 258);
+  --color-accent:  oklch(52% 0.22 250);
+  --color-graphite:oklch(24% 0.018 260);
+  --color-accent-soft: oklch(58% 0.20 256 / .45);
+  --color-accent-tint: oklch(97% 0.012 256 / .5);
+  --font-display: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px;
+  --radius-card: 12px; --radius-tile: 14px;
+  --color-veil: oklch(98.5% 0.004 250 / .85);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper:   oklch(18% 0.012 255);
+  --color-paper-2: oklch(22% 0.014 255);
+  --color-rule:    oklch(24% 0.013 255);
+  --color-rule-2:  oklch(38% 0.018 255);
+  --color-muted:   oklch(65% 0.014 255);
+  --color-neutral: oklch(72% 0.012 255);
+  --color-ink-2:   oklch(85% 0.010 255);
+  --color-ink:     oklch(94% 0.008 255);
+  --color-accent:  oklch(70% 0.16 256);
+  --color-graphite:oklch(31% 0.020 260);
+  --color-accent-soft: oklch(70% 0.16 256 / .5);
+  --color-accent-tint: oklch(28% 0.045 256 / .35);
+  --color-veil:    oklch(18% 0.012 255 / .85);
+}
+
+@font-face {
+  font-family:"Geist"; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(data:font/woff2;base64,%%FONT_DISPLAY%%) format("woff2");
+}
+@font-face {
+  font-family:"JetBrains Mono"; font-style:normal; font-weight:100 800; font-display:swap;
+  src:url(data:font/woff2;base64,%%FONT_JBM%%) format("woff2");
+}
+
+.kicker, .node .role, .el, .legend, .foot { letter-spacing: 0.03em; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { overflow-x: clip; }
+body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-body); padding: var(--space-xl) var(--space-lg) var(--space-2xl); }
+.page { width: fit-content; max-width: 100%; margin: 0 auto; }
+
+.head { display:grid; grid-template-columns: 1fr auto; gap: var(--space-lg); align-items:end;
+  padding-bottom: var(--space-md); border-bottom: 1px solid var(--color-rule-2); margin-bottom: var(--space-lg); }
+.kicker { font-family: var(--font-mono); font-size: 11px; color: var(--color-accent); margin-bottom: var(--space-sm); font-weight: 600; text-transform: uppercase; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(22px, 3.5vw, 30px); letter-spacing: -0.01em; line-height: 1.2; }
+.lede { max-width: 440px; font-size: 12px; line-height: 1.6; color: var(--color-neutral); padding-bottom: 2px; }
+@media (max-width: 768px) { .head { grid-template-columns: 1fr; align-items:start; } .lede { max-width:none; } }
+
+.scroller { overflow-x: auto; border: 1px solid var(--color-rule-2); border-radius: var(--radius-card); box-shadow: 0 4px 20px -2px rgba(0,0,0,0.04); }
+.canvas { position: relative; width: 1155px; height: 470px; background: var(--color-paper);
+  background-image:
+    linear-gradient(var(--color-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-rule) 1px, transparent 1px);
+  background-size: 24px 24px; background-position: -1px -1px; }
+
+.group { position:absolute; border-radius: var(--radius-tile); }
+.g-label { position:absolute; top:12px; left:12px; display:flex; align-items:center; gap:8px;
+  font-family: var(--font-display); font-size: 11px; font-weight: 800;
+  color: var(--color-neutral); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em; }
+.g-label img { width: 15px; height: 15px; }
+
+.group.g-input { border:1.5px solid var(--color-rule-2); background: var(--color-paper-2); }
+.group.g-input > .g-label { color: var(--color-neutral); }
+.group.g-process { border:1.5px solid var(--color-accent-soft); background: var(--color-accent-tint); }
+.group.g-process > .g-label { color: var(--color-accent); }
+.group.g-output { border:1.5px dashed var(--color-accent-soft); background: oklch(98% 0.01 250 / .4); }
+.group.g-output > .g-label { color: var(--color-accent); }
+[data-theme="dark"] .group.g-output { background: oklch(25% 0.03 256 / .25); }
+
+.node { position:absolute; width:132px; text-align:center; }
+.tile { width:60px; height:60px; margin:0 auto; border-radius: var(--radius-tile);
+  background:#fff; border:1px solid var(--color-rule-2); display:grid; place-items:center;
+  box-shadow: 0 2px 8px oklch(24% 0.02 258 / 0.06); transition: all .2s ease; }
+.node:hover .tile { border-color: var(--color-accent); transform: translateY(-2px); box-shadow: 0 6px 14px oklch(24% 0.02 258 / 0.1); }
+.tile img { width:32px; height:32px; object-fit:contain; }
+.node .name { font-family: var(--font-display); font-weight:700; font-size:12px; margin-top: var(--space-sm); letter-spacing:-0.005em; }
+.node .role { font-family: var(--font-mono); font-size:9.5px; color: var(--color-muted); margin-top:2px; }
+.node .name span, .node .role span { background: var(--color-veil); backdrop-filter: blur(2px);
+  padding: 0 var(--space-xs); border-radius: 3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+
+svg.edges { position:absolute; inset:0; width:1155px; height:470px; pointer-events:none; }
+.e  { stroke: var(--color-accent); stroke-width:1.8; fill:none; }
+.n  { stroke: var(--color-neutral); stroke-width:1.5; fill:none; }
+.dash { stroke-dasharray:4 4; }
+.el { font-family: var(--font-mono); font-size:9.5px; font-weight:600; fill: var(--color-neutral);
+  paint-order: stroke; stroke: var(--color-paper); stroke-width:4px; stroke-linejoin:round; }
+.el.a { fill: var(--color-accent); }
+
+.legend { display:flex; gap: var(--space-lg); align-items:center; margin-top: var(--space-md);
+  font-family: var(--font-mono); font-size:10.5px; color: var(--color-muted); flex-wrap:wrap; }
+.legend .sw { display:inline-block; width:28px; vertical-align:middle; margin-right:6px;
+  border-top:1.8px solid var(--color-accent); }
+.legend .sw.n { border-color: var(--color-neutral); border-top-width:1.5px; }
+.legend .sw.dash { border-top-style: dashed; }
+
+.foot { margin-top: var(--space-xl); padding-top: var(--space-md); border-top: 1px solid var(--color-rule-2);
+  display:flex; justify-content:space-between; gap: var(--space-md); flex-wrap:wrap;
+  font-family: var(--font-mono); font-size:10.5px; color: var(--color-muted); }
+.foot a { color: inherit; text-decoration-color: var(--color-rule-2); text-underline-offset: 2px; }
+.foot a:hover { color: var(--color-accent); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="head">
+    <div>
+      <div class="kicker">SIMAKIS · F3.0f AI Pipeline (Ablation Optimal: A2 + B1 + C2 + D1)</div>
+      <h1>Diagram AI Batch Clustering Pipeline</h1>
+    </div>
+    <p class="lede">Alur 4 tahap pengelompokan aduan warga secara batch harian (02:00 WIB): Embedding TF-IDF, Reduksi UMAP, Clustering HDBSCAN/Agglomerative, dan Labeling Unigram.</p>
+  </header>
+
+  <div class="scroller">
+  <div class="canvas">
+
+    <!-- GROUPS -->
+    <div class="group g-input" style="left:30px; top:40px; width:180px; height:390px;">
+      <div class="g-label"><img src="%%ICON_cron%%" alt="">1. Trigger &amp; Data</div>
+    </div>
+
+    <div class="group g-process" style="left:240px; top:40px; width:675px; height:390px;">
+      <div class="g-label"><img src="%%ICON_python%%" alt="">2. AI Batch Clustering Pipeline (A2 + B1 + C2 + D1)</div>
+    </div>
+
+    <div class="group g-output" style="left:945px; top:40px; width:180px; height:390px;">
+      <div class="g-label"><img src="%%ICON_ranking%%" alt="">3. Output Klaster</div>
+    </div>
+
+    <!-- EDGES -->
+    <svg class="edges" viewBox="0 0 1155 470" aria-hidden="true">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- Cron 02:00 -> TF-IDF -->
+      <path class="n dash" d="M156 130 H294" marker-end="url(#ar)"/>
+      <text class="el" x="225" y="122" text-anchor="middle">cron harian</text>
+
+      <!-- MySQL -> TF-IDF -->
+      <path class="e" d="M156 310 H225 V144 H294" marker-end="url(#ar)"/>
+      <text class="el a" x="188" y="302" text-anchor="middle">teks aduan</text>
+
+      <!-- TF-IDF -> UMAP -->
+      <path class="e" d="M366 130 H459" marker-end="url(#ar)"/>
+      <text class="el a" x="412" y="122" text-anchor="middle">300-dim</text>
+
+      <!-- UMAP -> HDBSCAN -->
+      <path class="e" d="M531 130 H624" marker-end="url(#ar)"/>
+      <text class="el a" x="577" y="122" text-anchor="middle">10-dim</text>
+
+      <!-- HDBSCAN -> Unigram Labeling -->
+      <path class="e" d="M696 130 H789" marker-end="url(#ar)"/>
+      <text class="el a" x="742" y="122" text-anchor="middle">cluster id</text>
+
+      <!-- HDBSCAN -> Agglomerative fallback -->
+      <path class="n dash" d="M660 206 V274" marker-end="url(#ar)"/>
+      <text class="el" x="668" y="244" text-anchor="start">jika 2 ≤ n &lt; 10</text>
+
+      <!-- Unigram Labeling -> Noise (-1) -->
+      <path class="n" d="M825 206 V274" marker-end="url(#ar)"/>
+      <text class="el" x="833" y="244" text-anchor="start">id == -1</text>
+
+      <!-- Unigram Labeling -> Klaster Isu -->
+      <path class="e" d="M861 130 H999" marker-end="url(#ar)"/>
+      <text class="el a" x="930" y="122" text-anchor="middle">top-5 terms</text>
+
+      <!-- Noise (-1) -> Perlu Review -->
+      <path class="n" d="M861 310 H999" marker-end="url(#ar)"/>
+      <text class="el" x="930" y="302" text-anchor="middle">status outlier</text>
+    </svg>
+
+    <!-- NODES -->
+    <!-- Group 1: Trigger & Data -->
+    <div class="node" style="left:54px; top:100px">
+      <div class="tile"><img src="%%ICON_cron%%" alt="Cron Batch"></div>
+      <div class="name"><span>Cron 02:00 WIB</span></div>
+      <div class="role"><span>run_clustering.py</span></div>
+    </div>
+
+    <div class="node" style="left:54px; top:280px">
+      <div class="tile"><img src="%%ICON_mysql%%" alt="MySQL 8.4"></div>
+      <div class="name"><span>MySQL 8.4</span></div>
+      <div class="role"><span>aduan tervalidasi</span></div>
+    </div>
+
+    <!-- Group 2: Pipeline Stages -->
+    <div class="node" style="left:264px; top:100px">
+      <div class="tile"><img src="%%ICON_tfidf%%" alt="TF-IDF"></div>
+      <div class="name"><span>TF-IDF Vectorizer</span></div>
+      <div class="role"><span>max_features=300 (A2)</span></div>
+    </div>
+
+    <div class="node" style="left:429px; top:100px">
+      <div class="tile"><img src="%%ICON_umap%%" alt="UMAP"></div>
+      <div class="name"><span>UMAP Reduction</span></div>
+      <div class="role"><span>n_components=10 (B1)</span></div>
+    </div>
+
+    <div class="node" style="left:594px; top:100px">
+      <div class="tile"><img src="%%ICON_cluster%%" alt="HDBSCAN"></div>
+      <div class="name"><span>HDBSCAN</span></div>
+      <div class="role"><span>min_size=3, samples=2</span></div>
+    </div>
+
+    <div class="node" style="left:759px; top:100px">
+      <div class="tile"><img src="%%ICON_tag%%" alt="Unigram Labeling"></div>
+      <div class="name"><span>Unigram Labeling</span></div>
+      <div class="role"><span>top-5 terms (D1)</span></div>
+    </div>
+
+    <!-- Row 2 inside Group 2: Fallback & Noise -->
+    <div class="node" style="left:594px; top:280px">
+      <div class="tile"><img src="%%ICON_mismatch%%" alt="Agglomerative"></div>
+      <div class="name"><span>Agglomerative</span></div>
+      <div class="role"><span>cosine fallback mikro</span></div>
+    </div>
+
+    <div class="node" style="left:759px; top:280px">
+      <div class="tile"><img src="%%ICON_question%%" alt="Noise -1"></div>
+      <div class="name"><span>Noise (-1)</span></div>
+      <div class="role"><span>belum_terklasifikasi</span></div>
+    </div>
+
+    <!-- Group 3: Output -->
+    <div class="node" style="left:969px; top:100px">
+      <div class="tile"><img src="%%ICON_ranking%%" alt="Klaster Isu"></div>
+      <div class="name"><span>Klaster Isu</span></div>
+      <div class="role"><span>5 kategori &amp; peta</span></div>
+    </div>
+
+    <div class="node" style="left:969px; top:280px">
+      <div class="tile"><img src="%%ICON_review%%" alt="Perlu Review"></div>
+      <div class="name"><span>Perlu Review</span></div>
+      <div class="role"><span>antrian verifikasi</span></div>
+    </div>
+
+  </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw"></span>alur utama pipeline (embedding &rarr; reduksi &rarr; klaster &rarr; label)</span>
+    <span><span class="sw n"></span>penanganan outlier (-1)</span>
+    <span><span class="sw n dash"></span>trigger batch &amp; fallback adaptif</span>
+  </div>
+
+  <div class="foot">
+    <span>SIMAKIS AI Pipeline (backend/app/ai_pipeline/pipeline.py) · Config A2+B1+C2+D1</span>
+    <span>icons: svgl / Lucide · dibuat dengan <a href="https://github.com/caru-ini/stack-diagram" target="_blank" rel="noopener">stack-diagram</a></span>
+  </div>
+
+</div>
+</body>
+</html>
