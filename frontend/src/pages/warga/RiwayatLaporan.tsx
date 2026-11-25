@@ -279,8 +279,9 @@ export default function RiwayatLaporan() {
   // Default selalu "publik" agar aduan tervalidasi dinas & klaster publik langsung terlihat
   const [viewMode, setViewMode] = useState<"publik" | "pribadi">("publik")
 
-  // State tab pribadi
+  // State tab & pencarian pribadi
   const [tabPribadi, setTabPribadi] = useState<TabPribadi>("semua")
+  const [searchPribadi, setSearchPribadi] = useState("")
   const [pagePribadi, setPagePribadi] = useState(1)
 
   // F4.13 T4 — modal konfirmasi severity dari riwayat (id laporan aktif).
@@ -338,10 +339,23 @@ export default function RiwayatLaporan() {
     return base
   }, [itemsPribadi])
 
-  const visiblePribadi = useMemo(
-    () => (tabPribadi === "semua" ? itemsPribadi : itemsPribadi.filter((i) => i.status_sanggahan === tabPribadi)),
-    [itemsPribadi, tabPribadi]
-  )
+  const visiblePribadi = useMemo(() => {
+    const byTab =
+      tabPribadi === "semua"
+        ? itemsPribadi
+        : itemsPribadi.filter((i) => i.status_sanggahan === tabPribadi)
+    const q = searchPribadi.trim().toLowerCase()
+    if (!q) return byTab
+    return byTab.filter((item) => {
+      const sekolahNama = profilSekolah.get(item.sekolah_npsn)?.nama ?? ""
+      return (
+        item.tracking_id.toLowerCase().includes(q) ||
+        item.sekolah_npsn.toLowerCase().includes(q) ||
+        sekolahNama.toLowerCase().includes(q) ||
+        (item.deskripsi ?? "").toLowerCase().includes(q)
+      )
+    })
+  }, [itemsPribadi, tabPribadi, searchPribadi, profilSekolah])
 
   // Laporan publik items (dari Klaster publik)
   const itemsPublikRaw: KlasterListItem[] =
@@ -630,6 +644,20 @@ export default function RiwayatLaporan() {
                       <ChevronDown className="h-3.5 w-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                   </div>
+                </div>
+              ) : loggedIn ? (
+                <div data-coachmark="riwayat-filter" className="relative flex-1 lg:max-w-md">
+                  <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchPribadi}
+                    onChange={(e) => {
+                      setSearchPribadi(e.target.value)
+                      setPagePribadi(1)
+                    }}
+                    placeholder="Lacak No. Tiket (LAP-...), sekolah, atau deskripsi..."
+                    className="w-full h-10 pl-10 pr-4 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0B3052] focus:bg-white transition-all"
+                  />
                 </div>
               ) : (
                 <span className="text-[11px] sm:text-xs text-slate-500 font-medium">
@@ -1054,6 +1082,26 @@ export default function RiwayatLaporan() {
                       <p className="text-xs text-slate-500">
                         Sampaikan temuanmu lewat tombol &ldquo;Buat Aduan Baru&rdquo;.
                       </p>
+                    </div>
+                  )}
+
+                  {statePribadi.status === "success" && itemsPribadi.length > 0 && visiblePribadi.length === 0 && (
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center space-y-3">
+                      <Search className="mx-auto h-6 w-6 text-slate-400" />
+                      <p className="text-sm font-bold text-slate-900">Tiket atau laporan tidak ditemukan</p>
+                      <p className="text-xs text-slate-500">
+                        Tidak ada laporan pribadi yang cocok dengan filter atau nomor tiket tersebut.
+                      </p>
+                      {searchPribadi.trim() && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSearchPribadi("")}
+                          className="h-8 text-xs font-semibold text-slate-700 border-slate-200"
+                        >
+                          Reset Pencarian
+                        </Button>
+                      )}
                     </div>
                   )}
 

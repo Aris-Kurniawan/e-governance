@@ -680,19 +680,19 @@ export default function FormLaporan() {
           </div>
 
           {/* Action Buttons */}
-          <div data-coachmark="lapor-submit" className="flex items-center justify-end gap-3 pt-2">
+          <div data-coachmark="lapor-submit" className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={handleBack}
-              className="rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer text-sm px-5 py-2.5 h-auto shadow-sm"
+              className="w-full sm:w-auto justify-center rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer text-sm px-5 py-2.5 h-auto shadow-sm"
             >
               Batal
             </Button>
             <Button
               type="submit"
               disabled={submitDisabled}
-              className="rounded-xl bg-[#0B3052] hover:bg-[#07213A] text-white px-5 py-2.5 text-sm font-bold shadow flex items-center gap-2 cursor-pointer h-auto transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto justify-center rounded-xl bg-[#0B3052] hover:bg-[#07213A] text-white px-5 py-2.5 text-sm font-bold shadow flex items-center gap-2 cursor-pointer h-auto transition-colors disabled:opacity-50"
             >
               {loading ? (
                 fotoFile ? "Mengirim & mengunggah foto…" : "Mengirim laporan…"
