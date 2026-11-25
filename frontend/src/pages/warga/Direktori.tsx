@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Info,
-  Clock,
   ShieldCheck,
   ArrowRight,
   HelpCircle,
@@ -16,8 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Plus
-} from "lucide-react"
+  Plus,
+} from "@/components/ui/iconify-icons"
 import { useFetch } from "@/hooks/useFetch"
 import { listSekolah } from "@/lib/api/sekolah"
 import type { SekolahList } from "@/lib/api/types"
@@ -157,74 +156,48 @@ export default function Direktori() {
     setCurrentPage(1)
   }
 
-  // Hitungan statistik dinamis
-  const kritisCount = useMemo(() => semuaSekolah.filter((s) => s.status === "Selisih Kritis").length, [semuaSekolah])
-  const minorCount = useMemo(() => semuaSekolah.filter((s) => s.status === "Selisih Minor").length, [semuaSekolah])
-  const sesuaiCount = useMemo(() => semuaSekolah.filter((s) => s.status === "Data Sesuai").length, [semuaSekolah])
-
   // Pagination mengikuti `meta` dari backend.
   const totalPages = sekolahState.status === "success" ? sekolahState.data.meta.total_pages : 1
   const paginatedSekolah = filteredSekolah
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-16">
+    <div className="bg-[#F8FAFC] min-h-screen pb-14">
       {/* Mobile Breadcrumb */}
       <MobileBreadcrumb items={[{ label: "Beranda", to: "/" }, { label: "Direktori Sekolah" }]} />
 
-      {/* ── Top Header Section ── */}
-      <div className="border-b border-slate-200/80 bg-white py-4 sm:py-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 space-y-3 sm:space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                Direktori Sekolah Kecamatan Lamongan
-              </h1>
-              {/* Desktop description */}
-              <p className="hidden sm:block text-slate-500 text-sm mt-1">
-                Menampilkan {totalItems} lembaga pendidikan resmi terdaftar dalam pangkalan data Dapodik Kemendikdasmen wilayah Kec. Lamongan.
-              </p>
-              {/* Mobile description (ringkas & padat) */}
-              <p className="sm:hidden text-slate-500 text-xs mt-1">
-                {totalItems} sekolah terdaftar di Dapodik Kec. Lamongan.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-xl bg-slate-50 border border-slate-200/70 px-4 py-2.5 shrink-0">
-              <Clock className="h-4 w-4 text-slate-400" />
-              <div className="text-xs">
-                <span className="text-slate-400 block text-[10px]">Sinkronisasi Terakhir</span>
-                <span className="font-bold text-slate-800">24 Oktober 2026 — 08:30 WIB</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 overflow-x-auto scrollbar-none">
-            <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-600 font-medium whitespace-nowrap">
-              <span>
-                <strong className="text-slate-900">{totalItems}</strong>{" "}
-                <span className="sm:hidden">Sekolah</span>
-                <span className="hidden sm:inline">Lembaga Terdaftar</span>
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="text-rose-700 font-bold">
-                {kritisCount} <span className="sm:hidden">Kritis</span><span className="hidden sm:inline">Selisih Kritis</span>
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="text-amber-700 font-bold">
-                {minorCount} <span className="sm:hidden">Minor</span><span className="hidden sm:inline">Selisih Minor</span>
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="text-emerald-700 font-bold">
-                {sesuaiCount} <span className="sm:hidden">Sesuai</span><span className="hidden sm:inline">Valid Sesuai</span>
-              </span>
-            </div>
+      {/* ── Top Utility Bar (selaras dengan Dashboard Wilayah) ── */}
+      <div className="hidden sm:block border-b border-slate-200/80 bg-white py-2.5">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2 text-xs text-slate-500 min-w-0">
+            <span className="font-bold text-[#0B3052] tracking-wide uppercase text-[11px] truncate">
+              PORTAL RESMI AUDIT DAPODIK
+            </span>
+            <span className="text-slate-300">|</span>
+            <span className="truncate">Direktori Sekolah Kec. Lamongan</span>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6 space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6 space-y-6 w-full overflow-x-hidden">
+        {/* ── Overview Header Row ── */}
+        <ScrollReveal direction="up" duration={500}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-semibold text-blue-600 block mb-0.5">
+                Pangkalan Data Dapodik · Kec. Lamongan
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0B3052]">
+                Direktori Sekolah Kecamatan Lamongan
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Menampilkan {totalItems} lembaga pendidikan resmi terdaftar di Kemendikdasmen wilayah Kec. Lamongan.
+              </p>
+            </div>
+          </div>
+        </ScrollReveal>
+
         {/* ── Search & Filter Bar ── */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-sm space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
+        <div data-coachmark="direktori-search" className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-2xs space-y-3 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
           {/* Search Input */}
           <div className="relative flex-1 lg:max-w-md">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -255,11 +228,10 @@ export default function Direktori() {
                   <button
                     key={j}
                     onClick={() => handleJenjangChange(j)}
-                    className={`py-1.5 px-2 sm:px-3 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      jenjang === j
-                        ? "bg-[#0B3052] text-white shadow-sm"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
+                    className={`py-1.5 px-2 sm:px-3 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${jenjang === j
+                      ? "bg-[#0B3052] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                      }`}
                   >
                     {j}
                   </button>
@@ -298,7 +270,7 @@ export default function Direktori() {
         </div>
 
         {/* ── Main Layout (3 Kartu Sekolah Per Baris) ── */}
-        <div className="space-y-6">
+        <div data-coachmark="direktori-list" className="space-y-6">
           {paginatedSekolah.length > 0 ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedSekolah.map((school, idx) => (
@@ -310,94 +282,92 @@ export default function Direktori() {
                   className="h-full"
                 >
                   <div
-                    className="h-full rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow"
+                    className="h-full rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xs flex flex-col justify-between space-y-4 hover:shadow-md hover:border-blue-200/80 transition-all"
                   >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-medium text-slate-400">NPSN: {school.npsn}</span>
-                      {school.status === "Selisih Kritis" && (
-                        <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-800 border border-rose-200 flex items-center gap-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-rose-600" /> {school.statusBadge}
-                        </span>
-                      )}
-                      {school.status === "Selisih Minor" && (
-                        <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200 flex items-center gap-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> {school.statusBadge}
-                        </span>
-                      )}
-                      {school.status === "Data Sesuai" && (
-                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 border border-slate-200 flex items-center gap-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {school.statusBadge}
-                        </span>
-                      )}
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 leading-snug">{school.nama}</h3>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-700">{school.jenjang}</span>
-                        <span className="truncate">{school.alamat}</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-medium text-slate-400">NPSN: {school.npsn}</span>
+                        {school.status === "Selisih Kritis" && (
+                          <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-800 border border-rose-200 flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-600" /> {school.statusBadge}
+                          </span>
+                        )}
+                        {school.status === "Selisih Minor" && (
+                          <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200 flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> {school.statusBadge}
+                          </span>
+                        )}
+                        {school.status === "Data Sesuai" && (
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 border border-slate-200 flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {school.statusBadge}
+                          </span>
+                        )}
                       </div>
-                    </div>
 
-                    <div className={`grid ${school.stats.length === 3 ? "grid-cols-3" : "grid-cols-2"} gap-2 rounded-xl bg-slate-50 p-3 text-xs border border-slate-100`}>
-                      {school.stats.map((st, i) => (
-                        <div key={i}>
-                          <span className="text-slate-400 block text-[10px]">{st.label}</span>
-                          <span className={`font-bold ${st.valueClass || "text-slate-800"}`}>{st.val}</span>
-                          <span className={`text-[10px] block ${st.descClass || "text-slate-400"}`}>{st.desc}</span>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-extrabold text-[#0B3052] leading-snug">{school.nama}</h3>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                          <span className="rounded-md bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 font-semibold text-[#0B3052]">{school.jenjang}</span>
+                          <span className="truncate">{school.alamat}</span>
                         </div>
-                      ))}
-                    </div>
+                      </div>
 
-                    <div className={`rounded-xl p-3 border text-xs ${school.temuan.tipe === "kritis"
+                      <div className={`grid ${school.stats.length === 3 ? "grid-cols-3" : "grid-cols-2"} gap-2 rounded-xl bg-blue-50/40 p-3 text-xs border border-blue-100/80`}>
+                        {school.stats.map((st, i) => (
+                          <div key={i}>
+                            <span className="text-slate-400 block text-[10px]">{st.label}</span>
+                            <span className={`font-bold ${st.valueClass || "text-slate-800"}`}>{st.val}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className={`rounded-xl p-3 border text-xs ${school.temuan.tipe === "kritis"
                         ? "bg-rose-50/70 border-rose-100"
                         : school.temuan.tipe === "minor"
                           ? "bg-blue-50/70 border-blue-100"
                           : "bg-emerald-50/70 border-emerald-100"
-                      }`}>
-                      <span className={`font-bold flex items-center gap-1 mb-1 ${school.temuan.tipe === "kritis"
+                        }`}>
+                        <span className={`font-bold flex items-center gap-1 mb-1 ${school.temuan.tipe === "kritis"
                           ? "text-rose-900"
                           : school.temuan.tipe === "minor"
                             ? "text-blue-900"
                             : "text-emerald-900"
-                        }`}>
-                        {school.temuan.tipe === "kritis" && <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />}
-                        {school.temuan.tipe === "minor" && <Info className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
-                        {school.temuan.tipe === "sesuai" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
-                        {school.temuan.judul}:
-                      </span>
-                      <p className={`text-[11px] leading-relaxed ${school.temuan.tipe === "kritis"
+                          }`}>
+                          {school.temuan.tipe === "kritis" && <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />}
+                          {school.temuan.tipe === "minor" && <Info className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                          {school.temuan.tipe === "sesuai" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                          {school.temuan.judul}:
+                        </span>
+                        <p className={`text-[11px] leading-relaxed ${school.temuan.tipe === "kritis"
                           ? "text-[#641E1E]"
                           : school.temuan.tipe === "minor"
                             ? "text-blue-950"
                             : "text-emerald-950"
-                        }`}>
-                        {school.temuan.deskripsi}
-                      </p>
+                          }`}>
+                          {school.temuan.deskripsi}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs gap-2">
-                    <span className="text-slate-400 truncate">Audit: {school.audit}</span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Link to={`/laporan/baru?sekolah=${school.npsn}`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-blue-200 text-[#0B3052] hover:bg-blue-50 font-semibold text-xs h-8 px-2.5 rounded-lg shadow-2xs cursor-pointer"
-                        >
-                          <Plus className="h-3.5 w-3.5 mr-1 text-blue-600" /> Lapor
-                        </Button>
-                      </Link>
-                      <Link to={`/sekolah/${school.npsn}`}>
-                        <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-8 px-3 rounded-lg shadow-sm cursor-pointer">
-                          Baseline <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                        </Button>
-                      </Link>
+                    <div className="flex items-center justify-end pt-3 border-t border-slate-100 text-xs gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link to={`/laporan/baru?sekolah=${school.npsn}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-blue-200 text-[#0B3052] hover:bg-blue-50 font-semibold text-xs h-8 px-2.5 rounded-lg shadow-2xs cursor-pointer"
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1 text-blue-600" /> Lapor
+                          </Button>
+                        </Link>
+                        <Link to={`/sekolah/${school.npsn}`}>
+                          <Button className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold text-xs h-8 px-3 rounded-lg shadow-sm cursor-pointer">
+                            Baseline <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
                 </ScrollReveal>
               ))}
             </div>
@@ -446,8 +416,8 @@ export default function Direktori() {
                       key={p}
                       onClick={() => setCurrentPage(p)}
                       className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${currentPage === p
-                          ? "bg-[#0B3052] text-white shadow-sm"
-                          : "text-slate-600 hover:bg-slate-100"
+                        ? "bg-[#0B3052] text-white shadow-sm"
+                        : "text-slate-600 hover:bg-slate-100"
                         }`}
                     >
                       {p}

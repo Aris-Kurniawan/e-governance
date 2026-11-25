@@ -11,7 +11,7 @@ import {
   EyeOff,
   ShieldCheck,
   AlertTriangle,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 
 /**
  * F4.1 — Login panel dinas dengan estetika split-dark yang diselaraskan
@@ -44,7 +44,12 @@ export default function LoginDinas() {
       const dinas = ["verifikator_dinas", "kepala_dinas", "admin"]
       navigate(dinas.includes(profile.role) ? "/dinas/dashboard" : "/dashboard")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal masuk. Periksa email & kata sandi.")
+      const msg = err instanceof Error ? err.message : ""
+      if (!msg || /sesi berakhir|unauthorized|invalid|salah|credential/i.test(msg)) {
+        setError("Email atau kata sandi salah. Silakan masukkan email/password yang benar.")
+      } else {
+        setError(msg)
+      }
     } finally {
       setLoading(false)
     }

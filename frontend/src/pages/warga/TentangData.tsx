@@ -51,7 +51,7 @@ export default function TentangData() {
       <div className="bg-background-alt">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-10">
           <ScrollReveal direction="up" duration={600}>
-            <div className="overflow-hidden rounded-2xl bg-primary text-white shadow-sm">
+            <div data-coachmark="tentang-sumber" className="overflow-hidden rounded-2xl bg-primary text-white shadow-sm">
               <div className="px-5 py-6 sm:px-8 sm:py-10">
                 <h2 className="text-xl sm:text-h2 font-bold leading-tight">Dari Mana Data Ini Berasal?</h2>
                 <p className="mt-2.5 sm:mt-3 max-w-3xl text-xs sm:text-body leading-relaxed text-white/80">
@@ -70,8 +70,8 @@ export default function TentangData() {
       </div>
 
       {/* ── 4 Pilar Data (Responsive: Swipe / Snap Carousel di Mobile agar muat 1 layar HP, Grid 2 Kolom di Desktop) ── */}
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 sm:py-10">
-        
+      <div data-coachmark="tentang-pilar" className="mx-auto max-w-5xl px-4 sm:px-6 py-4 sm:py-10">
+
         {/* Tampilan Mobile (< md): Horizontal Snap Cards dengan Indikator Swipe */}
         <div className="block md:hidden">
           <div className="flex items-center justify-between mb-2 px-1 text-[11px] text-ink-tertiary">
@@ -193,7 +193,7 @@ export default function TentangData() {
           </ScrollReveal>
 
           {/* ── Timeline dengan Tali Penghubung (Connected Steps) ── */}
-          <div className="relative mt-10 md:mt-12 pl-4 sm:pl-6 space-y-8 before:absolute before:left-[33px] sm:before:left-[41px] before:top-6 before:bottom-6 before:w-0.5 before:bg-gradient-to-b before:from-primary/40 before:via-primary/20 before:to-slate-200">
+          <div data-coachmark="tentang-timeline" className="relative mt-10 md:mt-12 pl-4 sm:pl-6 space-y-8 before:absolute before:left-[33px] sm:before:left-[41px] before:top-6 before:bottom-6 before:w-0.5 before:bg-gradient-to-b before:from-primary/40 before:via-primary/20 before:to-slate-200">
             {STEPS.map((step, idx) => (
               <ScrollReveal
                 key={step.number}

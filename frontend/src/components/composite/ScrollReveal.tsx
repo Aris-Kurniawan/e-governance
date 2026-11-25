@@ -81,8 +81,8 @@ export default function ScrollReveal({
   }
 
   const style: React.CSSProperties = {
-    transitionDuration: `${duration}ms`,
-    transitionDelay: `${delay}ms`,
+    transitionDuration: isVisible ? `${duration}ms` : "250ms",
+    transitionDelay: isVisible ? `${delay}ms` : "0ms",
     transitionProperty: "opacity, transform",
     transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
     opacity: isVisible ? 1 : 0,

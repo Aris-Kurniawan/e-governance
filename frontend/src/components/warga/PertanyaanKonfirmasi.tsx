@@ -5,7 +5,7 @@ import {
   HelpCircle,
   Loader2,
   SkipForward,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import {
   Dialog,
   DialogContent,

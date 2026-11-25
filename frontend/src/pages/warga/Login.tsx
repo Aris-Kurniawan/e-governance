@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AuthField } from "@/components/auth/AuthField"
 import { useAuth } from "@/context/AuthContext"
-import { ShieldAlert, Info, Mail, Eye, EyeOff } from "lucide-react"
+import { ShieldAlert, Info, Mail, Eye, EyeOff } from "@/components/ui/iconify-icons"
 
 export default function Login() {
   const navigate = useNavigate()
@@ -41,8 +41,12 @@ export default function Login() {
         navigate("/dashboard")
       }
     } catch (err) {
-      // Pesan dari backend sudah human-readable (INTERFACES.md §0.1).
-      setError(err instanceof Error ? err.message : "Gagal masuk. Coba lagi.")
+      const msg = err instanceof Error ? err.message : ""
+      if (!msg || /sesi berakhir|unauthorized|invalid|salah|credential/i.test(msg)) {
+        setError("Email atau kata sandi salah. Silakan masukkan email/password yang benar.")
+      } else {
+        setError(msg)
+      }
     } finally {
       setLoading(false)
     }

@@ -18,7 +18,8 @@ import {
   Copy,
   Check,
   Building2,
-} from "lucide-react"
+  ChevronDown,
+} from "@/components/ui/iconify-icons"
 
 type TipeTemuan = "mismatch" | "kerusakan_baru"
 
@@ -320,26 +321,21 @@ export default function FormLaporan() {
 
         {/* ── Header Card ── */}
         <div className="relative">
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/70 text-xs font-semibold px-3 py-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-              Audit Partisipatif · Sanggahan Fakta Lapangan
-            </span>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
+              Audit Ketidaksesuaian Fasilitas Sekolah
+            </h1>
 
             <button
               type="button"
               onClick={handleBack}
-              className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+              className="h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer shrink-0"
               aria-label="Tutup"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug mt-3">
-            Audit Ketidaksesuaian Fasilitas Sekolah
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed">
             Periksa catatan resmi Dapodik sekolah di bawah ini, lalu laporkan jika terdapat kerusakan fisik atau
             ketidaksesuaian dengan kondisi lapangan nyata.
           </p>
@@ -348,23 +344,26 @@ export default function FormLaporan() {
         {/* ── Body Form ── */}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 1. Pemilihan Sekolah */}
-          <div className="space-y-1.5">
+          <div data-coachmark="lapor-sekolah" className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
               1. Sekolah yang Diperiksa <span className="text-rose-500">*</span>
             </label>
 
-            <select
-              value={selectedNpsn}
-              onChange={(e) => handlePilihSekolah(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 font-medium focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] cursor-pointer"
-            >
-              <option value="">-- Pilih Sekolah yang Ingin Diaudit --</option>
-              {daftarSekolah.map((s) => (
-                <option key={s.npsn} value={s.npsn}>
-                  {s.nama} ({s.jenjang} - NPSN {s.npsn})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedNpsn}
+                onChange={(e) => handlePilihSekolah(e.target.value)}
+                className="w-full h-11 appearance-none rounded-xl border border-slate-300 bg-white pl-3.5 pr-10 text-sm text-slate-900 font-medium focus:border-[#0B3052] focus:outline-none focus:ring-1 focus:ring-[#0B3052] cursor-pointer truncate"
+              >
+                <option value="">-- Pilih Sekolah yang Ingin Diaudit --</option>
+                {daftarSekolah.map((s) => (
+                  <option key={s.npsn} value={s.npsn}>
+                    {s.nama} ({s.jenjang} - NPSN {s.npsn})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="h-4 w-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
             {user?.sekolah_terkait_npsn && selectedNpsn === user.sekolah_terkait_npsn && (
               <p className="text-[11px] text-blue-600 font-medium">
@@ -520,7 +519,7 @@ export default function FormLaporan() {
           )}
 
           {/* 2. Tipe Temuan Lapangan */}
-          <div className="space-y-2">
+          <div data-coachmark="lapor-temuan" className="space-y-2">
             <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
               2. Tipe Temuan Lapangan <span className="text-rose-500">*</span>
             </label>
@@ -681,7 +680,7 @@ export default function FormLaporan() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div data-coachmark="lapor-submit" className="flex items-center justify-end gap-3 pt-2">
             <Button
               type="button"
               variant="outline"

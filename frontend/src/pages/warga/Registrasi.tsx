@@ -22,7 +22,7 @@ import {
   Mail,
   Hash,
   CreditCard,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 
 type Step = 1 | 2
 

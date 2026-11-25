@@ -28,7 +28,7 @@ import {
   LogIn,
   AlertTriangle,
   ShieldQuestion,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 
 // Label kategori klaster — memakai taksonomi backend v1 (INTERFACES.md §5).
 const KATEGORI_LABEL: Record<string, string> = {

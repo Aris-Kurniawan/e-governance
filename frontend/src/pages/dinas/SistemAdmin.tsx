@@ -10,7 +10,7 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { useFetch, useStatusPolling } from "@/hooks/useFetch"

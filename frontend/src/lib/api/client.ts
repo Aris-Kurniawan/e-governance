@@ -351,8 +351,11 @@ export async function postData<T>(
   path: string,
   json?: unknown,
   query?: Record<string, QueryValue>,
+  options?: { anonymous?: boolean },
 ): Promise<T> {
-  return unwrap<T>(await request<unknown>(path, { method: "POST", json, query }));
+  return unwrap<T>(
+    await request<unknown>(path, { method: "POST", json, query, anonymous: options?.anonymous }),
+  );
 }
 
 /** PUT dengan body JSON (atau hanya query param — lihat INTERFACES.md §7). */

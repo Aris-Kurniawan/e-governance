@@ -16,7 +16,7 @@ import {
   Clock,
   MessageSquare,
   Gauge,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,

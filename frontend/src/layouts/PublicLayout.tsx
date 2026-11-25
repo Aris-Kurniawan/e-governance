@@ -16,7 +16,7 @@ import {
   PlusCircle,
   ChevronDown,
   Sparkles,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
 import CoachMarksTour from "@/components/composite/CoachMarksTour"
@@ -119,41 +119,39 @@ export default function PublicLayout() {
         }`}
       >
         <div
-          className={`mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 transition-all duration-300 ${
+          className={`flex w-full items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 xl:px-12 transition-all duration-300 ${
             isScrolled ? "h-14 sm:h-16" : "h-16 sm:h-20"
           }`}
         >
-          {/* Logo & Desktop Nav */}
-          <div className="flex items-center gap-6 lg:gap-8">
-            <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-xs shrink-0 overflow-hidden">
-                <img
-                  src="/logo-simakis-icon.png"
-                  alt="Logo SIMAKIS"
-                  className="h-full w-full object-contain rounded-full"
-                  onError={(e) => {
-                    e.currentTarget.src = "/logo-simakis.png"
-                  }}
-                />
-              </div>
-              <div className="leading-tight">
-                <span className="text-base font-extrabold text-[#0B3052] tracking-tight">SIMAKIS</span>
-                <span className="block text-[10px] sm:text-[11px] font-medium text-slate-400">Kec. Lamongan</span>
-              </div>
-            </Link>
+          {/* Logo (Pojok Kiri dengan Margin Responsif) */}
+          <Link to="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white border border-slate-200/80 flex items-center justify-center p-1 shadow-xs shrink-0 overflow-hidden">
+              <img
+                src="/logo-simakis-icon.png"
+                alt="Logo SIMAKIS"
+                className="h-full w-full object-contain rounded-full"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo-simakis.png"
+                }}
+              />
+            </div>
+            <div className="leading-tight">
+              <span className="text-base font-extrabold text-[#0B3052] tracking-tight">SIMAKIS</span>
+              <span className="block text-[10px] sm:text-[11px] font-medium text-slate-400">Kec. Lamongan</span>
+            </div>
+          </Link>
 
-            {/* Navigasi Desktop */}
-            <nav className="hidden items-center gap-1 lg:flex xl:gap-1.5">
-              <NavLink to="/" label="Home" active={location.pathname === "/"} dataCoachmark="nav-home" />
-              <NavLink to="/laporan/wilayah" label="Dashboard Wilayah" active={location.pathname === "/laporan/wilayah"} dataCoachmark="nav-wilayah" />
-              <NavLink to="/klaster" label="Klaster Isu" active={location.pathname.startsWith("/klaster")} dataCoachmark="nav-klaster" />
-              <NavLink to="/sekolah" label="Direktori Sekolah" active={location.pathname === "/sekolah"} dataCoachmark="nav-sekolah" />
-              <NavLink to="/laporan/riwayat" label="Riwayat Laporan" active={location.pathname === "/laporan/riwayat"} dataCoachmark="nav-riwayat" />
-              <NavLink to="/tentang" label="Tentang Data" active={location.pathname === "/tentang"} dataCoachmark="nav-tentang" />
-            </nav>
-          </div>
+          {/* Navigasi Desktop (Tengah) */}
+          <nav className="hidden items-center justify-center gap-0.5 lg:flex xl:gap-1.5">
+            <NavLink to="/" label="Home" active={location.pathname === "/"} dataCoachmark="nav-home" />
+            <NavLink to="/laporan/wilayah" label="Dashboard Wilayah" active={location.pathname === "/laporan/wilayah"} dataCoachmark="nav-wilayah" />
+            <NavLink to="/klaster" label="Klaster Isu" active={location.pathname.startsWith("/klaster")} dataCoachmark="nav-klaster" />
+            <NavLink to="/sekolah" label="Direktori Sekolah" active={location.pathname === "/sekolah"} dataCoachmark="nav-sekolah" />
+            <NavLink to="/laporan/riwayat" label="Riwayat Laporan" active={location.pathname === "/laporan/riwayat"} dataCoachmark="nav-riwayat" />
+            <NavLink to="/tentang" label="Tentang Data" active={location.pathname === "/tentang"} dataCoachmark="nav-tentang" />
+          </nav>
 
-          {/* Right Area: Auth & Hamburger Toggle */}
+          {/* Right Area: Buat Laporan, Akun Warga & Hamburger Toggle (Pojok Kanan dengan Margin Responsif) */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {isAuthenticated ? (
               <>

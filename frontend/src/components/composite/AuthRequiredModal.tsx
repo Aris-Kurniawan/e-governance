@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ShieldAlert, CheckCircle2, LogIn, UserPlus, Lock } from "lucide-react"
+import { ShieldAlert, CheckCircle2, LogIn, UserPlus, Lock } from "@/components/ui/iconify-icons"
 
 interface AuthRequiredModalProps {
   open: boolean

@@ -6,7 +6,7 @@ import {
   User,
   AlertTriangle,
   RotateCw,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { Button } from "@/components/ui/button"
 import { useFetch } from "@/hooks/useFetch"
 import { auditLog } from "@/lib/api/dashboard"

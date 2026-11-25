@@ -14,7 +14,7 @@ import {
   TrendingUp,
   BarChart2,
   GripHorizontal,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { useMemo } from "react"
 import { useFetch } from "@/hooks/useFetch"
 import { listKlaster, detailKlaster } from "@/lib/api/klaster"

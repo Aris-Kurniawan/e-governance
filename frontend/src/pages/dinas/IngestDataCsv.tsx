@@ -14,7 +14,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Download,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { useFetch } from "@/hooks/useFetch"
 import { ingestDapodik, auditLog } from "@/lib/api/dashboard"
 

@@ -13,7 +13,7 @@ import {
   Layers,
   FileCheck,
   RotateCcw,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import {
   Dialog,
   DialogContent,

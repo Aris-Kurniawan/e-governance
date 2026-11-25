@@ -11,7 +11,7 @@ import {
   Info,
   PlusCircle,
   LogOut,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
 

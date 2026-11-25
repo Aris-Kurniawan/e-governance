@@ -15,7 +15,7 @@ import {
   Info,
   X,
   ImageIcon,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 
 interface ModalFormLaporanProps {
   open: boolean

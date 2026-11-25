@@ -1,16 +1,19 @@
+import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { TiltCard } from "@/components/ui/TiltCard"
 import { EllipseGallery } from "@/components/ui/EllipseGallery"
 import ConvergingWorkflow from "@/components/composite/ConvergingWorkflow"
+import ScrollReveal from "@/components/composite/ScrollReveal"
+import { CoachMarkIcon } from "@/components/composite/coachMarksIcons"
 import { useAuth } from "@/context/AuthContext"
 import {
   ArrowRight,
+  ChevronDown,
   ChevronRight,
   Lock,
-  CheckCircle2,
   ShieldCheck,
-  Camera,
+  Sparkles,
   ThumbsUp,
   Activity,
   Landmark,
@@ -19,15 +22,53 @@ import {
   Gauge,
   Bot,
   LineChart,
-  Megaphone,
   MapPin,
   TrendingUp,
   Users,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
+
+const FAQ_ITEMS = [
+  {
+    question: "Bagaimana cara melaporkan kerusakan fasilitas sekolah di SIMAKIS?",
+    answer:
+      "Warga yang telah masuk dengan akun terverifikasi dapat menekan tombol Buat Laporan, memilih sekolah tujuan, mengunggah foto kondisi fisik (maksimal 2 MB), menentukan tingkat kerusakan, serta menuliskan deskripsi keluhan secara jelas.",
+  },
+  {
+    question: "Apakah identitas pelapor dan data NIK dilindungi?",
+    answer:
+      "Ya. Data NIK pelapor dienkripsi menggunakan standar AES-256 sesuai mandat UU PDP No. 27/2022 dan metadata lokasi EXIF pada foto dibersihkan secara otomatis sebelum disimpan.",
+  },
+  {
+    question: "Bagaimana sistem mengelompokkan laporan warga yang serupa?",
+    answer:
+      "SIMAKIS menggunakan algoritma klasterisasi teks berbasis AI untuk menggabungkan keluhan serupa pada sekolah yang sama ke dalam satu klaster isu, sehingga tidak terjadi penumpukan aduan duplikat.",
+  },
+  {
+    question: "Bagaimana cara kerja sistem dukungan suara (1 NIK 1 Vote)?",
+    answer:
+      "Setiap warga terverifikasi berhak memberikan satu suara dukungan pada klaster isu yang dianggap paling mendesak. Dukungan suara warga ikut menambah skor prioritas perbaikan (P_k).",
+  },
+  {
+    question: "Bagaimana skor prioritas perbaikan sekolah ditentukan?",
+    answer:
+      "Skor prioritas dihitung secara objektif dari kombinasi 70% fakta laporan lapangan warga dan 30% data audit Dapodik resmi, lalu ditambah jumlah dukungan suara warga pada klaster terkait.",
+  },
+  {
+    question: "Bagaimana cara memantau tindak lanjut laporan saya?",
+    answer:
+      "Anda dapat memantau status verifikasi dinas, penetapan prioritas, hingga progres pengerjaan secara terbuka melalui halaman Riwayat Laporan dan Dashboard Wilayah.",
+  },
+  {
+    question: "Apakah pelaporan di SIMAKIS dipungut biaya?",
+    answer:
+      "Tidak. Seluruh layanan pelaporan, pemantauan klaster isu, dan transparansi data sarpras di SIMAKIS Kecamatan Lamongan sepenuhnya gratis bagi masyarakat.",
+  },
+]
 
 export default function Landing() {
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
 
   // Gerbang autentikasi pelaporan:
   // belum login → langsung diarahkan ke halaman login; sudah login → langsung ke form laporan.
@@ -77,6 +118,15 @@ export default function Landing() {
                     Jelajahi Peta Sekolah
                   </Link>
                 </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => window.dispatchEvent(new CustomEvent("open-simakis-coachmarks"))}
+                  className="text-blue-700 hover:text-blue-800 hover:bg-blue-50/80 font-semibold px-4 py-3.5 h-auto rounded-xl text-sm transition-colors cursor-pointer"
+                >
+                  <Sparkles className="h-4 w-4 mr-1.5" />
+                  Panduan Fitur
+                </Button>
               </div>
 
               {/* Indikator Status Autentikasi Pelapor */}
@@ -112,7 +162,7 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Right Floating Preview Cards – disembunyikan di mobile */}
+            {/* Right Floating Preview Ticket Card – disembunyikan di mobile */}
             <div className="hidden lg:block lg:col-span-5 relative">
               <TiltCard
                 maxTilt={9}
@@ -120,96 +170,129 @@ export default function Landing() {
                 glare={true}
                 className="relative rounded-3xl p-1 bg-transparent border-0 shadow-none cursor-pointer"
               >
-                {/* Kartu kecil: sekolah tervalidasi */}
+                {/* Kartu kecil melayang: sekolah tervalidasi (Iconify Solar Verified Check) */}
                 <div
                   style={{ transform: "translateZ(36px)" }}
-                  className="absolute -top-11 left-0 z-30 flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60 transition-transform duration-200"
+                  className="absolute -top-11 left-0 z-30 flex items-center gap-2.5 rounded-xl border border-blue-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-blue-100/60 transition-transform duration-200"
                 >
-                  <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <div className="h-8 w-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                    <CoachMarkIcon icon="solar:verified-check-bold-duotone" className="h-5 w-5 text-blue-600" />
                   </div>
                   <div className="leading-tight">
-                    <span className="block text-xs font-bold text-slate-900">SDN 1 Sukodadi</span>
-                    <span className="block text-[10px] text-slate-400">Laporan Terverifikasi · NPSN 6401 Validasi</span>
+                    <span className="block text-xs font-bold text-[#0B3052]">Unit Sekolah Terintegrasi</span>
+                    <span className="block text-[10px] text-slate-500">Laporan Terverifikasi · Kec. Lamongan</span>
                   </div>
                 </div>
 
-                {/* Kartu utama: Indeks Integritas Sarpras */}
+                {/* Pembungkus Drop Shadow agar bayangan mengikuti lekukan potongan tiket */}
                 <div
-                  style={{ transform: "translateZ(18px)" }}
-                  className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/50 transition-shadow duration-300 hover:border-blue-300"
+                  style={{
+                    transform: "translateZ(18px)",
+                    filter: "drop-shadow(0 18px 34px rgba(11, 48, 82, 0.10))",
+                  }}
                 >
-                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                    <span className="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase">
-                      Verifikasi Sarpras Terbuka
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Live Sistem
-                    </span>
-                  </div>
+                  {/* Kartu Utama Bentuk Tiket (Putih-Biru dengan Notch Atas/Bawah + Garis Sobekan + Barcode) */}
+                  <div
+                    style={{
+                      maskImage:
+                        "radial-gradient(circle 11px at calc(100% - 76px) 0px, transparent 10.5px, black 11px), radial-gradient(circle 11px at calc(100% - 76px) 100%, transparent 10.5px, black 11px)",
+                      WebkitMaskImage:
+                        "radial-gradient(circle 11px at calc(100% - 76px) 0px, transparent 10.5px, black 11px), radial-gradient(circle 11px at calc(100% - 76px) 100%, transparent 10.5px, black 11px)",
+                      maskComposite: "intersect",
+                      WebkitMaskComposite: "source-in",
+                    }}
+                    className="flex items-stretch rounded-2xl border border-blue-200/80 bg-white overflow-hidden transition-colors duration-300 hover:border-blue-300"
+                  >
+                    {/* Bagian Kiri Tiket: Konten Utama */}
+                    <div className="flex-1 min-w-0 p-5 bg-gradient-to-br from-white via-white to-blue-50/40">
+                      <div className="flex items-center justify-between gap-2 pb-3 border-b border-blue-100/80">
+                        <span className="text-[10px] font-extrabold tracking-wider text-[#0B3052]/80 uppercase">
+                          Verifikasi Sarpras Terbuka
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-200/80 shrink-0">
+                          <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+                          Live Sistem
+                        </span>
+                      </div>
 
-                  <div className="mt-4 flex items-center gap-5">
-                    {/* Gauge indeks */}
-                    <div className="relative h-24 w-24 shrink-0">
-                      <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                        <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="10" />
-                        <circle
-                          cx="50" cy="50" r="42" fill="none"
-                          stroke="#2563EB" strokeWidth="10" strokeLinecap="round"
-                          strokeDasharray={2 * Math.PI * 42}
-                          strokeDashoffset={2 * Math.PI * 42 * (1 - 0.942)}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-xl font-extrabold text-slate-900 leading-none">94.2</span>
-                        <span className="text-[9px] font-bold text-slate-400 tracking-wider mt-0.5">INDEKS</span>
+                      <div className="mt-4 flex items-center gap-4">
+                        {/* Gauge indeks */}
+                        <div className="relative h-24 w-24 shrink-0">
+                          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="#DBEAFE" strokeWidth="10" />
+                            <circle
+                              cx="50" cy="50" r="42" fill="none"
+                              stroke="#2563EB" strokeWidth="10" strokeLinecap="round"
+                              strokeDasharray={2 * Math.PI * 42}
+                              strokeDashoffset={2 * Math.PI * 42 * (1 - 0.942)}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-xl font-extrabold text-[#0B3052] leading-none">94.2</span>
+                            <span className="text-[9px] font-bold text-blue-600/80 tracking-wider mt-0.5">INDEKS</span>
+                          </div>
+                        </div>
+
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-bold text-[#0B3052]">Indeks Integritas Sarpras</h3>
+                          <p className="text-[11px] text-slate-500 leading-snug mt-1">
+                            Berbasis audit 62 sekolah dan 49 laporan warga terverifikasi.
+                          </p>
+                          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-blue-700">
+                            <CoachMarkIcon icon="solar:shield-check-bold-duotone" className="h-4 w-4 text-blue-600 shrink-0" />
+                            <span>Terverifikasi Dapodik &amp; Warga</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-blue-100/80">
+                        <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 mb-1.5">
+                          <span>Realisasi Perbaikan Semester Ini</span>
+                          <span className="font-bold text-[#0B3052]">64%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-blue-100 overflow-hidden">
+                          <div className="h-full w-[64%] rounded-full bg-gradient-to-r from-[#0B3052] to-blue-600" />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900">Indeks Integritas Sarpras</h3>
-                      <p className="text-[11px] text-slate-500 leading-snug mt-1">
-                        Berbasis audit 62 sekolah dan 49 laporan warga terverifikasi.
-                      </p>
-                      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        Terverifikasi Dapodik &amp; Warga
+                    {/* Bagian Kanan Tiket: Stub Sobekan + Barcode Vertikal */}
+                    <div className="w-[76px] shrink-0 border-l-2 border-dashed border-blue-200 bg-gradient-to-b from-blue-50/90 via-blue-50/60 to-sky-50/90 flex flex-col items-center justify-center py-6 px-4 select-none">
+                      <div className="w-full h-full flex flex-col justify-between gap-[3px]" aria-hidden="true">
+                        {[
+                          "h-[3px]", "h-[1.5px]", "h-[4px]", "h-[2px]", "h-[1.5px]",
+                          "h-[3.5px]", "h-[1.5px]", "h-[2.5px]", "h-[4.5px]", "h-[1.5px]",
+                          "h-[2px]", "h-[3px]", "h-[1.5px]", "h-[4px]", "h-[2px]",
+                          "h-[1.5px]", "h-[3.5px]", "h-[2px]", "h-[4px]", "h-[1.5px]",
+                          "h-[2.5px]", "h-[3px]", "h-[1.5px]", "h-[3.5px]", "h-[2px]",
+                        ].map((barClass, i) => (
+                          <span key={i} className={`block w-full rounded-[1px] bg-[#0B3052]/85 ${barClass}`} />
+                        ))}
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100">
-                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 mb-1.5">
-                      <span>Realisasi Perbaikan Semester Ini</span>
-                      <span className="font-bold text-slate-700">64%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div className="h-full w-[64%] rounded-full bg-blue-600" />
                     </div>
                   </div>
                 </div>
 
-                {/* Kartu melayang: AI Consensus */}
+                {/* Kartu melayang: AI Consensus (Iconify Solar CPU Bolt) */}
                 <div
                   style={{ transform: "translateZ(42px)" }}
-                  className="absolute -bottom-12 -left-6 z-30 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-slate-200/60 transition-transform duration-200"
+                  className="absolute -bottom-12 -left-6 z-30 rounded-xl border border-blue-200/80 bg-white px-3.5 py-2.5 shadow-lg shadow-blue-100/60 transition-transform duration-200"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-md bg-blue-50 flex items-center justify-center">
-                      <Bot className="h-3.5 w-3.5 text-blue-600" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-7 w-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                      <CoachMarkIcon icon="solar:cpu-bolt-bold-duotone" className="h-4 w-4 text-blue-600" />
                     </div>
                     <div className="leading-tight">
-                      <span className="block text-[11px] font-bold text-slate-900">AI Consensus: 0.88</span>
-                      <span className="block text-[10px] text-slate-400">Kualitas Klaster</span>
+                      <span className="block text-[11px] font-bold text-[#0B3052]">AI Consensus: 0.88</span>
+                      <span className="block text-[10px] text-slate-500">Kualitas Klaster</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Pil isu mendesak */}
+                {/* Pil isu mendesak (Putih-Biru) */}
                 <div
                   style={{ transform: "translateZ(38px)" }}
-                  className="absolute top-1/2 -right-4 z-30 rounded-full bg-amber-50 border border-amber-200/80 px-3 py-1.5 text-[10px] font-bold text-amber-700 shadow-sm"
+                  className="absolute -top-4 right-5 z-30 rounded-full bg-blue-50 border border-blue-200 px-3 py-1.5 text-[10px] font-bold text-blue-700 shadow-sm"
                 >
                   4 Isu Mendesak
                 </div>
@@ -217,7 +300,7 @@ export default function Landing() {
                 {/* Pil status antrean */}
                 <div
                   style={{ transform: "translateZ(46px)" }}
-                  className="absolute -bottom-4 right-4 z-30 rounded-full bg-[#0B3052] px-4 py-2 text-[10px] font-bold text-white shadow-lg"
+                  className="absolute -bottom-4 right-24 z-30 rounded-full bg-[#0B3052] px-4 py-2 text-[10px] font-bold text-white shadow-lg"
                 >
                   Status: Masuk Antrian Prioritas Dinas
                 </div>
@@ -297,10 +380,16 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Transparansi Penuh: 4 Kartu Fitur ── */}
-      <section className="bg-[#F8FAFC] py-14 md:py-20 border-b border-slate-100">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
+      {/* ── Transparansi Penuh: 4 Kartu Fitur (Full 1 Layar & Terpusat Vertikal) ── */}
+      <section className="bg-[#F8FAFC] min-h-[calc(100dvh-4rem)] flex items-center py-14 md:py-20 border-b border-slate-100">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <ScrollReveal
+            direction="up"
+            distance={32}
+            duration={950}
+            once={false}
+            className="text-center max-w-3xl mx-auto mb-10 md:mb-14"
+          >
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
               Transparansi Penuh dari Aduan hingga Realisasi Fisik
             </h2>
@@ -308,96 +397,104 @@ export default function Landing() {
               Setiap aduan warga diproses secara objektif, aman, dan diaudit secara
               terbuka tanpa jalur birokrasi tertutup.
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {/* Kartu 1 */}
-            <TiltCard
-              maxTilt={7}
-              scale={1.025}
-              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
-            >
-              <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
-                <Lock className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
-                Pelaporan Aman &amp; Bebas Cemas
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed flex-1">
-                Pembersihan metadata EXIF lokasi otomatis dan enkripsi berstandar
-                AES-256 pada NIK warga sesuai mandat UU PDP No. 27/2022.
-              </p>
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>Sanitasi Kriptografi 100%</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-              </div>
-            </TiltCard>
+            <ScrollReveal direction="up" distance={36} duration={950} delay={0} once={false} className="flex">
+              <TiltCard
+                maxTilt={7}
+                scale={1.025}
+                className="w-full rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
+              >
+                <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
+                  <Lock className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  Pelaporan Aman &amp; Bebas Cemas
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed flex-1">
+                  Pembersihan metadata EXIF lokasi otomatis dan enkripsi berstandar
+                  AES-256 pada NIK warga sesuai mandat UU PDP No. 27/2022.
+                </p>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                  <span>Sanitasi Kriptografi 100%</span>
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
+              </TiltCard>
+            </ScrollReveal>
 
             {/* Kartu 2 */}
-            <TiltCard
-              maxTilt={7}
-              scale={1.025}
-              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
-            >
-              <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
-                <Bot className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
-                Klasterisasi Isu Berbasis AI
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed flex-1">
-                Algoritma adaptif mengelompokkan keluhan serupa dari berbagai warga
-                sekolah yang sama secara otomatis tanpa spam aduan duplikat.
-              </p>
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>Cosine Distance Matching</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-              </div>
-            </TiltCard>
+            <ScrollReveal direction="up" distance={36} duration={950} delay={120} once={false} className="flex">
+              <TiltCard
+                maxTilt={7}
+                scale={1.025}
+                className="w-full rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
+              >
+                <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
+                  <Bot className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  Klasterisasi Isu Berbasis AI
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed flex-1">
+                  Algoritma adaptif mengelompokkan keluhan serupa dari berbagai warga
+                  sekolah yang sama secara otomatis tanpa spam aduan duplikat.
+                </p>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                  <span>Cosine Distance Matching</span>
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
+              </TiltCard>
+            </ScrollReveal>
 
             {/* Kartu 3 */}
-            <TiltCard
-              maxTilt={7}
-              scale={1.025}
-              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
-            >
-              <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
-                <ThumbsUp className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
-                Dukungan Warga (1 NIK 1 Vote)
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed flex-1">
-                Komunitas orang tua murid dan warga dapat memvote isu paling mendesak
-                agar skor prioritas anggaran daerah (P_k) meningkat.
-              </p>
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>Konsensus Warga Transparan</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-              </div>
-            </TiltCard>
+            <ScrollReveal direction="up" distance={36} duration={950} delay={240} once={false} className="flex">
+              <TiltCard
+                maxTilt={7}
+                scale={1.025}
+                className="w-full rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
+              >
+                <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
+                  <ThumbsUp className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  Dukungan Warga (1 NIK 1 Vote)
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed flex-1">
+                  Komunitas orang tua murid dan warga dapat memvote isu paling mendesak
+                  agar skor prioritas anggaran daerah (P_k) meningkat.
+                </p>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                  <span>Konsensus Warga Transparan</span>
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
+              </TiltCard>
+            </ScrollReveal>
 
             {/* Kartu 4 */}
-            <TiltCard
-              maxTilt={7}
-              scale={1.025}
-              className="rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
-            >
-              <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
-                <Activity className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
-                Audit Progres Real-Time
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed flex-1">
-                Pantau setiap tahap perbaikan fisik sekolah hingga verifikasi dinas,
-                pelaksanaan SPK tender, hingga serah terima fisik (BAST).
-              </p>
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>Status Ledger D-32 Terbuka</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-              </div>
-            </TiltCard>
+            <ScrollReveal direction="up" distance={36} duration={950} delay={360} once={false} className="flex">
+              <TiltCard
+                maxTilt={7}
+                scale={1.025}
+                className="w-full rounded-2xl border border-slate-200 bg-white p-6 cursor-pointer flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-blue-100/70 hover:border-blue-200 transition-all duration-300 ease-out"
+              >
+                <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 mb-4 transition-all duration-300 group-hover:scale-110">
+                  <Activity className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  Audit Progres Real-Time
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed flex-1">
+                  Pantau setiap tahap perbaikan fisik sekolah hingga verifikasi dinas,
+                  pelaksanaan SPK tender, hingga serah terima fisik (BAST).
+                </p>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                  <span>Status Ledger D-32 Terbuka</span>
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
+              </TiltCard>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -405,10 +502,16 @@ export default function Landing() {
       {/* ── Alur Kerja Partisipatif: Animasi Konvergensi Scroll (Pure React + Tailwind) ── */}
       <ConvergingWorkflow />
 
-      {/* ── Skor Prioritas Perbaikan ── */}
-      <section className="bg-white py-14 md:py-20 border-b border-slate-100">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
+      {/* ── Skor Prioritas Perbaikan (Full 1 Layar & Animasi Terbit dari Atas) ── */}
+      <section className="bg-white min-h-[calc(100dvh-4rem)] flex items-center py-14 md:py-20 border-b border-slate-100">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <ScrollReveal
+            direction="down"
+            distance={32}
+            duration={950}
+            once={false}
+            className="text-center max-w-3xl mx-auto mb-10 md:mb-14"
+          >
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
               Bagaimana Skor Prioritas Perbaikan Sekolah Ditentukan?
             </h2>
@@ -416,10 +519,17 @@ export default function Landing() {
               Dinas Pendidikan menentukan urutan pengerjaan sarpras berdasarkan data
               faktaual lapangan, catatan resmi Dapodik, dan suara sah warga Lamongan.
             </p>
-          </div>
+          </ScrollReveal>
 
           {/* ── TAMPILAN MOBILE (< lg): Unified Formula Ledger Card (Muat 1 Layar Penuh) ── */}
-          <div className="block lg:hidden max-w-md mx-auto">
+          <ScrollReveal
+            direction="down"
+            distance={32}
+            duration={950}
+            delay={100}
+            once={false}
+            className="block lg:hidden max-w-md mx-auto"
+          >
             <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-3.5">
 
               {/* Baris 1: Skor Keparahan Fasilitas */}
@@ -504,177 +614,208 @@ export default function Landing() {
                 </span>
               </div>
 
-              {/* Baris 3: Output Resmi (Skor Prioritas Final) */}
-              <div className="rounded-xl bg-slate-900 p-3.5 text-white space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded bg-white/10 flex items-center justify-center">
-                      <LineChart className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <span className="text-xs font-bold tracking-tight">3. Skor Prioritas Final (P_k)</span>
+              {/* Baris 3: Output Resmi (Skor Prioritas Final) — selaras warna putih-biru desktop */}
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+                    <LineChart className="h-4 w-4" />
                   </div>
-                </div>
-
-                <div className="flex items-end justify-between pt-0.5">
                   <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
-                      Indeks Urgensi
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 leading-tight block">
+                      3. Skor Prioritas Final (P_k)
                     </span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl sm:text-3xl font-black text-white leading-none">85.5</span>
-                      <span className="text-xs font-semibold text-slate-400">/100</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-400/20 border border-blue-400/30 px-2.5 py-1 text-[10px] font-bold text-blue-200">
-                      <TrendingUp className="h-3 w-3 text-blue-300" />
-                      <span>Prioritas Darurat</span>
+                    <span className="text-[10px] text-slate-500 block">
+                      Penentuan Akhir Susunan Fisik oleh Dinas
                     </span>
                   </div>
                 </div>
 
-                <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-800 leading-snug">
-                  Urutan antrean Surat Perintah Kerja (SPK) RKT Dinas Pendidikan.
-                </p>
+                <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-3.5 py-2.5">
+                  <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">
+                    Indeks Urgensi
+                  </span>
+                  <div className="flex items-end justify-between mt-1">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-none">85.5</span>
+                      <span className="text-xs font-bold text-slate-400">/100</span>
+                    </div>
+                    <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                      <TrendingUp className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
             </div>
-          </div>
+          </ScrollReveal>
 
           {/* ── TAMPILAN DESKTOP (≥ lg): 3 Kartu Horizontal Lebar ── */}
           <div className="hidden lg:flex items-stretch justify-center gap-4 lg:gap-3 max-w-none">
             {/* Kartu 1: Skor Keparahan */}
-            <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
-              <div className="mb-3">
-                <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
-                  <Activity className="h-5 w-5" />
+            <ScrollReveal direction="down" distance={36} duration={950} delay={0} once={false} className="flex-1 flex">
+              <div className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+                <div className="mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
+                    <Activity className="h-5 w-5" />
+                  </div>
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">1. Skor Keparahan Fasilitas</h3>
+                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                  Matriks 100 Poin Berdasarkan Matriks Kerusakan Fisik
+                </p>
+                <div className="mt-3.5 h-2 rounded-full bg-slate-100 overflow-hidden flex">
+                  <div className="h-full w-[70%] bg-blue-600" />
+                  <div className="h-full w-[30%] bg-blue-200" />
+                </div>
+                <div className="mt-2.5 flex items-center gap-4 text-[10px] font-semibold text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-blue-600" /> 70% Fakta Laporan
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-blue-200" /> 30% Audit Dapodik
+                  </span>
                 </div>
               </div>
-              <h3 className="text-sm font-bold text-slate-900">1. Skor Keparahan Fasilitas</h3>
-              <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                Matriks 100 Poin Berdasarkan Matriks Kerusakan Fisik
-              </p>
-              <div className="mt-3.5 h-2 rounded-full bg-slate-100 overflow-hidden flex">
-                <div className="h-full w-[70%] bg-blue-600" />
-                <div className="h-full w-[30%] bg-blue-200" />
-              </div>
-              <div className="mt-2.5 flex items-center gap-4 text-[10px] font-semibold text-slate-600">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-blue-600" /> 70% Fakta Laporan
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-blue-200" /> 30% Audit Dapodik
-                </span>
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* Konektor + */}
-            <div className="flex items-center justify-center self-center py-2 lg:py-0">
+            <ScrollReveal direction="down" distance={24} duration={950} delay={120} once={false} className="flex items-center justify-center self-center py-2 lg:py-0">
               <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-md">
                 <span className="leading-none pb-0.5">+</span>
               </div>
-            </div>
+            </ScrollReveal>
 
             {/* Kartu 2: Dukungan Partisipasi */}
-            <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
-              <div className="mb-3">
-                <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">
-                  <ThumbsUp className="h-5 w-5" />
-                </div>
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">2. Dukungan Partisipasi Warga</h3>
-              <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                Kompensasi suara dari komite sekolah &amp; warga (Akumulasi 1 NIK = 1 Suara Sah)
-              </p>
-              <div className="mt-3.5 rounded-xl border border-blue-200 bg-blue-50/60 px-3.5 py-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-8 w-8 rounded-lg bg-white border border-blue-200 flex items-center justify-center shrink-0">
-                    <Users className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="leading-tight">
-                    <span className="block text-sm font-extrabold text-slate-900">+1.0 Poin per Suara</span>
-                    <span className="block text-[10px] text-slate-500">Menjangkau 471 Warga Lamongan</span>
+            <ScrollReveal direction="down" distance={36} duration={950} delay={200} once={false} className="flex-1 flex">
+              <div className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+                <div className="mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">
+                    <ThumbsUp className="h-5 w-5" />
                   </div>
                 </div>
+                <h3 className="text-sm font-bold text-slate-900">2. Dukungan Partisipasi Warga</h3>
+                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                  Kompensasi suara dari komite sekolah &amp; warga (Akumulasi 1 NIK = 1 Suara Sah)
+                </p>
+                <div className="mt-3.5 rounded-xl border border-blue-200 bg-blue-50/60 px-3.5 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-white border border-blue-200 flex items-center justify-center shrink-0">
+                      <Users className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="leading-tight">
+                      <span className="block text-sm font-extrabold text-slate-900">+1.0 Poin per Suara</span>
+                      <span className="block text-[10px] text-slate-500">Menjangkau 471 Warga Lamongan</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </ScrollReveal>
 
             {/* Konektor = */}
-            <div className="flex items-center justify-center self-center py-2 lg:py-0">
+            <ScrollReveal direction="down" distance={24} duration={950} delay={300} once={false} className="flex items-center justify-center self-center py-2 lg:py-0">
               <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-md">
                 <span className="leading-none pb-0.5">=</span>
               </div>
-            </div>
+            </ScrollReveal>
 
             {/* Kartu 3: Skor Prioritas Final */}
-            <div className="flex-1 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
-              <div className="mb-3">
-                <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110">
-                  <LineChart className="h-5 w-5" />
-                </div>
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">3. Skor Prioritas Final (P_k)</h3>
-              <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                Penentuan Akhir Susunan Fisik oleh Dinas
-              </p>
-              <div className="mt-3.5 rounded-xl border border-blue-100 bg-blue-50/50 px-3.5 py-3">
-                <span className="text-[9px] font-bold tracking-wider text-slate-400 uppercase">
-                  Indeks Urgensi
-                </span>
-                <div className="flex items-end justify-between mt-1">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-slate-900 leading-none">85.5</span>
-                    <span className="text-xs font-bold text-slate-400">/100</span>
-                  </div>
-                  <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
+            <ScrollReveal direction="down" distance={36} duration={950} delay={380} once={false} className="flex-1 flex">
+              <div className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-xl hover:shadow-blue-100/70 hover:-translate-y-1.5 hover:border-blue-200 transition-all duration-300 ease-out flex flex-col cursor-pointer group">
+                <div className="mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-all duration-300 group-hover:scale-110">
+                    <LineChart className="h-5 w-5" />
                   </div>
                 </div>
+                <h3 className="text-sm font-bold text-slate-900">3. Skor Prioritas Final (P_k)</h3>
+                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                  Penentuan Akhir Susunan Fisik oleh Dinas
+                </p>
+                <div className="mt-3.5 rounded-xl border border-blue-100 bg-blue-50/50 px-3.5 py-3">
+                  <span className="text-[9px] font-bold tracking-wider text-slate-400 uppercase">
+                    Indeks Urgensi
+                  </span>
+                  <div className="flex items-end justify-between mt-1">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-extrabold text-slate-900 leading-none">85.5</span>
+                      <span className="text-xs font-bold text-slate-400">/100</span>
+                    </div>
+                    <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
 
-      {/* ── CTA: Menemukan Sarana Rusak ── */}
-      <section className="bg-[#F8FAFC] py-14 md:py-20">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6">
-          <div className="group rounded-3xl border border-slate-200 bg-white px-6 py-10 sm:px-12 sm:py-14 text-center shadow-sm hover:shadow-xl hover:shadow-blue-100/60 hover:border-blue-200 hover:-translate-y-1 transition-all duration-300 ease-out">
-            <div className="mx-auto h-12 w-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6">
-              <Megaphone className="h-6 w-6 text-blue-600" />
+      {/* ── FAQ: Pertanyaan yang Sering Diajukan ── */}
+      <section className="bg-[#F8FAFC] py-14 md:py-20 border-t border-slate-100 overflow-x-clip">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-12 items-start">
+            {/* Kolom Kiri: Tag & Judul FAQ (Terbit dari Samping Kiri) */}
+            <div className="lg:col-span-4 lg:sticky lg:top-28">
+              <ScrollReveal direction="right" distance={40} duration={950} once={false}>
+                <span className="inline-block font-mono text-xs sm:text-sm font-bold tracking-wider text-blue-600">
+                  [ FAQ ]
+                </span>
+                <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0B3052] tracking-tight leading-tight">
+                  Pertanyaan yang sering diajukan
+                </h2>
+                <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  Informasi seputar pelaporan sarana prasarana sekolah, keamanan data warga, dan mekanisme prioritas perbaikan.
+                </p>
+              </ScrollReveal>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Menemukan Sarana Sekolah Rusak di Sekitar Anda?
-            </h2>
-            <p className="mt-3 mx-auto max-w-2xl text-slate-600 text-sm md:text-base leading-relaxed">
-              Partisipasi Anda adalah langkah nyata menghadirkan ruang belajar yang
-              aman bagi anak-anak di Lamongan. Tidak dipungut biaya dan kerahasiaan
-              identitas dilindungi.
-            </p>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              {isAuthenticated ? (
-                <Button
-                  onClick={() => navigate("/laporan/baru")}
-                  className="bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-md text-white font-semibold px-6 py-3.5 h-auto rounded-xl text-sm transition-all cursor-pointer"
-                >
-                  <Camera className="h-4 w-4 mr-1.5" />
-                  Ambil Foto &amp; Unggah Laporan
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => navigate("/registrasi?redirect=%2Flaporan%2Fbaru&action=report")}
-                  className="bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-md text-white font-semibold px-6 py-3.5 h-auto rounded-xl text-sm transition-all cursor-pointer"
-                >
-                  <Camera className="h-4 w-4 mr-1.5" />
-                  Ambil Foto &amp; Unggah Laporan
-                </Button>
-              )}
-              <Button asChild variant="outline" className="bg-white hover:bg-slate-50 hover:-translate-y-0.5 hover:shadow-md text-slate-800 border-slate-200 font-semibold px-6 py-3.5 h-auto rounded-xl text-sm transition-all cursor-pointer">
-                <Link to="/klaster">
-                  Lihat 49 Klaster Aktif
-                </Link>
-              </Button>
+            {/* Kolom Kanan: Daftar Accordion FAQ (Terbit dari Samping Kanan) */}
+            <div className="lg:col-span-8 border-t border-b border-slate-200 divide-y divide-slate-200">
+              {FAQ_ITEMS.map((item, idx) => {
+                const isOpen = openFaqIndex === idx
+                return (
+                  <ScrollReveal
+                    key={idx}
+                    direction="left"
+                    distance={40}
+                    duration={950}
+                    delay={idx * 70}
+                    once={false}
+                    className="transition-colors"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                      aria-expanded={isOpen}
+                      className="w-full py-5 flex items-center justify-between gap-4 text-left cursor-pointer group"
+                    >
+                      <span
+                        className={`text-sm sm:text-base font-bold leading-snug transition-colors ${isOpen
+                          ? "text-blue-600"
+                          : "text-[#0B3052] group-hover:text-blue-600"
+                          }`}
+                      >
+                        {item.question}
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180 text-blue-600" : "text-slate-400 group-hover:text-blue-600"
+                          }`}
+                      />
+                    </button>
+
+                    <div
+                      className={`grid transition-all duration-300 ease-out ${isOpen ? "grid-rows-[1fr] opacity-100 pb-5" : "grid-rows-[0fr] opacity-0"
+                        }`}
+                    >
+                      <div className="overflow-hidden">
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed pr-6 sm:pr-10">
+                          {item.answer}
+                        </p>
+                      </div>
+                    </div>
+                  </ScrollReveal>
+                )
+              })}
             </div>
           </div>
         </div>

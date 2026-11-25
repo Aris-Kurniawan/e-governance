@@ -88,7 +88,7 @@ import {
   Building,
   GraduationCap,
   Award,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 
 // Label kategori klaster untuk Kartu 3 — Isu & Klaster Warga (TASK_GUIDE F2.6)
 const KATEGORI_LABEL: Record<string, string> = {

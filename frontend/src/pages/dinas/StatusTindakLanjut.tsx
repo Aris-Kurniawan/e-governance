@@ -6,7 +6,7 @@ import {
   CheckCircle2,
   Flame,
   FileText,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,

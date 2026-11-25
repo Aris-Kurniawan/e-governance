@@ -1,4 +1,4 @@
-import { Check } from "lucide-react"
+import { Check } from "@/components/ui/iconify-icons"
 
 /**
  * F3.1 — "Institutional Stepper: 4 Stages" (UI_COMPONENTS.md §5).

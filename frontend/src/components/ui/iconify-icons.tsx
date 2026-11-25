@@ -1,0 +1,126 @@
+import { Icon, addIcon } from "@iconify/react"
+import type { ComponentProps, ComponentType } from "react"
+import { SOLAR_ICONS_DATA } from "./solar-icons-data"
+
+for (const [name, data] of Object.entries(SOLAR_ICONS_DATA)) {
+  addIcon(`solar:${name}`, { width: 24, height: 24, ...data })
+}
+
+export type IconifyIconProps = Omit<ComponentProps<typeof Icon>, "icon"> & {
+  strokeWidth?: number
+  size?: number | string
+}
+
+export type LucideIcon = ComponentType<IconifyIconProps>
+
+export function SolarIcon({ icon, className, ...props }: ComponentProps<typeof Icon>) {
+  return <Icon icon={icon} className={className} {...props} />
+}
+
+function makeSolarIcon(solarName: string): LucideIcon {
+  return function IconifySolar({ className, size, strokeWidth: _sw, ...props }: IconifyIconProps) {
+    return <Icon icon={`solar:${solarName}`} width={size} height={size} className={className} {...props} />
+  }
+}
+
+export const Activity = makeSolarIcon("pulse-2-bold-duotone")
+export const AlertCircle = makeSolarIcon("info-circle-bold-duotone")
+export const AlertTriangle = makeSolarIcon("danger-triangle-bold-duotone")
+export const ArrowLeft = makeSolarIcon("arrow-left-linear")
+export const ArrowRight = makeSolarIcon("arrow-right-linear")
+export const ArrowUpDown = makeSolarIcon("sort-vertical-linear")
+export const ArrowUpRight = makeSolarIcon("arrow-right-up-linear")
+export const Award = makeSolarIcon("cup-star-bold-duotone")
+export const BadgeCheck = makeSolarIcon("verified-check-bold-duotone")
+export const BarChart2 = makeSolarIcon("chart-2-bold-duotone")
+export const Bell = makeSolarIcon("bell-bold-duotone")
+export const Bot = makeSolarIcon("bot-bold-duotone")
+export const Building = makeSolarIcon("buildings-2-bold-duotone")
+export const Building2 = makeSolarIcon("buildings-3-bold-duotone")
+export const CalendarDays = makeSolarIcon("calendar-bold-duotone")
+export const Camera = makeSolarIcon("camera-bold-duotone")
+export const Check = makeSolarIcon("check-read-linear")
+export const CheckCheck = makeSolarIcon("check-read-linear")
+export const CheckCircle2 = makeSolarIcon("check-circle-bold-duotone")
+export const CheckSquare = makeSolarIcon("check-square-bold-duotone")
+export const ChevronDown = makeSolarIcon("alt-arrow-down-linear")
+export const ChevronLeft = makeSolarIcon("alt-arrow-left-linear")
+export const ChevronRight = makeSolarIcon("alt-arrow-right-linear")
+export const ChevronUp = makeSolarIcon("alt-arrow-up-linear")
+export const ClipboardCheck = makeSolarIcon("clipboard-check-bold-duotone")
+export const ClipboardList = makeSolarIcon("clipboard-list-bold-duotone")
+export const Clock = makeSolarIcon("clock-circle-bold-duotone")
+export const Clock3 = makeSolarIcon("clock-circle-linear")
+export const CloudUpload = makeSolarIcon("cloud-upload-bold-duotone")
+export const Compass = makeSolarIcon("compass-bold-duotone")
+export const Copy = makeSolarIcon("copy-linear")
+export const Cpu = makeSolarIcon("cpu-bolt-bold-duotone")
+export const CreditCard = makeSolarIcon("card-bold-duotone")
+export const Database = makeSolarIcon("database-bold-duotone")
+export const Download = makeSolarIcon("download-linear")
+export const ExternalLink = makeSolarIcon("square-top-up-linear")
+export const Eye = makeSolarIcon("eye-linear")
+export const EyeOff = makeSolarIcon("eye-closed-linear")
+export const FileCheck = makeSolarIcon("file-check-bold-duotone")
+export const FileSpreadsheet = makeSolarIcon("document-text-bold-duotone")
+export const FileText = makeSolarIcon("file-text-bold-duotone")
+export const Flame = makeSolarIcon("fire-bold-duotone")
+export const FolderOpen = makeSolarIcon("folder-open-bold-duotone")
+export const Gauge = makeSolarIcon("speedometer-middle-bold-duotone")
+export const Globe2 = makeSolarIcon("globe-bold-duotone")
+export const GraduationCap = makeSolarIcon("square-academic-cap-bold-duotone")
+export const GripHorizontal = makeSolarIcon("menu-dots-linear")
+export const Hash = makeSolarIcon("hashtag-linear")
+export const HelpCircle = makeSolarIcon("question-circle-bold-duotone")
+export const History = makeSolarIcon("history-bold-duotone")
+export const Home = makeSolarIcon("home-2-bold-duotone")
+export const ImageIcon = makeSolarIcon("gallery-bold-duotone")
+export const Inbox = makeSolarIcon("inbox-bold-duotone")
+export const Info = makeSolarIcon("info-circle-bold-duotone")
+export const Landmark = makeSolarIcon("buildings-bold-duotone")
+export const Layers = makeSolarIcon("layers-minimalistic-bold-duotone")
+export const LayoutDashboard = makeSolarIcon("widget-2-bold-duotone")
+export const LayoutGrid = makeSolarIcon("widget-4-bold-duotone")
+export const LineChart = makeSolarIcon("graph-up-bold-duotone")
+export const Loader2 = makeSolarIcon("refresh-linear")
+export const Lock = makeSolarIcon("lock-bold-duotone")
+export const LogIn = makeSolarIcon("login-2-linear")
+export const LogOut = makeSolarIcon("logout-2-linear")
+export const Mail = makeSolarIcon("letter-bold-duotone")
+export const MapPin = makeSolarIcon("map-point-bold-duotone")
+export const Menu = makeSolarIcon("hamburger-menu-linear")
+export const MessageSquare = makeSolarIcon("chat-round-dots-bold-duotone")
+export const Phone = makeSolarIcon("phone-bold-duotone")
+export const Play = makeSolarIcon("play-bold-duotone")
+export const Plus = makeSolarIcon("add-circle-linear")
+export const PlusCircle = makeSolarIcon("add-circle-bold-duotone")
+export const Printer = makeSolarIcon("printer-bold-duotone")
+export const RefreshCw = makeSolarIcon("refresh-linear")
+export const RotateCcw = makeSolarIcon("restart-linear")
+export const RotateCw = makeSolarIcon("refresh-linear")
+export const Scale = makeSolarIcon("scale-bold-duotone")
+export const School = makeSolarIcon("square-academic-cap-2-bold-duotone")
+export const Search = makeSolarIcon("magnifer-bold-duotone")
+export const Send = makeSolarIcon("plain-bold-duotone")
+export const Settings = makeSolarIcon("settings-bold-duotone")
+export const Share2 = makeSolarIcon("share-bold-duotone")
+export const ShieldAlert = makeSolarIcon("shield-warning-bold-duotone")
+export const ShieldCheck = makeSolarIcon("shield-check-bold-duotone")
+export const ShieldQuestion = makeSolarIcon("shield-bold-duotone")
+export const SkipForward = makeSolarIcon("skip-next-linear")
+export const SlidersHorizontal = makeSolarIcon("tuning-2-linear")
+export const Sparkles = makeSolarIcon("sparkles-bold-duotone")
+export const ThumbsUp = makeSolarIcon("like-bold-duotone")
+export const Ticket = makeSolarIcon("ticket-bold-duotone")
+export const Trash2 = makeSolarIcon("trash-bin-trash-bold-duotone")
+export const TrendingDown = makeSolarIcon("graph-down-bold-duotone")
+export const TrendingUp = makeSolarIcon("graph-up-bold-duotone")
+export const Upload = makeSolarIcon("upload-linear")
+export const User = makeSolarIcon("user-bold-duotone")
+export const UserCheck = makeSolarIcon("user-check-bold-duotone")
+export const UserPlus = makeSolarIcon("user-plus-bold-duotone")
+export const Users = makeSolarIcon("users-group-two-rounded-bold-duotone")
+export const Wrench = makeSolarIcon("wrench-bold-duotone")
+export const X = makeSolarIcon("close-circle-linear")
+export const XCircle = makeSolarIcon("close-circle-bold-duotone")
+export const Zap = makeSolarIcon("bolt-bold-duotone")

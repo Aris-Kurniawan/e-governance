@@ -20,7 +20,7 @@ import {
   ThumbsUp,
   MapPin,
   HelpCircle,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 
 interface OnboardingGuideModalProps {
   open: boolean

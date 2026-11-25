@@ -10,7 +10,7 @@ import {
   ArrowRight,
   RotateCw,
   CheckCircle2,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 import { useFetch } from "@/hooks/useFetch"
 import { listKlaster } from "@/lib/api/klaster"
 import { listSekolah } from "@/lib/api/sekolah"

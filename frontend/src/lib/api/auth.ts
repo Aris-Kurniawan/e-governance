@@ -24,6 +24,7 @@ export async function login(
     "/auth/login",
     { email, password },
     undefined,
+    { anonymous: true },
   );
   tokenStore.set(data.access_token, data.refresh_token, remember);
   return data;
@@ -31,7 +32,7 @@ export async function login(
 
 /** `POST /auth/register` — publik. Akun baru statusnya `menunggu`. */
 export async function register(payload: RegisterRequest): Promise<RegisterResponse> {
-  return postData<RegisterResponse>("/auth/register", payload);
+  return postData<RegisterResponse>("/auth/register", payload, undefined, { anonymous: true });
 }
 
 /** `GET /auth/me` — data akun & role sendiri. */

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { AlertTriangle, ArrowRight, BarChart2, Download, Scale, ShieldCheck, TrendingDown, Wrench } from "lucide-react"
+import { AlertTriangle, ArrowRight, BarChart2, Download, Scale, ShieldCheck, TrendingDown, Wrench } from "@/components/ui/iconify-icons"
 import { Button } from "@/components/ui/button"
 import { HorizontalBarChart } from "@/components/charts"
 import { useFetch } from "@/hooks/useFetch"

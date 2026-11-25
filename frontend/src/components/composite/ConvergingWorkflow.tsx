@@ -9,11 +9,12 @@ import {
   MotionValue,
 } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import ScrollReveal from "@/components/composite/ScrollReveal"
 import { useAuth } from "@/context/AuthContext"
 import {
   ArrowUpRight,
   ChevronDown,
-} from "lucide-react"
+} from "@/components/ui/iconify-icons"
 
 // 62 Sekolah resmi Dapodik di Kecamatan Lamongan (Data Riil Kabupaten Lamongan)
 interface SchoolChipItem {
@@ -462,35 +463,49 @@ export default function ConvergingWorkflow() {
         <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[400px] w-[500px] rounded-full bg-blue-500/10 blur-[120px]" />
 
         <div className="max-w-xl mx-auto space-y-8 relative z-10">
+          {/* Kartu Rekapitulasi Sekolah (62+ Sekolah Terdaftar) — di atas pada tampilan mobile */}
+          <ScrollReveal direction="up" distance={28} duration={850} once={false} className="flex justify-center">
+            <SchoolCardView count={62} />
+          </ScrollReveal>
+
           {/* Konten Alur Kerja Partisipatif */}
           <div className="space-y-6">
-            <div>
+            <ScrollReveal direction="up" distance={24} duration={850} delay={60} once={false}>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
                 Tiga Langkah Mudah Mengawal Fasilitas Belajar
               </h2>
-            </div>
+            </ScrollReveal>
 
-            {/* List 3 Langkah Pelaporan (Langsung Tampak Tanpa Scroll) */}
+            {/* List 3 Langkah Pelaporan (Animasi Terbit dari Bawah) */}
             <div className="space-y-5">
-              {STEPS_DATA.map((step) => (
-                <div key={step.stepNumber} className="flex items-start gap-4">
-                  <div className="h-11 w-11 rounded-full font-black text-sm flex items-center justify-center shrink-0 shadow-lg mt-0.5 bg-blue-600 text-white shadow-blue-600/40 ring-4 ring-blue-500/20">
-                    {step.stepNumber}
+              {STEPS_DATA.map((step, idx) => (
+                <ScrollReveal
+                  key={step.stepNumber}
+                  direction="up"
+                  distance={24}
+                  duration={800}
+                  delay={100 + idx * 90}
+                  once={false}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="h-11 w-11 rounded-full font-black text-sm flex items-center justify-center shrink-0 shadow-lg mt-0.5 bg-blue-600 text-white shadow-blue-600/40 ring-4 ring-blue-500/20">
+                      {step.stepNumber}
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-white leading-snug">
+                        {step.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        {step.desc}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-white leading-snug">
-                      {step.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                      {step.desc}
-                    </p>
-                  </div>
-                </div>
+                </ScrollReveal>
               ))}
             </div>
 
             {/* Tombol CTA */}
-            <div className="pt-2">
+            <ScrollReveal direction="up" distance={24} duration={800} delay={360} once={false} className="pt-2">
               <Button
                 onClick={handleMulaiLapor}
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3.5 h-auto rounded-xl text-xs sm:text-sm shadow-xl shadow-blue-600/30 transition-all duration-300 cursor-pointer inline-flex items-center justify-center gap-2"
@@ -498,12 +513,7 @@ export default function ConvergingWorkflow() {
                 <span>Mulai Laporkan Sarpras Sekarang</span>
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
-            </div>
-          </div>
-
-          {/* Kartu Rekapitulasi Sekolah (62+ Sekolah Terdaftar) — di bawah konten teks pada mobile */}
-          <div className="flex justify-center">
-            <SchoolCardView count={62} />
+            </ScrollReveal>
           </div>
         </div>
       </section>

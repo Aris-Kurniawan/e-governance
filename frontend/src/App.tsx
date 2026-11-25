@@ -1,6 +1,6 @@
 import { Suspense, lazy } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import { Loader2 } from "lucide-react"
+import { Loader2 } from "@/components/ui/iconify-icons"
 import { ErrorBoundary } from "@/components/errors/ErrorBoundary"
 import { AuthProvider } from "@/context/AuthContext"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
