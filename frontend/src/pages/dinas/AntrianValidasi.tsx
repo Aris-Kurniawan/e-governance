@@ -449,15 +449,6 @@ export default function AntrianValidasi() {
               : `Mode Split-View · ${totalMenungguMandiri} Aduan Mandiri Menunggu Verifikasi Manual`}
           </p>
         </div>
-
-        {/* Tag Sistem Pojok Kanan Atas */}
-        <div className="self-start sm:self-center">
-          <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500 bg-slate-100/80 border border-slate-200/70 px-3.5 py-1.5 rounded-full">
-            <span className="font-semibold text-slate-700">HASH: 8F2A-90DC-71</span>
-            <span className="text-slate-300">·</span>
-            <span>SIK-VERIF-LAMONGAN v2.4</span>
-          </div>
-        </div>
       </div>
 
       {/* ── Switcher Track: Track Klaster Issue vs Track Issue Mandiri ── */}
@@ -467,11 +458,11 @@ export default function AntrianValidasi() {
           onClick={() => handleSwitchTrack("klaster")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             modeTrack === "klaster"
-              ? "bg-white text-slate-900 border border-slate-300/80 shadow-xs ring-1 ring-slate-200"
-              : "bg-transparent text-slate-600 hover:bg-slate-100/70 border border-transparent"
+              ? "bg-[#0B3052] text-white shadow-2xs"
+              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
           }`}
         >
-          <Layers className="h-3.5 w-3.5 text-slate-600" />
+          <Layers className={`h-3.5 w-3.5 ${modeTrack === "klaster" ? "text-white" : "text-slate-500"}`} />
           <span>Track Klaster Issue</span>
           <span className="rounded bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
             {daftarKlaster.length}
@@ -483,11 +474,11 @@ export default function AntrianValidasi() {
           onClick={() => handleSwitchTrack("mandiri")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             modeTrack === "mandiri"
-              ? "bg-white text-slate-900 border border-slate-300/80 shadow-xs ring-1 ring-slate-200"
-              : "bg-transparent text-slate-600 hover:bg-slate-100/70 border border-transparent"
+              ? "bg-[#0B3052] text-white shadow-2xs"
+              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
           }`}
         >
-          <FileText className="h-3.5 w-3.5 text-slate-500" />
+          <FileText className={`h-3.5 w-3.5 ${modeTrack === "mandiri" ? "text-white" : "text-slate-500"}`} />
           <span>Track Issue Mandiri</span>
           <span className="rounded bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
             {daftarMandiri.length}

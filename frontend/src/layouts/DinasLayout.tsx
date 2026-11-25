@@ -379,13 +379,13 @@ export default function DinasLayout() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${item.active
+                className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${item.active
                   ? "bg-[#EBF3FC] text-[#0B3052] shadow-2xs font-bold"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  : "text-slate-600 hover:bg-blue-50/60 hover:text-[#0B3052]"
                   }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <Icon className={`h-4 w-4 shrink-0 ${item.active ? "text-[#0B3052]" : "text-slate-400"}`} />
+                  <Icon className={`h-4 w-4 shrink-0 transition-colors ${item.active ? "text-blue-600" : "text-blue-500/75 group-hover:text-blue-600"}`} />
                   <span>{item.label}</span>
                 </div>
               </Link>
@@ -421,7 +421,7 @@ export default function DinasLayout() {
           onClick={() => setIsProfileModalOpen(true)}
           className="flex items-center gap-2.5 px-3.5 py-2 mx-3.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer w-[calc(100%-1.75rem)]"
         >
-          <Settings className="h-4 w-4 text-slate-400" />
+          <Settings className="h-4 w-4 text-blue-500/75" />
           <span>Pengaturan</span>
         </button>
 
