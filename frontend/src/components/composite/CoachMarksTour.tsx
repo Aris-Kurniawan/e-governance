@@ -782,9 +782,9 @@ export default function CoachMarksTour() {
           setIsOpen(true)
         }}
         title={`Buka panduan fitur ${activeTour.name}`}
-        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-blue-200/90 bg-white/95 backdrop-blur-md px-3.5 py-2 text-xs font-bold text-[#0B3052] shadow-lg hover:bg-blue-50 hover:border-blue-300 transition-all cursor-pointer"
+        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 sm:gap-2.5 rounded-full border border-blue-200/90 bg-white/95 backdrop-blur-md px-4 py-2.5 sm:px-5 sm:py-3 text-[13px] sm:text-sm font-bold text-[#0B3052] shadow-lg hover:bg-blue-50 hover:border-blue-300 transition-all cursor-pointer"
       >
-        <Sparkles className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+        <Sparkles className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-blue-600 shrink-0" />
         <span className="hidden sm:inline">Panduan {activeTour.name}</span>
         <span className="sm:hidden">Panduan</span>
       </button>

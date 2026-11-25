@@ -503,21 +503,21 @@ export default function Landing() {
       <ConvergingWorkflow />
 
       {/* ── Skor Prioritas Perbaikan (Full 1 Layar & Animasi Terbit dari Atas) ── */}
-      <section className="bg-white min-h-[calc(100dvh-4rem)] flex items-center py-14 md:py-20 border-b border-slate-100">
+      <section className="bg-white min-h-[calc(100dvh-4rem)] flex items-center py-10 md:py-20 border-b border-slate-100">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
           <ScrollReveal
             direction="down"
             distance={32}
             duration={950}
             once={false}
-            className="text-center max-w-3xl mx-auto mb-10 md:mb-14"
+            className="text-center max-w-3xl mx-auto mb-6 md:mb-14"
           >
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
               Bagaimana Skor Prioritas Perbaikan Sekolah Ditentukan?
             </h2>
             <p className="mt-3 text-slate-600 text-sm md:text-base leading-relaxed">
               Dinas Pendidikan menentukan urutan pengerjaan sarpras berdasarkan data
-              faktaual lapangan, catatan resmi Dapodik, dan suara sah warga Lamongan.
+              faktual lapangan, catatan resmi Dapodik, dan suara sah warga Lamongan.
             </p>
           </ScrollReveal>
 
@@ -530,13 +530,13 @@ export default function Landing() {
             once={false}
             className="block lg:hidden max-w-md mx-auto"
           >
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-3.5">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm space-y-5">
 
               {/* Baris 1: Skor Keparahan Fasilitas */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
                       <Activity className="h-4 w-4" />
                     </div>
                     <div>
@@ -549,37 +549,42 @@ export default function Landing() {
 
                 </div>
 
-                <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 space-y-1.5">
-                  <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden flex">
+                <div className="bg-blue-50/40 rounded-xl p-3.5 border border-blue-100 space-y-2">
+                  <div className="h-2 rounded-full bg-slate-200 overflow-hidden flex">
                     <div className="h-full w-[70%] bg-blue-600" />
                     <div className="h-full w-[30%] bg-blue-300" />
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-600 font-medium">
-                    <span className="flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> 70% Fakta
+                  <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-blue-600" /> 70% Fakta
                     </span>
-                    <span className="flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-300" /> 30% Dapodik
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-blue-300" /> 30% Dapodik
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Divider Operator (+) */}
-              <div className="relative flex items-center justify-center py-0.5">
+              <div className="relative flex items-center justify-center py-1">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200" />
                 </div>
-                <span className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-xs font-black shadow-2xs">
-                  +
+                <span
+                  aria-hidden="true"
+                  className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 border border-blue-200 text-blue-600 shadow-2xs"
+                >
+                  <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                    <path d="M8 3v10M3 8h10" />
+                  </svg>
                 </span>
               </div>
 
               {/* Baris 2: Dukungan Partisipasi Warga */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
                       <ThumbsUp className="h-4 w-4" />
                     </div>
                     <div>
@@ -592,7 +597,7 @@ export default function Landing() {
 
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/50 px-3 py-2 text-xs">
+                <div className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/40 px-3.5 py-3 text-xs">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-blue-600 shrink-0" />
                     <span className="font-bold text-slate-900 text-xs">+1.0 Poin per Suara</span>
@@ -605,43 +610,49 @@ export default function Landing() {
               </div>
 
               {/* Divider Operator (=) */}
-              <div className="relative flex items-center justify-center py-0.5">
+              <div className="relative flex items-center justify-center py-1">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t-2 border-slate-300" />
+                  <div className="w-full border-t border-slate-200" />
                 </div>
-                <span className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-black shadow-xs">
-                  =
+                <span
+                  aria-hidden="true"
+                  className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-xs"
+                >
+                  <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                    <path d="M3.5 5.75h9M3.5 10.25h9" />
+                  </svg>
                 </span>
               </div>
 
-              {/* Baris 3: Output Resmi (Skor Prioritas Final) — selaras warna putih-biru desktop */}
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+              {/* Baris 3: Output Resmi (Skor Prioritas Final) — tanpa nested border ganda */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
                     <LineChart className="h-4 w-4" />
                   </div>
                   <div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-900 leading-tight block">
-                      3. Skor Prioritas Final (P_k)
-                    </span>
-                    <span className="text-[10px] text-slate-500 block">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                      3. Skor Prioritas Final (Pₖ)
+                    </h3>
+                    <p className="text-[10px] text-slate-500">
                       Penentuan Akhir Susunan Fisik oleh Dinas
-                    </span>
+                    </p>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-3.5 py-2.5">
-                  <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold">
+                <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/90 to-indigo-50/50 px-3.5 py-4">
+                  <span className="block text-[9px] uppercase tracking-wider text-blue-700/70 font-bold">
                     Indeks Urgensi
                   </span>
-                  <div className="flex items-end justify-between mt-1">
+                  <div className="flex items-center justify-between gap-2 mt-1">
                     <div className="flex items-baseline gap-1">
                       <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-none">85.5</span>
                       <span className="text-xs font-bold text-slate-400">/100</span>
                     </div>
-                    <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <TrendingUp className="h-4 w-4 text-blue-600" />
-                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-bold text-white shadow-xs shrink-0">
+                      <TrendingUp className="h-3 w-3" />
+                      Prioritas Darurat
+                    </span>
                   </div>
                 </div>
               </div>
@@ -726,7 +737,7 @@ export default function Landing() {
                     <LineChart className="h-5 w-5" />
                   </div>
                 </div>
-                <h3 className="text-sm font-bold text-slate-900">3. Skor Prioritas Final (P_k)</h3>
+                <h3 className="text-sm font-bold text-slate-900">3. Skor Prioritas Final (Pₖ)</h3>
                 <p className="text-[11px] text-slate-500 mt-1 leading-snug">
                   Penentuan Akhir Susunan Fisik oleh Dinas
                 </p>
@@ -752,7 +763,7 @@ export default function Landing() {
 
       {/* ── FAQ: Pertanyaan yang Sering Diajukan ── */}
       <section className="bg-[#F8FAFC] py-14 md:py-20 border-t border-slate-100 overflow-x-clip">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <div className="grid gap-10 lg:grid-cols-12 lg:gap-12 items-start">
             {/* Kolom Kiri: Tag & Judul FAQ (Terbit dari Samping Kiri) */}
             <div className="lg:col-span-4 lg:sticky lg:top-28">

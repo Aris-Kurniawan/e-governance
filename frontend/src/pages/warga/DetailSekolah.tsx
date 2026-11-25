@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Link, useParams, useSearchParams, useNavigate, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import ModalFormLaporan from "@/components/composite/ModalFormLaporan"
@@ -205,6 +205,26 @@ export default function DetailSekolah() {
     }
   }, [searchParams, isAuthenticated])
 
+  const carouselRef = useRef<HTMLDivElement>(null)
+  const [activeCard, setActiveCard] = useState(0)
+
+  const handleCarouselScroll = () => {
+    const el = carouselRef.current
+    if (!el) return
+    const idx = Math.round(el.scrollLeft / (el.clientWidth * 0.86))
+    setActiveCard(Math.min(2, Math.max(0, idx)))
+  }
+
+  const scrollToCard = (idx: number) => {
+    const el = carouselRef.current
+    if (!el) return
+    const child = el.children[idx] as HTMLElement | undefined
+    if (child) {
+      child.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" })
+      setActiveCard(idx)
+    }
+  }
+
   const handleReportClick = () => {
     if (!isAuthenticated) {
       navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}&action=report`)
@@ -294,7 +314,6 @@ export default function DetailSekolah() {
             <Link to="/sekolah" className="text-slate-600 hover:text-[#0B3052]">Direktori Sekolah</Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
             <span className="font-bold text-slate-900">{baseline.nama}</span>
-            <span className="font-mono text-slate-400 text-[11px] ml-1">NPSN: {baseline.npsn}</span>
           </div>
 
           <div className="hidden sm:flex items-center gap-2 text-[11px]">
@@ -311,9 +330,7 @@ export default function DetailSekolah() {
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
             <div className="space-y-3 max-w-3xl">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-500 tracking-wider uppercase flex-wrap">
-                <span>DINAS PENDIDIKAN PROVINSI JAWA TIMUR — WILAYAH KERJA KAB. LAMONGAN</span>
-                <span className="text-slate-300">|</span>
-                <span className="font-mono text-slate-400">Kode Wilayah: {baseline.kodeWilayah} · Akreditasi: {baseline.akreditasi} Unggul</span>
+                <span>DISDIK JATIM — KAB. LAMONGAN</span>
               </div>
 
               <div className="flex items-baseline gap-3 flex-wrap">
@@ -341,20 +358,16 @@ export default function DetailSekolah() {
               </div>
             </div>
 
-            <div className="space-y-1.5 text-right shrink-0">
+            <div className="space-y-1.5 flex flex-col items-start lg:items-end shrink-0">
               <Button
                 onClick={handleReportClick}
-                className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold px-5 py-3 h-auto text-sm rounded-lg shadow-sm cursor-pointer"
+                className="bg-[#0B3052] hover:bg-[#07213A] text-white font-semibold w-auto px-3.5 py-2 text-xs sm:px-5 sm:py-3 sm:text-sm h-auto rounded-lg shadow-sm cursor-pointer"
               >
-                <Plus className="h-4 w-4 mr-1.5" /> Laporkan Ketidaksesuaian Fasilitas
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 shrink-0" /> Laporkan Ketidaksesuaian Fasilitas
               </Button>
-              {isAuthenticated ? (
+              {isAuthenticated && (
                 <span className="text-[11px] text-emerald-600 font-semibold block">
                   ✓ Masuk sebagai {user?.nama} (Terverifikasi)
-                </span>
-              ) : (
-                <span className="text-[11px] text-slate-400 block">
-                  Khusus NIK Warga &amp; Komite terverifikasi (Wajib Masuk)
                 </span>
               )}
             </div>
@@ -362,9 +375,14 @@ export default function DetailSekolah() {
         </div>
 
         {/* ── 3 Kartu Detail (TASK_GUIDE F2.6 / DECISIONS D-20): Audit Sarpras + Profil Dapodik + Isu & Klaster ── */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div>
+        <div
+          ref={carouselRef}
+          onScroll={handleCarouselScroll}
+          className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {/* Kartu 1 — Audit Sarpras */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4 flex flex-col justify-between">
+          <div className="shrink-0 w-[86vw] sm:w-[75vw] md:w-auto snap-center rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2">
                 <span className="text-xs font-bold tracking-wider text-slate-500 uppercase flex items-center gap-1">
@@ -412,7 +430,7 @@ export default function DetailSekolah() {
           </div>
 
           {/* Kartu 2 — Profil Dapodik */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4 flex flex-col justify-between">
+          <div className="shrink-0 w-[86vw] sm:w-[75vw] md:w-auto snap-center rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2">
                 <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">PROFIL DAPODIK</span>
@@ -450,7 +468,7 @@ export default function DetailSekolah() {
           </div>
 
           {/* Kartu 3 — Isu & Klaster Warga */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4 flex flex-col justify-between">
+          <div className="shrink-0 w-[86vw] sm:w-[75vw] md:w-auto snap-center rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2">
                 <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">ISU &amp; KLASTER WARGA</span>
@@ -522,6 +540,21 @@ export default function DetailSekolah() {
             </div>
           </div>
         </div>
+        {/* Indikator titik carousel untuk mobile */}
+        <div className="flex items-center justify-center gap-2 pt-2 md:hidden" aria-label="Navigasi kartu ringkasan">
+          {["Audit", "Dapodik", "Isu"].map((label, idx) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => scrollToCard(idx)}
+              aria-label={`Lihat kartu ${label}`}
+              className={`h-2 rounded-full transition-all cursor-pointer ${
+                activeCard === idx ? "w-6 bg-[#0B3052]" : "w-2 bg-slate-300"
+              }`}
+            />
+          ))}
+        </div>
+        </div>
 
         {/* ── Section: Rincian Fasilitas Sekolah ── */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-6">
@@ -534,7 +567,7 @@ export default function DetailSekolah() {
             )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {baseline.fasilitas.map((f, i) => {
               const style = FASILITAS_STYLE[f.tipe]
               const isFlask = style.icon === "flask"
