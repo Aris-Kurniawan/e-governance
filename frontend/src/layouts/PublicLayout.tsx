@@ -155,17 +155,19 @@ export default function PublicLayout() {
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {isAuthenticated ? (
               <>
-                <Button
-                  asChild
-                  size="sm"
-                  data-coachmark="action-laporan"
-                  className="bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-semibold shadow-xs cursor-pointer h-9 px-3 sm:px-3.5 rounded-xl hidden md:flex items-center gap-1.5 shrink-0 whitespace-nowrap"
-                >
-                  <Link to="/laporan/baru">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span>Buat Laporan</span>
-                  </Link>
-                </Button>
+                {!location.pathname.startsWith("/laporan/baru") && (
+                  <Button
+                    asChild
+                    size="sm"
+                    data-coachmark="action-laporan"
+                    className="bg-[#0B3052] hover:bg-[#07213A] text-white text-xs font-semibold shadow-xs cursor-pointer h-9 px-3 sm:px-3.5 rounded-xl hidden md:flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                  >
+                    <Link to="/laporan/baru">
+                      <PlusCircle className="h-3.5 w-3.5" />
+                      <span>Buat Laporan</span>
+                    </Link>
+                  </Button>
+                )}
 
                 <div className="relative shrink-0" ref={accountContainerRef} data-coachmark="user-menu">
                 <button

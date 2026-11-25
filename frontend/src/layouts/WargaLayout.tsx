@@ -93,17 +93,19 @@ export default function WargaLayout() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Button
-              asChild
-              size="sm"
-              className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-xs cursor-pointer h-9 px-3 sm:px-4 rounded-lg"
-            >
-              <Link to="/laporan/baru" className="flex items-center gap-1.5">
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Buat Laporan</span>
-                <span className="sm:hidden">Lapor</span>
-              </Link>
-            </Button>
+            {!location.pathname.startsWith("/laporan/baru") && (
+              <Button
+                asChild
+                size="sm"
+                className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-xs cursor-pointer h-9 px-3 sm:px-4 rounded-lg"
+              >
+                <Link to="/laporan/baru" className="flex items-center gap-1.5">
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Buat Laporan</span>
+                  <span className="sm:hidden">Lapor</span>
+                </Link>
+              </Button>
+            )}
 
             <div className="hidden md:flex flex-col items-end leading-tight px-1">
               <span className="text-xs font-bold text-slate-800 truncate max-w-[140px]">{user?.nama || "Warga"}</span>
