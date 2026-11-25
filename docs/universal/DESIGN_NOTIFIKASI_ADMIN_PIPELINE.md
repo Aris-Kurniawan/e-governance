@@ -6,14 +6,15 @@
 
 ---
 
-## 0. Keputusan yang diminta dari Aris
+## 0. Status keputusan
 
-| # | Pertanyaan | Rekomendasi saya |
+| # | Pertanyaan | Rekomendasi saya / status |
 |---|---|---|
-| K1 | Notifikasi warga: in-app saja, atau in-app + WhatsApp/email? | **In-app saja** untuk F4.13. Kanal eksternal ditunda sampai ada keputusan biaya/penyedia. |
-| K2 | Surface admin dipisah dari `/dinas/*`? | **Ya**, `/admin/*` dengan layout sendiri. Alasan di §3.1. |
+| K1 | Notifikasi warga: in-app saja, atau in-app + WhatsApp/email? | **In-app saja** — disetujui 22 Nov: notif ditambahkan di dashboard warga. |
+| K2 | Surface admin dipisah dari `/dinas/*`? | **Ya, dipisah** — disetujui 22 Nov: `/admin/*` dengan layout sendiri. Alasan di §3.1. |
 | K3 | Halaman ingest tetap di `/dinas/ingest` atau pindah ke `/admin/ingest`? | **Tetap di `/dinas/ingest`** (verifikator butuh), admin dapat halaman riwayat sendiri. |
 | K4 | Retensi notifikasi | **90 hari**, dihapus cron harian. |
+| K6 | Siapa yang boleh melihat riwayat run AI & mengubah threshold klaster? | **Sudah dijawab 22 Nov: admin saja.** Tidak ada akses kepala dinas ke `/admin/pipeline`. Pengaturan threshold masuk §4.7. |
 
 ---
 
@@ -220,7 +221,34 @@ Tidak boleh: persentase akurasi, "kualitas klaster naik X%", biaya rupiah. Tidak
 - Tombol "Jalankan sekarang" nonaktif saat `sedang_berjalan`; konfirmasi menyebutkan bahwa klaster + pemetaan vote akan ditulis ulang.
 - Polling 10 detik selama ada run `berjalan`, berhenti saat selesai.
 
-### 4.7 Jalur cron
+### 4.7 Pengaturan threshold klaster (admin) — K6 dijawab
+
+Admin bisa mengatur **kemiripan minimum** dan **ukuran klaster minimum**; tidak ada role lain yang boleh.
+
+**Temuan dari kode yang harus diketahui sebelum menyetujui angka:** `cluster_texts_adaptive` memakai `distance_threshold=threshold` dengan `metric="cosine"` (`ai_pipeline/clustering.py:56`, `:86-88`). Artinya `threshold` itu **jarak cosine** (0 = identik, 2 = berlawanan), **bukan** kemiripan. Default `0.88` = klaster sah bila jarak rata-rata ≤ 0.88 = **kemiripan ≥ 12%**. Kalau yang dimaksud "kemiripan 88%", nilainya harus `0.12`. Ini K7 — jangan diubah sebelum dipastikan.
+
+Batasan jujur: `threshold` hanya berlaku pada jalur Agglomerative (2 ≤ n < 10 laporan). Jalur n ≥ 10 memakai HDBSCAN `min_cluster_size=3, min_samples=2` dan **tidak punya threshold kemiripan sama sekali** — mengubah threshold tidak memengaruhi klaster besar.
+
+Tabel `ai_konfigurasi`, satu baris (tidak ada `system_setting` di backend saat ini):
+
+```sql
+CREATE TABLE ai_konfigurasi (
+    id INT PRIMARY KEY CHECK (id = 1),
+    kemiripan_minimum FLOAT NOT NULL DEFAULT 0.88,
+    min_cluster_size INT NOT NULL DEFAULT 3,
+    min_samples INT NOT NULL DEFAULT 2,
+    updated_by VARCHAR(36) REFERENCES users(user_id) ON DELETE SET NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Endpoint: `GET /ai/konfigurasi` (admin) · `PATCH /ai/konfigurasi` (admin, audit `audit.log` wajib).
+
+Cara pakai: `run_clustering_sync` baca konfigurasi → `distance_threshold = 1 - kemiripan_minimum` → nilai yang dipakai ditulis ke `ai_run.params_json`, sehingga riwayat run bisa menjawab "run ini memakai threshold berapa".
+
+Uji: 4 test — `GET`/`PATCH` RBAC admin, validasi `0 < kemiripan_minimum < 1`, `params_json` mencatat nilai terpakai, audit tercatat.
+
+### 4.8 Jalur cron
 
 `scripts/run_clustering.py` tetap menjadi entry cron 02:00. Perubahan: tiga panggilan (`mulai_run`, `catat_tahap`, `selesai_run`) menggantikan `record_pipeline_run`. `pipeline_state.json` dipertahankan sebagai cache `last_run` sampai `GET /ai/status` membaca DB, lalu file dihapus di commit terpisah.
 
@@ -233,8 +261,9 @@ Tidak boleh: persentase akurasi, "kualitas klaster naik X%", biaya rupiah. Tidak
 | F4.13 | `GET /notifikasi`, `GET /notifikasi/jumlah`, `PATCH /notifikasi/{id}/baca`, `PATCH /notifikasi/baca-semua` | — |
 | F4.14 | — (murni frontend) | — |
 | F4.15 | `GET /ai/runs`, `GET /ai/runs/{run_id}` | `POST /ai/cluster` → 202 async, `GET /ai/status` + 2 field |
+| F4.16 | `GET /ai/konfigurasi`, `PATCH /ai/konfigurasi` | — |
 
-Total 6 endpoint baru, 2 berubah.
+Total 8 endpoint baru, 2 berubah. Semua endpoint pipeline (runs, konfigurasi) `admin` saja.
 
 ---
 
@@ -246,6 +275,7 @@ Repo sudah punya `backend/alembic`. Tiga revisi terpisah, satu per tabel:
 xxxx_add_notifikasi.py       → tabel notifikasi
 xxxx_add_ai_run.py           → tabel ai_run
 xxxx_add_ai_run_tahap.py     → tabel ai_run_tahap
+xxxx_add_ai_konfigurasi.py    → tabel ai_konfigurasi (1 baris)
 ```
 
 Tanpa `server_default` untuk kolom baru yang nullable; tidak ada backfill karena ketiga tabel baru. Tabel lama tidak disentuh.
@@ -264,6 +294,9 @@ Tanpa `server_default` untuk kolom baru yang nullable; tidak ada backfill karena
 | F4.15a | Model `ai_run` + `ai_run_tahap` + refactor `run_clustering_sync` jadi bertahap | `models/ai_run.py`, `ai_pipeline/clustering.py` | 4 test: run sukses tercatat, gagal tercatat, reaper, 409 saat run aktif |
 | F4.15b | `POST /ai/cluster` async + `GET /ai/runs` | `routers/klaster.py` | 5 test: 202, status berubah, riwayat, filter, RBAC |
 | F4.15c | UI `/admin/pipeline` | `pages/admin/Pipeline.tsx` | smoke Playwright: tabel, detail, tombol nonaktif saat berjalan |
+| F4.16a | `ai_konfigurasi` + `GET/PATCH /ai/konfigurasi` | `models/ai_konfigurasi.py`, `routers/klaster.py` | 4 test: RBAC, validasi, audit |
+| F4.16b | `run_clustering_sync` baca konfigurasi → `params_json` | `ai_pipeline/clustering.py` | 1 test: run mencatat threshold terpakai |
+| F4.16c | Panel pengaturan di `/admin/pipeline` | `pages/admin/Pipeline.tsx` | smoke: nilai tersimpan dan tampil lagi |
 
 Urutan wajib: F4.13 → F4.14 → F4.15. F4.14 sebelum F4.15 karena UI pipeline hidup di `/admin`.
 
@@ -284,10 +317,12 @@ Urutan wajib: F4.13 → F4.14 → F4.15. F4.14 sebelum F4.15 karena UI pipeline 
 
 ## 9. Pertanyaan terbuka
 
-1. **K1** — notifikasi in-app saja cukup untuk demo/sidang, atau perlu WhatsApp?
-2. **K3** — halaman unggah CSV tetap di `/dinas/ingest` (verifikator), atau admin juga dipindah ke `/admin/ingest` dan `/dinas/ingest` dihapus?
-3. **K5** — banner hardcoded `DinasLayout.tsx:406` diganti angka nyata dari `GET /dashboard/pemerintah`, atau dihapus saja sampai ada data yang bisa dihitung?
-4. **K6** — kepala dinas perlu akses baca ke `/admin/pipeline` (lihat riwayat run AI), atau cukup admin?
+1. ~~**K1**~~ — **terjawab 22 Nov**: notifikasi in-app di dashboard warga. Kanal eksternal (WhatsApp/email) menunggu keputusan biaya/penyedia.
+2. ~~**K2**~~ — **terjawab 22 Nov**: admin dipisah ke `/admin/*`.
+3. ~~**K6**~~ — **terjawab 22 Nov**: riwayat run AI dan pengaturan threshold **admin saja**. Keputusan implementasi: §4.7.
+4. **K3** — halaman unggah CSV tetap di `/dinas/ingest` (verifikator), atau pindah ke `/admin/ingest` dan `/dinas/ingest` dihapus?
+5. **K5** — banner hardcoded `DinasLayout.tsx:406` diganti angka nyata dari `GET /dashboard/pemerintah`, atau dihapus saja sampai ada data yang bisa dihitung?
+6. **K7** — `threshold` default `0.88` itu **jarak** cosine (≈ kemiripan 12%). Dipertahankan, atau memang niatnya kemiripan 88% (berarti `0.12`)? Konfirmasi sebelum admin diberi kontrol; ubah diam-diam akan mengubah hasil klaster tanpa jejak.
 
 ---
 
@@ -296,4 +331,5 @@ Urutan wajib: F4.13 → F4.14 → F4.15. F4.14 sebelum F4.15 karena UI pipeline 
 - Notifikasi: 6 tipe terpicu, idempoten (kirim dua kali → satu baris), RBAC (warga hanya melihat miliknya), badge akurat, `GET /notifikasi` tidak pernah memuat NIK.
 - Admin: role `verifikator_dinas` dan `kepala_dinas` ditolak di seluruh `/admin/*` (403 API + redirect UI); menu pemerintah tinggal 4 item; `/dinas/sistem` redirect permanen.
 - Pipeline: satu run = satu baris `ai_run` + 5 baris `ai_run_tahap`; run gagal menyimpan `pesan_error`; reaper menutup run menggantung; `silhouette` `NULL` bila klaster ≤ 1; tombol jalankan nonaktif saat `sedang_berjalan`.
+- Threshold: hanya `admin` yang bisa `GET/PATCH /ai/konfigurasi`; nilai terpakai tercatat di `ai_run.params_json`; audit terisi.
 - Tidak ada angka rupiah, tidak ada klaim akurasi tanpa pengukuran.
